@@ -13,6 +13,7 @@ return new class extends Migration
             $table->foreignId('splitter_id')->constrained('splitters')->onDelete('cascade');
             $table->integer('port_number')->unsigned();
             $table->foreignId('destination_network_point_id')->nullable()->constrained('network_points')->onDelete('set null');
+            $table->foreignId('destination_main_core_id')->nullable()->constrained('main_cores')->onDelete('set null');
             $table->decimal('output_attenuation', 8, 2)->nullable();
             $table->decimal('attenuation_difference', 8, 2)->nullable();
             $table->string('status')->default('empty');

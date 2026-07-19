@@ -10,7 +10,8 @@ return new class extends Migration
     {
         Schema::create('splitters', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('network_point_id')->constrained('network_points')->onDelete('cascade');
+            $table->foreignId('network_point_id')->nullable()->constrained('network_points')->onDelete('set null');
+            $table->foreignId('main_core_id')->constrained('main_cores')->onDelete('cascade');
             $table->foreignId('network_input_id')->constrained('network_inputs')->onDelete('cascade');
             $table->string('splitter_name');
             $table->string('splitter_ratio');

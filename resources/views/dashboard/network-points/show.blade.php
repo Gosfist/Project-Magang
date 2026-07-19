@@ -3,7 +3,7 @@
 @section('content')
 <div class="mb-6"><a href="{{ route('network-points.index') }}" class="text-sm text-blue-600 hover:underline">← Kembali ke Daftar Titik Jaringan</a></div>
 
-<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+<div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
     <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-bold text-gray-900">{{ $networkPoint->name }}</h2>
         <div class="flex items-center gap-2">
@@ -21,7 +21,7 @@
 </div>
 
 {{-- Input Redaman --}}
-<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+<div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
     <div class="flex items-center justify-between mb-4">
         <h3 class="font-semibold text-gray-900">Input Redaman</h3>
         <a href="{{ route('network-inputs.create', ['network_point_id' => $networkPoint->id]) }}" class="text-sm text-blue-600 hover:underline">+ Tambah Input</a>
@@ -31,7 +31,7 @@
         <table class="w-full text-sm">
             <thead class="bg-gray-50 border-b"><tr>
                 <th class="text-left px-4 py-2 text-gray-500 font-medium">Sumber</th>
-                <th class="text-left px-4 py-2 text-gray-500 font-medium">Main Core</th>
+                <th class="text-left px-4 py-2 text-gray-500 font-medium">Data Closure</th>
                 <th class="text-left px-4 py-2 text-gray-500 font-medium">Warna/No Core</th>
                 <th class="text-right px-4 py-2 text-gray-500 font-medium">Redaman</th>
             </tr></thead>
@@ -53,7 +53,7 @@
 </div>
 
 {{-- Splitters --}}
-<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+<div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
     <div class="flex items-center justify-between mb-4">
         <h3 class="font-semibold text-gray-900">Splitter</h3>
         <a href="{{ route('splitters.create', ['network_point_id' => $networkPoint->id]) }}" class="text-sm text-blue-600 hover:underline">+ Tambah Splitter</a>
@@ -70,7 +70,7 @@
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
             @foreach($splitter->outputs as $output)
-            <div class="p-2 rounded-lg border text-xs {{ $output->status == 'active' ? 'bg-green-50 border-green-200' : ($output->status == 'backup' ? 'bg-blue-50 border-blue-200' : ($output->status == 'damaged' ? 'bg-red-50 border-red-200' : ($output->status == 'maintenance' ? 'bg-yellow-50 border-yellow-200' : 'bg-gray-50 border-gray-200'))) }}">
+            <div class="p-2 rounded-lg border text-xs {{ $output->status == 'active' ? 'bg-blue-50 border-blue-200' : ($output->status == 'damaged' ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200') }}">
                 <span class="font-medium">Port {{ $output->port_number }}</span>
                 <span class="block text-gray-500 truncate">{{ $output->destinationNetworkPoint->name ?? $output->status_label }}</span>
                 @if($output->output_attenuation)<span class="font-mono text-blue-600">{{ $output->output_attenuation }} dBm</span>@endif
@@ -86,7 +86,7 @@
 
 {{-- Incoming Connections --}}
 @if($networkPoint->incomingOutputs->count() > 0)
-<div class="bg-white rounded-xl border border-gray-200 p-6">
+<div class="bg-white rounded-lg border border-gray-200 p-6">
     <h3 class="font-semibold text-gray-900 mb-4">Koneksi Masuk (dari splitter lain)</h3>
     <div class="overflow-x-auto">
         <table class="w-full text-sm">

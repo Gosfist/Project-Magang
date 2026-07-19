@@ -22,7 +22,7 @@
     </a>
 </div>
 
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+<div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="bg-gray-50 border-b border-gray-200">
@@ -39,8 +39,8 @@
                 <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td class="px-6 py-3 font-medium text-gray-900">{{ $user->name }}</td>
                     <td class="px-6 py-3 text-gray-500">{{ $user->email }}</td>
-                    <td class="px-6 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full {{ $user->role == 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700' }}">{{ ucfirst($user->role) }}</span></td>
-                    <td class="px-6 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full {{ $user->status == 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">{{ ucfirst($user->status) }}</span></td>
+                    <td class="px-6 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">{{ ucfirst($user->role) }}</span></td>
+                    <td class="px-6 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full {{ $user->status == 'active' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700' }}">{{ ucfirst($user->status) }}</span></td>
                     <td class="px-6 py-3 text-right">
                         <div class="flex items-center justify-end gap-2">
                             <a href="{{ route('users.edit', $user) }}" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\NetworkInput;
-use App\Models\NetworkPoint;
 use App\Models\MainCore;
 use Illuminate\Http\Request;
 
@@ -11,104 +10,103 @@ class NetworkInputController extends Controller
 {
     public function index(Request $request)
     {
-        $query = NetworkInput::with(['networkPoint', 'mainCore']);
+        $query = NetworkInput::with('mainCore');
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('source_name', 'like', "%{$search}%")
-                  ->orWhere('cable_color', 'like', "%{$search}%")
-                  ->orWhereHas('networkPoint', function ($sub) use ($search) {
+                  ->orWhereHas('mainCore', function ($sub) use ($search) {
                       $sub->where('name', 'like', "%{$search}%");
                   });
             });
         }
 
-        if ($request->filled('network_point_id')) {
-            $query->where('network_point_id', $request->network_point_id);
+        if ($request->filled('main_core_id')) {
+            $query->where('main_core_id', $request->main_core_id);
         }
 
-        $networkInputs = $query->latest()->paginate(15)->withQueryString();
-        $networkPoints = NetworkPoint::orderBy('name')->get();
+        $networkInputs = $query->orderBy('main_core_id')->orderBy('core_number')->paginate(15)->withQueryString();
+        $mainCores = MainCore::orderBy('name')->get();
 
-        return view('dashboard.network-inputs.index', compact('networkInputs', 'networkPoints'));
+        return view('dashboard.network-inputs.index', compact('networkInputs', 'mainCores'));
     }
 
     public function create(Request $request)
     {
-        $networkPoints = NetworkPoint::orderBy('name')->get();
-        $mainCores = MainCore::orderBy('name')->get();
-        $selectedNetworkPoint = $request->network_point_id;
-
-        return view('dashboard.network-inputs.create', compact('networkPoints', 'mainCores', 'selectedNetworkPoint'));
+        return redirect()->route('network-inputs.index');
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'network_point_id' => 'required|exists:network_points,id',
-            'main_core_id' => 'nullable|exists:main_cores,id',
-            'source_name' => 'required|string|max:255',
-            'cable_color' => 'nullable|string|max:255',
-            'core_number' => 'nullable|integer',
-            'input_attenuation' => 'required|numeric',
-            'description' => 'nullable|string',
+        $validated = $request->validate([
+            'main_core_id' => 'required|exists:main_cores,id',
+            'attenuations' => 'nullable|array',
         ], [
-            'network_point_id.required' => 'Titik jaringan wajib dipilih.',
-            'network_point_id.exists' => 'Titik jaringan tidak valid.',
-            'source_name.required' => 'Sumber input wajib diisi.',
-            'input_attenuation.required' => 'Redaman input wajib diisi.',
-            'input_attenuation.numeric' => 'Redaman input harus angka.',
+            'main_core_id.required' => 'Data Closure wajib dipilih.',
+            'main_core_id.exists' => 'Data Closure tidak valid.',
         ]);
 
-        NetworkInput::create($request->only([
-            'network_point_id', 'main_core_id', 'source_name',
-            'cable_color', 'core_number', 'input_attenuation', 'description'
-        ]));
+        $mainCore = MainCore::findOrFail($validated['main_core_id']);
 
-        return redirect()->route('network-inputs.index')->with('success', 'Input Redaman berhasil ditambahkan.');
+        $rules = [];
+        $messages = [];
+        for ($core = 1; $core <= $mainCore->total_core; $core++) {
+            $rules["attenuations.{$core}"] = 'nullable|numeric';
+            $messages["attenuations.{$core}.numeric"] = "Redaman Core {$core} harus angka.";
+        }
+        $request->validate($rules, $messages);
+
+        for ($core = 1; $core <= $mainCore->total_core; $core++) {
+            $networkInput = NetworkInput::where('main_core_id', $mainCore->id)
+                ->where('core_number', $core)
+                ->first();
+            $attenuation = $request->input("attenuations.{$core}");
+
+            if ($attenuation === null || $attenuation === '') {
+                continue;
+            }
+
+            $data = [
+                'main_core_id' => $mainCore->id,
+                'source_name' => "Core {$core}",
+                'cable_color' => null,
+                'core_number' => $core,
+                'input_attenuation' => $attenuation,
+                'description' => null,
+            ];
+
+            if ($networkInput) {
+                $networkInput->update($data);
+            } else {
+                $networkInput = NetworkInput::create($data);
+            }
+
+            $this->recalculateSplitterOutputs($networkInput);
+        }
+
+        return redirect()->route('network-inputs.index')->with('success', 'Input Redaman berhasil disimpan.');
     }
 
     public function edit(NetworkInput $networkInput)
     {
-        $networkPoints = NetworkPoint::orderBy('name')->get();
-        $mainCores = MainCore::orderBy('name')->get();
-
-        return view('dashboard.network-inputs.edit', compact('networkInput', 'networkPoints', 'mainCores'));
+        return redirect()->route('network-inputs.index');
     }
 
     public function update(Request $request, NetworkInput $networkInput)
     {
         $request->validate([
-            'network_point_id' => 'required|exists:network_points,id',
-            'main_core_id' => 'nullable|exists:main_cores,id',
-            'source_name' => 'required|string|max:255',
-            'cable_color' => 'nullable|string|max:255',
-            'core_number' => 'nullable|integer',
             'input_attenuation' => 'required|numeric',
-            'description' => 'nullable|string',
         ], [
-            'network_point_id.required' => 'Titik jaringan wajib dipilih.',
-            'network_point_id.exists' => 'Titik jaringan tidak valid.',
-            'source_name.required' => 'Sumber input wajib diisi.',
             'input_attenuation.required' => 'Redaman input wajib diisi.',
             'input_attenuation.numeric' => 'Redaman input harus angka.',
         ]);
 
-        $networkInput->update($request->only([
-            'network_point_id', 'main_core_id', 'source_name',
-            'cable_color', 'core_number', 'input_attenuation', 'description'
-        ]));
+        $networkInput->update([
+            'input_attenuation' => $request->input_attenuation,
+        ]);
 
-        // Recalculate attenuation difference for related splitter outputs
-        foreach ($networkInput->splitters as $splitter) {
-            foreach ($splitter->outputs as $output) {
-                if ($output->output_attenuation !== null) {
-                    $output->attenuation_difference = $output->output_attenuation - $networkInput->input_attenuation;
-                    $output->save();
-                }
-            }
-        }
+        $this->recalculateSplitterOutputs($networkInput);
 
         return redirect()->route('network-inputs.index')->with('success', 'Input Redaman berhasil diperbarui.');
     }
@@ -118,5 +116,19 @@ class NetworkInputController extends Controller
         $networkInput->delete();
 
         return redirect()->route('network-inputs.index')->with('success', 'Input Redaman berhasil dihapus.');
+    }
+
+    private function recalculateSplitterOutputs(NetworkInput $networkInput): void
+    {
+        $networkInput->loadMissing('splitters.outputs');
+
+        foreach ($networkInput->splitters as $splitter) {
+            foreach ($splitter->outputs as $output) {
+                if ($output->output_attenuation !== null) {
+                    $output->attenuation_difference = $output->output_attenuation - $networkInput->input_attenuation;
+                    $output->save();
+                }
+            }
+        }
     }
 }

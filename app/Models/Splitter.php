@@ -13,6 +13,7 @@ class Splitter extends Model
 
     protected $fillable = [
         'network_point_id',
+        'main_core_id',
         'network_input_id',
         'splitter_name',
         'splitter_ratio',
@@ -33,6 +34,11 @@ class Splitter extends Model
     public function networkPoint(): BelongsTo
     {
         return $this->belongsTo(NetworkPoint::class);
+    }
+
+    public function mainCore(): BelongsTo
+    {
+        return $this->belongsTo(MainCore::class);
     }
 
     /**

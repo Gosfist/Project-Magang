@@ -23,12 +23,10 @@ class DashboardController extends Controller
             'totalDistributionBox' => NetworkPoint::where('type', 'distribution_box')->count(),
             'totalSplitters' => Splitter::count(),
             'totalPortActive' => SplitterOutput::where('status', 'active')->count(),
-            'totalPortBackup' => SplitterOutput::where('status', 'backup')->count(),
             'totalPortEmpty' => SplitterOutput::where('status', 'empty')->count(),
             'totalPortDamaged' => SplitterOutput::where('status', 'damaged')->count(),
-            'totalPortMaintenance' => SplitterOutput::where('status', 'maintenance')->count(),
             'latestInputs' => NetworkInput::with(['networkPoint', 'mainCore'])->latest()->take(5)->get(),
-            'latestOutputs' => SplitterOutput::with(['splitter.networkPoint', 'destinationNetworkPoint'])->latest()->take(5)->get(),
+            'latestOutputs' => SplitterOutput::with(['splitter.mainCore', 'destinationMainCore'])->latest()->take(5)->get(),
         ];
 
         // Total petugas only for admin

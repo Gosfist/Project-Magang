@@ -14,6 +14,7 @@ class SplitterOutput extends Model
         'splitter_id',
         'port_number',
         'destination_network_point_id',
+        'destination_main_core_id',
         'output_attenuation',
         'attenuation_difference',
         'status',
@@ -33,22 +34,18 @@ class SplitterOutput extends Model
      * Status labels for display.
      */
     public const STATUS_LABELS = [
-        'active' => 'Aktif',
-        'backup' => 'Cadangan',
         'empty' => 'Kosong',
+        'active' => 'Aktif',
         'damaged' => 'Rusak',
-        'maintenance' => 'Maintenance',
     ];
 
     /**
      * Status colors for badges.
      */
     public const STATUS_COLORS = [
-        'active' => 'green',
-        'backup' => 'blue',
         'empty' => 'gray',
+        'active' => 'blue',
         'damaged' => 'red',
-        'maintenance' => 'yellow',
     ];
 
     /**
@@ -81,6 +78,11 @@ class SplitterOutput extends Model
     public function destinationNetworkPoint(): BelongsTo
     {
         return $this->belongsTo(NetworkPoint::class, 'destination_network_point_id');
+    }
+
+    public function destinationMainCore(): BelongsTo
+    {
+        return $this->belongsTo(MainCore::class, 'destination_main_core_id');
     }
 
     /**

@@ -3,19 +3,19 @@
 @section('content')
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
     <form method="GET" class="flex flex-wrap gap-2">
-        <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari splitter atau tujuan..." class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-64">
+        <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari splitter atau closure..." class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-64">
         <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"><option value="">Semua Status</option>@foreach(\App\Models\SplitterOutput::STATUS_LABELS as $val => $label)<option value="{{ $val }}" {{ request('status') == $val ? 'selected' : '' }}>{{ $label }}</option>@endforeach</select>
-        <select name="splitter_id" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"><option value="">Semua Splitter</option>@foreach($splitters as $s)<option value="{{ $s->id }}" {{ request('splitter_id') == $s->id ? 'selected' : '' }}>{{ $s->splitter_name }} ({{ $s->networkPoint->name ?? '' }})</option>@endforeach</select>
+        <select name="splitter_id" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"><option value="">Semua Splitter</option>@foreach($splitters as $s)<option value="{{ $s->id }}" {{ request('splitter_id') == $s->id ? 'selected' : '' }}>{{ $s->splitter_name }} ({{ $s->mainCore->name ?? '' }})</option>@endforeach</select>
         <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">Cari</button>
     </form>
 </div>
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+<div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="bg-gray-50 border-b"><tr>
                 <th class="text-left px-6 py-3 text-gray-500 font-medium">Splitter</th>
                 <th class="text-left px-6 py-3 text-gray-500 font-medium">Port</th>
-                <th class="text-left px-6 py-3 text-gray-500 font-medium">Tujuan</th>
+                <th class="text-left px-6 py-3 text-gray-500 font-medium">Nama Closure</th>
                 <th class="text-right px-6 py-3 text-gray-500 font-medium">Redaman Output</th>
                 <th class="text-right px-6 py-3 text-gray-500 font-medium">Selisih</th>
                 <th class="text-left px-6 py-3 text-gray-500 font-medium">Status</th>
@@ -26,7 +26,7 @@
                 <tr class="border-b border-gray-100 hover:bg-gray-50">
                     <td class="px-6 py-3 text-gray-700"><a href="{{ route('splitters.show', $output->splitter_id) }}" class="text-blue-600 hover:underline">{{ $output->splitter->splitter_name ?? '-' }}</a></td>
                     <td class="px-6 py-3 font-medium text-gray-900">Port {{ $output->port_number }}</td>
-                    <td class="px-6 py-3 text-gray-600">{{ $output->destinationNetworkPoint->name ?? '-' }}</td>
+                    <td class="px-6 py-3 text-gray-600">{{ $output->destinationMainCore->name ?? '-' }}</td>
                     <td class="px-6 py-3 text-right font-mono text-blue-600">{{ $output->output_attenuation ? $output->output_attenuation . ' dBm' : '-' }}</td>
                     <td class="px-6 py-3 text-right font-mono text-orange-600">{{ $output->attenuation_difference ? $output->attenuation_difference . ' dBm' : '-' }}</td>
                     <td class="px-6 py-3">@php $c = \App\Models\SplitterOutput::STATUS_COLORS[$output->status] ?? 'gray'; @endphp<span class="px-2 py-1 text-xs font-medium rounded-full bg-{{ $c }}-100 text-{{ $c }}-700">{{ $output->status_label }}</span></td>

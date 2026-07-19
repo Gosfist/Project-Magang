@@ -2,7 +2,7 @@
 @section('page-title', 'Edit Petugas')
 @section('content')
 <div class="max-w-2xl">
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="bg-white rounded-lg border border-gray-200 p-6">
         <form method="POST" action="{{ route('users.update', $user) }}" class="space-y-5">
             @csrf @method('PUT')
             <div>

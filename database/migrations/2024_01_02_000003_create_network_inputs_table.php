@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::create('network_inputs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('network_point_id')->constrained('network_points')->onDelete('cascade');
-            $table->foreignId('main_core_id')->nullable()->constrained('main_cores')->onDelete('set null');
+            $table->foreignId('network_point_id')->nullable()->constrained('network_points')->onDelete('set null');
+            $table->foreignId('main_core_id')->constrained('main_cores')->onDelete('cascade');
             $table->string('source_name');
             $table->string('cable_color')->nullable();
             $table->integer('core_number')->nullable();

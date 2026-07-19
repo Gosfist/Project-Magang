@@ -2,7 +2,7 @@
 @section('page-title', 'Tambah Titik Jaringan')
 @section('content')
 <div class="max-w-2xl">
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <div class="bg-white rounded-lg border border-gray-200 p-6">
         <form method="POST" action="{{ route('network-points.store') }}" class="space-y-5">
             @csrf
             <div><label class="block text-sm font-medium text-gray-700 mb-1">Nama <span class="text-red-500">*</span></label><input type="text" name="name" value="{{ old('name') }}" required class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none @error('name') border-red-500 @enderror" placeholder="cth: ODC Area 1">@error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror</div>
