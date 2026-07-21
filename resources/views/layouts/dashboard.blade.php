@@ -54,23 +54,15 @@
                     <p class="text-xs font-semibold uppercase tracking-wider text-blue-400/70">Data Jaringan</p>
                 </div>
 
-                <a href="{{ route('main-cores.index') }}"
-                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('main-cores.*') ? 'bg-white/15 text-white shadow-sm' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
+                <a href="{{ route('fiber.dashboard') }}"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('fiber.*') ? 'bg-white/15 text-white shadow-sm' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            d="M12 3v18m0-18a4 4 0 00-4 4v2a4 4 0 004 4m0-10a4 4 0 014 4v2a4 4 0 01-4 4m-7 4h14" />
                     </svg>
-                    Data Closure
+                    Main Core Fiber
                 </a>
 
-                <a href="{{ route('splitter-outputs.index') }}"
-                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('splitter-outputs.*') ? 'bg-white/15 text-white shadow-sm' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Output Splitter
-                </a>
             </nav>
 
             {{-- User Info --}}

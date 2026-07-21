@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="900" viewBox="0 0 1500 900">
+  <defs>
+    <style>
+      .bg{fill:#f8fafc}
+      .box{fill:#ffffff;stroke:#1f2937;stroke-width:2}
+      .head{fill:#1d4ed8}
+      .head2{fill:#059669}
+      .title{font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:700;fill:#111827}
+      .table-title{font-family:Arial,Helvetica,sans-serif;font-size:17px;font-weight:700;fill:#ffffff}
+      .text{font-family:Arial,Helvetica,sans-serif;font-size:14px;fill:#111827}
+      .muted{font-family:Arial,Helvetica,sans-serif;font-size:13px;fill:#4b5563}
+      .pk{font-weight:700;fill:#b91c1c}
+      .fk{font-weight:700;fill:#1d4ed8}
+      .rel{stroke:#374151;stroke-width:2;fill:none;marker-end:url(#arrow)}
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#374151"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1500" height="900"/>
+  <text class="title" x="40" y="48">ERD Fiber - Unzanet</text>
+  <text class="muted" x="40" y="74">Schema aktif: closure, kabel, core, endpoint core, splitter, dan output splitter. Tabel users tetap dipertahankan untuk login.</text>
+
+  <g transform="translate(60 135)">
+    <rect class="box" width="270" height="185" rx="8"/>
+    <rect class="head" width="270" height="40" rx="8"/>
+    <text class="table-title" x="16" y="26">fo_closure</text>
+    <text class="text pk" x="16" y="70">PK fo_closure</text>
+    <text class="text" x="16" y="100">nama_cl</text>
+    <text class="text" x="16" y="130">alamat_cl</text>
+    <text class="text" x="16" y="160">catatan</text>
+  </g>
+
+  <g transform="translate(430 135)">
+    <rect class="box" width="270" height="185" rx="8"/>
+    <rect class="head" width="270" height="40" rx="8"/>
+    <text class="table-title" x="16" y="26">fo_kabel</text>
+    <text class="text pk" x="16" y="70">PK fo_kabel</text>
+    <text class="text" x="16" y="100">nama_kabel</text>
+    <text class="text" x="16" y="130">jumlah_core</text>
+    <text class="text" x="16" y="160">catatan</text>
+  </g>
+
+  <g transform="translate(800 135)">
+    <rect class="box" width="270" height="245" rx="8"/>
+    <rect class="head" width="270" height="40" rx="8"/>
+    <text class="table-title" x="16" y="26">fo_core</text>
+    <text class="text pk" x="16" y="70">PK fo_core</text>
+    <text class="text fk" x="16" y="100">FK fo_kabel</text>
+    <text class="text" x="16" y="130">redaman</text>
+    <text class="text" x="16" y="160">nomer_core</text>
+    <text class="text" x="16" y="190">warna_core</text>
+    <text class="text" x="16" y="220">catatan</text>
+  </g>
+
+  <g transform="translate(430 510)">
+    <rect class="box" width="300" height="185" rx="8"/>
+    <rect class="head" width="300" height="40" rx="8"/>
+    <text class="table-title" x="16" y="26">fo_core_endpoint</text>
+    <text class="text pk" x="16" y="70">PK fo_core_endpoint</text>
+    <text class="text fk" x="16" y="100">FK fo_core</text>
+    <text class="text fk" x="16" y="130">FK fo_closure</text>
+    <text class="text" x="16" y="160">endpoint_side</text>
+  </g>
+
+  <g transform="translate(1160 135)">
+    <rect class="box" width="280" height="215" rx="8"/>
+    <rect class="head2" width="280" height="40" rx="8"/>
+    <text class="table-title" x="16" y="26">fo_splitter</text>
+    <text class="text pk" x="16" y="70">PK fo_splitter</text>
+    <text class="text fk" x="16" y="100">FK fo_core</text>
+    <text class="text fk" x="16" y="130">FK fo_closure</text>
+    <text class="text" x="16" y="160">rasio_split</text>
+    <text class="text" x="16" y="190">catatan</text>
+  </g>
+
+  <g transform="translate(1160 510)">
+    <rect class="box" width="280" height="245" rx="8"/>
+    <rect class="head2" width="280" height="40" rx="8"/>
+    <text class="table-title" x="16" y="26">fo_splitter_output</text>
+    <text class="text pk" x="16" y="70">PK fo_splitter_output</text>
+    <text class="text fk" x="16" y="100">FK fo_splitter</text>
+    <text class="text" x="16" y="130">nomor_output</text>
+    <text class="text" x="16" y="160">redaman</text>
+    <text class="text fk" x="16" y="190">FK target_closure</text>
+    <text class="text" x="16" y="220">catatan</text>
+  </g>
+
+  <path class="rel" d="M700 228 C740 228 760 228 800 228"/>
+  <text class="muted" x="720" y="215">1 kabel punya banyak core</text>
+
+  <path class="rel" d="M930 380 C860 470 795 570 730 600"/>
+  <text class="muted" x="760" y="505">1 core punya endpoint A/B</text>
+
+  <path class="rel" d="M330 230 C380 330 410 510 430 595"/>
+  <text class="muted" x="230" y="455">endpoint menunjuk CL</text>
+
+  <path class="rel" d="M1070 230 C1105 230 1125 230 1160 230"/>
+  <text class="muted" x="1080" y="215">core dapat menjadi splitter</text>
+
+  <path class="rel" d="M1300 350 C1300 405 1300 455 1300 510"/>
+  <text class="muted" x="1315" y="435">1 splitter punya output</text>
+
+  <path class="rel" d="M1160 625 C1040 780 240 760 195 320"/>
+  <text class="muted" x="670" y="795">output splitter bisa target ke CL berikutnya</text>
+</svg>
