@@ -18,7 +18,6 @@
         </div>
         <div class="flex flex-wrap gap-2 sm:justify-end">
             <button type="button" onclick="openModal('spliceModal')" @disabled($cables->sum(fn ($item) => $item->cores->count()) < 2) class="shrink-0 px-4 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed" style="cursor: pointer;">Splicing</button>
-            <button type="button" onclick="openModal('coreModal')" @disabled($cables->isEmpty()) class="shrink-0 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed" style="cursor: pointer;">Tambah Core</button>
             <button type="button" onclick="openModal('listCableModal')" class="shrink-0 px-4 py-2 bg-green-600 text-white rounded-lg text-sm" style="cursor: pointer;">List Kabel</button>
         </div>
     </div>
@@ -436,37 +435,6 @@
     </div>
 @endforeach
 
-<div id="coreModal" class="fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm">
-    <div class="w-full max-w-lg bg-white rounded-lg shadow-xl">
-        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-            <h2 class="font-semibold text-gray-900">Tambah Core</h2>
-            <button type="button" onclick="closeModal('coreModal')" class="text-gray-400 hover:text-gray-700" style="cursor: pointer;">X</button>
-        </div>
-        <form method="POST" action="{{ route('fiber.closures.cores.store', $closure) }}" class="p-5 space-y-4">
-            @csrf
-            <input type="hidden" name="form_mode" value="core_create">
-            <div>
-                <label class="block text-sm font-medium mb-1">Nama kabel</label>
-                <select name="fo_kabel" required class="w-full px-4 py-2 border rounded-lg">
-                    @foreach($cables as $cable)
-                        <option value="{{ $cable->fo_kabel }}" @selected((string)old('fo_kabel') === (string)$cable->fo_kabel)>{{ $cable->nama_kabel }}</option>
-                    @endforeach
-                </select>
-                @if(old('form_mode') === 'core_create') @error('fo_kabel')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror @endif
-            </div>
-            <div>
-                <label class="block text-sm font-medium mb-1">Jumlah core</label>
-                <input name="jumlah_core" value="{{ old('form_mode') === 'core_create' ? old('jumlah_core', 1) : 1 }}" type="number" min="1" required class="w-full px-4 py-2 border rounded-lg">
-                @if(old('form_mode') === 'core_create') @error('jumlah_core')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror @endif
-            </div>
-            <div class="flex gap-2 justify-end">
-                <button type="button" onclick="closeModal('coreModal')" class="px-4 py-2 border rounded-lg" style="cursor: pointer;">Batal</button>
-                <button class="px-4 py-2 bg-blue-600 text-white rounded-lg" style="cursor: pointer;">Simpan</button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <div id="cableModal" class="fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm">
     <div class="w-full max-w-2xl bg-white rounded-lg shadow-xl">
         <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
@@ -690,10 +658,6 @@
 
     @if ($errors->any() && old('form_mode') === 'cable_create')
         openModal('cableModal');
-    @endif
-
-    @if ($errors->any() && old('form_mode') === 'core_create')
-        openModal('coreModal');
     @endif
 
     @if ($errors->any() && old('form_mode') === 'core_edit' && old('core_id'))

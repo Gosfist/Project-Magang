@@ -9,17 +9,12 @@ use App\Models\FoClosure;
 use App\Models\FoSplice;
 use App\Models\FoSplitter;
 use App\Models\FoSplitterOutput;
-use App\Services\FiberTopologyService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class FoClosureController extends Controller
 {
-    public function __construct(private readonly FiberTopologyService $topology)
-    {
-    }
-
     public function index(Request $request)
     {
         $query = FoClosure::query();
@@ -151,22 +146,6 @@ class FoClosureController extends Controller
         }
 
         return redirect()->route('fiber.closures.show', $closure)->with('success', 'Core berhasil diperbarui.');
-    }
-
-    public function storeCore(Request $request, FoClosure $closure)
-    {
-        $data = $request->validate([
-            'fo_kabel' => ['required', 'exists:fo_kabel,fo_kabel'],
-            'jumlah_core' => ['required', 'integer', 'min:1'],
-        ]);
-
-        $cable = FoCable::whereKey($data['fo_kabel'])
-            ->whereHas('cores.endpoints', fn ($query) => $query->where('fo_closure', $closure->fo_closure))
-            ->firstOrFail();
-
-        $this->topology->addCoreToCable($cable, (int) $data['jumlah_core'], $closure->fo_closure);
-
-        return redirect()->route('fiber.closures.show', $closure)->with('success', 'Core berhasil ditambahkan.');
     }
 
     public function storeSplice(Request $request, FoClosure $closure)

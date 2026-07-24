@@ -346,40 +346,6 @@ class FiberTopologyTest extends TestCase
         $this->assertDatabaseMissing('fo_splice', ['fo_splice' => $splice->fo_splice]);
     }
 
-    public function test_closure_detail_can_add_core_to_existing_cable(): void
-    {
-        $user = $this->user();
-        $closure = FoClosure::create(['nama_cl' => 'Closure Add Core']);
-
-        $this->actingAs($user)->post('/dashboard/fiber/cables', [
-            'nama_kabel' => 'Kabel Add Core',
-            'jumlah_core' => 1,
-            'source_closure_id' => $closure->fo_closure,
-            'redirect_to' => 'fiber.closures.show',
-            'redirect_closure_id' => $closure->fo_closure,
-        ])->assertRedirect("/dashboard/fiber/closures/{$closure->fo_closure}");
-
-        $cable = FoCable::where('nama_kabel', 'Kabel Add Core')->firstOrFail();
-
-        $this->actingAs($user)->post("/dashboard/fiber/closures/{$closure->fo_closure}/cores", [
-            'fo_kabel' => $cable->fo_kabel,
-            'jumlah_core' => 1,
-        ])->assertRedirect("/dashboard/fiber/closures/{$closure->fo_closure}");
-
-        $this->assertSame(2, $cable->fresh()->jumlah_core);
-        $this->assertDatabaseHas('fo_core', [
-            'fo_kabel' => $cable->fo_kabel,
-            'nomer_core' => 2,
-        ]);
-
-        $newCore = FiberCore::where('fo_kabel', $cable->fo_kabel)->where('nomer_core', 2)->firstOrFail();
-        $this->assertDatabaseHas('fo_core_endpoint', [
-            'fo_core' => $newCore->fo_core,
-            'fo_closure' => $closure->fo_closure,
-            'endpoint_side' => 'A',
-        ]);
-    }
-
     public function test_deleting_last_core_also_deletes_cable_record(): void
     {
         $user = $this->user();
@@ -659,6 +625,7 @@ class FiberTopologyTest extends TestCase
         $this->actingAs($user)->get('/dashboard/fiber/measurements')->assertNotFound();
         $this->actingAs($user)->get('/dashboard/fiber/connections?closure_id=4')->assertNotFound();
         $this->actingAs($user)->get('/dashboard/fiber/trace')->assertNotFound();
+        $this->actingAs($user)->post('/dashboard/fiber/closures/1/cores')->assertNotFound();
     }
 
     private function user(): User
