@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FiberCore;
-use App\Models\FoCable;
-use App\Models\FoClosure;
+use App\Models\MainOdc;
+use App\Models\MainOdp;
+use App\Models\MainServerCore;
 use App\Models\User;
 
 class DashboardController extends Controller
@@ -12,10 +12,10 @@ class DashboardController extends Controller
     public function index()
     {
         $data = [
-            'totalClosures' => FoClosure::count(),
-            'totalCables' => FoCable::count(),
-            'totalCores' => FiberCore::count(),
-            'totalCoreWithRedaman' => FiberCore::whereNotNull('redaman')->count(),
+            'totalServerCores' => MainServerCore::count(),
+            'totalOdcs' => MainOdc::count(),
+            'totalOdps' => MainOdp::count(),
+            'totalWithRedaman' => MainOdc::whereNotNull('redaman')->count() + MainOdp::whereNotNull('redaman')->count(),
         ];
 
         if (auth()->user()->isAdmin()) {

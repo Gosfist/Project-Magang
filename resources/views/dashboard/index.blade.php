@@ -3,10 +3,10 @@
 @section('content')
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     @foreach([
-        ['label' => 'Total CL', 'count' => $totalClosures],
-        ['label' => 'Total Kabel', 'count' => $totalCables],
-        ['label' => 'Total Core', 'count' => $totalCores],
-        ['label' => 'Core Ada Redaman', 'count' => $totalCoreWithRedaman],
+        ['label' => 'Total Server Core', 'count' => $totalServerCores],
+        ['label' => 'Total ODC', 'count' => $totalOdcs],
+        ['label' => 'Total ODP', 'count' => $totalOdps],
+        ['label' => 'Data Ada Redaman', 'count' => $totalWithRedaman],
     ] as $item)
         <div class="bg-white rounded-lg border border-gray-200 p-5">
             <p class="text-sm text-gray-500">{{ $item['label'] }}</p>

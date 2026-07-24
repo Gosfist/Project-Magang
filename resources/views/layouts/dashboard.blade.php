@@ -15,7 +15,7 @@
         <aside id="sidebar"
             class="fixed inset-y-0 left-0 z-50 w-64 bg-blue-800 text-white transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
             {{-- Logo --}}
-            <div class="flex items-center gap-3 px-6 py-5 border-b border-blue-700/50">
+            <div class="flex items-center gap-3 border-b border-blue-700/50 bg-blue-900 px-6" style="height: 53px;">
                 <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -54,14 +54,30 @@
                     <p class="text-xs font-semibold uppercase tracking-wider text-blue-400/70">Data Jaringan</p>
                 </div>
 
-                <a href="{{ route('fiber.dashboard') }}"
-                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('fiber.*') ? 'bg-white/15 text-white shadow-sm' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 3v18m0-18a4 4 0 00-4 4v2a4 4 0 004 4m0-10a4 4 0 014 4v2a4 4 0 01-4 4m-7 4h14" />
-                    </svg>
-                    Main Core Fiber
-                </a>
+                <div>
+                    <a href="{{ route('fiber.server') }}"
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('fiber.*') ? 'text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 3v18m0-18a4 4 0 00-4 4v2a4 4 0 004 4m0-10a4 4 0 014 4v2a4 4 0 01-4 4m-7 4h14" />
+                        </svg>
+                        Main Core Fiber
+                    </a>
+                    <div class="mt-1 space-y-1 pl-11 pr-2">
+                        <a href="{{ route('fiber.server') }}"
+                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.server') || request()->routeIs('fiber.dashboard') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
+                            Server
+                        </a>
+                        <a href="{{ route('fiber.odc') }}"
+                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.odc') || request()->routeIs('fiber.odcs.*') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
+                            ODC
+                        </a>
+                        <a href="{{ route('fiber.odp') }}"
+                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.odp') || request()->routeIs('fiber.odps.*') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
+                            ODP
+                        </a>
+                    </div>
+                </div>
 
             </nav>
 

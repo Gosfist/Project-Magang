@@ -1,154 +1,307 @@
 @extends('layouts.dashboard')
 @section('page-title', 'Main Core Fiber')
 @section('content')
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-    <form method="GET" class="flex gap-2">
-        <input name="search" value="{{ $search }}" class="w-72 max-w-full px-4 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Cari nama CL atau alamat...">
-        <button class="px-4 py-2 bg-gray-100 rounded-lg text-sm">Cari</button>
-    </form>
-    <div class="flex flex-wrap gap-2">
-        <button type="button" onclick="openClosureModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Tambah Closure</button>
-    </div>
-</div>
+@php
+    $formatDate = function ($date) {
+        if (! $date) return '-';
+        $months = [1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        $value = \Carbon\Carbon::parse($date);
+        return $value->format('d').' '.$months[(int) $value->format('n')].' '.$value->format('Y');
+    };
+    $formatRedaman = fn ($value) => $value === null ? '-' : rtrim(rtrim(number_format((float) $value, 3, '.', ''), '0'), '.').' dB';
+@endphp
 
-<div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div class="px-5 py-4 border-b border-gray-200 font-semibold">Closure</div>
+<div class="space-y-5">
+    @if($section === 'server')
+    <div class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <div class="flex items-center justify-between gap-3 border-b border-gray-200 px-5 py-4">
+            <h2 class="font-semibold">Server</h2>
+            <button type="button" onclick="openModal('serverModal')" class="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white" style="cursor: pointer;">Add Server</button>
+        </div>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
-                <thead class="bg-gray-50 text-gray-500">
-                    <tr><th class="text-left px-5 py-3 w-16">No</th><th class="text-left px-5 py-3">Nama CL</th><th class="text-left px-5 py-3">Alamat</th><th class="text-left px-5 py-3">Catatan</th><th class="text-right px-5 py-3 min-w-56">Aksi</th></tr>
+                <thead class="bg-gray-50 text-gray-600">
+                    <tr>
+                        <th class="w-16 px-5 py-3 text-left">No</th>
+                        <th class="px-5 py-3 text-left">Core</th>
+                        <th class="px-5 py-3 text-left">Tanggal</th>
+                        <th class="px-5 py-3 text-right">Action</th>
+                    </tr>
                 </thead>
                 <tbody>
-                    @forelse($closures as $closure)
-                    <tr class="border-t border-gray-100">
-                        <td class="px-5 py-3 text-gray-600">{{ $closures->firstItem() + $loop->index }}</td>
-                        <td class="px-5 py-3 font-medium">{{ $closure->nama_cl }}</td>
-                        <td class="px-5 py-3">{{ $closure->alamat_cl ?? '-' }}</td>
-                        <td class="px-5 py-3">{{ $closure->catatan ?: '-' }}</td>
-                        <td class="px-5 py-3">
-                            <div class="flex justify-end gap-2 whitespace-nowrap">
-                                <a class="shrink-0 cursor-pointer px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700" href="{{ route('fiber.closures.show', $closure) }}">Detail</a>
-                                <button type="button"
-                                    class="shrink-0 cursor-pointer px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700"
-                                    style="cursor: pointer;"
-                                    onclick="openClosureModal({
-                                        id: @js($closure->id),
-                                        url: @js(route('fiber.closures.update', $closure)),
-                                        nama_cl: @js($closure->nama_cl),
-                                        alamat_cl: @js($closure->alamat_cl),
-                                        catatan: @js($closure->catatan)
-                                    })">Edit</button>
-                                <form class="shrink-0" method="POST" action="{{ route('fiber.closures.destroy', $closure) }}" onsubmit="return confirm('Yakin ingin menghapus closure ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <input type="hidden" name="redirect_to" value="fiber.dashboard">
-                                    <button type="submit" class="inline-flex cursor-pointer items-center rounded-lg px-3 py-1.5 text-xs font-medium" style="background-color: #dc2626; color: #ffffff; border: 1px solid #dc2626; cursor: pointer;">Hapus</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
+                    @forelse($serverCores as $server)
+                        <tr class="border-t border-gray-100">
+                            <td class="px-5 py-3">{{ $loop->iteration }}</td>
+                            <td class="px-5 py-3">Core {{ $server->core }}</td>
+                            <td class="px-5 py-3">{{ $formatDate($server->tanggal) }}</td>
+                            <td class="px-5 py-3">
+                                <div class="flex justify-end gap-2 whitespace-nowrap">
+                                    <button type="button" onclick="openModal('editServerModal{{ $server->main_server_core }}')" class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white" style="cursor: pointer;">Edit</button>
+                                    <form method="POST" action="{{ route('fiber.servers.destroy', $server) }}" onsubmit="return confirm('Yakin ingin menghapus server core ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="rounded-lg px-3 py-1.5 text-xs" style="background-color: #dc2626; color: #ffffff; border: 1px solid #dc2626; cursor: pointer;">Hapus</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
                     @empty
-                    <tr><td colspan="5" class="px-5 py-8 text-center text-gray-400">Belum ada closure FO.</td></tr>
+                        <tr><td colspan="4" class="px-5 py-8 text-center text-gray-400">Belum ada core server.</td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        <div class="px-5 py-3">{{ $closures->links() }}</div>
+    </div>
+    @endif
+
+    @if($section === 'odc')
+    <div class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <div class="flex items-center justify-between gap-3 border-b border-gray-200 px-5 py-4">
+            <h2 class="font-semibold">ODC</h2>
+            <button type="button" onclick="openModal('odcModal')" @disabled($serverCores->isEmpty()) class="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-50 disabled:cursor-not-allowed" style="cursor: pointer;">Add ODC</button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 text-gray-600">
+                    <tr>
+                        <th class="w-16 px-5 py-3 text-left">No</th>
+                        <th class="px-5 py-3 text-left">Nama ODC</th>
+                        <th class="px-5 py-3 text-left">Core Server</th>
+                        <th class="px-5 py-3 text-left">Rasio Split</th>
+                        <th class="px-5 py-3 text-left">Redaman</th>
+                        <th class="px-5 py-3 text-left">Tanggal</th>
+                        <th class="px-5 py-3 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($odcs as $odc)
+                        <tr class="border-t border-gray-100">
+                            <td class="px-5 py-3">{{ $loop->iteration }}</td>
+                            <td class="px-5 py-3 font-medium">{{ $odc->nama_odc }}</td>
+                            <td class="px-5 py-3">Core {{ $odc->serverCore?->core ?? '-' }}</td>
+                            <td class="px-5 py-3">{{ str_replace(':', ' : ', $odc->rasio_split) }}</td>
+                            <td class="px-5 py-3">{{ $formatRedaman($odc->redaman) }}</td>
+                            <td class="px-5 py-3">{{ $formatDate($odc->tanggal) }}</td>
+                            <td class="px-5 py-3">
+                                <div class="flex justify-end gap-2 whitespace-nowrap">
+                                    <a href="{{ route('fiber.odcs.show', $odc) }}" class="rounded-lg bg-green-600 px-3 py-1.5 text-xs text-white">Detail</a>
+                                    <button type="button" onclick="openModal('editOdcModal{{ $odc->main_odc }}')" class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white" style="cursor: pointer;">Edit</button>
+                                    <form method="POST" action="{{ route('fiber.odcs.destroy', $odc) }}" onsubmit="return confirm('Yakin ingin menghapus ODC ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="rounded-lg px-3 py-1.5 text-xs" style="background-color: #dc2626; color: #ffffff; border: 1px solid #dc2626; cursor: pointer;">Hapus</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="7" class="px-5 py-8 text-center text-gray-400">Belum ada ODC.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
+
+    @if($section === 'odp')
+    <div class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <div class="flex items-center justify-between gap-3 border-b border-gray-200 px-5 py-4">
+            <h2 class="font-semibold">ODP</h2>
+            <button type="button" onclick="openModal('odpModal')" class="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white" style="cursor: pointer;">Add ODP</button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 text-gray-600">
+                    <tr>
+                        <th class="w-16 px-5 py-3 text-left">No</th>
+                        <th class="px-5 py-3 text-left">Nama ODP</th>
+                        <th class="px-5 py-3 text-left">Rasio</th>
+                        <th class="px-5 py-3 text-left">Redaman</th>
+                        <th class="px-5 py-3 text-left">Tanggal</th>
+                        <th class="px-5 py-3 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($odps as $odp)
+                        <tr class="border-t border-gray-100">
+                            <td class="px-5 py-3">{{ $loop->iteration }}</td>
+                            <td class="px-5 py-3 font-medium">{{ $odp->nama_odp }}</td>
+                            <td class="px-5 py-3">{{ str_replace(':', ' : ', $odp->rasio_split) }}</td>
+                            <td class="px-5 py-3">{{ $formatRedaman($odp->redaman) }}</td>
+                            <td class="px-5 py-3">{{ $formatDate($odp->tanggal) }}</td>
+                            <td class="px-5 py-3">
+                                <div class="flex justify-end gap-2 whitespace-nowrap">
+                                    <a href="{{ route('fiber.odps.show', $odp) }}" class="rounded-lg bg-green-600 px-3 py-1.5 text-xs text-white">Detail</a>
+                                    <button type="button" onclick="openModal('editOdpModal{{ $odp->main_odp }}')" class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white" style="cursor: pointer;">Edit</button>
+                                    <form method="POST" action="{{ route('fiber.odps.destroy', $odp) }}" onsubmit="return confirm('Yakin ingin menghapus ODP ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="rounded-lg px-3 py-1.5 text-xs" style="background-color: #dc2626; color: #ffffff; border: 1px solid #dc2626; cursor: pointer;">Hapus</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="6" class="px-5 py-8 text-center text-gray-400">Belum ada ODP.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
 </div>
 
-<div id="closureModal" class="fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm">
-    <div class="w-full max-w-2xl bg-white rounded-lg shadow-xl">
-        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-            <h2 id="closureModalTitle" class="font-semibold text-gray-900">Tambah Closure FO</h2>
-            <button type="button" onclick="closeClosureModal()" class="text-gray-400 hover:text-gray-700">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
+<div id="serverModal" class="fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm">
+    <div class="w-full max-w-xl rounded-lg bg-white shadow-xl">
+        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+            <h2 class="font-semibold">Add Server</h2>
+            <button type="button" onclick="closeModal('serverModal')" class="text-gray-400 hover:text-gray-700" style="cursor: pointer;">X</button>
         </div>
-        <form id="closureForm" method="POST" action="{{ route('fiber.closures.store') }}" class="p-5 space-y-4">
+        <form method="POST" action="{{ route('fiber.servers.store') }}" class="space-y-4 p-5">
             @csrf
-            <input id="closureFormMethod" type="hidden" name="_method" value="PUT" disabled>
-            <input type="hidden" name="redirect_to" value="fiber.dashboard">
-            <input id="closureFormMode" type="hidden" name="form_mode" value="closure_create">
-            <input id="closureId" type="hidden" name="closure_id" value="{{ old('closure_id') }}">
+            <input type="hidden" name="form_mode" value="server_create">
             <div>
-                @error('nama_cl')<p class="text-red-600 text-xs mb-1">{{ $message }}</p>@enderror
-                <label class="block text-sm font-medium mb-1">Nama CL</label>
-                <input id="closureName" name="nama_cl" value="{{ old('nama_cl') }}" required class="w-full px-4 py-2 border rounded-lg">
+                @if(old('form_mode') === 'server_create') @error('core')<p class="mb-1 text-xs text-red-600">{{ $message }}</p>@enderror @endif
+                <label class="mb-1 block text-sm font-medium">Core</label>
+                <input name="core" value="{{ old('form_mode') === 'server_create' ? old('core') : '' }}" type="number" min="1" required class="w-full rounded-lg border px-4 py-2">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Alamat</label>
-                <textarea id="closureAddress" name="alamat_cl" rows="3" class="w-full px-4 py-2 border rounded-lg">{{ old('alamat_cl') }}</textarea>
+                <label class="mb-1 block text-sm font-medium">Tanggal</label>
+                <input name="tanggal" value="{{ old('form_mode') === 'server_create' ? old('tanggal') : '' }}" type="date" class="w-full rounded-lg border px-4 py-2">
             </div>
             <div>
-                <label class="block text-sm font-medium mb-1">Catatan</label>
-                <textarea id="closureNotes" name="catatan" rows="3" class="w-full px-4 py-2 border rounded-lg">{{ old('catatan') }}</textarea>
+                <label class="mb-1 block text-sm font-medium">Catatan</label>
+                <textarea name="catatan" rows="3" class="w-full rounded-lg border px-4 py-2">{{ old('form_mode') === 'server_create' ? old('catatan') : '' }}</textarea>
             </div>
-            <div class="flex gap-2 justify-end">
-                <button type="button" onclick="closeClosureModal()" class="px-4 py-2 border rounded-lg">Batal</button>
-                <button class="px-4 py-2 bg-blue-600 text-white rounded-lg">Simpan</button>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeModal('serverModal')" class="rounded-lg border px-4 py-2" style="cursor: pointer;">Batal</button>
+                <button class="rounded-lg bg-blue-600 px-4 py-2 text-white" style="cursor: pointer;">Simpan</button>
             </div>
         </form>
     </div>
 </div>
 
+<div id="odcModal" class="fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm">
+    <div class="w-full max-w-2xl rounded-lg bg-white shadow-xl">
+        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+            <h2 class="font-semibold">Add ODC</h2>
+            <button type="button" onclick="closeModal('odcModal')" class="text-gray-400 hover:text-gray-700" style="cursor: pointer;">X</button>
+        </div>
+        <form method="POST" action="{{ route('fiber.odcs.store') }}" class="space-y-4 p-5">
+            @csrf
+            <input type="hidden" name="form_mode" value="odc_create">
+            @include('dashboard.fiber.partials.odc-fields', ['odc' => null, 'serverCores' => $serverCores, 'mode' => 'odc_create'])
+        </form>
+    </div>
+</div>
+
+<div id="odpModal" class="fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm">
+    <div class="w-full max-w-2xl rounded-lg bg-white shadow-xl">
+        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+            <h2 class="font-semibold">Add ODP</h2>
+            <button type="button" onclick="closeModal('odpModal')" class="text-gray-400 hover:text-gray-700" style="cursor: pointer;">X</button>
+        </div>
+        <form method="POST" action="{{ route('fiber.odps.store') }}" class="space-y-4 p-5">
+            @csrf
+            <input type="hidden" name="form_mode" value="odp_create">
+            @include('dashboard.fiber.partials.odp-fields', ['odp' => null, 'mode' => 'odp_create'])
+        </form>
+    </div>
+</div>
+
+@foreach($serverCores as $server)
+    <div id="editServerModal{{ $server->main_server_core }}" class="fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm">
+        <div class="w-full max-w-xl rounded-lg bg-white shadow-xl">
+            <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+                <h2 class="font-semibold">Edit Server</h2>
+                <button type="button" onclick="closeModal('editServerModal{{ $server->main_server_core }}')" class="text-gray-400 hover:text-gray-700" style="cursor: pointer;">X</button>
+            </div>
+            <form method="POST" action="{{ route('fiber.servers.update', $server) }}" class="space-y-4 p-5">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="form_mode" value="server_edit_{{ $server->main_server_core }}">
+                <div>
+                    @if(old('form_mode') === 'server_edit_'.$server->main_server_core) @error('core')<p class="mb-1 text-xs text-red-600">{{ $message }}</p>@enderror @endif
+                    <label class="mb-1 block text-sm font-medium">Core</label>
+                    <input name="core" value="{{ old('form_mode') === 'server_edit_'.$server->main_server_core ? old('core', $server->core) : $server->core }}" type="number" min="1" required class="w-full rounded-lg border px-4 py-2">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium">Tanggal</label>
+                    <input name="tanggal" value="{{ old('form_mode') === 'server_edit_'.$server->main_server_core ? old('tanggal', $server->tanggal) : $server->tanggal }}" type="date" class="w-full rounded-lg border px-4 py-2">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium">Catatan</label>
+                    <textarea name="catatan" rows="3" class="w-full rounded-lg border px-4 py-2">{{ old('form_mode') === 'server_edit_'.$server->main_server_core ? old('catatan', $server->catatan) : $server->catatan }}</textarea>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('editServerModal{{ $server->main_server_core }}')" class="rounded-lg border px-4 py-2" style="cursor: pointer;">Batal</button>
+                    <button class="rounded-lg bg-blue-600 px-4 py-2 text-white" style="cursor: pointer;">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+@endforeach
+
+@foreach($odcs as $odc)
+    <div id="editOdcModal{{ $odc->main_odc }}" class="fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm">
+        <div class="w-full max-w-2xl rounded-lg bg-white shadow-xl">
+            <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+                <h2 class="font-semibold">Edit ODC</h2>
+                <button type="button" onclick="closeModal('editOdcModal{{ $odc->main_odc }}')" class="text-gray-400 hover:text-gray-700" style="cursor: pointer;">X</button>
+            </div>
+            <form method="POST" action="{{ route('fiber.odcs.update', $odc) }}" class="space-y-4 p-5">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="form_mode" value="odc_edit_{{ $odc->main_odc }}">
+                @include('dashboard.fiber.partials.odc-fields', ['odc' => $odc, 'serverCores' => $serverCores, 'mode' => 'odc_edit_'.$odc->main_odc])
+            </form>
+        </div>
+    </div>
+@endforeach
+
+@foreach($odps as $odp)
+    <div id="editOdpModal{{ $odp->main_odp }}" class="fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm">
+        <div class="w-full max-w-2xl rounded-lg bg-white shadow-xl">
+            <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+                <h2 class="font-semibold">Edit ODP</h2>
+                <button type="button" onclick="closeModal('editOdpModal{{ $odp->main_odp }}')" class="text-gray-400 hover:text-gray-700" style="cursor: pointer;">X</button>
+            </div>
+            <form method="POST" action="{{ route('fiber.odps.update', $odp) }}" class="space-y-4 p-5">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="form_mode" value="odp_edit_{{ $odp->main_odp }}">
+                @include('dashboard.fiber.partials.odp-fields', ['odp' => $odp, 'mode' => 'odp_edit_'.$odp->main_odp])
+            </form>
+        </div>
+    </div>
+@endforeach
+
 <script>
-    const closureStoreUrl = @js(route('fiber.closures.store'));
-
-    function openClosureModal(closure = null) {
-        const modal = document.getElementById('closureModal');
-        const form = document.getElementById('closureForm');
-        const method = document.getElementById('closureFormMethod');
-        const mode = document.getElementById('closureFormMode');
-        const id = document.getElementById('closureId');
-        const title = document.getElementById('closureModalTitle');
-        const name = document.getElementById('closureName');
-        const address = document.getElementById('closureAddress');
-        const notes = document.getElementById('closureNotes');
-
-        if (closure) {
-            form.action = closure.url;
-            method.disabled = false;
-            mode.value = 'closure_edit';
-            id.value = closure.id;
-            title.textContent = 'Edit Closure FO';
-            name.value = closure.nama_cl ?? '';
-            address.value = closure.alamat_cl ?? '';
-            notes.value = closure.catatan ?? '';
-        } else {
-            form.action = closureStoreUrl;
-            method.disabled = true;
-            mode.value = 'closure_create';
-            id.value = '';
-            title.textContent = 'Tambah Closure FO';
-            name.value = '';
-            address.value = '';
-            notes.value = '';
-        }
-
-        modal?.classList.remove('hidden');
-        modal?.classList.add('flex');
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
     }
 
-    function closeClosureModal() {
-        document.getElementById('closureModal')?.classList.add('hidden');
-        document.getElementById('closureModal')?.classList.remove('flex');
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
     }
 
-    @if ($errors->any() && old('form_mode') === 'closure_create')
-        openClosureModal();
-        document.getElementById('closureName').value = @js(old('nama_cl'));
-        document.getElementById('closureAddress').value = @js(old('alamat_cl'));
-        document.getElementById('closureNotes').value = @js(old('catatan'));
-    @elseif ($errors->any() && old('form_mode') === 'closure_edit' && old('closure_id'))
-        openClosureModal({
-            id: @js(old('closure_id')),
-            url: @js(route('fiber.closures.update', old('closure_id'))),
-            nama_cl: @js(old('nama_cl')),
-            alamat_cl: @js(old('alamat_cl')),
-            catatan: @js(old('catatan'))
-        });
-    @endif
+    @if($errors->any() && old('form_mode') === 'server_create') openModal('serverModal'); @endif
+    @if($errors->any() && old('form_mode') === 'odc_create') openModal('odcModal'); @endif
+    @if($errors->any() && old('form_mode') === 'odp_create') openModal('odpModal'); @endif
+    @foreach($serverCores as $server)
+        @if($errors->any() && old('form_mode') === 'server_edit_'.$server->main_server_core) openModal('editServerModal{{ $server->main_server_core }}'); @endif
+    @endforeach
+    @foreach($odcs as $odc)
+        @if($errors->any() && old('form_mode') === 'odc_edit_'.$odc->main_odc) openModal('editOdcModal{{ $odc->main_odc }}'); @endif
+    @endforeach
+    @foreach($odps as $odp)
+        @if($errors->any() && old('form_mode') === 'odp_edit_'.$odp->main_odp) openModal('editOdpModal{{ $odp->main_odp }}'); @endif
+    @endforeach
 </script>
 @endsection

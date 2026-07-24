@@ -3,8 +3,6 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FiberDashboardController;
-use App\Http\Controllers\FoCableController;
-use App\Http\Controllers\FoClosureController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -47,31 +45,26 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 
     Route::prefix('fiber')->name('fiber.')->group(function () {
         Route::get('/', [FiberDashboardController::class, 'index'])->name('dashboard');
-        Route::patch('closures/{closure}/cores/{fiberCore}', [FoClosureController::class, 'updateCore'])->name('closures.cores.update');
-        Route::delete('closures/{closure}/cores/{fiberCore}', [FoClosureController::class, 'destroyCore'])->name('closures.cores.destroy');
-        Route::post('closures/{closure}/splices', [FoClosureController::class, 'storeSplice'])->name('closures.splices.store');
-        Route::patch('closures/{closure}/splices/{splice}', [FoClosureController::class, 'updateSplice'])->name('closures.splices.update');
-        Route::delete('closures/{closure}/splices/{splice}', [FoClosureController::class, 'destroySplice'])->name('closures.splices.destroy');
-        Route::resource('closures', FoClosureController::class)->except(['edit']);
-        Route::resource('cables', FoCableController::class);
+        Route::get('server', [FiberDashboardController::class, 'server'])->name('server');
+        Route::get('odc', [FiberDashboardController::class, 'odc'])->name('odc');
+        Route::get('odp', [FiberDashboardController::class, 'odp'])->name('odp');
+
+        Route::post('servers', [FiberDashboardController::class, 'storeServer'])->name('servers.store');
+        Route::patch('servers/{server}', [FiberDashboardController::class, 'updateServer'])->name('servers.update');
+        Route::delete('servers/{server}', [FiberDashboardController::class, 'destroyServer'])->name('servers.destroy');
+
+        Route::post('odcs', [FiberDashboardController::class, 'storeOdc'])->name('odcs.store');
+        Route::get('odcs/{odc}', [FiberDashboardController::class, 'showOdc'])->name('odcs.show');
+        Route::patch('odcs/{odc}', [FiberDashboardController::class, 'updateOdc'])->name('odcs.update');
+        Route::delete('odcs/{odc}', [FiberDashboardController::class, 'destroyOdc'])->name('odcs.destroy');
+        Route::patch('odcs/{odc}/outputs/{output}', [FiberDashboardController::class, 'updateOdcOutput'])->name('odcs.outputs.update');
+        Route::delete('odcs/{odc}/outputs/{output}', [FiberDashboardController::class, 'destroyOdcOutput'])->name('odcs.outputs.destroy');
+
+        Route::post('odps', [FiberDashboardController::class, 'storeOdp'])->name('odps.store');
+        Route::get('odps/{odp}', [FiberDashboardController::class, 'showOdp'])->name('odps.show');
+        Route::patch('odps/{odp}', [FiberDashboardController::class, 'updateOdp'])->name('odps.update');
+        Route::delete('odps/{odp}', [FiberDashboardController::class, 'destroyOdp'])->name('odps.destroy');
+        Route::patch('odps/{odp}/ports/{port}', [FiberDashboardController::class, 'updateOdpPort'])->name('odps.ports.update');
+        Route::delete('odps/{odp}/ports/{port}', [FiberDashboardController::class, 'destroyOdpPort'])->name('odps.ports.destroy');
     });
-});
-
-Route::middleware(['auth'])->prefix('api')->group(function () {
-    Route::get('closures', [FoClosureController::class, 'index']);
-    Route::get('closures/{closure}', [FoClosureController::class, 'show']);
-    Route::post('closures', [FoClosureController::class, 'store']);
-    Route::put('closures/{closure}', [FoClosureController::class, 'update']);
-    Route::delete('closures/{closure}', [FoClosureController::class, 'destroy']);
-
-    Route::get('cables', [FoCableController::class, 'index']);
-    Route::get('cables/{cable}', [FoCableController::class, 'show']);
-    Route::post('cables', [FoCableController::class, 'store']);
-    Route::put('cables/{cable}', [FoCableController::class, 'update']);
-    Route::delete('cables/{cable}', [FoCableController::class, 'destroy']);
-    Route::get('cables/{cable}/cores', [FoCableController::class, 'cores']);
-    Route::get('fiber-cores/{fiberCore}', [FoCableController::class, 'showCore']);
-    Route::put('fiber-cores/{fiberCore}', [FoCableController::class, 'updateCore']);
-
-    Route::get('network/dashboard', [FiberDashboardController::class, 'index']);
 });
