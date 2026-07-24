@@ -11,7 +11,7 @@ class FoSplitterOutput extends Model
     protected $primaryKey = 'fo_splitter_output';
     public $timestamps = false;
 
-    protected $fillable = ['fo_splitter', 'nomor_output', 'redaman', 'target_closure', 'catatan'];
+    protected $fillable = ['fo_splitter', 'nomor_output', 'redaman', 'target_closure', 'target_core', 'catatan'];
 
     protected function casts(): array
     {
@@ -26,5 +26,10 @@ class FoSplitterOutput extends Model
     public function targetClosure(): BelongsTo
     {
         return $this->belongsTo(FoClosure::class, 'target_closure', 'fo_closure');
+    }
+
+    public function targetCore(): BelongsTo
+    {
+        return $this->belongsTo(FiberCore::class, 'target_core', 'fo_core');
     }
 }

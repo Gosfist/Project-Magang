@@ -56,7 +56,7 @@
         <div class="px-5 py-3">{{ $closures->links() }}</div>
 </div>
 
-<div id="closureModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
+<div id="closureModal" class="fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm">
     <div class="w-full max-w-2xl bg-white rounded-lg shadow-xl">
         <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
             <h2 id="closureModalTitle" class="font-semibold text-gray-900">Tambah Closure FO</h2>

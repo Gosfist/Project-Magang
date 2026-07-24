@@ -16,11 +16,11 @@ class FiberCore extends Model
     protected $primaryKey = 'fo_core';
     public $timestamps = false;
 
-    protected $fillable = ['fo_kabel', 'redaman', 'nomer_core', 'warna_core', 'catatan'];
+    protected $fillable = ['fo_kabel', 'redaman', 'nomer_core', 'warna_core', 'target_closure', 'target_core', 'direct_redaman_awal', 'catatan'];
 
     protected function casts(): array
     {
-        return ['nomer_core' => 'integer', 'redaman' => 'decimal:3'];
+        return ['nomer_core' => 'integer', 'redaman' => 'decimal:3', 'direct_redaman_awal' => 'decimal:3'];
     }
 
     public function cable(): BelongsTo
@@ -36,6 +36,26 @@ class FiberCore extends Model
     public function splitter(): HasOne
     {
         return $this->hasOne(FoSplitter::class, 'fo_core', 'fo_core');
+    }
+
+    public function incomingSplitterOutputs(): HasMany
+    {
+        return $this->hasMany(FoSplitterOutput::class, 'target_core', 'fo_core')->orderBy('nomor_output');
+    }
+
+    public function targetClosure(): BelongsTo
+    {
+        return $this->belongsTo(FoClosure::class, 'target_closure', 'fo_closure');
+    }
+
+    public function targetCore(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'target_core', 'fo_core');
+    }
+
+    public function incomingDirectCores(): HasMany
+    {
+        return $this->hasMany(self::class, 'target_core', 'fo_core')->orderBy('nomer_core');
     }
 
     public function getCoreNumberAttribute(): ?int

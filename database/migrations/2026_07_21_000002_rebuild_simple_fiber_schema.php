@@ -55,6 +55,9 @@ return new class extends Migration
             $table->decimal('redaman', 8, 3)->nullable();
             $table->unsignedInteger('nomer_core');
             $table->string('warna_core')->nullable();
+            $table->foreignId('target_closure')->nullable()->constrained('fo_closure', 'fo_closure')->nullOnDelete();
+            $table->foreignId('target_core')->nullable()->constrained('fo_core', 'fo_core')->nullOnDelete();
+            $table->decimal('direct_redaman_awal', 8, 3)->nullable();
             $table->text('catatan')->nullable();
             $table->unique(['fo_kabel', 'nomer_core']);
         });

@@ -23,6 +23,7 @@ return new class extends Migration
             $table->unsignedInteger('nomor_output');
             $table->decimal('redaman', 8, 3)->nullable();
             $table->foreignId('target_closure')->nullable()->constrained('fo_closure', 'fo_closure')->nullOnDelete();
+            $table->foreignId('target_core')->nullable()->constrained('fo_core', 'fo_core')->nullOnDelete();
             $table->text('catatan')->nullable();
             $table->unique(['fo_splitter', 'nomor_output']);
         });

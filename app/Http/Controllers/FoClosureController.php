@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\FiberCore;
+use App\Models\FiberCoreEndpoint;
 use App\Models\FoCable;
 use App\Models\FoClosure;
 use App\Models\FoSplitter;
@@ -10,6 +11,7 @@ use App\Models\FoSplitterOutput;
 use App\Services\FiberTopologyService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class FoClosureController extends Controller
 {
@@ -52,10 +54,25 @@ class FoClosureController extends Controller
 
     public function show(Request $request, FoClosure $closure)
     {
-        $cables = FoCable::with('cores.endpoints.closure', 'cores.splitter.outputs.targetClosure')
+        $cables = FoCable::with(
+            'cores.endpoints.closure',
+            'cores.incomingDirectCores.cable',
+            'cores.incomingSplitterOutputs.splitter.core.cable',
+            'cores.splitter.outputs.targetClosure',
+            'cores.splitter.outputs.targetCore.cable'
+        )
             ->whereHas('cores.endpoints', fn ($query) => $query->where('fo_closure', $closure->fo_closure))
             ->orderBy('nama_kabel')
             ->get();
+        $targetCoreOptions = FiberCoreEndpoint::with('fiberCore.cable', 'closure')
+            ->whereNotNull('fo_closure')
+            ->where('fo_closure', '!=', $closure->fo_closure)
+            ->get()
+            ->sortBy([
+                fn (FiberCoreEndpoint $a, FiberCoreEndpoint $b) => strcmp($a->closure?->nama_cl ?? '', $b->closure?->nama_cl ?? ''),
+                fn (FiberCoreEndpoint $a, FiberCoreEndpoint $b) => strcmp($a->fiberCore?->cable?->nama_kabel ?? '', $b->fiberCore?->cable?->nama_kabel ?? ''),
+                fn (FiberCoreEndpoint $a, FiberCoreEndpoint $b) => ($a->fiberCore?->nomer_core ?? 0) <=> ($b->fiberCore?->nomer_core ?? 0),
+            ]);
 
         if ($request->is('api/*')) {
             return response()->json(['data' => $closure, 'cables' => $cables]);
@@ -65,6 +82,7 @@ class FoClosureController extends Controller
             'closure' => $closure,
             'closures' => FoClosure::orderBy('nama_cl')->get(),
             'cables' => $cables,
+            'targetCoreOptions' => $targetCoreOptions,
         ]);
     }
 
@@ -73,22 +91,44 @@ class FoClosureController extends Controller
         abort_unless($fiberCore->endpoints()->where('fo_closure', $closure->fo_closure)->exists(), 404);
 
         $data = $request->validate([
-            'redaman' => ['nullable', 'numeric'],
+            'redaman' => ['required_if:splitter_status,active', 'nullable', 'numeric'],
             'catatan' => ['nullable', 'string'],
-            'add_splitter' => ['nullable', 'boolean'],
-            'rasio_split' => ['required_if:add_splitter,1', Rule::in(FoSplitter::RATIOS)],
+            'target_closure' => ['nullable', 'exists:fo_closure,fo_closure'],
+            'target_core' => ['nullable', 'exists:fo_core,fo_core'],
+            'splitter_form_open' => ['nullable', 'boolean'],
+            'splitter_status' => ['required_if:splitter_form_open,1', Rule::in(['active', 'inactive'])],
+            'rasio_split' => ['required_if:splitter_status,active', Rule::in(FoSplitter::RATIOS)],
             'outputs' => ['nullable', 'array'],
             'outputs.*.redaman' => ['nullable', 'numeric'],
             'outputs.*.target_closure' => ['nullable', 'exists:fo_closure,fo_closure'],
+            'outputs.*.target_core' => ['nullable', 'exists:fo_core,fo_core'],
             'outputs.*.catatan' => ['nullable', 'string'],
+        ], [
+            'redaman.required_if' => 'Redaman core wajib diisi sebelum splitter diaktifkan.',
         ]);
 
-        $fiberCore->update([
+        $this->validateSplitterOutputTargets($data['outputs'] ?? []);
+
+        $coreData = [
             'redaman' => $data['redaman'] ?? null,
             'catatan' => $data['catatan'] ?? null,
-        ]);
+        ];
 
-        if (! empty($data['add_splitter'])) {
+        if (! empty($data['target_closure']) || ! empty($data['target_core'])) {
+            $this->validateCoreTarget($data['target_closure'] ?? null, $data['target_core'] ?? null);
+
+            $coreData['target_closure'] = ($data['target_closure'] ?? null) ?: null;
+            $coreData['target_core'] = ($data['target_core'] ?? null) ?: null;
+            $coreData['direct_redaman_awal'] = ! empty($data['target_core']) ? ($data['redaman'] ?? null) : null;
+        }
+
+        $fiberCore->update($coreData);
+
+        if (! empty($data['splitter_form_open']) && ($data['splitter_status'] ?? null) === 'inactive') {
+            $fiberCore->splitter?->delete();
+        }
+
+        if (! empty($data['splitter_form_open']) && ($data['splitter_status'] ?? null) === 'active') {
             $splitter = FoSplitter::updateOrCreate(
                 ['fo_core' => $fiberCore->fo_core],
                 [
@@ -206,9 +246,64 @@ class FoClosureController extends Controller
                 [
                     'redaman' => $output['redaman'] ?? null,
                     'target_closure' => ($output['target_closure'] ?? null) ?: null,
+                    'target_core' => ($output['target_core'] ?? null) ?: null,
                     'catatan' => $output['catatan'] ?? null,
                 ]
             );
+        }
+    }
+
+    private function validateSplitterOutputTargets(array $outputs): void
+    {
+        $errors = [];
+
+        foreach ($outputs as $index => $output) {
+            $targetClosure = $output['target_closure'] ?? null;
+            $targetCore = $output['target_core'] ?? null;
+
+            if (! $targetCore) {
+                continue;
+            }
+
+            if (! $targetClosure) {
+                $errors["outputs.{$index}.target_core"] = 'Pilih target CL sebelum memilih core.';
+                continue;
+            }
+
+            $coreBelongsToClosure = FiberCore::whereKey($targetCore)
+                ->whereHas('endpoints', fn ($query) => $query->where('fo_closure', $targetClosure))
+                ->exists();
+
+            if (! $coreBelongsToClosure) {
+                $errors["outputs.{$index}.target_core"] = 'Core tidak sesuai dengan target CL yang dipilih.';
+            }
+        }
+
+        if ($errors) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    private function validateCoreTarget(mixed $targetClosure, mixed $targetCore): void
+    {
+        if (! $targetCore) {
+            return;
+        }
+
+        if (! $targetClosure) {
+            throw ValidationException::withMessages([
+                'target_core' => 'Pilih target CL sebelum memilih core.',
+            ]);
+        }
+
+        $coreBelongsToClosure = FiberCore::whereKey($targetCore)
+            ->whereHas('endpoints', fn ($query) => $query->where('fo_closure', $targetClosure))
+            ->exists();
+
+        if (! $coreBelongsToClosure) {
+            throw ValidationException::withMessages([
+                'target_core' => 'Core tidak sesuai dengan target CL yang dipilih.',
+            ]);
         }
     }
 }

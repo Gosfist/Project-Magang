@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FoSplitter extends Model
 {
-    public const RATIOS = ['1:2', '1:4', '1:8', '1:16', '1:32', '1:64'];
+    public const RATIOS = ['1:2', '1:4', '1:8'];
 
     protected $table = 'fo_splitter';
     protected $primaryKey = 'fo_splitter';
