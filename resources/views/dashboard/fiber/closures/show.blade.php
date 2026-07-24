@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 @section('page-title')
-    <a href="{{ route('fiber.dashboard') }}" class="text-gray-800 hover:text-blue-600">&lt; Kembali</a>
+    <a href="{{ route('fiber.dashboard') }}" class="text-gray-800 hover:text-blue-600">Kembali</a>
 @endsection
 @section('content')
 @if($errors->has('core'))

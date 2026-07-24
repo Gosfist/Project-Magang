@@ -58,7 +58,7 @@
         </div>
 
         <p class="text-center text-gray-400 text-sm mt-6">
-            <a href="{{ route('home') }}" class="text-blue-600 hover:underline">← Kembali ke Beranda</a>
+            <a href="{{ route('home') }}" class="text-blue-600 hover:underline">Kembali ke Beranda</a>
         </p>
     </div>
 </body>
