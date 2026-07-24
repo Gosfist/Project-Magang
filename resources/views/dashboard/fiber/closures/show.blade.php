@@ -17,60 +17,57 @@
             @if($closure->catatan)<p class="text-sm text-gray-500 mt-1">Catatan: {{ $closure->catatan }}</p>@endif
         </div>
         <div class="flex flex-wrap gap-2 sm:justify-end">
+            <button type="button" onclick="openModal('spliceModal')" @disabled($cables->sum(fn ($item) => $item->cores->count()) < 2) class="shrink-0 px-4 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed" style="cursor: pointer;">Splicing</button>
             <button type="button" onclick="openModal('coreModal')" @disabled($cables->isEmpty()) class="shrink-0 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed" style="cursor: pointer;">Tambah Core</button>
-            <button type="button" onclick="openModal('cableModal')" class="shrink-0 px-4 py-2 bg-green-600 text-white rounded-lg text-sm" style="cursor: pointer;">Tambah Kabel</button>
+            <button type="button" onclick="openModal('listCableModal')" class="shrink-0 px-4 py-2 bg-green-600 text-white rounded-lg text-sm" style="cursor: pointer;">List Kabel</button>
         </div>
     </div>
 </div>
 
-<div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+<div class="bg-white border border-gray-200 rounded-lg overflow-hidden mt-5">
+    <div class="px-5 py-4 border-b border-gray-200">
+        <h2 class="font-semibold text-gray-900">Splice</h2>
+    </div>
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="bg-gray-50 text-gray-600">
                 <tr>
-                    <th class="text-left px-5 py-3">Nama Kabel</th>
-                    <th class="text-left px-5 py-3">Tujuan Closure</th>
-                    <th class="text-left px-5 py-3">Core</th>
-                    <th class="text-left px-5 py-3">Warna</th>
-                    <th class="text-left px-5 py-3">Redaman Awal</th>
-                    <th class="text-left px-5 py-3">Redaman Akhir</th>
+                    <th class="text-left px-5 py-3">Kabel 1</th>
+                    <th class="text-left px-5 py-3">Kabel 2</th>
+                    <th class="text-left px-5 py-3">Splice</th>
+                    <th class="text-left px-5 py-3">Redaman Kabel 1</th>
+                    <th class="text-left px-5 py-3">Redaman Kabel 2</th>
                     <th class="text-right px-5 py-3">Action</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($cables as $cable)
-                    @foreach($cable->cores as $core)
-                        @php($splitter = $core->splitter)
-                        @php($incomingOutput = $core->incomingSplitterOutputs->first())
-                        @php($incomingDirectCore = $core->incomingDirectCores->first())
-                        @php($redamanAwal = $incomingOutput?->redaman ?? $incomingDirectCore?->direct_redaman_awal ?? $incomingDirectCore?->redaman)
-                        @php($targetClosures = $core->endpoints->where('fo_closure', '!=', $closure->fo_closure)->pluck('closure.nama_cl')->filter()->unique()->join(', '))
-                        <tr class="border-t align-top">
-                            <td class="px-5 py-4">
-                                <div class="font-medium text-gray-900">{{ $cable->nama_kabel }}</div>
-                            </td>
-                            <td class="px-5 py-4">{{ $targetClosures ?: '-' }}</td>
-                            <td class="px-5 py-4">Core {{ $core->nomer_core }}</td>
-                            <td class="px-5 py-4">{{ $core->warna_core ?? '-' }}</td>
-                            <td class="px-5 py-4">{{ $redamanAwal !== null ? $redamanAwal.' dB' : '-' }}</td>
-                            <td class="px-5 py-4">{{ $core->redaman !== null ? $core->redaman.' dB' : '-' }}</td>
-                            <td class="px-5 py-4 text-right">
-                                <div class="flex justify-end gap-2 whitespace-nowrap">
-                                    <button type="button" onclick="openModal('editCoreModal{{ $core->fo_core }}')" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs" style="cursor: pointer;">Edit</button>
-                                    @if($splitter)
-                                        <button type="button" onclick="openModal('detailCoreModal{{ $core->fo_core }}')" class="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs" style="cursor: pointer;">Detail</button>
-                                    @endif
-                                    <form method="POST" action="{{ route('fiber.closures.cores.destroy', [$closure, $core]) }}" onsubmit="return confirm('Yakin ingin menghapus core ini?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="px-3 py-1.5 rounded-lg text-xs" style="background-color: #dc2626; color: #ffffff; border: 1px solid #dc2626; cursor: pointer;">Hapus</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforeach
+                @forelse($splices as $splice)
+                    @php($coreA = $splice->coreA)
+                    @php($coreB = $splice->coreB)
+                    @php($redamanB = $coreB?->pairedCore?->redaman ?? $coreB?->redaman)
+                    <tr class="border-t">
+                        <td class="px-5 py-4 font-medium">{{ $coreA?->cable?->nama_kabel ?? '-' }}</td>
+                        <td class="px-5 py-4 font-medium">{{ $coreB?->cable?->nama_kabel ?? '-' }}</td>
+                        <td class="px-5 py-4">
+                            Core {{ $coreA?->nomer_core ?? '-' }} {{ $coreA?->core_color ? '('.$coreA->core_color.')' : '' }}
+                            -
+                            Core {{ $coreB?->nomer_core ?? '-' }} {{ $coreB?->core_color ? '('.$coreB->core_color.')' : '' }}
+                        </td>
+                        <td class="px-5 py-4">{{ $coreA?->redaman !== null ? $coreA->redaman.' dB' : '-' }}</td>
+                        <td class="px-5 py-4">{{ $redamanB !== null ? $redamanB.' dB' : '-' }}</td>
+                        <td class="px-5 py-4 text-right">
+                            <div class="flex justify-end gap-2 whitespace-nowrap">
+                                <button type="button" onclick="openModal('editSpliceModal{{ $splice->fo_splice }}')" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs" style="cursor: pointer;">Edit</button>
+                                <form method="POST" action="{{ route('fiber.closures.splices.destroy', [$closure, $splice]) }}" onsubmit="return confirm('Yakin ingin menghapus splice ini?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="px-3 py-1.5 rounded-lg text-xs" style="background-color: #dc2626; color: #ffffff; border: 1px solid #dc2626; cursor: pointer;">Hapus</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
                 @empty
-                    <tr><td colspan="7" class="px-5 py-8 text-center text-gray-400">Belum ada kabel pada closure ini.</td></tr>
+                    <tr><td colspan="6" class="px-5 py-8 text-center text-gray-400">Belum ada splice pada closure ini.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -243,6 +240,202 @@
     @endforeach
 @endforeach
 
+@foreach($splices as $splice)
+    @php($editCoreA = $splice->coreA)
+    @php($editCoreB = $splice->coreB)
+    <div id="editSpliceModal{{ $splice->fo_splice }}" class="fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm">
+        <div class="w-full max-w-2xl bg-white rounded-lg shadow-xl">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+                <h2 class="font-semibold text-gray-900">Edit Splicing</h2>
+                <button type="button" onclick="closeModal('editSpliceModal{{ $splice->fo_splice }}')" class="text-gray-400 hover:text-gray-700" style="cursor: pointer;">X</button>
+            </div>
+            <form method="POST" action="{{ route('fiber.closures.splices.update', [$closure, $splice]) }}" class="p-5 space-y-4">
+                @csrf
+                @method('PATCH')
+                <div>
+                    <label class="block text-sm font-medium mb-1">Kabel 1</label>
+                    <select name="core_a" required data-splice-core-a class="w-full px-4 py-2 border rounded-lg">
+                        <option value="">Pilih kabel - core</option>
+                        @foreach($cables as $cable)
+                            @foreach($cable->cores as $core)
+                                <option value="{{ $core->fo_core }}" data-cable-id="{{ $cable->fo_kabel }}" @selected($editCoreA?->fo_core === $core->fo_core)>
+                                    {{ $cable->nama_kabel }} - Core {{ $core->nomer_core }} ({{ $core->core_color }})
+                                </option>
+                            @endforeach
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Redaman kabel 1</label>
+                    <input name="redaman_core_a" value="{{ $editCoreA?->redaman }}" type="number" step="0.001" required class="w-full px-4 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Kabel 2</label>
+                    <select name="core_b" required data-splice-core-b class="w-full px-4 py-2 border rounded-lg">
+                        <option value="">Pilih kabel - core</option>
+                        @foreach($cables as $cable)
+                            @foreach($cable->cores as $core)
+                                <option value="{{ $core->fo_core }}" data-cable-id="{{ $cable->fo_kabel }}" @selected($editCoreB?->fo_core === $core->fo_core)>
+                                    {{ $cable->nama_kabel }} - Core {{ $core->nomer_core }} ({{ $core->core_color }})
+                                </option>
+                            @endforeach
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Catatan</label>
+                    <textarea name="catatan" rows="3" class="w-full px-4 py-2 border rounded-lg">{{ $splice->catatan }}</textarea>
+                </div>
+                <div class="flex gap-2 justify-end">
+                    <button type="button" onclick="closeModal('editSpliceModal{{ $splice->fo_splice }}')" class="px-4 py-2 border rounded-lg" style="cursor: pointer;">Batal</button>
+                    <button class="px-4 py-2 bg-blue-600 text-white rounded-lg" style="cursor: pointer;">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+@endforeach
+
+<div id="spliceModal" class="fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm">
+    <div class="w-full max-w-2xl bg-white rounded-lg shadow-xl">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+            <h2 class="font-semibold text-gray-900">Splicing</h2>
+            <button type="button" onclick="closeModal('spliceModal')" class="text-gray-400 hover:text-gray-700" style="cursor: pointer;">X</button>
+        </div>
+        <form method="POST" action="{{ route('fiber.closures.splices.store', $closure) }}" class="p-5 space-y-4">
+            @csrf
+            <div>
+                <label class="block text-sm font-medium mb-1">Kabel 1</label>
+                <select name="core_a" required data-splice-core-a class="w-full px-4 py-2 border rounded-lg">
+                    <option value="">Pilih kabel - core</option>
+                    @foreach($cables as $cable)
+                        @foreach($cable->cores as $core)
+                            <option value="{{ $core->fo_core }}" data-cable-id="{{ $cable->fo_kabel }}" @selected((string)old('core_a') === (string)$core->fo_core)>
+                                {{ $cable->nama_kabel }} - Core {{ $core->nomer_core }} ({{ $core->core_color }})
+                            </option>
+                        @endforeach
+                    @endforeach
+                </select>
+                @error('core_a')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Redaman kabel 1</label>
+                <input name="redaman_core_a" value="{{ old('redaman_core_a') }}" type="number" step="0.001" required class="w-full px-4 py-2 border rounded-lg">
+                @error('redaman_core_a')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Kabel 2</label>
+                <select name="core_b" required data-splice-core-b class="w-full px-4 py-2 border rounded-lg">
+                    <option value="">Pilih kabel - core</option>
+                    @foreach($cables as $cable)
+                        @foreach($cable->cores as $core)
+                            <option value="{{ $core->fo_core }}" data-cable-id="{{ $cable->fo_kabel }}" @selected((string)old('core_b') === (string)$core->fo_core)>
+                                {{ $cable->nama_kabel }} - Core {{ $core->nomer_core }} ({{ $core->core_color }})
+                            </option>
+                        @endforeach
+                    @endforeach
+                </select>
+                @error('core_b')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Catatan</label>
+                <textarea name="catatan" rows="3" class="w-full px-4 py-2 border rounded-lg">{{ old('catatan') }}</textarea>
+            </div>
+            <div class="flex gap-2 justify-end">
+                <button type="button" onclick="closeModal('spliceModal')" class="px-4 py-2 border rounded-lg" style="cursor: pointer;">Batal</button>
+                <button class="px-4 py-2 bg-blue-600 text-white rounded-lg" style="cursor: pointer;">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="listCableModal" class="fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm">
+    <div class="w-full max-w-2xl bg-white rounded-lg shadow-xl">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+            <h2 class="font-semibold text-gray-900">List Kabel</h2>
+            <button type="button" onclick="closeModal('listCableModal')" class="text-gray-400 hover:text-gray-700" style="cursor: pointer;">X</button>
+        </div>
+        <div class="p-5">
+            <div class="mb-4 flex justify-end">
+                <button type="button" onclick="closeModal('listCableModal'); openModal('cableModal')" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm" style="cursor: pointer;">Tambah Kabel</button>
+            </div>
+            <div class="overflow-x-auto border border-gray-200 rounded-lg">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-gray-600">
+                        <tr>
+                            <th class="text-left px-4 py-3">Nama Kabel</th>
+                            <th class="text-left px-4 py-3">Jumlah Core</th>
+                            <th class="text-right px-4 py-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($cables as $cable)
+                            <tr class="border-t">
+                                <td class="px-4 py-3 font-medium text-gray-900">{{ $cable->nama_kabel }}</td>
+                                <td class="px-4 py-3">{{ $cable->jumlah_core }}</td>
+                                <td class="px-4 py-3 text-right">
+                                    <div class="flex justify-end gap-2 whitespace-nowrap">
+                                        <button type="button" onclick="closeModal('listCableModal'); openModal('editCableModal{{ $cable->fo_kabel }}')" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs" style="cursor: pointer;">Edit</button>
+                                        <form method="POST" action="{{ route('fiber.cables.destroy', $cable) }}" onsubmit="return confirm('Yakin ingin menghapus kabel ini?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <input type="hidden" name="redirect_to" value="fiber.closures.show">
+                                            <input type="hidden" name="redirect_closure_id" value="{{ $closure->fo_closure }}">
+                                            <button type="submit" class="px-3 py-1.5 rounded-lg text-xs" style="background-color: #dc2626; color: #ffffff; border: 1px solid #dc2626; cursor: pointer;">Hapus</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="3" class="px-4 py-6 text-center text-gray-400">Belum ada kabel pada closure ini.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@foreach($cables as $cable)
+    <div id="editCableModal{{ $cable->fo_kabel }}" class="fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm">
+        <div class="w-full max-w-2xl bg-white rounded-lg shadow-xl">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+                <h2 class="font-semibold text-gray-900">Edit Kabel</h2>
+                <button type="button" onclick="closeModal('editCableModal{{ $cable->fo_kabel }}')" class="text-gray-400 hover:text-gray-700" style="cursor: pointer;">X</button>
+            </div>
+            <form method="POST" action="{{ route('fiber.cables.update', $cable) }}" class="p-5 space-y-4">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="redirect_to" value="fiber.closures.show">
+                <input type="hidden" name="redirect_closure_id" value="{{ $closure->fo_closure }}">
+                <input type="hidden" name="form_mode" value="cable_edit">
+                <input type="hidden" name="cable_id" value="{{ $cable->fo_kabel }}">
+                <input type="hidden" name="nama_kabel" value="{{ $cable->nama_kabel }}">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Nama kabel</label>
+                    <input value="{{ $cable->nama_kabel }}" disabled class="w-full px-4 py-2 border rounded-lg bg-gray-100 text-gray-600">
+                    @if(old('form_mode') === 'cable_edit' && old('cable_id') == $cable->fo_kabel) @error('nama_kabel')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror @endif
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Closure tujuan</label>
+                    <input value="{{ $cable->targetClosure?->nama_cl ?? '-' }}" disabled class="w-full px-4 py-2 border rounded-lg bg-gray-100 text-gray-600">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Jumlah core</label>
+                    <input value="{{ $cable->jumlah_core }}" disabled class="w-full px-4 py-2 border rounded-lg bg-gray-100 text-gray-600">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Catatan</label>
+                    <textarea name="catatan" rows="3" class="w-full px-4 py-2 border rounded-lg">{{ old('form_mode') === 'cable_edit' && old('cable_id') == $cable->fo_kabel ? old('catatan', $cable->catatan) : $cable->catatan }}</textarea>
+                </div>
+                <div class="flex gap-2 justify-end">
+                    <button type="button" onclick="closeModal('editCableModal{{ $cable->fo_kabel }}')" class="px-4 py-2 border rounded-lg" style="cursor: pointer;">Batal</button>
+                    <button class="px-4 py-2 bg-blue-600 text-white rounded-lg" style="cursor: pointer;">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+@endforeach
+
 <div id="coreModal" class="fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto bg-black/50 px-4 py-6 backdrop-blur-sm">
     <div class="w-full max-w-lg bg-white rounded-lg shadow-xl">
         <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
@@ -287,18 +480,19 @@
             <input type="hidden" name="form_mode" value="cable_create">
             <input type="hidden" name="source_closure_id" value="{{ $closure->fo_closure }}">
             <div>
-                <label class="block text-sm font-medium mb-1">Nama kabel</label>
-                <input name="nama_kabel" value="{{ old('form_mode') === 'cable_create' ? old('nama_kabel') : '' }}" required class="w-full px-4 py-2 border rounded-lg">
-                @if(old('form_mode') === 'cable_create') @error('nama_kabel')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror @endif
-            </div>
-            <div>
                 <label class="block text-sm font-medium mb-1">Closure tujuan</label>
-                <select name="destination_closure_id" class="w-full px-4 py-2 border rounded-lg">
+                <select name="destination_closure_id" data-cable-target-select class="w-full px-4 py-2 border rounded-lg">
                     <option value="">Kosong</option>
                     @foreach($closures->where('fo_closure', '!=', $closure->fo_closure) as $item)
-                        <option value="{{ $item->fo_closure }}" @selected((string)old('destination_closure_id') === (string)$item->fo_closure)>{{ $item->nama_cl }}</option>
+                        <option value="{{ $item->fo_closure }}" data-cable-name="to {{ $item->nama_cl }}" @selected((string)old('destination_closure_id') === (string)$item->fo_closure)>{{ $item->nama_cl }}</option>
                     @endforeach
                 </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Nama kabel</label>
+                <input type="hidden" name="nama_kabel" data-cable-name-hidden value="{{ old('form_mode') === 'cable_create' ? old('nama_kabel') : '' }}">
+                <input value="{{ old('form_mode') === 'cable_create' ? old('nama_kabel') : '' }}" data-cable-name-display disabled required class="w-full px-4 py-2 border rounded-lg bg-gray-100 text-gray-600">
+                @if(old('form_mode') === 'cable_create') @error('nama_kabel')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror @endif
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">Jumlah core</label>
@@ -446,6 +640,54 @@
         refreshTargetCoreOptions(select);
     });
 
+    function refreshCableNameFromTarget(select) {
+        const form = select.closest('form');
+        const selected = select.selectedOptions[0];
+        const cableName = selected?.dataset.cableName || '';
+        const display = form?.querySelector('[data-cable-name-display]');
+        const hidden = form?.querySelector('[data-cable-name-hidden]');
+
+        if (display) display.value = cableName;
+        if (hidden) hidden.value = cableName;
+    }
+
+    document.querySelectorAll('[data-cable-target-select]').forEach((select) => {
+        select.addEventListener('change', () => refreshCableNameFromTarget(select));
+        refreshCableNameFromTarget(select);
+    });
+
+    function refreshSpliceCoreBOptions(form) {
+        const coreA = form.querySelector('[data-splice-core-a]');
+        const coreB = form.querySelector('[data-splice-core-b]');
+        const selectedCableId = coreA?.selectedOptions[0]?.dataset.cableId || '';
+        let selectedCoreBStillVisible = false;
+
+        coreB?.querySelectorAll('option').forEach((option) => {
+            if (!option.value) {
+                option.hidden = false;
+                return;
+            }
+
+            const visible = !selectedCableId || option.dataset.cableId !== selectedCableId;
+            option.hidden = !visible;
+            if (visible && option.selected) {
+                selectedCoreBStillVisible = true;
+            }
+        });
+
+        if (coreB && !selectedCoreBStillVisible) {
+            coreB.value = '';
+        }
+    }
+
+    document.querySelectorAll('[data-splice-core-a]').forEach((select) => {
+        const form = select.closest('form');
+        if (!form) return;
+
+        select.addEventListener('change', () => refreshSpliceCoreBOptions(form));
+        refreshSpliceCoreBOptions(form);
+    });
+
     @if ($errors->any() && old('form_mode') === 'cable_create')
         openModal('cableModal');
     @endif
@@ -456,6 +698,10 @@
 
     @if ($errors->any() && old('form_mode') === 'core_edit' && old('core_id'))
         openModal('editCoreModal{{ old('core_id') }}');
+    @endif
+
+    @if ($errors->any() && old('form_mode') === 'cable_edit' && old('cable_id'))
+        openModal('editCableModal{{ old('cable_id') }}');
     @endif
 </script>
 @endsection

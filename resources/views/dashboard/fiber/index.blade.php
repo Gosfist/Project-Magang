@@ -73,9 +73,9 @@
             <input id="closureFormMode" type="hidden" name="form_mode" value="closure_create">
             <input id="closureId" type="hidden" name="closure_id" value="{{ old('closure_id') }}">
             <div>
+                @error('nama_cl')<p class="text-red-600 text-xs mb-1">{{ $message }}</p>@enderror
                 <label class="block text-sm font-medium mb-1">Nama CL</label>
                 <input id="closureName" name="nama_cl" value="{{ old('nama_cl') }}" required class="w-full px-4 py-2 border rounded-lg">
-                @error('nama_cl')<p class="text-red-600 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">Alamat</label>

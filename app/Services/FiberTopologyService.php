@@ -5,13 +5,12 @@ namespace App\Services;
 use App\Models\FiberCore;
 use App\Models\FiberCoreEndpoint;
 use App\Models\FoCable;
+use App\Models\FoClosure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class FiberTopologyService
 {
-    private const CORE_COLORS = ['Biru', 'Orange', 'Hijau', 'Coklat', 'Abu-abu', 'Putih', 'Merah', 'Hitam', 'Kuning', 'Ungu', 'Pink', 'Aqua'];
-
     public function createCable(array $data): FoCable
     {
         return DB::transaction(function () use ($data) {
@@ -23,13 +22,33 @@ class FiberTopologyService
             $destinationClosureId = $data['destination_closure_id'] ?? null;
             unset($data['source_closure_id'], $data['destination_closure_id']);
 
-            $cable = FoCable::create($data);
+            $sourceClosure = $sourceClosureId ? FoClosure::find($sourceClosureId) : null;
+            $destinationClosure = $destinationClosureId ? FoClosure::find($destinationClosureId) : null;
+
+            $cable = FoCable::create([
+                ...$data,
+                'fo_closure' => $sourceClosureId,
+                'target_closure' => $destinationClosureId,
+            ]);
+
+            $pairedCable = null;
+            if ($sourceClosureId && $destinationClosureId) {
+                $pairedCable = FoCable::create([
+                    'nama_kabel' => 'to ' . ($sourceClosure?->nama_cl ?? 'closure ' . $sourceClosureId),
+                    'jumlah_core' => $data['jumlah_core'],
+                    'fo_closure' => $destinationClosureId,
+                    'target_closure' => $sourceClosureId,
+                    'catatan' => $data['catatan'] ?? null,
+                ]);
+
+                $cable->update(['paired_cable' => $pairedCable->fo_kabel]);
+                $pairedCable->update(['paired_cable' => $cable->fo_kabel]);
+            }
 
             for ($i = 1; $i <= $cable->jumlah_core; $i++) {
                 $core = FiberCore::create([
                     'fo_kabel' => $cable->fo_kabel,
                     'nomer_core' => $i,
-                    'warna_core' => self::CORE_COLORS[($i - 1) % count(self::CORE_COLORS)],
                 ]);
 
                 FiberCoreEndpoint::create([
@@ -38,12 +57,20 @@ class FiberTopologyService
                     'endpoint_side' => 'A',
                 ]);
 
-                if ($destinationClosureId) {
-                    FiberCoreEndpoint::create([
-                        'fo_core' => $core->fo_core,
-                        'fo_closure' => $destinationClosureId,
-                        'endpoint_side' => 'B',
+                if ($pairedCable && $destinationClosure) {
+                    $pairedCore = FiberCore::create([
+                        'fo_kabel' => $pairedCable->fo_kabel,
+                        'nomer_core' => $i,
                     ]);
+
+                    FiberCoreEndpoint::create([
+                        'fo_core' => $pairedCore->fo_core,
+                        'fo_closure' => $destinationClosureId,
+                        'endpoint_side' => 'A',
+                    ]);
+
+                    $core->update(['paired_core' => $pairedCore->fo_core]);
+                    $pairedCore->update(['paired_core' => $core->fo_core]);
                 }
             }
 
@@ -59,13 +86,13 @@ class FiberTopologyService
             }
 
             $lastCoreNumber = (int) $cable->cores()->max('nomer_core');
+            $pairedCable = $cable->pairedCable;
 
             for ($i = 1; $i <= $count; $i++) {
                 $coreNumber = $lastCoreNumber + $i;
                 $core = FiberCore::create([
                     'fo_kabel' => $cable->fo_kabel,
                     'nomer_core' => $coreNumber,
-                    'warna_core' => self::CORE_COLORS[($coreNumber - 1) % count(self::CORE_COLORS)],
                 ]);
 
                 FiberCoreEndpoint::create([
@@ -73,9 +100,26 @@ class FiberTopologyService
                     'fo_closure' => $closureId,
                     'endpoint_side' => 'A',
                 ]);
+
+                if ($pairedCable) {
+                    $pairedCore = FiberCore::create([
+                        'fo_kabel' => $pairedCable->fo_kabel,
+                        'nomer_core' => $coreNumber,
+                    ]);
+
+                    FiberCoreEndpoint::create([
+                        'fo_core' => $pairedCore->fo_core,
+                        'fo_closure' => $pairedCable->fo_closure,
+                        'endpoint_side' => 'A',
+                    ]);
+
+                    $core->update(['paired_core' => $pairedCore->fo_core]);
+                    $pairedCore->update(['paired_core' => $core->fo_core]);
+                }
             }
 
             $cable->update(['jumlah_core' => $cable->cores()->count()]);
+            $pairedCable?->update(['jumlah_core' => $pairedCable->cores()->count()]);
         });
     }
 }

@@ -6,6 +6,7 @@ use App\Models\FiberCore;
 use App\Models\FiberCoreEndpoint;
 use App\Models\FoCable;
 use App\Models\FoClosure;
+use App\Models\FoSplice;
 use App\Models\FoSplitter;
 use App\Models\FoSplitterOutput;
 use App\Services\FiberTopologyService;
@@ -59,10 +60,18 @@ class FoClosureController extends Controller
             'cores.incomingDirectCores.cable',
             'cores.incomingSplitterOutputs.splitter.core.cable',
             'cores.splitter.outputs.targetClosure',
-            'cores.splitter.outputs.targetCore.cable'
+            'cores.splitter.outputs.targetCore.cable',
+            'targetClosure',
+            'pairedCable'
         )
-            ->whereHas('cores.endpoints', fn ($query) => $query->where('fo_closure', $closure->fo_closure))
+            ->where(fn ($query) => $query
+                ->where('fo_closure', $closure->fo_closure)
+                ->orWhereHas('cores.endpoints', fn ($query) => $query->where('fo_closure', $closure->fo_closure)))
             ->orderBy('nama_kabel')
+            ->get();
+        $splices = FoSplice::with('coreA.cable', 'coreA.pairedCore', 'coreB.cable', 'coreB.pairedCore')
+            ->where('fo_closure', $closure->fo_closure)
+            ->orderByDesc('fo_splice')
             ->get();
         $targetCoreOptions = FiberCoreEndpoint::with('fiberCore.cable', 'closure')
             ->whereNotNull('fo_closure')
@@ -82,6 +91,7 @@ class FoClosureController extends Controller
             'closure' => $closure,
             'closures' => FoClosure::orderBy('nama_cl')->get(),
             'cables' => $cables,
+            'splices' => $splices,
             'targetCoreOptions' => $targetCoreOptions,
         ]);
     }
@@ -159,6 +169,51 @@ class FoClosureController extends Controller
         return redirect()->route('fiber.closures.show', $closure)->with('success', 'Core berhasil ditambahkan.');
     }
 
+    public function storeSplice(Request $request, FoClosure $closure)
+    {
+        $data = $this->validatedSplice($request, $closure);
+        $coreA = FiberCore::findOrFail($data['core_a']);
+
+        $coreA->update(['redaman' => $data['redaman_core_a']]);
+
+        FoSplice::updateOrCreate(
+            [
+                'fo_closure' => $closure->fo_closure,
+                'core_a' => $data['core_a'],
+                'core_b' => $data['core_b'],
+            ],
+            ['catatan' => $data['catatan'] ?? null]
+        );
+
+        return redirect()->route('fiber.closures.show', $closure)->with('success', 'Splice berhasil disimpan.');
+    }
+
+    public function updateSplice(Request $request, FoClosure $closure, FoSplice $splice)
+    {
+        abort_unless($splice->fo_closure === $closure->fo_closure, 404);
+
+        $data = $this->validatedSplice($request, $closure);
+        $coreA = FiberCore::findOrFail($data['core_a']);
+        $coreA->update(['redaman' => $data['redaman_core_a']]);
+
+        $splice->update([
+            'core_a' => $data['core_a'],
+            'core_b' => $data['core_b'],
+            'catatan' => $data['catatan'] ?? null,
+        ]);
+
+        return redirect()->route('fiber.closures.show', $closure)->with('success', 'Splice berhasil diperbarui.');
+    }
+
+    public function destroySplice(FoClosure $closure, FoSplice $splice)
+    {
+        abort_unless($splice->fo_closure === $closure->fo_closure, 404);
+
+        $splice->delete();
+
+        return redirect()->route('fiber.closures.show', $closure)->with('success', 'Splice berhasil dihapus.');
+    }
+
     public function destroyCore(FoClosure $closure, FiberCore $fiberCore)
     {
         abort_unless($fiberCore->endpoints()->where('fo_closure', $closure->fo_closure)->exists(), 404);
@@ -172,7 +227,11 @@ class FoClosureController extends Controller
                 ->withErrors(['core' => 'Core tidak bisa dihapus karena masih ada core setelahnya. Hapus core terakhir terlebih dahulu.']);
         }
 
+        $pairedCore = $fiberCore->pairedCore;
+        $pairedCable = $pairedCore?->cable;
+
         $fiberCore->delete();
+        $pairedCore?->delete();
 
         if ($cable) {
             $remainingCoreCount = $cable->cores()->count();
@@ -181,6 +240,16 @@ class FoClosureController extends Controller
                 $cable->delete();
             } else {
                 $cable->update(['jumlah_core' => $remainingCoreCount]);
+            }
+        }
+
+        if ($pairedCable) {
+            $remainingPairedCoreCount = $pairedCable->cores()->count();
+
+            if ($remainingPairedCoreCount === 0) {
+                $pairedCable->delete();
+            } else {
+                $pairedCable->update(['jumlah_core' => $remainingPairedCoreCount]);
             }
         }
 
@@ -194,7 +263,7 @@ class FoClosureController extends Controller
 
     public function update(Request $request, FoClosure $closure)
     {
-        $closure->update($this->validated($request));
+        $closure->update($this->validated($request, $closure));
 
         if ($request->is('api/*')) {
             return response()->json(['data' => $closure]);
@@ -216,12 +285,19 @@ class FoClosureController extends Controller
             : redirect()->route($request->input('redirect_to') === 'fiber.dashboard' ? 'fiber.dashboard' : 'fiber.closures.index')->with('success', 'Closure berhasil dihapus.');
     }
 
-    private function validated(Request $request): array
+    private function validated(Request $request, ?FoClosure $closure = null): array
     {
         return $request->validate([
-            'nama_cl' => ['required', 'string', 'max:255'],
+            'nama_cl' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('fo_closure', 'nama_cl')->ignore($closure?->fo_closure, 'fo_closure'),
+            ],
             'alamat_cl' => ['nullable', 'string'],
             'catatan' => ['nullable', 'string'],
+        ], [
+            'nama_cl.unique' => 'Nama CL sudah ada.',
         ]);
     }
 
@@ -282,6 +358,39 @@ class FoClosureController extends Controller
         if ($errors) {
             throw ValidationException::withMessages($errors);
         }
+    }
+
+    private function validatedSplice(Request $request, FoClosure $closure): array
+    {
+        $data = $request->validate([
+            'core_a' => ['required', 'exists:fo_core,fo_core'],
+            'core_b' => ['required', 'exists:fo_core,fo_core', 'different:core_a'],
+            'redaman_core_a' => ['required', 'numeric'],
+            'catatan' => ['nullable', 'string'],
+        ]);
+
+        foreach (['core_a', 'core_b'] as $field) {
+            $coreBelongsToClosure = FiberCore::whereKey($data[$field])
+                ->where(fn ($query) => $query
+                    ->whereHas('cable', fn ($query) => $query->where('fo_closure', $closure->fo_closure))
+                    ->orWhereHas('endpoints', fn ($query) => $query->where('fo_closure', $closure->fo_closure)))
+                ->exists();
+
+            if (! $coreBelongsToClosure) {
+                throw ValidationException::withMessages([$field => 'Core tidak ada di closure ini.']);
+            }
+        }
+
+        $coreA = FiberCore::findOrFail($data['core_a']);
+        $coreB = FiberCore::findOrFail($data['core_b']);
+
+        if ($coreA->fo_kabel === $coreB->fo_kabel) {
+            throw ValidationException::withMessages([
+                'core_b' => 'Kabel 2 tidak boleh dari kabel yang sama dengan Kabel 1.',
+            ]);
+        }
+
+        return $data;
     }
 
     private function validateCoreTarget(mixed $targetClosure, mixed $targetCore): void

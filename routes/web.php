@@ -50,6 +50,9 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::post('closures/{closure}/cores', [FoClosureController::class, 'storeCore'])->name('closures.cores.store');
         Route::patch('closures/{closure}/cores/{fiberCore}', [FoClosureController::class, 'updateCore'])->name('closures.cores.update');
         Route::delete('closures/{closure}/cores/{fiberCore}', [FoClosureController::class, 'destroyCore'])->name('closures.cores.destroy');
+        Route::post('closures/{closure}/splices', [FoClosureController::class, 'storeSplice'])->name('closures.splices.store');
+        Route::patch('closures/{closure}/splices/{splice}', [FoClosureController::class, 'updateSplice'])->name('closures.splices.update');
+        Route::delete('closures/{closure}/splices/{splice}', [FoClosureController::class, 'destroySplice'])->name('closures.splices.destroy');
         Route::resource('closures', FoClosureController::class)->except(['edit']);
         Route::resource('cables', FoCableController::class);
     });

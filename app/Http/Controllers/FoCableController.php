@@ -73,14 +73,28 @@ class FoCableController extends Controller
         unset($data['jumlah_core'], $data['source_closure_id'], $data['destination_closure_id']);
         $cable->update($data);
 
+        if ($request->input('redirect_to') === 'fiber.closures.show' && $request->filled('redirect_closure_id')) {
+            return redirect()->route('fiber.closures.show', $request->redirect_closure_id)->with('success', 'Kabel berhasil diperbarui.');
+        }
+
         return redirect()->route('fiber.cables.show', $cable)->with('success', 'Kabel berhasil diperbarui.');
     }
 
     public function destroy(Request $request, FoCable $cable)
     {
+        $pairedCable = $cable->pairedCable;
         $cable->delete();
+        $pairedCable?->delete();
 
-        return $request->is('api/*') ? response()->json(['message' => 'Cable deleted']) : redirect()->route('fiber.cables.index')->with('success', 'Kabel berhasil dihapus.');
+        if ($request->is('api/*')) {
+            return response()->json(['message' => 'Cable deleted']);
+        }
+
+        if ($request->input('redirect_to') === 'fiber.closures.show' && $request->filled('redirect_closure_id')) {
+            return redirect()->route('fiber.closures.show', $request->redirect_closure_id)->with('success', 'Kabel berhasil dihapus.');
+        }
+
+        return redirect()->route('fiber.cables.index')->with('success', 'Kabel berhasil dihapus.');
     }
 
     public function cores(Request $request, FoCable $cable)
@@ -97,7 +111,6 @@ class FoCableController extends Controller
     {
         $data = $request->validate([
             'redaman' => ['nullable', 'numeric'],
-            'warna_core' => ['nullable', 'string', 'max:255'],
             'catatan' => ['nullable', 'string'],
         ]);
         $fiberCore->update($data);
@@ -107,11 +120,16 @@ class FoCableController extends Controller
 
     private function validated(Request $request, ?FoCable $cable = null): array
     {
+        $destinationClosureRule = $request->input('redirect_to') === 'fiber.closures.show'
+            && $request->filled('destination_closure_id')
+                ? 'required'
+                : 'nullable';
+
         $data = $request->validate([
             'nama_kabel' => ['required', 'string', 'max:255'],
             'jumlah_core' => [$cable ? 'sometimes' : 'required', 'integer', 'min:1'],
             'source_closure_id' => ['nullable', 'exists:fo_closure,fo_closure'],
-            'destination_closure_id' => ['nullable', 'exists:fo_closure,fo_closure'],
+            'destination_closure_id' => [$destinationClosureRule, 'exists:fo_closure,fo_closure'],
             'catatan' => ['nullable', 'string'],
         ]);
 
@@ -122,19 +140,10 @@ class FoCableController extends Controller
 
     private function ensureCableNameUniqueInClosures(array $data, ?FoCable $cable = null): void
     {
-        $closureIds = collect([
-            $data['source_closure_id'] ?? null,
-            $data['destination_closure_id'] ?? null,
-        ])->filter()->unique()->values();
+        $closureIds = collect([$data['source_closure_id'] ?? null])->filter()->unique()->values();
 
         if ($cable && $closureIds->isEmpty()) {
-            $closureIds = $cable->cores()
-                ->with('endpoints')
-                ->get()
-                ->flatMap(fn (FiberCore $core) => $core->endpoints->pluck('fo_closure'))
-                ->filter()
-                ->unique()
-                ->values();
+            $closureIds = collect([$cable->fo_closure])->filter()->values();
         }
 
         if ($closureIds->isEmpty()) {
@@ -142,7 +151,7 @@ class FoCableController extends Controller
         }
 
         $query = FoCable::where('nama_kabel', $data['nama_kabel'])
-            ->whereHas('cores.endpoints', fn ($query) => $query->whereIn('fo_closure', $closureIds));
+            ->whereIn('fo_closure', $closureIds);
 
         if ($cable) {
             $query->where('fo_kabel', '!=', $cable->fo_kabel);

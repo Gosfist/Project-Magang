@@ -16,7 +16,9 @@ class FiberCore extends Model
     protected $primaryKey = 'fo_core';
     public $timestamps = false;
 
-    protected $fillable = ['fo_kabel', 'redaman', 'nomer_core', 'warna_core', 'target_closure', 'target_core', 'direct_redaman_awal', 'catatan'];
+    private const CORE_COLORS = ['Biru', 'Orange', 'Hijau', 'Coklat', 'Abu-abu', 'Putih', 'Merah', 'Hitam', 'Kuning', 'Ungu', 'Pink', 'Aqua'];
+
+    protected $fillable = ['fo_kabel', 'redaman', 'nomer_core', 'target_closure', 'target_core', 'paired_core', 'direct_redaman_awal', 'catatan'];
 
     protected function casts(): array
     {
@@ -53,6 +55,11 @@ class FiberCore extends Model
         return $this->belongsTo(self::class, 'target_core', 'fo_core');
     }
 
+    public function pairedCore(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'paired_core', 'fo_core');
+    }
+
     public function incomingDirectCores(): HasMany
     {
         return $this->hasMany(self::class, 'target_core', 'fo_core')->orderBy('nomer_core');
@@ -65,7 +72,11 @@ class FiberCore extends Model
 
     public function getCoreColorAttribute(): ?string
     {
-        return $this->warna_core;
+        if (! $this->nomer_core) {
+            return null;
+        }
+
+        return self::CORE_COLORS[($this->nomer_core - 1) % count(self::CORE_COLORS)];
     }
 
     public function getAttenuationDbAttribute(): mixed
