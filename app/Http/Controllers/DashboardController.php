@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\MainOdc;
-use App\Models\MainOdp;
-use App\Models\MainServerCore;
+use App\Models\MainCore;
 use App\Models\User;
 
 class DashboardController extends Controller
@@ -12,10 +10,10 @@ class DashboardController extends Controller
     public function index()
     {
         $data = [
-            'totalServerCores' => MainServerCore::count(),
-            'totalOdcs' => MainOdc::count(),
-            'totalOdps' => MainOdp::count(),
-            'totalWithRedaman' => MainOdc::whereNotNull('redaman')->count() + MainOdp::whereNotNull('redaman')->count(),
+            'totalServerCores' => MainCore::type('server')->count(),
+            'totalOdcs' => MainCore::type('odc')->count(),
+            'totalOdps' => MainCore::type('odp')->count(),
+            'totalWithRedaman' => MainCore::whereNotNull('redaman_in')->count(),
         ];
 
         if (auth()->user()->isAdmin()) {

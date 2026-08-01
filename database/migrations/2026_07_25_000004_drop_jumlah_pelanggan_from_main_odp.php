@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! Schema::hasTable('main_odp')) {
+            return;
+        }
+
         Schema::table('main_odp', function (Blueprint $table) {
             if (Schema::hasColumn('main_odp', 'jumlah_pelanggan')) {
                 $table->dropColumn('jumlah_pelanggan');
@@ -17,6 +21,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! Schema::hasTable('main_odp')) {
+            return;
+        }
+
         Schema::table('main_odp', function (Blueprint $table) {
             if (! Schema::hasColumn('main_odp', 'jumlah_pelanggan')) {
                 $table->unsignedInteger('jumlah_pelanggan')->default(0)->after('tanggal');

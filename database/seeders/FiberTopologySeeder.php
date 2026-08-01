@@ -2,25 +2,50 @@
 
 namespace Database\Seeders;
 
-use App\Models\FoClosure;
-use App\Services\FiberTopologyService;
+use App\Models\MainCore;
 use Illuminate\Database\Seeder;
 
 class FiberTopologySeeder extends Seeder
 {
     public function run(): void
     {
-        $topology = app(FiberTopologyService::class);
+        $server = MainCore::firstOrCreate([
+            'nama_titik' => 'Server Pusat',
+        ], [
+            'tipe_titik' => 'server',
+            'alamat' => 'Ruang server utama',
+        ]);
 
-        $cl01 = FoClosure::firstOrCreate(['nama_cl' => 'Closure Pusat'], ['alamat_cl' => 'Pusat']);
-        $cl02 = FoClosure::firstOrCreate(['nama_cl' => 'Closure Barat'], ['alamat_cl' => 'Barat']);
+        $rasio = MainCore::firstOrCreate([
+            'nama_titik' => 'Rasio 01 Jalur Utama',
+        ], [
+            'parent_id' => $server->id,
+            'tipe_titik' => 'rasio',
+            'redaman_in' => -1.20,
+            'alamat' => 'Jalur utama',
+            'spesifikasi' => ['jenis_splitter' => '1:2'],
+        ]);
 
-        $topology->createCable([
-            'nama_kabel' => 'Kabel CL01 CL02',
-            'jumlah_core' => 4,
-            'source_closure_id' => $cl01->fo_closure,
-            'destination_closure_id' => $cl02->fo_closure,
-            'catatan' => 'Data contoh',
+        $odc = MainCore::firstOrCreate([
+            'nama_titik' => 'ODC 01 Balai Desa',
+        ], [
+            'parent_id' => $rasio->id,
+            'parent_port_out' => 1,
+            'tipe_titik' => 'odc',
+            'redaman_in' => -3.40,
+            'alamat' => 'Balai Desa',
+            'spesifikasi' => ['jenis_splitter' => '1:4'],
+        ]);
+
+        MainCore::firstOrCreate([
+            'nama_titik' => 'ODP 01 Gang Melati',
+        ], [
+            'parent_id' => $odc->id,
+            'parent_port_out' => 1,
+            'tipe_titik' => 'odp',
+            'redaman_in' => -6.10,
+            'alamat' => 'Gang Melati',
+            'spesifikasi' => ['jenis_splitter' => '1:8'],
         ]);
     }
 }

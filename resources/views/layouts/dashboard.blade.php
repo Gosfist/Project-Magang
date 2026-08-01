@@ -55,26 +55,35 @@
                 </div>
 
                 <div>
-                    <a href="{{ route('fiber.server') }}"
-                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('fiber.*') ? 'text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
+                    <button type="button" onclick="toggleMainCoreMenu()"
+                        class="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('fiber.*') ? 'text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 3v18m0-18a4 4 0 00-4 4v2a4 4 0 004 4m0-10a4 4 0 014 4v2a4 4 0 01-4 4m-7 4h14" />
                         </svg>
-                        Main Core Fiber
-                    </a>
-                    <div class="mt-1 space-y-1 pl-11 pr-2">
+                        <span class="flex-1 text-left">Main Core</span>
+                        <span id="mainCoreChevron" class="text-xs {{ request()->routeIs('fiber.*') ? '' : '-rotate-90' }}">v</span>
+                    </button>
+                    <div id="mainCoreMenu" class="mt-1 space-y-1 pl-11 pr-2 {{ request()->routeIs('fiber.*') ? '' : 'hidden' }}">
                         <a href="{{ route('fiber.server') }}"
                             class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.server') || request()->routeIs('fiber.dashboard') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
                             Server
                         </a>
+                        <a href="{{ route('fiber.rasio') }}"
+                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.rasio') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
+                            Rasio
+                        </a>
                         <a href="{{ route('fiber.odc') }}"
-                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.odc') || request()->routeIs('fiber.odcs.*') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
+                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.odc') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
                             ODC
                         </a>
                         <a href="{{ route('fiber.odp') }}"
-                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.odp') || request()->routeIs('fiber.odps.*') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
+                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.odp') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
                             ODP
+                        </a>
+                        <a href="{{ route('fiber.topology') }}"
+                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.topology') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
+                            Peta Topologi
                         </a>
                     </div>
                 </div>
@@ -111,10 +120,10 @@
         </div>
 
         {{-- Main Content --}}
-        <div class="flex-1 lg:ml-64">
+        <div class="min-w-0 flex-1 lg:ml-64">
             {{-- Top Bar --}}
             <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
-                <div class="flex items-center justify-between px-4 sm:px-6 py-3">
+                <div class="flex min-w-0 items-center justify-between px-4 sm:px-6 py-3">
                     <div class="flex items-center gap-3">
                         <button onclick="toggleSidebar()"
                             class="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100">
@@ -193,6 +202,11 @@
             const overlay = document.getElementById('sidebarOverlay');
             sidebar.classList.toggle('-translate-x-full');
             overlay.classList.toggle('hidden');
+        }
+
+        function toggleMainCoreMenu() {
+            document.getElementById('mainCoreMenu')?.classList.toggle('hidden');
+            document.getElementById('mainCoreChevron')?.classList.toggle('-rotate-90');
         }
 
         setTimeout(() => {

@@ -2,255 +2,288 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\MainOdc;
-use App\Models\MainOdcOutput;
-use App\Models\MainOdp;
-use App\Models\MainOdpPort;
-use App\Models\MainServerCore;
+use App\Models\MainCore;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 
 class FiberDashboardController extends Controller
 {
-    public function index()
+    public function index(): RedirectResponse
     {
         return redirect()->route('fiber.server');
     }
 
     public function server()
     {
-        return view('dashboard.fiber.index', [
-            'section' => 'server',
-            'serverCores' => MainServerCore::orderBy('core')->get(),
-            'odcs' => collect(),
-            'odps' => collect(),
-        ]);
+        return $this->listByType('server');
+    }
+
+    public function rasio()
+    {
+        return $this->listByType('rasio');
     }
 
     public function odc()
     {
-        return view('dashboard.fiber.index', [
-            'section' => 'odc',
-            'serverCores' => MainServerCore::orderBy('core')->get(),
-            'odcs' => MainOdc::with('serverCore')->orderBy('nama_odc')->get(),
-            'odps' => collect(),
-        ]);
+        return $this->listByType('odc');
     }
 
     public function odp()
     {
+        return $this->listByType('odp');
+    }
+
+    public function topology()
+    {
+        $roots = MainCore::with('children.children.children.children')
+            ->whereNull('parent_id')
+            ->orderBy('nama_titik')
+            ->get();
+
+        return view('dashboard.fiber.topology', [
+            'roots' => $roots,
+            'treeData' => $roots->map(fn (MainCore $node) => $this->mapTree($node))->values(),
+        ]);
+    }
+
+    public function store(Request $request, string $type)
+    {
+        $node = MainCore::create($this->validatedNode($request, $type));
+
+        return $this->responseFor($request, $node, "{$this->typeLabel($type)} berhasil ditambahkan.");
+    }
+
+    public function update(Request $request, string $type, MainCore $node)
+    {
+        abort_unless($node->tipe_titik === $type, 404);
+
+        $node->update($this->validatedNode($request, $type, $node));
+
+        return $this->responseFor($request, $node->fresh('parent'), "{$this->typeLabel($type)} berhasil diperbarui.");
+    }
+
+    public function destroy(Request $request, string $type, MainCore $node)
+    {
+        abort_unless($node->tipe_titik === $type, 404);
+
+        if ($node->children()->exists()) {
+            $message = "{$this->typeLabel($type)} masih memiliki anak. Hapus data dari paling bawah terlebih dahulu.";
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 422);
+            }
+
+            return redirect()->route("fiber.$type")->with('error', $message);
+        }
+
+        $node->forceDelete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => "{$this->typeLabel($type)} berhasil dihapus."]);
+        }
+
+        return redirect()->route("fiber.$type")->with('success', "{$this->typeLabel($type)} berhasil dihapus.");
+    }
+
+    private function listByType(string $type)
+    {
+        $allParents = $this->parentOptions($type, true);
+
         return view('dashboard.fiber.index', [
-            'section' => 'odp',
-            'serverCores' => collect(),
-            'odcs' => collect(),
-            'odps' => MainOdp::withCount('ports')->orderBy('nama_odp')->get(),
+            'section' => $type,
+            'nodes' => MainCore::with('parent')->type($type)->orderBy('nama_titik')->get(),
+            'parents' => $this->parentOptions($type),
+            'allParents' => $allParents,
+            'existingNames' => MainCore::select('id', 'nama_titik')->orderBy('nama_titik')->get(),
+            'labels' => $this->labels(),
         ]);
     }
 
-    public function storeServer(Request $request)
+    private function validatedNode(Request $request, string $type, ?MainCore $node = null): array
     {
-        MainServerCore::create($this->validatedServer($request));
+        abort_unless(in_array($type, MainCore::TYPES, true), 404);
 
-        return redirect()->route('fiber.server')->with('success', 'Server core berhasil ditambahkan.');
-    }
+        $parentTypes = $this->allowedParentTypes($type);
+        $parentRule = Rule::exists('main_core', 'id')->where(fn ($query) => $query->whereIn('tipe_titik', $parentTypes));
 
-    public function updateServer(Request $request, MainServerCore $server)
-    {
-        $server->update($this->validatedServer($request, $server));
+        $rules = [
+            'parent_id' => $type === 'server' ? ['nullable'] : ['required', $parentRule],
+            'parent_port_out' => ['nullable', 'integer', 'min:1'],
+            'nama_titik' => ['required', 'string', 'max:255', Rule::unique('main_core', 'nama_titik')->ignore($node?->id)],
+            'redaman_in' => ['nullable', 'numeric', 'between:-99.99,99.99'],
+            'alamat' => ['nullable', 'string'],
+        ];
 
-        return redirect()->route('fiber.server')->with('success', 'Server core berhasil diperbarui.');
-    }
+        if (in_array($type, ['rasio', 'odc', 'odp'], true)) {
+            $ratios = $type === 'odp' ? MainCore::ODP_RATIOS : MainCore::SPLITTER_RATIOS;
+            $rules['spesifikasi.jenis_splitter'] = ['required', Rule::in($ratios)];
+        }
 
-    public function destroyServer(MainServerCore $server)
-    {
-        $server->delete();
-
-        return redirect()->route('fiber.server')->with('success', 'Server core berhasil dihapus.');
-    }
-
-    public function storeOdc(Request $request)
-    {
-        $odc = MainOdc::create($this->validatedOdc($request));
-        $this->syncOdcOutputs($odc);
-
-        return redirect()->route('fiber.odc')->with('success', 'ODC berhasil ditambahkan.');
-    }
-
-    public function showOdc(MainOdc $odc)
-    {
-        return view('dashboard.fiber.odcs.show', [
-            'odc' => $odc->load('serverCore', 'outputs.odp'),
-            'odps' => MainOdp::orderBy('nama_odp')->get(),
-        ]);
-    }
-
-    public function updateOdc(Request $request, MainOdc $odc)
-    {
-        $odc->update($this->validatedOdc($request, $odc));
-        $this->syncOdcOutputs($odc);
-
-        return redirect()->route('fiber.odc')->with('success', 'ODC berhasil diperbarui.');
-    }
-
-    public function destroyOdc(MainOdc $odc)
-    {
-        $odc->delete();
-
-        return redirect()->route('fiber.odc')->with('success', 'ODC berhasil dihapus.');
-    }
-
-    public function updateOdcOutput(Request $request, MainOdc $odc, MainOdcOutput $output)
-    {
-        abort_unless($output->main_odc === $odc->main_odc, 404);
-
-        $data = $request->validate([
-            'main_odp' => ['nullable', 'exists:main_odp,main_odp'],
-            'redaman' => ['nullable', 'numeric'],
-            'tanggal' => ['nullable', 'date'],
-            'catatan' => ['nullable', 'string'],
+        $data = $request->validate($rules, [
+            'nama_titik.unique' => "{$this->nameLabel($type)} sudah digunakan!",
+            'parent_id.required' => 'Sumber jalur wajib dipilih.',
+            'spesifikasi.jenis_splitter.required' => 'Jenis splitter wajib dipilih.',
+            'spesifikasi.jenis_splitter.in' => $type === 'odp'
+                ? 'Jenis splitter hanya boleh 1:2, 1:4, atau 1:8.'
+                : 'Jenis splitter hanya boleh 1:2 atau 1:4.',
         ]);
 
-        $output->update([
-            'main_odp' => $data['main_odp'] ?: null,
-            'redaman' => $data['redaman'] ?? null,
-            'tanggal' => $data['tanggal'] ?? null,
-            'catatan' => $data['catatan'] ?? null,
-        ]);
+        $parentPortOut = null;
 
-        return redirect()->route('fiber.odcs.show', $odc)->with('success', 'Output ODC berhasil diperbarui.');
+        if ($type !== 'server') {
+            $parent = MainCore::with('children')->withCount('children')->find($data['parent_id']);
+
+            if ($parent?->tipe_titik === 'server') {
+                $alreadyConnected = $parent->children()
+                    ->when($node, fn ($query) => $query->whereKeyNot($node->id))
+                    ->exists();
+
+                if ($alreadyConnected) {
+                    throw ValidationException::withMessages([
+                        'parent_id' => 'Sumber jalur server sudah tersambung ke data lain.',
+                    ]);
+                }
+            } else {
+                $outputCount = $parent?->jumlah_output ?? 0;
+                $parentPortOut = (int) ($data['parent_port_out'] ?? 0);
+
+                if ($parentPortOut < 1) {
+                    throw ValidationException::withMessages([
+                        'parent_port_out' => 'Port sumber wajib dipilih.',
+                    ]);
+                }
+
+                if ($parentPortOut > $outputCount) {
+                    throw ValidationException::withMessages([
+                        'parent_port_out' => "Port sumber hanya tersedia dari port 1 sampai {$outputCount}.",
+                    ]);
+                }
+
+                $portUsed = $parent->children()
+                    ->where('parent_port_out', $parentPortOut)
+                    ->when($node, fn ($query) => $query->whereKeyNot($node->id))
+                    ->exists();
+
+                if ($portUsed) {
+                    throw ValidationException::withMessages([
+                        'parent_port_out' => "Port {$parentPortOut} sudah digunakan.",
+                    ]);
+                }
+
+                $full = $parent->children()
+                    ->when($node, fn ($query) => $query->whereKeyNot($node->id))
+                    ->count() >= $outputCount;
+
+                if ($full && $node?->parent_id !== $parent->id) {
+                    throw ValidationException::withMessages([
+                        'parent_id' => 'Semua port sumber jalur sudah digunakan.',
+                    ]);
+                }
+            }
+        }
+
+        return [
+            'parent_id' => $type === 'server' ? null : $data['parent_id'],
+            'parent_port_out' => $type === 'server' ? null : $parentPortOut,
+            'nama_titik' => $data['nama_titik'],
+            'tipe_titik' => $type,
+            'redaman_in' => $data['redaman_in'] ?? null,
+            'alamat' => $data['alamat'] ?? null,
+            'spesifikasi' => $data['spesifikasi'] ?? null,
+        ];
     }
 
-    public function destroyOdcOutput(MainOdc $odc, MainOdcOutput $output)
+    private function responseFor(Request $request, MainCore $node, string $message): JsonResponse|RedirectResponse
     {
-        abort_unless($output->main_odc === $odc->main_odc, 404);
-
-        $output->update([
-            'main_odp' => null,
-            'redaman' => null,
-            'tanggal' => null,
-            'catatan' => null,
-        ]);
-
-        return redirect()->route('fiber.odcs.show', $odc)->with('success', 'Output ODC berhasil dikosongkan.');
-    }
-
-    public function storeOdp(Request $request)
-    {
-        $odp = MainOdp::create($this->validatedOdp($request));
-        $this->syncOdpPorts($odp);
-
-        return redirect()->route('fiber.odp')->with('success', 'ODP berhasil ditambahkan.');
-    }
-
-    public function showOdp(MainOdp $odp)
-    {
-        return view('dashboard.fiber.odps.show', [
-            'odp' => $odp->load('ports'),
-        ]);
-    }
-
-    public function updateOdp(Request $request, MainOdp $odp)
-    {
-        $odp->update($this->validatedOdp($request, $odp));
-        $this->syncOdpPorts($odp);
-
-        return redirect()->route('fiber.odp')->with('success', 'ODP berhasil diperbarui.');
-    }
-
-    public function destroyOdp(MainOdp $odp)
-    {
-        $odp->delete();
-
-        return redirect()->route('fiber.odp')->with('success', 'ODP berhasil dihapus.');
-    }
-
-    public function updateOdpPort(Request $request, MainOdp $odp, MainOdpPort $port)
-    {
-        abort_unless($port->main_odp === $odp->main_odp, 404);
-
-        $port->update($request->validate([
-            'redaman' => ['nullable', 'numeric'],
-            'tanggal' => ['nullable', 'date'],
-            'catatan' => ['nullable', 'string'],
-        ]));
-
-        return redirect()->route('fiber.odps.show', $odp)->with('success', 'Port ODP berhasil diperbarui.');
-    }
-
-    public function destroyOdpPort(MainOdp $odp, MainOdpPort $port)
-    {
-        abort_unless($port->main_odp === $odp->main_odp, 404);
-
-        $port->update([
-            'redaman' => null,
-            'tanggal' => null,
-            'catatan' => null,
-        ]);
-
-        return redirect()->route('fiber.odps.show', $odp)->with('success', 'Port ODP berhasil dikosongkan.');
-    }
-
-    private function validatedServer(Request $request, ?MainServerCore $server = null): array
-    {
-        return $request->validate([
-            'core' => ['required', 'integer', 'min:1', Rule::unique('main_server_core', 'core')->ignore($server?->main_server_core, 'main_server_core')],
-            'tanggal' => ['nullable', 'date'],
-            'catatan' => ['nullable', 'string'],
-        ], [
-            'core.unique' => 'Core server sudah ada.',
-        ]);
-    }
-
-    private function validatedOdc(Request $request, ?MainOdc $odc = null): array
-    {
-        return $request->validate([
-            'nama_odc' => ['required', 'string', 'max:255', Rule::unique('main_odc', 'nama_odc')->ignore($odc?->main_odc, 'main_odc')],
-            'main_server_core' => ['required', 'exists:main_server_core,main_server_core'],
-            'rasio_split' => ['required', Rule::in(MainOdc::RATIOS)],
-            'redaman' => ['nullable', 'numeric'],
-            'tanggal' => ['nullable', 'date'],
-            'catatan' => ['nullable', 'string'],
-        ], [
-            'nama_odc.unique' => 'Nama ODC sudah ada.',
-        ]);
-    }
-
-    private function validatedOdp(Request $request, ?MainOdp $odp = null): array
-    {
-        return $request->validate([
-            'nama_odp' => ['required', 'string', 'max:255', Rule::unique('main_odp', 'nama_odp')->ignore($odp?->main_odp, 'main_odp')],
-            'rasio_split' => ['required', Rule::in(MainOdp::RATIOS)],
-            'redaman' => ['nullable', 'numeric'],
-            'tanggal' => ['nullable', 'date'],
-            'catatan' => ['nullable', 'string'],
-        ], [
-            'nama_odp.unique' => 'Nama ODP sudah ada.',
-        ]);
-    }
-
-    private function syncOdcOutputs(MainOdc $odc): void
-    {
-        $count = $odc->split_count;
-        $odc->outputs()->where('output_number', '>', $count)->delete();
-
-        for ($number = 1; $number <= $count; $number++) {
-            MainOdcOutput::firstOrCreate([
-                'main_odc' => $odc->main_odc,
-                'output_number' => $number,
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'node' => $node->load('parent'),
             ]);
         }
+
+        return redirect()->route("fiber.{$node->tipe_titik}")->with('success', $message);
     }
 
-    private function syncOdpPorts(MainOdp $odp): void
+    private function parentOptions(string $type, bool $includeConnected = false)
     {
-        $count = $odp->split_count;
-        $odp->ports()->where('port_number', '>', $count)->delete();
+        $types = $this->allowedParentTypes($type);
 
-        for ($number = 1; $number <= $count; $number++) {
-            MainOdpPort::firstOrCreate([
-                'main_odp' => $odp->main_odp,
-                'port_number' => $number,
-            ]);
+        if ($types === []) {
+            return collect();
         }
+
+        return MainCore::with(['children:id,parent_id,parent_port_out'])
+            ->withCount('children')
+            ->whereIn('tipe_titik', $types)
+            ->orderBy('tipe_titik')
+            ->orderBy('nama_titik')
+            ->get()
+            ->filter(fn (MainCore $parent) => $includeConnected || $this->hasAvailableOutput($parent))
+            ->values();
+    }
+
+    private function hasAvailableOutput(MainCore $parent): bool
+    {
+        if ($parent->tipe_titik === 'server') {
+            return $parent->children_count === 0;
+        }
+
+        $outputCount = $parent->jumlah_output ?? 0;
+
+        return $outputCount > 0 && $parent->children_count < $outputCount;
+    }
+
+    private function allowedParentTypes(string $type): array
+    {
+        return match ($type) {
+            'server' => [],
+            'rasio' => ['server', 'rasio', 'odc'],
+            'odc' => ['server', 'rasio', 'odc'],
+            'odp' => ['server', 'rasio', 'odc'],
+            default => [],
+        };
+    }
+
+    private function mapTree(MainCore $node): array
+    {
+        return [
+            'id' => $node->id,
+            'name' => $node->nama_titik,
+            'type' => $this->typeLabel($node->tipe_titik),
+            'redaman' => $node->redaman_in,
+            'output' => $node->jumlah_output,
+            'port' => $node->parent_port_out,
+            'children' => $node->children->map(fn (MainCore $child) => $this->mapTree($child))->values(),
+        ];
+    }
+
+    private function labels(): array
+    {
+        return [
+            'server' => 'Server',
+            'rasio' => 'Rasio',
+            'odc' => 'ODC',
+            'odp' => 'ODP',
+        ];
+    }
+
+    private function typeLabel(string $type): string
+    {
+        return $this->labels()[$type] ?? strtoupper($type);
+    }
+
+    private function nameLabel(string $type): string
+    {
+        return match ($type) {
+            'server' => 'Nama core',
+            'rasio' => 'Nama rasio',
+            'odc' => 'Nama ODC',
+            'odp' => 'Nama ODP',
+            default => 'Nama titik',
+        };
     }
 }
