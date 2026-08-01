@@ -27,7 +27,13 @@ class FiberTopologyTest extends TestCase
             'nama_titik' => 'Rasio 01',
             'redaman_in' => -1.25,
             'alamat' => 'Jalur utama',
-            'spesifikasi' => ['jenis_splitter' => '1:2'],
+            'spesifikasi' => [
+                'jenis_splitter' => '1:2',
+                'rasio_redaman_ports' => [
+                    1 => '10%',
+                    2 => '90%',
+                ],
+            ],
         ])->assertRedirect('/dashboard/fiber/rasio');
 
         $rasio = MainCore::type('rasio')->firstOrFail();
@@ -60,6 +66,7 @@ class FiberTopologyTest extends TestCase
         ]);
 
         $this->assertSame(2, $rasio->jumlah_output);
+        $this->assertSame('Port 1: 10% Dan Port 2: 90%', $rasio->rasio_redaman);
         $this->assertSame(4, $odc->jumlah_output);
         $this->assertSame(8, MainCore::type('odp')->firstOrFail()->jumlah_output);
 
@@ -73,7 +80,8 @@ class FiberTopologyTest extends TestCase
         $this->actingAs($user)->get('/dashboard/fiber/rasio')
             ->assertOk()
             ->assertSee('Rasio 01')
-            ->assertSee('1:2');
+            ->assertSee('1:2')
+            ->assertSee('Port 1: 10% Dan Port 2: 90%');
 
         $this->actingAs($user)->get('/dashboard/fiber/odc')
             ->assertOk()

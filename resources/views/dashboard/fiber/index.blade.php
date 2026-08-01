@@ -38,6 +38,9 @@
                         <th class="px-5 py-3 text-left">Redaman In</th>
                         @if(in_array($section, ['rasio', 'odc', 'odp'], true))
                             <th class="px-5 py-3 text-left">Jenis Splitter</th>
+                            @if($section === 'rasio')
+                                <th class="px-5 py-3 text-left">Rasio Redaman</th>
+                            @endif
                             <th class="px-5 py-3 text-left">Jumlah Output</th>
                         @endif
                         <th class="px-5 py-3 text-left">Alamat</th>
@@ -56,6 +59,9 @@
                             <td class="px-5 py-3">{{ $formatRedaman($node->redaman_in) }}</td>
                             @if(in_array($section, ['rasio', 'odc', 'odp'], true))
                                 <td class="px-5 py-3">{{ $node->jenis_splitter ?? '-' }}</td>
+                                @if($section === 'rasio')
+                                    <td class="px-5 py-3">{{ $node->rasio_redaman ?? '-' }}</td>
+                                @endif
                                 <td class="px-5 py-3">{{ $node->jumlah_output ?? '-' }}</td>
                             @endif
                             <td class="px-5 py-3">{{ $node->alamat ?: '-' }}</td>
@@ -146,6 +152,33 @@
         syncPortSelect(parentSelect);
         parentSelect.addEventListener('change', () => syncPortSelect(parentSelect));
     });
+
+    document.querySelectorAll('[data-splitter-select]').forEach((splitterSelect) => {
+        syncRasioRedamanPorts(splitterSelect);
+        splitterSelect.addEventListener('change', () => syncRasioRedamanPorts(splitterSelect));
+    });
+
+    function syncRasioRedamanPorts(splitterSelect) {
+        const form = splitterSelect.closest('form');
+        const wrapper = form?.querySelector('[data-rasio-redaman-wrapper]');
+
+        if (!wrapper) return;
+
+        const outputCount = Number((splitterSelect.value || '').replace('1:', '')) || 0;
+        wrapper.classList.toggle('hidden', outputCount === 0);
+
+        wrapper.querySelectorAll('[data-rasio-redaman-port]').forEach((field) => {
+            const port = Number(field.dataset.rasioRedamanPort || 0);
+            const input = field.querySelector('input');
+            const visible = port > 0 && port <= outputCount;
+
+            field.classList.toggle('hidden', !visible);
+            if (input) {
+                input.disabled = !visible;
+                if (!visible) input.value = '';
+            }
+        });
+    }
 
     function syncPortSelect(parentSelect) {
         const form = parentSelect.closest('form');

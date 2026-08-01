@@ -73,13 +73,30 @@
                 <div>
                     @if(old('form_mode') === $mode) @error('spesifikasi.jenis_splitter')<p class="mb-1 text-xs text-red-600">{{ $message }}</p>@enderror @endif
                     <label class="mb-1 block text-sm font-medium">Jenis Splitter</label>
-                    <select name="spesifikasi[jenis_splitter]" required class="w-full rounded-lg border px-4 py-2">
+                    <select name="spesifikasi[jenis_splitter]" required @if($section === 'rasio') data-splitter-select @endif class="w-full rounded-lg border px-4 py-2">
                         <option value="">Pilih jenis splitter</option>
                         @foreach($ratioOptions as $ratio)
                             <option value="{{ $ratio }}" @selected((string)(old('form_mode') === $mode ? old('spesifikasi.jenis_splitter', $node?->jenis_splitter) : $node?->jenis_splitter) === $ratio)>{{ $ratio }}</option>
                         @endforeach
                     </select>
                 </div>
+
+                @if($section === 'rasio')
+                    @php
+                        $rasioPorts = old('form_mode') === $mode ? old('spesifikasi.rasio_redaman_ports', $node?->rasio_redaman_ports ?? []) : ($node?->rasio_redaman_ports ?? []);
+                    @endphp
+                    <div data-rasio-redaman-wrapper class="hidden">
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            @for($port = 1; $port <= 4; $port++)
+                                <div data-rasio-redaman-port="{{ $port }}" class="hidden">
+                                    @if(old('form_mode') === $mode) @error('spesifikasi.rasio_redaman_ports.'.$port)<p class="mb-1 text-xs text-red-600">{{ $message }}</p>@enderror @endif
+                                    <label class="mb-1 block text-sm font-medium">Port {{ $port }}</label>
+                                    <input name="spesifikasi[rasio_redaman_ports][{{ $port }}]" value="{{ $rasioPorts[$port] ?? '' }}" placeholder="{{ $port === 1 ? '10%' : ($port === 2 ? '90%' : '') }}" class="w-full rounded-lg border px-4 py-2">
+                                </div>
+                            @endfor
+                        </div>
+                    </div>
+                @endif
             @endif
 
             <div>

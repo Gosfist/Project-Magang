@@ -61,4 +61,29 @@ class MainCore extends Model
         return (int) str_replace('1:', '', $this->jenis_splitter);
     }
 
+    public function getRasioRedamanAttribute(): ?string
+    {
+        $ports = $this->rasio_redaman_ports;
+
+        if ($ports === []) {
+            return null;
+        }
+
+        return collect($ports)
+            ->filter(fn ($value) => $value !== null && $value !== '')
+            ->map(fn ($value, $port) => "Port {$port}: {$value}")
+            ->implode(' Dan ');
+    }
+
+    public function getRasioRedamanPortsAttribute(): array
+    {
+        $ports = $this->spesifikasi['rasio_redaman_ports'] ?? [];
+
+        if (is_array($ports)) {
+            return $ports;
+        }
+
+        return [];
+    }
+
 }

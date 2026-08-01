@@ -138,6 +138,7 @@
             const meta = [
                 node.port ? `Port ${node.port}` : '',
                 node.output ? `${node.output} output` : '',
+                node.rasioRedaman ? node.rasioRedaman : '',
                 node.redaman === null ? '' : `${node.redaman} dBm`,
             ].filter(Boolean).join(' Dan ');
             card.innerHTML = `

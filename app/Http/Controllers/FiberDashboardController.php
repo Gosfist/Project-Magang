@@ -122,6 +122,11 @@ class FiberDashboardController extends Controller
             $rules['spesifikasi.jenis_splitter'] = ['required', Rule::in($ratios)];
         }
 
+        if ($type === 'rasio') {
+            $rules['spesifikasi.rasio_redaman_ports'] = ['nullable', 'array'];
+            $rules['spesifikasi.rasio_redaman_ports.*'] = ['nullable', 'string', 'max:50'];
+        }
+
         $data = $request->validate($rules, [
             'nama_titik.unique' => "{$this->nameLabel($type)} sudah digunakan!",
             'parent_id.required' => 'Sumber jalur wajib dipilih.',
@@ -185,6 +190,20 @@ class FiberDashboardController extends Controller
             }
         }
 
+        $specification = $data['spesifikasi'] ?? null;
+
+        if ($type === 'rasio' && is_array($specification)) {
+            $outputCount = (int) str_replace('1:', '', $specification['jenis_splitter'] ?? '0');
+            $ports = collect($specification['rasio_redaman_ports'] ?? [])
+                ->only(range(1, $outputCount))
+                ->map(fn ($value) => is_string($value) ? trim($value) : $value)
+                ->filter(fn ($value) => $value !== null && $value !== '')
+                ->all();
+
+            unset($specification['rasio_redaman']);
+            $specification['rasio_redaman_ports'] = $ports;
+        }
+
         return [
             'parent_id' => $type === 'server' ? null : $data['parent_id'],
             'parent_port_out' => $type === 'server' ? null : $parentPortOut,
@@ -192,7 +211,7 @@ class FiberDashboardController extends Controller
             'tipe_titik' => $type,
             'redaman_in' => $data['redaman_in'] ?? null,
             'alamat' => $data['alamat'] ?? null,
-            'spesifikasi' => $data['spesifikasi'] ?? null,
+            'spesifikasi' => $specification,
         ];
     }
 
@@ -256,6 +275,7 @@ class FiberDashboardController extends Controller
             'type' => $this->typeLabel($node->tipe_titik),
             'redaman' => $node->redaman_in,
             'output' => $node->jumlah_output,
+            'rasioRedaman' => $node->rasio_redaman,
             'port' => $node->parent_port_out,
             'children' => $node->children->map(fn (MainCore $child) => $this->mapTree($child))->values(),
         ];
