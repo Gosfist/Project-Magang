@@ -99,11 +99,13 @@
                 @endif
             @endif
 
-            <div>
-                @if(old('form_mode') === $mode) @error('alamat')<p class="mb-1 text-xs text-red-600">{{ $message }}</p>@enderror @endif
-                <label class="mb-1 block text-sm font-medium">Alamat</label>
-                <textarea name="alamat" rows="3" class="w-full rounded-lg border px-4 py-2">{{ old('form_mode') === $mode ? old('alamat', $node?->alamat) : $node?->alamat }}</textarea>
-            </div>
+            @if($section !== 'server')
+                <div>
+                    @if(old('form_mode') === $mode) @error('alamat')<p class="mb-1 text-xs text-red-600">{{ $message }}</p>@enderror @endif
+                    <label class="mb-1 block text-sm font-medium">Alamat</label>
+                    <textarea name="alamat" rows="3" class="w-full rounded-lg border px-4 py-2">{{ old('form_mode') === $mode ? old('alamat', $node?->alamat) : $node?->alamat }}</textarea>
+                </div>
+            @endif
 
             <div class="flex justify-end gap-2">
                 <button type="button" onclick="closeModal('{{ $modalId }}')" class="rounded-lg border px-4 py-2" style="cursor: pointer;">Batal</button>

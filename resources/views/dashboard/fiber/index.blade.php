@@ -11,8 +11,14 @@
         default => 'Nama Titik',
     };
     $formatRedaman = fn ($value) => $value === null ? '-' : rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.').' dBm';
+    $formatTanggal = fn ($value) => $value?->format('d-m-Y') ?? '-';
     $fieldValue = fn ($node, $key) => old('form_mode') === ($node ? $section.'_edit_'.$node->id : $section.'_create') ? old($key, data_get($node, $key)) : data_get($node, $key);
     $ratioOptions = $section === 'odp' ? \App\Models\MainCore::ODP_RATIOS : \App\Models\MainCore::SPLITTER_RATIOS;
+    $columnCount = match ($section) {
+        'server' => 6,
+        'rasio' => 12,
+        default => 11,
+    };
 @endphp
 
 <div class="space-y-5">
@@ -43,7 +49,11 @@
                             @endif
                             <th class="px-5 py-3 text-left">Jumlah Output</th>
                         @endif
-                        <th class="px-5 py-3 text-left">Alamat</th>
+                        @if($section !== 'server')
+                            <th class="px-5 py-3 text-left">Alamat</th>
+                        @endif
+                        <th class="px-5 py-3 text-left">Tanggal Perubahan</th>
+                        <th class="px-5 py-3 text-left">Tanggal Redaman</th>
                         <th class="px-5 py-3 text-right">Action</th>
                     </tr>
                 </thead>
@@ -64,7 +74,11 @@
                                 @endif
                                 <td class="px-5 py-3">{{ $node->jumlah_output ?? '-' }}</td>
                             @endif
-                            <td class="px-5 py-3">{{ $node->alamat ?: '-' }}</td>
+                            @if($section !== 'server')
+                                <td class="px-5 py-3">{{ $node->alamat ?: '-' }}</td>
+                            @endif
+                            <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal_perubahan) }}</td>
+                            <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal_redaman) }}</td>
                             <td class="px-5 py-3">
                                 <div class="flex justify-end gap-2 whitespace-nowrap">
                                     <button type="button" onclick="openModal('editModal{{ $node->id }}')" class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white" style="cursor: pointer;">Edit</button>
@@ -77,7 +91,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="9" class="px-5 py-8 text-center text-gray-400">Belum ada data {{ $label }}.</td></tr>
+                        <tr><td colspan="{{ $columnCount }}" class="px-5 py-8 text-center text-gray-400">Belum ada data {{ $label }}.</td></tr>
                     @endforelse
                 </tbody>
             </table>

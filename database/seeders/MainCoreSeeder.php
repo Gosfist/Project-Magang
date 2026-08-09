@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use App\Models\MainCore;
 use Illuminate\Database\Seeder;
 
-class FiberTopologySeeder extends Seeder
+class MainCoreSeeder extends Seeder
 {
     public function run(): void
     {
@@ -13,7 +13,6 @@ class FiberTopologySeeder extends Seeder
             'nama_titik' => 'Server Pusat',
         ], [
             'tipe_titik' => 'server',
-            'alamat' => 'Ruang server utama',
         ]);
 
         $rasio = MainCore::firstOrCreate([

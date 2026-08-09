@@ -49,7 +49,6 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::get('rasio', [FiberDashboardController::class, 'rasio'])->name('rasio');
         Route::get('odc', [FiberDashboardController::class, 'odc'])->name('odc');
         Route::get('odp', [FiberDashboardController::class, 'odp'])->name('odp');
-        Route::get('topologi', [FiberDashboardController::class, 'topology'])->name('topology');
 
         Route::post('{type}', [FiberDashboardController::class, 'store'])->whereIn('type', ['server', 'rasio', 'odc', 'odp'])->name('nodes.store');
         Route::patch('{type}/{node}', [FiberDashboardController::class, 'update'])->whereIn('type', ['server', 'rasio', 'odc', 'odp'])->name('nodes.update');

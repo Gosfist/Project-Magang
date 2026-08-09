@@ -36,19 +36,6 @@ class FiberDashboardController extends Controller
         return $this->listByType('odp');
     }
 
-    public function topology()
-    {
-        $roots = MainCore::with('children.children.children.children')
-            ->whereNull('parent_id')
-            ->orderBy('nama_titik')
-            ->get();
-
-        return view('dashboard.fiber.topology', [
-            'roots' => $roots,
-            'treeData' => $roots->map(fn (MainCore $node) => $this->mapTree($node))->values(),
-        ]);
-    }
-
     public function store(Request $request, string $type)
     {
         $node = MainCore::create($this->validatedNode($request, $type));
@@ -114,8 +101,11 @@ class FiberDashboardController extends Controller
             'parent_port_out' => ['nullable', 'integer', 'min:1'],
             'nama_titik' => ['required', 'string', 'max:255', Rule::unique('main_core', 'nama_titik')->ignore($node?->id)],
             'redaman_in' => ['nullable', 'numeric', 'between:-99.99,99.99'],
-            'alamat' => ['nullable', 'string'],
         ];
+
+        if ($type !== 'server') {
+            $rules['alamat'] = ['nullable', 'string'];
+        }
 
         if (in_array($type, ['rasio', 'odc', 'odp'], true)) {
             $ratios = $type === 'odp' ? MainCore::ODP_RATIOS : MainCore::SPLITTER_RATIOS;
@@ -210,7 +200,7 @@ class FiberDashboardController extends Controller
             'nama_titik' => $data['nama_titik'],
             'tipe_titik' => $type,
             'redaman_in' => $data['redaman_in'] ?? null,
-            'alamat' => $data['alamat'] ?? null,
+            'alamat' => $type === 'server' ? null : ($data['alamat'] ?? null),
             'spesifikasi' => $specification,
         ];
     }
@@ -261,24 +251,9 @@ class FiberDashboardController extends Controller
         return match ($type) {
             'server' => [],
             'rasio' => ['server', 'rasio', 'odc'],
-            'odc' => ['server', 'rasio', 'odc'],
-            'odp' => ['server', 'rasio', 'odc'],
+            'odc', 'odp' => ['server', 'rasio', 'odc', 'odp'],
             default => [],
         };
-    }
-
-    private function mapTree(MainCore $node): array
-    {
-        return [
-            'id' => $node->id,
-            'name' => $node->nama_titik,
-            'type' => $this->typeLabel($node->tipe_titik),
-            'redaman' => $node->redaman_in,
-            'output' => $node->jumlah_output,
-            'rasioRedaman' => $node->rasio_redaman,
-            'port' => $node->parent_port_out,
-            'children' => $node->children->map(fn (MainCore $child) => $this->mapTree($child))->values(),
-        ];
     }
 
     private function labels(): array

@@ -4,10 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\MainCore;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class FiberTopologyTest extends TestCase
+class FiberMainCoreTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -21,6 +22,8 @@ class FiberTopologyTest extends TestCase
         ])->assertRedirect('/dashboard/fiber/server');
 
         $server = MainCore::type('server')->firstOrFail();
+
+        $this->assertNull($server->alamat);
 
         $this->actingAs($user)->post('/dashboard/fiber/rasio', [
             'parent_id' => $server->id,
@@ -75,7 +78,8 @@ class FiberTopologyTest extends TestCase
 
         $this->actingAs($user)->get('/dashboard/fiber/server')
             ->assertOk()
-            ->assertSee('Server Pusat');
+            ->assertSee('Server Pusat')
+            ->assertDontSee('Alamat');
 
         $this->actingAs($user)->get('/dashboard/fiber/rasio')
             ->assertOk()
@@ -113,6 +117,66 @@ class FiberTopologyTest extends TestCase
             ->assertJsonPath('node.nama_titik', 'ODC AJAX');
     }
 
+    public function test_general_and_redaman_dates_change_independently(): void
+    {
+        $user = $this->user();
+
+        Carbon::setTestNow('2026-08-10 08:00:00 UTC');
+
+        $this->actingAs($user)->post('/dashboard/fiber/server', [
+            'nama_titik' => 'Server Bertanggal',
+            'redaman_in' => -1,
+        ])->assertRedirect('/dashboard/fiber/server');
+
+        $server = MainCore::type('server')->where('nama_titik', 'Server Bertanggal')->firstOrFail();
+
+        $this->assertSame('2026-08-10', $server->tanggal_perubahan->toDateString());
+        $this->assertSame('2026-08-10', $server->tanggal_redaman->toDateString());
+        $this->actingAs($user)->get('/dashboard/fiber/server')
+            ->assertOk()
+            ->assertSee('Tanggal Perubahan')
+            ->assertSee('Tanggal Redaman')
+            ->assertSee('10-08-2026');
+
+        Carbon::setTestNow('2026-08-12 08:00:00 UTC');
+
+        $this->actingAs($user)->patch("/dashboard/fiber/server/{$server->id}", [
+            'nama_titik' => 'Server Bertanggal',
+            'redaman_in' => -2,
+        ])->assertRedirect('/dashboard/fiber/server');
+
+        $server->refresh();
+
+        $this->assertSame('2026-08-10', $server->tanggal_perubahan->toDateString());
+        $this->assertSame('2026-08-12', $server->tanggal_redaman->toDateString());
+
+        Carbon::setTestNow('2026-08-14 08:00:00 UTC');
+
+        $this->actingAs($user)->patch("/dashboard/fiber/server/{$server->id}", [
+            'nama_titik' => 'Server Bertanggal Diperbarui',
+            'redaman_in' => -2,
+        ])->assertRedirect('/dashboard/fiber/server');
+
+        $server->refresh();
+
+        $this->assertSame('2026-08-14', $server->tanggal_perubahan->toDateString());
+        $this->assertSame('2026-08-12', $server->tanggal_redaman->toDateString());
+
+        Carbon::setTestNow('2026-08-16 08:00:00 UTC');
+
+        $this->actingAs($user)->patch("/dashboard/fiber/server/{$server->id}", [
+            'nama_titik' => 'Server dan Redaman Diperbarui',
+            'redaman_in' => -3,
+        ])->assertRedirect('/dashboard/fiber/server');
+
+        $server->refresh();
+
+        $this->assertSame('2026-08-16', $server->tanggal_perubahan->toDateString());
+        $this->assertSame('2026-08-16', $server->tanggal_redaman->toDateString());
+
+        Carbon::setTestNow();
+    }
+
     public function test_splitter_and_odp_specific_validation_follow_prd(): void
     {
         $user = $this->user();
@@ -134,6 +198,48 @@ class FiberTopologyTest extends TestCase
         ])->assertRedirect('/dashboard/fiber/odp');
 
         $this->assertSame(8, MainCore::type('odp')->firstOrFail()->jumlah_output);
+    }
+
+    public function test_rasio_port_redaman_only_changes_redaman_date(): void
+    {
+        $user = $this->user();
+
+        Carbon::setTestNow('2026-08-10 08:00:00 UTC');
+
+        $server = MainCore::create([
+            'nama_titik' => 'Server Rasio',
+            'tipe_titik' => 'server',
+        ]);
+        $rasio = MainCore::create([
+            'parent_id' => $server->id,
+            'nama_titik' => 'Rasio Bertanggal',
+            'tipe_titik' => 'rasio',
+            'spesifikasi' => [
+                'jenis_splitter' => '1:2',
+                'rasio_redaman_ports' => [1 => '10%', 2 => '90%'],
+            ],
+        ]);
+
+        $this->assertSame('2026-08-10', $rasio->tanggal_perubahan->toDateString());
+        $this->assertSame('2026-08-10', $rasio->tanggal_redaman->toDateString());
+
+        Carbon::setTestNow('2026-08-12 08:00:00 UTC');
+
+        $this->actingAs($user)->patch("/dashboard/fiber/rasio/{$rasio->id}", [
+            'parent_id' => $server->id,
+            'nama_titik' => 'Rasio Bertanggal',
+            'spesifikasi' => [
+                'jenis_splitter' => '1:2',
+                'rasio_redaman_ports' => [1 => '20%', 2 => '80%'],
+            ],
+        ])->assertRedirect('/dashboard/fiber/rasio');
+
+        $rasio->refresh();
+
+        $this->assertSame('2026-08-10', $rasio->tanggal_perubahan->toDateString());
+        $this->assertSame('2026-08-12', $rasio->tanggal_redaman->toDateString());
+
+        Carbon::setTestNow();
     }
 
     public function test_connected_parent_is_hidden_and_cannot_be_reused(): void
@@ -233,32 +339,68 @@ class FiberTopologyTest extends TestCase
         ]);
     }
 
-    public function test_topology_page_renders_recursive_tree_from_parent_id(): void
+    public function test_odp_can_feed_another_odp_and_an_odc(): void
     {
         $user = $this->user();
-        $server = MainCore::create(['nama_titik' => 'Server Pusat', 'tipe_titik' => 'server']);
-        $odc = MainCore::create([
-            'parent_id' => $server->id,
-            'nama_titik' => 'ODC Cabang',
-            'tipe_titik' => 'odc',
-            'redaman_in' => -2.5,
-            'spesifikasi' => ['jenis_splitter' => '1:4'],
-        ]);
-        MainCore::create([
-            'parent_id' => $odc->id,
-            'parent_port_out' => 1,
-            'nama_titik' => 'ODP Ujung',
-            'tipe_titik' => 'odp',
-            'redaman_in' => -5.75,
-            'spesifikasi' => ['jenis_splitter' => '1:8'],
+        $server = MainCore::create([
+            'nama_titik' => 'Server Sumber',
+            'tipe_titik' => 'server',
         ]);
 
-        $this->actingAs($user)->get('/dashboard/fiber/topologi')
+        $this->actingAs($user)->post('/dashboard/fiber/odp', [
+            'parent_id' => $server->id,
+            'nama_titik' => 'ODP Sumber',
+            'spesifikasi' => ['jenis_splitter' => '1:8'],
+        ])->assertRedirect('/dashboard/fiber/odp');
+
+        $odpSource = MainCore::type('odp')->where('nama_titik', 'ODP Sumber')->firstOrFail();
+
+        $this->actingAs($user)->get('/dashboard/fiber/odc')
             ->assertOk()
-            ->assertSee('Peta Topologi Main Core')
-            ->assertSee('Server Pusat')
-            ->assertSee('ODC Cabang')
-            ->assertSee('ODP Ujung');
+            ->assertSee('ODP - ODP Sumber');
+
+        $this->actingAs($user)->get('/dashboard/fiber/odp')
+            ->assertOk()
+            ->assertSee('ODP - ODP Sumber');
+
+        $this->actingAs($user)->post('/dashboard/fiber/odp', [
+            'parent_id' => $odpSource->id,
+            'parent_port_out' => 1,
+            'nama_titik' => 'ODP Lanjutan',
+            'spesifikasi' => ['jenis_splitter' => '1:8'],
+        ])->assertRedirect('/dashboard/fiber/odp');
+
+        $this->actingAs($user)->post('/dashboard/fiber/odc', [
+            'parent_id' => $odpSource->id,
+            'parent_port_out' => 2,
+            'nama_titik' => 'ODC Lanjutan',
+            'spesifikasi' => ['jenis_splitter' => '1:4'],
+        ])->assertRedirect('/dashboard/fiber/odc');
+
+        $this->assertDatabaseHas('main_core', [
+            'parent_id' => $odpSource->id,
+            'parent_port_out' => 1,
+            'nama_titik' => 'ODP Lanjutan',
+            'tipe_titik' => 'odp',
+        ]);
+        $this->assertDatabaseHas('main_core', [
+            'parent_id' => $odpSource->id,
+            'parent_port_out' => 2,
+            'nama_titik' => 'ODC Lanjutan',
+            'tipe_titik' => 'odc',
+        ]);
+    }
+
+    public function test_topology_feature_is_removed(): void
+    {
+        $user = $this->user();
+
+        $this->actingAs($user)->get('/dashboard/fiber/topologi')
+            ->assertNotFound();
+
+        $this->actingAs($user)->get('/dashboard/fiber/server')
+            ->assertOk()
+            ->assertDontSee('Peta Topologi');
     }
 
     public function test_node_delete_removes_row_from_database(): void
