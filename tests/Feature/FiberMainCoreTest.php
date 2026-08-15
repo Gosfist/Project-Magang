@@ -94,13 +94,25 @@ class FiberMainCoreTest extends TestCase
         $this->actingAs($user)->get('/dashboard/fiber/odc')
             ->assertOk()
             ->assertSee('ODC 01')
-            ->assertSee('Rasio 01');
+            ->assertSee('Rasio 01')
+            ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Port Sumber</th>')
+            ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Jenis Splitter</th>')
+            ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Jumlah Output</th>')
+            ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Alamat</th>')
+            ->assertSeeHtml('name="parent_port_out"')
+            ->assertSeeHtml('name="spesifikasi[jenis_splitter]"')
+            ->assertSeeHtml('name="alamat"');
 
         $this->actingAs($user)->get('/dashboard/fiber/odp')
             ->assertOk()
             ->assertSee('ODP 01')
-            ->assertSee('1:8')
-            ->assertSee('8');
+            ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Port Sumber</th>')
+            ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Jenis Splitter</th>')
+            ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Jumlah Output</th>')
+            ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Alamat</th>')
+            ->assertSeeHtml('name="parent_port_out"')
+            ->assertSeeHtml('name="spesifikasi[jenis_splitter]"')
+            ->assertSeeHtml('name="alamat"');
     }
 
     public function test_json_ajax_create_returns_node_payload(): void
