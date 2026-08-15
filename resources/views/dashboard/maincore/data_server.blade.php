@@ -2,28 +2,13 @@
 @section('page-title', 'Main Core')
 @section('content')
     @php
-        $label = $labels[$section] ?? strtoupper($section);
-        $nameLabel = match ($section) {
-            'server' => 'Nama Core',
-            'rasio' => 'Nama Rasio',
-            'odc' => 'Nama ODC',
-            'odp' => 'Nama ODP',
-            default => 'Nama Titik',
-        };
+        $section = 'server';
+        $label = 'Server';
+        $nameLabel = 'Nama Core';
         $formatRedaman = fn($value) => $value === null
             ? '-'
             : rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.') . ' dBm';
         $formatTanggal = fn($value) => $value?->format('d-m-Y') ?? '-';
-        $fieldValue = fn($node, $key) => old('form_mode') ===
-        ($node ? $section . '_edit_' . $node->id : $section . '_create')
-            ? old($key, data_get($node, $key))
-            : data_get($node, $key);
-        $ratioOptions = $section === 'odp' ? \App\Models\MainCore::ODP_RATIOS : \App\Models\MainCore::SPLITTER_RATIOS;
-        $columnCount = match ($section) {
-            'server' => 6,
-            'rasio' => 12,
-            default => 11,
-        };
     @endphp
 
     <div class="space-y-5">
@@ -42,22 +27,8 @@
                     <thead class="bg-gray-50 text-gray-600">
                         <tr>
                             <th class="w-16 px-5 py-3 text-left">No</th>
-                            <th class="px-5 py-3 text-left">{{ $nameLabel }}</th>
-                            @if ($section !== 'server')
-                                <th class="px-5 py-3 text-left">Sumber Jalur</th>
-                                <th class="px-5 py-3 text-left">Port Sumber</th>
-                            @endif
+                            <th class="px-5 py-3 text-left">Nama Core</th>
                             <th class="px-5 py-3 text-left">Redaman In</th>
-                            @if (in_array($section, ['rasio', 'odc', 'odp'], true))
-                                <th class="px-5 py-3 text-left">Jenis Splitter</th>
-                                @if ($section === 'rasio')
-                                    <th class="px-5 py-3 text-left">Rasio Redaman</th>
-                                @endif
-                                <th class="px-5 py-3 text-left">Jumlah Output</th>
-                            @endif
-                            @if ($section !== 'server')
-                                <th class="px-5 py-3 text-left">Alamat</th>
-                            @endif
                             <th class="px-5 py-3 text-left">Tanggal Perubahan</th>
                             <th class="px-5 py-3 text-left">Tanggal Redaman</th>
                             <th class="px-5 py-3 text-right">Action</th>
@@ -68,23 +39,7 @@
                             <tr class="border-t border-gray-100" data-node-row="{{ $node->id }}">
                                 <td class="px-5 py-3">{{ $loop->iteration }}</td>
                                 <td class="px-5 py-3 font-medium">{{ $node->nama_titik }}</td>
-                                @if ($section !== 'server')
-                                    <td class="px-5 py-3">{{ $node->parent?->nama_titik ?? '-' }}</td>
-                                    <td class="px-5 py-3">
-                                        {{ $node->parent?->tipe_titik === 'server' ? '-' : 'Port ' . $node->parent_port_out }}
-                                    </td>
-                                @endif
                                 <td class="px-5 py-3">{{ $formatRedaman($node->redaman_in) }}</td>
-                                @if (in_array($section, ['rasio', 'odc', 'odp'], true))
-                                    <td class="px-5 py-3">{{ $node->jenis_splitter ?? '-' }}</td>
-                                    @if ($section === 'rasio')
-                                        <td class="px-5 py-3">{{ $node->rasio_redaman ?? '-' }}</td>
-                                    @endif
-                                    <td class="px-5 py-3">{{ $node->jumlah_output ?? '-' }}</td>
-                                @endif
-                                @if ($section !== 'server')
-                                    <td class="px-5 py-3">{{ $node->alamat ?: '-' }}</td>
-                                @endif
                                 <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal_perubahan) }}</td>
                                 <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal_redaman) }}</td>
                                 <td class="px-5 py-3">
@@ -104,8 +59,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $columnCount }}" class="px-5 py-8 text-center text-gray-400">Belum ada
-                                    data {{ $label }}.</td>
+                                <td colspan="6" class="px-5 py-8 text-center text-gray-400">Belum ada data Server.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -114,7 +68,7 @@
         </div>
     </div>
 
-    @include('dashboard.modal.data_' . $section, [
+    @include('dashboard.modal.data_server', [
         'modalId' => 'createModal',
         'title' => 'Tambah Data ' . $label,
         'action' => route('fiber.nodes.store', $section),
@@ -122,24 +76,17 @@
         'node' => null,
         'mode' => $section . '_create',
         'existingNames' => $existingNames,
-        'ratioOptions' => $ratioOptions,
     ])
 
     @foreach ($nodes as $node)
-        @include('dashboard.modal.data_' . $section, [
+        @include('dashboard.modal.data_server', [
             'modalId' => 'editModal' . $node->id,
             'title' => 'Edit Data ' . $label,
             'action' => route('fiber.nodes.update', [$section, $node]),
             'method' => 'PATCH',
             'node' => $node,
             'mode' => $section . '_edit_' . $node->id,
-            'parents' => $allParents->filter(
-                fn($parent) => $parent->id === $node->parent_id ||
-                    ($parent->tipe_titik === 'server'
-                        ? $parent->children_count === 0
-                        : $parent->children_count < ($parent->jumlah_output ?? 0))),
             'existingNames' => $existingNames,
-            'ratioOptions' => $ratioOptions,
         ])
     @endforeach
 
@@ -179,102 +126,6 @@
         function closeModalBackdrop() {
             if (document.querySelector('.fixed.flex[id$="Modal"], #createModal.flex')) return;
             document.getElementById('modalBackdrop')?.remove();
-        }
-
-        document.querySelectorAll('[data-parent-select]').forEach((parentSelect) => {
-            syncPortSelect(parentSelect);
-            parentSelect.addEventListener('change', () => syncPortSelect(parentSelect));
-        });
-
-        document.querySelectorAll('[data-splitter-select]').forEach((splitterSelect) => {
-            syncRasioRedamanPorts(splitterSelect);
-            splitterSelect.addEventListener('change', () => syncRasioRedamanPorts(splitterSelect));
-        });
-
-        function syncRasioRedamanPorts(splitterSelect) {
-            const form = splitterSelect.closest('form');
-            const wrapper = form?.querySelector('[data-rasio-redaman-wrapper]');
-
-            if (!wrapper) return;
-
-            const outputCount = Number((splitterSelect.value || '').replace('1:', '')) || 0;
-            wrapper.classList.toggle('hidden', outputCount === 0);
-
-            wrapper.querySelectorAll('[data-rasio-redaman-port]').forEach((field) => {
-                const port = Number(field.dataset.rasioRedamanPort || 0);
-                const input = field.querySelector('input');
-                const visible = port > 0 && port <= outputCount;
-
-                field.classList.toggle('hidden', !visible);
-                if (input) {
-                    input.disabled = !visible;
-                    if (!visible) input.value = '';
-                }
-            });
-        }
-
-        function syncPortSelect(parentSelect) {
-            const form = parentSelect.closest('form');
-            const portSelect = form?.querySelector('[data-port-select]');
-
-            if (!portSelect) return;
-
-            const option = parentSelect.selectedOptions[0];
-            const parentType = option?.dataset.parentType || '';
-            const outputCount = Number(option?.dataset.outputCount || 0);
-            const currentParent = String(parentSelect.dataset.currentParent || '');
-            const selectedParent = String(parentSelect.value || '');
-            const selectedPort = Number(portSelect.dataset.selectedPort || 0);
-            const currentPort = currentParent && selectedParent === currentParent ? selectedPort : 0;
-            const usedPorts = parseJsonPorts(option?.dataset.usedPorts || '[]');
-
-            portSelect.innerHTML = '';
-
-            if (!selectedParent) {
-                setSinglePortOption(portSelect, 'Pilih sumber jalur terlebih dahulu');
-                return;
-            }
-
-            if (parentType === 'server') {
-                setSinglePortOption(portSelect, 'Server/Core tidak memakai port');
-                return;
-            }
-
-            const availablePorts = [];
-            for (let port = 1; port <= outputCount; port++) {
-                if (!usedPorts.includes(port) || port === currentPort) {
-                    availablePorts.push(port);
-                }
-            }
-
-            if (availablePorts.length === 0) {
-                setSinglePortOption(portSelect, 'Semua port sudah digunakan');
-                return;
-            }
-
-            portSelect.disabled = false;
-            portSelect.required = true;
-            portSelect.appendChild(new Option('Pilih port', ''));
-
-            availablePorts.forEach((port) => {
-                const item = new Option(`Port ${port}`, port);
-                item.selected = port === selectedPort;
-                portSelect.appendChild(item);
-            });
-        }
-
-        function setSinglePortOption(portSelect, label) {
-            portSelect.disabled = true;
-            portSelect.required = false;
-            portSelect.appendChild(new Option(label, ''));
-        }
-
-        function parseJsonPorts(value) {
-            try {
-                return JSON.parse(value).map(Number);
-            } catch {
-                return [];
-            }
         }
 
         document.querySelectorAll('[data-ajax-form]').forEach((form) => {

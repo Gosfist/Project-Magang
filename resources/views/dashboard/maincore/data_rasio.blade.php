@@ -2,14 +2,9 @@
 @section('page-title', 'Main Core')
 @section('content')
     @php
-        $label = $labels[$section] ?? strtoupper($section);
-        $nameLabel = match ($section) {
-            'server' => 'Nama Core',
-            'rasio' => 'Nama Rasio',
-            'odc' => 'Nama ODC',
-            'odp' => 'Nama ODP',
-            default => 'Nama Titik',
-        };
+        $section = 'rasio';
+        $label = 'Rasio';
+        $nameLabel = 'Nama Rasio';
         $formatRedaman = fn($value) => $value === null
             ? '-'
             : rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.') . ' dBm';
@@ -18,12 +13,7 @@
         ($node ? $section . '_edit_' . $node->id : $section . '_create')
             ? old($key, data_get($node, $key))
             : data_get($node, $key);
-        $ratioOptions = $section === 'odp' ? \App\Models\MainCore::ODP_RATIOS : \App\Models\MainCore::SPLITTER_RATIOS;
-        $columnCount = match ($section) {
-            'server' => 6,
-            'rasio' => 12,
-            default => 11,
-        };
+        $ratioOptions = \App\Models\MainCore::SPLITTER_RATIOS;
     @endphp
 
     <div class="space-y-5">
@@ -42,22 +32,14 @@
                     <thead class="bg-gray-50 text-gray-600">
                         <tr>
                             <th class="w-16 px-5 py-3 text-left">No</th>
-                            <th class="px-5 py-3 text-left">{{ $nameLabel }}</th>
-                            @if ($section !== 'server')
-                                <th class="px-5 py-3 text-left">Sumber Jalur</th>
-                                <th class="px-5 py-3 text-left">Port Sumber</th>
-                            @endif
+                            <th class="px-5 py-3 text-left">Nama Rasio</th>
+                            <th class="px-5 py-3 text-left">Sumber Jalur</th>
+                            <th class="px-5 py-3 text-left">Port Sumber</th>
                             <th class="px-5 py-3 text-left">Redaman In</th>
-                            @if (in_array($section, ['rasio', 'odc', 'odp'], true))
-                                <th class="px-5 py-3 text-left">Jenis Splitter</th>
-                                @if ($section === 'rasio')
-                                    <th class="px-5 py-3 text-left">Rasio Redaman</th>
-                                @endif
-                                <th class="px-5 py-3 text-left">Jumlah Output</th>
-                            @endif
-                            @if ($section !== 'server')
-                                <th class="px-5 py-3 text-left">Alamat</th>
-                            @endif
+                            <th class="px-5 py-3 text-left">Jenis Splitter</th>
+                            <th class="px-5 py-3 text-left">Rasio Redaman</th>
+                            <th class="px-5 py-3 text-left">Jumlah Output</th>
+                            <th class="px-5 py-3 text-left">Alamat</th>
                             <th class="px-5 py-3 text-left">Tanggal Perubahan</th>
                             <th class="px-5 py-3 text-left">Tanggal Redaman</th>
                             <th class="px-5 py-3 text-right">Action</th>
@@ -68,23 +50,13 @@
                             <tr class="border-t border-gray-100" data-node-row="{{ $node->id }}">
                                 <td class="px-5 py-3">{{ $loop->iteration }}</td>
                                 <td class="px-5 py-3 font-medium">{{ $node->nama_titik }}</td>
-                                @if ($section !== 'server')
-                                    <td class="px-5 py-3">{{ $node->parent?->nama_titik ?? '-' }}</td>
-                                    <td class="px-5 py-3">
-                                        {{ $node->parent?->tipe_titik === 'server' ? '-' : 'Port ' . $node->parent_port_out }}
-                                    </td>
-                                @endif
+                                <td class="px-5 py-3">{{ $node->parent?->nama_titik ?? '-' }}</td>
+                                <td class="px-5 py-3">{{ $node->parent?->tipe_titik === 'server' ? '-' : 'Port ' . $node->parent_port_out }}</td>
                                 <td class="px-5 py-3">{{ $formatRedaman($node->redaman_in) }}</td>
-                                @if (in_array($section, ['rasio', 'odc', 'odp'], true))
-                                    <td class="px-5 py-3">{{ $node->jenis_splitter ?? '-' }}</td>
-                                    @if ($section === 'rasio')
-                                        <td class="px-5 py-3">{{ $node->rasio_redaman ?? '-' }}</td>
-                                    @endif
-                                    <td class="px-5 py-3">{{ $node->jumlah_output ?? '-' }}</td>
-                                @endif
-                                @if ($section !== 'server')
-                                    <td class="px-5 py-3">{{ $node->alamat ?: '-' }}</td>
-                                @endif
+                                <td class="px-5 py-3">{{ $node->jenis_splitter ?? '-' }}</td>
+                                <td class="px-5 py-3">{{ $node->rasio_redaman ?? '-' }}</td>
+                                <td class="px-5 py-3">{{ $node->jumlah_output ?? '-' }}</td>
+                                <td class="px-5 py-3">{{ $node->alamat ?: '-' }}</td>
                                 <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal_perubahan) }}</td>
                                 <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal_redaman) }}</td>
                                 <td class="px-5 py-3">
@@ -104,8 +76,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $columnCount }}" class="px-5 py-8 text-center text-gray-400">Belum ada
-                                    data {{ $label }}.</td>
+                                <td colspan="12" class="px-5 py-8 text-center text-gray-400">Belum ada data Rasio.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -114,7 +85,7 @@
         </div>
     </div>
 
-    @include('dashboard.modal.data_' . $section, [
+    @include('dashboard.modal.data_rasio', [
         'modalId' => 'createModal',
         'title' => 'Tambah Data ' . $label,
         'action' => route('fiber.nodes.store', $section),
@@ -126,7 +97,7 @@
     ])
 
     @foreach ($nodes as $node)
-        @include('dashboard.modal.data_' . $section, [
+        @include('dashboard.modal.data_rasio', [
             'modalId' => 'editModal' . $node->id,
             'title' => 'Edit Data ' . $label,
             'action' => route('fiber.nodes.update', [$section, $node]),
