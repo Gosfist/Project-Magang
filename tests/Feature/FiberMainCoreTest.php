@@ -121,6 +121,34 @@ class FiberMainCoreTest extends TestCase
             ->assertJsonPath('node.nama_titik', 'ODC AJAX');
     }
 
+    public function test_rasio_list_has_responsive_name_filter(): void
+    {
+        $user = $this->user();
+        $server = MainCore::create(['nama_titik' => 'Core Pencarian', 'tipe_titik' => 'server']);
+
+        MainCore::create([
+            'parent_id' => $server->id,
+            'nama_titik' => 'Rasio Utara',
+            'tipe_titik' => 'rasio',
+            'spesifikasi' => ['jenis_splitter' => '1:2'],
+        ]);
+        MainCore::create([
+            'parent_id' => $server->id,
+            'nama_titik' => 'Rasio Selatan',
+            'tipe_titik' => 'rasio',
+            'spesifikasi' => ['jenis_splitter' => '1:2'],
+        ]);
+
+        $this->actingAs($user)
+            ->get('/dashboard/fiber/rasio')
+            ->assertOk()
+            ->assertSee('Cari nama rasio...')
+            ->assertSee('data-rasio-row', false)
+            ->assertSee('data-search-name="rasio utara"', false)
+            ->assertSee("addEventListener('input'", false)
+            ->assertViewHas('nodes', fn($nodes) => $nodes->pluck('nama_titik')->all() === ['Rasio Selatan', 'Rasio Utara']);
+    }
+
     public function test_main_core_date_changes_automatically_on_every_update(): void
     {
         $user = $this->user();

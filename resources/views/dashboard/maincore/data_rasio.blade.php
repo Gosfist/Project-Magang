@@ -32,8 +32,13 @@
                     <h2 class="font-semibold">Data {{ $label }}</h2>
 
                 </div>
-                <button type="button" onclick="openModal('createModal')"
-                    class="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white" style="cursor: pointer;">Tambah Data</button>
+                <div class="flex flex-wrap items-center gap-2">
+                    <input id="rasioSearch" type="search" placeholder="Cari nama rasio..."
+                        aria-label="Cari berdasarkan nama rasio"
+                        class="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                    <button type="button" onclick="openModal('createModal')"
+                        class="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white" style="cursor: pointer;">Tambah Data</button>
+                </div>
             </div>
 
             <div class="overflow-x-auto">
@@ -52,8 +57,9 @@
                     </thead>
                     <tbody id="nodeRows">
                         @forelse($nodes as $node)
-                            <tr class="border-t border-gray-100" data-node-row="{{ $node->id }}">
-                                <td class="px-5 py-3">{{ $loop->iteration }}</td>
+                            <tr class="border-t border-gray-100" data-node-row="{{ $node->id }}" data-rasio-row
+                                data-search-name="{{ mb_strtolower($node->nama_titik) }}">
+                                <td class="px-5 py-3" data-row-number>{{ $loop->iteration }}</td>
                                 <td class="px-5 py-3 font-medium">{{ $node->nama_titik }}</td>
                                 <td class="px-5 py-3">{{ $node->parent?->nama_titik ?? '-' }}</td>
                                 <td class="px-5 py-3">{{ $node->jenis_splitter ?? '-' }}</td>
@@ -80,6 +86,9 @@
                                 <td colspan="8" class="px-5 py-8 text-center text-gray-400">Belum ada data Rasio.</td>
                             </tr>
                         @endforelse
+                        <tr id="noRasioSearchResults" class="hidden">
+                            <td colspan="8" class="px-5 py-8 text-center text-gray-400">Nama Rasio tidak ditemukan.</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -116,6 +125,28 @@
     @endforeach
 
     <script>
+        const rasioSearch = document.getElementById('rasioSearch');
+        const rasioRows = Array.from(document.querySelectorAll('[data-rasio-row]'));
+        const noRasioSearchResults = document.getElementById('noRasioSearchResults');
+
+        rasioSearch?.addEventListener('input', () => {
+            const query = rasioSearch.value.trim().toLocaleLowerCase('id-ID');
+            let visibleRows = 0;
+
+            rasioRows.forEach((row) => {
+                const matches = (row.dataset.searchName || '').includes(query);
+                row.classList.toggle('hidden', !matches);
+
+                if (matches) {
+                    visibleRows++;
+                    const number = row.querySelector('[data-row-number]');
+                    if (number) number.textContent = visibleRows;
+                }
+            });
+
+            noRasioSearchResults?.classList.toggle('hidden', query === '' || visibleRows > 0 || rasioRows.length === 0);
+        });
+
         function openModal(id) {
             const modal = document.getElementById(id);
             if (!modal) return;
