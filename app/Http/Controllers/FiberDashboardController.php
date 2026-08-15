@@ -79,7 +79,14 @@ class FiberDashboardController extends Controller
     {
         $allParents = $this->parentOptions($type, true);
 
-        return view('dashboard.fiber.index', [
+        $view = match ($type) {
+            'server' => 'dashboard.maincore.data_server',
+            'odc' => 'dashboard.maincore.data_odc',
+            'odp' => 'dashboard.maincore.data_odp',
+            'rasio' => 'dashboard.maincore.data_rasio',
+        };
+
+        return view($view, [
             'section' => $type,
             'nodes' => MainCore::with('parent')->type($type)->orderBy('nama_titik')->get(),
             'parents' => $this->parentOptions($type),
