@@ -29,8 +29,7 @@
                             <th class="w-16 px-5 py-3 text-left">No</th>
                             <th class="px-5 py-3 text-left">Nama Core</th>
                             <th class="px-5 py-3 text-left">Redaman In</th>
-                            <th class="px-5 py-3 text-left">Tanggal Perubahan</th>
-                            <th class="px-5 py-3 text-left">Tanggal Redaman</th>
+                            <th class="px-5 py-3 text-left">Tanggal</th>
                             <th class="px-5 py-3 text-right">Action</th>
                         </tr>
                     </thead>
@@ -40,8 +39,7 @@
                                 <td class="px-5 py-3">{{ $loop->iteration }}</td>
                                 <td class="px-5 py-3 font-medium">{{ $node->nama_titik }}</td>
                                 <td class="px-5 py-3">{{ $formatRedaman($node->redaman_in) }}</td>
-                                <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal_perubahan) }}</td>
-                                <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal_redaman) }}</td>
+                                <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal) }}</td>
                                 <td class="px-5 py-3">
                                     <div class="flex justify-end gap-2 whitespace-nowrap">
                                         <button type="button" onclick="openModal('editModal{{ $node->id }}')"
@@ -59,7 +57,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-5 py-8 text-center text-gray-400">Belum ada data Server.</td>
+                                <td colspan="5" class="px-5 py-8 text-center text-gray-400">Belum ada data Server.</td>
                             </tr>
                         @endforelse
                     </tbody>

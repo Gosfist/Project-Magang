@@ -33,8 +33,8 @@ class FiberMainCoreTest extends TestCase
             'spesifikasi' => [
                 'jenis_splitter' => '1:2',
                 'rasio_redaman_ports' => [
-                    1 => '10%',
-                    2 => '90%',
+                    1 => '10',
+                    2 => '90',
                 ],
             ],
         ])->assertRedirect('/dashboard/fiber/rasio');
@@ -69,7 +69,7 @@ class FiberMainCoreTest extends TestCase
         ]);
 
         $this->assertSame(2, $rasio->jumlah_output);
-        $this->assertSame('Port 1: 10% Dan Port 2: 90%', $rasio->rasio_redaman);
+        $this->assertSame('Port 1: 10 Dan Port 2: 90', $rasio->rasio_redaman);
         $this->assertSame(4, $odc->jumlah_output);
         $this->assertSame(8, MainCore::type('odp')->firstOrFail()->jumlah_output);
 
@@ -85,7 +85,11 @@ class FiberMainCoreTest extends TestCase
             ->assertOk()
             ->assertSee('Rasio 01')
             ->assertSee('1:2')
-            ->assertSee('Port 1: 10% Dan Port 2: 90%');
+            ->assertSee('Jenis Rasio')
+            ->assertSee('10% dan 90%')
+            ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Port Sumber</th>')
+            ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Jumlah Output</th>')
+            ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Alamat</th>');
 
         $this->actingAs($user)->get('/dashboard/fiber/odc')
             ->assertOk()
@@ -117,7 +121,7 @@ class FiberMainCoreTest extends TestCase
             ->assertJsonPath('node.nama_titik', 'ODC AJAX');
     }
 
-    public function test_general_and_redaman_dates_change_independently(): void
+    public function test_main_core_date_changes_automatically_on_every_update(): void
     {
         $user = $this->user();
 
@@ -130,12 +134,12 @@ class FiberMainCoreTest extends TestCase
 
         $server = MainCore::type('server')->where('nama_titik', 'Server Bertanggal')->firstOrFail();
 
-        $this->assertSame('2026-08-10', $server->tanggal_perubahan->toDateString());
-        $this->assertSame('2026-08-10', $server->tanggal_redaman->toDateString());
+        $this->assertSame('2026-08-10', $server->tanggal->toDateString());
         $this->actingAs($user)->get('/dashboard/fiber/server')
             ->assertOk()
-            ->assertSee('Tanggal Perubahan')
-            ->assertSee('Tanggal Redaman')
+            ->assertSee('Tanggal')
+            ->assertDontSee('Tanggal Perubahan')
+            ->assertDontSee('Tanggal Redaman')
             ->assertSee('10-08-2026');
 
         Carbon::setTestNow('2026-08-12 08:00:00 UTC');
@@ -147,8 +151,7 @@ class FiberMainCoreTest extends TestCase
 
         $server->refresh();
 
-        $this->assertSame('2026-08-10', $server->tanggal_perubahan->toDateString());
-        $this->assertSame('2026-08-12', $server->tanggal_redaman->toDateString());
+        $this->assertSame('2026-08-12', $server->tanggal->toDateString());
 
         Carbon::setTestNow('2026-08-14 08:00:00 UTC');
 
@@ -159,8 +162,7 @@ class FiberMainCoreTest extends TestCase
 
         $server->refresh();
 
-        $this->assertSame('2026-08-14', $server->tanggal_perubahan->toDateString());
-        $this->assertSame('2026-08-12', $server->tanggal_redaman->toDateString());
+        $this->assertSame('2026-08-14', $server->tanggal->toDateString());
 
         Carbon::setTestNow('2026-08-16 08:00:00 UTC');
 
@@ -171,8 +173,7 @@ class FiberMainCoreTest extends TestCase
 
         $server->refresh();
 
-        $this->assertSame('2026-08-16', $server->tanggal_perubahan->toDateString());
-        $this->assertSame('2026-08-16', $server->tanggal_redaman->toDateString());
+        $this->assertSame('2026-08-16', $server->tanggal->toDateString());
 
         Carbon::setTestNow();
     }
@@ -200,7 +201,7 @@ class FiberMainCoreTest extends TestCase
         $this->assertSame(8, MainCore::type('odp')->firstOrFail()->jumlah_output);
     }
 
-    public function test_rasio_port_redaman_only_changes_redaman_date(): void
+    public function test_rasio_port_redaman_changes_main_core_date(): void
     {
         $user = $this->user();
 
@@ -220,8 +221,7 @@ class FiberMainCoreTest extends TestCase
             ],
         ]);
 
-        $this->assertSame('2026-08-10', $rasio->tanggal_perubahan->toDateString());
-        $this->assertSame('2026-08-10', $rasio->tanggal_redaman->toDateString());
+        $this->assertSame('2026-08-10', $rasio->tanggal->toDateString());
 
         Carbon::setTestNow('2026-08-12 08:00:00 UTC');
 
@@ -236,8 +236,7 @@ class FiberMainCoreTest extends TestCase
 
         $rasio->refresh();
 
-        $this->assertSame('2026-08-10', $rasio->tanggal_perubahan->toDateString());
-        $this->assertSame('2026-08-12', $rasio->tanggal_redaman->toDateString());
+        $this->assertSame('2026-08-12', $rasio->tanggal->toDateString());
 
         Carbon::setTestNow();
     }

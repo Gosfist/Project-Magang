@@ -39,8 +39,7 @@
                             <th class="px-5 py-3 text-left">Jenis Splitter</th>
                             <th class="px-5 py-3 text-left">Jumlah Output</th>
                             <th class="px-5 py-3 text-left">Alamat</th>
-                            <th class="px-5 py-3 text-left">Tanggal Perubahan</th>
-                            <th class="px-5 py-3 text-left">Tanggal Redaman</th>
+                            <th class="px-5 py-3 text-left">Tanggal</th>
                             <th class="px-5 py-3 text-right">Action</th>
                         </tr>
                     </thead>
@@ -55,8 +54,7 @@
                                 <td class="px-5 py-3">{{ $node->jenis_splitter ?? '-' }}</td>
                                 <td class="px-5 py-3">{{ $node->jumlah_output ?? '-' }}</td>
                                 <td class="px-5 py-3">{{ $node->alamat ?: '-' }}</td>
-                                <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal_perubahan) }}</td>
-                                <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal_redaman) }}</td>
+                                <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal) }}</td>
                                 <td class="px-5 py-3">
                                     <div class="flex justify-end gap-2 whitespace-nowrap">
                                         <button type="button" onclick="openModal('editModal{{ $node->id }}')"
@@ -74,7 +72,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="11" class="px-5 py-8 text-center text-gray-400">Belum ada data ODC.</td>
+                                <td colspan="10" class="px-5 py-8 text-center text-gray-400">Belum ada data ODC.</td>
                             </tr>
                         @endforelse
                     </tbody>

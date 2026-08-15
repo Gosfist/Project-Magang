@@ -9,6 +9,15 @@
             ? '-'
             : rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.') . ' dBm';
         $formatTanggal = fn($value) => $value?->format('d-m-Y') ?? '-';
+        $formatRasioRedaman = fn($ports) => collect($ports)
+            ->filter(fn($value) => $value !== null && $value !== '')
+            ->map(function ($value) {
+                $value = trim((string) $value);
+
+                return str_ends_with($value, '%') ? $value : $value . '%';
+            })
+            ->implode(' dan ') ?:
+        '-';
         $fieldValue = fn($node, $key) => old('form_mode') ===
         ($node ? $section . '_edit_' . $node->id : $section . '_create')
             ? old($key, data_get($node, $key))
@@ -34,14 +43,10 @@
                             <th class="w-16 px-5 py-3 text-left">No</th>
                             <th class="px-5 py-3 text-left">Nama Rasio</th>
                             <th class="px-5 py-3 text-left">Sumber Jalur</th>
-                            <th class="px-5 py-3 text-left">Port Sumber</th>
-                            <th class="px-5 py-3 text-left">Redaman In</th>
-                            <th class="px-5 py-3 text-left">Jenis Splitter</th>
+                            <th class="px-5 py-3 text-left">Jenis Rasio</th>
                             <th class="px-5 py-3 text-left">Rasio Redaman</th>
-                            <th class="px-5 py-3 text-left">Jumlah Output</th>
-                            <th class="px-5 py-3 text-left">Alamat</th>
-                            <th class="px-5 py-3 text-left">Tanggal Perubahan</th>
-                            <th class="px-5 py-3 text-left">Tanggal Redaman</th>
+                            <th class="px-5 py-3 text-left">Redaman In</th>
+                            <th class="px-5 py-3 text-left">Tanggal</th>
                             <th class="px-5 py-3 text-right">Action</th>
                         </tr>
                     </thead>
@@ -51,14 +56,10 @@
                                 <td class="px-5 py-3">{{ $loop->iteration }}</td>
                                 <td class="px-5 py-3 font-medium">{{ $node->nama_titik }}</td>
                                 <td class="px-5 py-3">{{ $node->parent?->nama_titik ?? '-' }}</td>
-                                <td class="px-5 py-3">{{ $node->parent?->tipe_titik === 'server' ? '-' : 'Port ' . $node->parent_port_out }}</td>
-                                <td class="px-5 py-3">{{ $formatRedaman($node->redaman_in) }}</td>
                                 <td class="px-5 py-3">{{ $node->jenis_splitter ?? '-' }}</td>
-                                <td class="px-5 py-3">{{ $node->rasio_redaman ?? '-' }}</td>
-                                <td class="px-5 py-3">{{ $node->jumlah_output ?? '-' }}</td>
-                                <td class="px-5 py-3">{{ $node->alamat ?: '-' }}</td>
-                                <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal_perubahan) }}</td>
-                                <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal_redaman) }}</td>
+                                <td class="px-5 py-3">{{ $formatRasioRedaman($node->rasio_redaman_ports) }}</td>
+                                <td class="px-5 py-3">{{ $formatRedaman($node->redaman_in) }}</td>
+                                <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal) }}</td>
                                 <td class="px-5 py-3">
                                     <div class="flex justify-end gap-2 whitespace-nowrap">
                                         <button type="button" onclick="openModal('editModal{{ $node->id }}')"
@@ -76,7 +77,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="12" class="px-5 py-8 text-center text-gray-400">Belum ada data Rasio.</td>
+                                <td colspan="8" class="px-5 py-8 text-center text-gray-400">Belum ada data Rasio.</td>
                             </tr>
                         @endforelse
                     </tbody>
