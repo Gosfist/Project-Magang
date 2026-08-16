@@ -20,11 +20,11 @@
 
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <input id="odcSearch" type="search" placeholder="Cari nama ODC..."
-                        aria-label="Cari berdasarkan nama ODC"
+                    <input id="odcSearch" type="search" placeholder="Cari nama ODC..." aria-label="Cari berdasarkan nama ODC"
                         class="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
                     <button type="button" onclick="openModal('createModal')"
-                        class="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white" style="cursor: pointer;">Tambah Data</button>
+                        class="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white" style="cursor: pointer;">Tambah
+                        Data</button>
                 </div>
             </div>
 
@@ -103,10 +103,11 @@
             'node' => $node,
             'mode' => $section . '_edit_' . $node->id,
             'parents' => $allParents->filter(
-                fn($parent) => $parent->id !== $node->id && ($parent->id === $node->parent_id ||
-                    ($parent->tipe_titik === 'server'
-                        ? $parent->children_count === 0
-                        : $parent->children_count < ($parent->jumlah_output ?? 0)))),
+                fn($parent) => $parent->id !== $node->id &&
+                    ($parent->id === $node->parent_id ||
+                        ($parent->tipe_titik === 'server'
+                            ? $parent->children_count === 0
+                            : $parent->children_count < ($parent->jumlah_output ?? 0)))),
             'existingNames' => $existingNames,
             'ratioOptions' => $ratioOptions,
         ])
