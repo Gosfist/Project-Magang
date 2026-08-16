@@ -46,7 +46,7 @@
                                             class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white"
                                             style="cursor: pointer;">Edit</button>
                                         <form data-ajax-form data-confirm="Yakin ingin menghapus data ini?" method="POST"
-                                            action="{{ route('fiber.nodes.destroy', [$section, $node]) }}">
+                                            action="{{ route('api.maincore.destroy', [$section, $node]) }}">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="rounded-lg px-3 py-1.5 text-xs"
@@ -74,7 +74,7 @@
     @include('dashboard.modal.data_server', [
         'modalId' => 'createModal',
         'title' => 'Tambah Data ' . $label,
-        'action' => route('fiber.nodes.store', $section),
+        'action' => route('api.maincore.store', $section),
         'method' => 'POST',
         'node' => null,
         'mode' => $section . '_create',
@@ -85,7 +85,7 @@
         @include('dashboard.modal.data_server', [
             'modalId' => 'editModal' . $node->id,
             'title' => 'Edit Data ' . $label,
-            'action' => route('fiber.nodes.update', [$section, $node]),
+            'action' => route('api.maincore.update', [$section, $node]),
             'method' => 'PATCH',
             'node' => $node,
             'mode' => $section . '_edit_' . $node->id,
@@ -147,12 +147,8 @@
                         return;
                     }
 
-                    const response = await fetch(form.action, {
+                    const response = await window.apiFetch(form.action, {
                         method: 'POST',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json',
-                        },
                         body: new FormData(form),
                     });
 

@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
-class FiberDashboardController extends Controller
+class MainCoreController extends Controller
 {
     public function index(): RedirectResponse
     {
@@ -124,6 +124,35 @@ class FiberDashboardController extends Controller
     public function odp()
     {
         return $this->listByType('odp');
+    }
+
+    public function apiIndex(Request $request, string $type): JsonResponse
+    {
+        abort_unless(in_array($type, MainCore::TYPES, true), 404);
+
+        $perPage = min(max($request->integer('per_page', 15), 1), 100);
+        $nodes = MainCore::with('parent')
+            ->type($type)
+            ->orderBy('nama_titik')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $nodes->getCollection()->each(fn (MainCore $node) => $node->append([
+            'jenis_splitter',
+            'jumlah_output',
+            'rasio_redaman',
+            'rasio_redaman_ports',
+        ]));
+
+        return response()->json([
+            'data' => $nodes->items(),
+            'meta' => [
+                'current_page' => $nodes->currentPage(),
+                'last_page' => $nodes->lastPage(),
+                'per_page' => $nodes->perPage(),
+                'total' => $nodes->total(),
+            ],
+        ]);
     }
 
     public function store(Request $request, string $type)

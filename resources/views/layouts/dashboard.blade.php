@@ -92,14 +92,14 @@
             {{-- User Info --}}
             <div class="shrink-0 border-t border-blue-700/50 bg-blue-800 p-3">
                 <div class="flex items-center gap-3 px-3 py-2">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold">
+                    <div id="current-user-initial" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold">
                         {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium truncate">{{ auth()->user()->name }}</p>
-                        <p class="text-xs text-blue-300 capitalize">{{ auth()->user()->role }}</p>
+                        <p id="current-user-name" class="text-sm font-medium truncate">{{ auth()->user()->name }}</p>
+                        <p id="current-user-role" class="text-xs text-blue-300 capitalize">{{ auth()->user()->role }}</p>
                     </div>
-                    <form method="POST" action="{{ route('logout') }}">
+                    <form id="logout-form" method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit"
                             class="p-1.5 rounded-lg text-blue-300 hover:text-white hover:bg-white/10 transition-colors"
@@ -196,6 +196,69 @@
     @endif
 
     <script>
+        const jwtTokenKey = 'unzanet_jwt';
+        const jwtExpiresAtKey = 'unzanet_jwt_expires_at';
+        let automaticLogoutStarted = false;
+
+        function clearJwtToken() {
+            localStorage.removeItem(jwtTokenKey);
+            localStorage.removeItem(jwtExpiresAtKey);
+        }
+
+        function automaticLogout() {
+            if (automaticLogoutStarted) return;
+
+            automaticLogoutStarted = true;
+            clearJwtToken();
+
+            const logoutForm = document.getElementById('logout-form');
+            if (logoutForm) {
+                logoutForm.requestSubmit();
+                return;
+            }
+
+            window.location.href = @json(route('login'));
+        }
+
+        window.apiFetch = async function (input, options = {}) {
+            const token = localStorage.getItem(jwtTokenKey);
+
+            if (!token) {
+                automaticLogout();
+                throw new Error('Token tidak ditemukan. Silakan login kembali.');
+            }
+
+            const headers = new Headers(options.headers || {});
+            headers.set('Authorization', `Bearer ${token}`);
+            headers.set('Accept', 'application/json');
+            headers.set('X-Requested-With', 'XMLHttpRequest');
+
+            const response = await fetch(input, {
+                ...options,
+                headers,
+            });
+
+            if (response.status === 401) {
+                automaticLogout();
+                throw new Error('Token telah kedaluwarsa. Silakan login kembali.');
+            }
+
+            return response;
+        };
+
+        function scheduleJwtExpiration() {
+            const expiresAt = Date.parse(localStorage.getItem(jwtExpiresAtKey) || '');
+            const remaining = expiresAt - Date.now();
+
+            if (!Number.isFinite(expiresAt) || remaining <= 0) {
+                automaticLogout();
+                return false;
+            }
+
+            setTimeout(automaticLogout, remaining);
+            return true;
+        }
+
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
@@ -211,6 +274,18 @@
         setTimeout(() => {
             document.getElementById('global-flash')?.remove();
         }, 5000);
+
+        if (scheduleJwtExpiration()) {
+            window.apiFetch(@json(route('api.me')))
+                .then((response) => response.ok ? response.json() : null)
+                .then((payload) => {
+                    if (!payload?.user) return;
+
+                    document.getElementById('current-user-name').textContent = payload.user.name;
+                    document.getElementById('current-user-role').textContent = payload.user.role;
+                    document.getElementById('current-user-initial').textContent = payload.user.name.charAt(0).toUpperCase();
+                }).catch(() => {});
+        }
     </script>
 
     @stack('scripts')

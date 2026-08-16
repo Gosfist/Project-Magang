@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\FiberDashboardController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MainCoreController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -44,15 +44,15 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     });
 
     Route::prefix('fiber')->name('fiber.')->group(function () {
-        Route::get('/', [FiberDashboardController::class, 'index'])->name('dashboard');
-        Route::get('trace-jalur', [FiberDashboardController::class, 'traceJalur'])->name('trace');
-        Route::get('server', [FiberDashboardController::class, 'server'])->name('server');
-        Route::get('rasio', [FiberDashboardController::class, 'rasio'])->name('rasio');
-        Route::get('odc', [FiberDashboardController::class, 'odc'])->name('odc');
-        Route::get('odp', [FiberDashboardController::class, 'odp'])->name('odp');
+        Route::get('/', [MainCoreController::class, 'index'])->name('dashboard');
+        Route::get('trace-jalur', [MainCoreController::class, 'traceJalur'])->name('trace');
+        Route::get('server', [MainCoreController::class, 'server'])->name('server');
+        Route::get('rasio', [MainCoreController::class, 'rasio'])->name('rasio');
+        Route::get('odc', [MainCoreController::class, 'odc'])->name('odc');
+        Route::get('odp', [MainCoreController::class, 'odp'])->name('odp');
 
-        Route::post('{type}', [FiberDashboardController::class, 'store'])->whereIn('type', ['server', 'rasio', 'odc', 'odp'])->name('nodes.store');
-        Route::patch('{type}/{node}', [FiberDashboardController::class, 'update'])->whereIn('type', ['server', 'rasio', 'odc', 'odp'])->name('nodes.update');
-        Route::delete('{type}/{node}', [FiberDashboardController::class, 'destroy'])->whereIn('type', ['server', 'rasio', 'odc', 'odp'])->name('nodes.destroy');
+        Route::post('{type}', [MainCoreController::class, 'store'])->whereIn('type', ['server', 'rasio', 'odc', 'odp'])->name('nodes.store');
+        Route::patch('{type}/{node}', [MainCoreController::class, 'update'])->whereIn('type', ['server', 'rasio', 'odc', 'odp'])->name('nodes.update');
+        Route::delete('{type}/{node}', [MainCoreController::class, 'destroy'])->whereIn('type', ['server', 'rasio', 'odc', 'odp'])->name('nodes.destroy');
     });
 });
