@@ -12,7 +12,7 @@
     @endphp
 
     <div data-maincore-page data-type="server" data-row-offset="{{ ($nodes->firstItem() ?? 1) - 1 }}" class="space-y-5">
-        <div class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-5 py-4">
                 <div>
                     <h2 class="font-semibold">Data {{ $label }}</h2>
@@ -23,8 +23,8 @@
             </div>
 
             <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-50 text-gray-600">
+                <table class="w-full bg-white text-sm">
+                    <thead class="border-b border-gray-200 bg-gray-50 text-gray-600">
                         <tr>
                             <th class="w-16 px-5 py-3 text-left">No</th>
                             <th class="px-5 py-3 text-left">Nama Core</th>
@@ -33,9 +33,9 @@
                             <th class="px-5 py-3 text-right">Action</th>
                         </tr>
                     </thead>
-                    <tbody id="nodeRows">
+                    <tbody id="nodeRows" class="divide-y divide-gray-200 bg-white">
                         @forelse($nodes as $node)
-                            <tr class="border-t border-gray-100" data-node-row="{{ $node->id }}">
+                            <tr class="bg-white" data-node-row="{{ $node->id }}">
                                 <td class="px-5 py-3">{{ $nodes->firstItem() + $loop->index }}</td>
                                 <td class="px-5 py-3 font-medium">{{ $node->nama_titik }}</td>
                                 <td class="px-5 py-3">{{ $formatRedaman($node->redaman_in) }}</td>
