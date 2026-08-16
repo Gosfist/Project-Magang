@@ -590,13 +590,26 @@ class FiberMainCoreTest extends TestCase
             'tipe_titik' => 'odc',
             'spesifikasi' => ['jenis_splitter' => '1:4'],
         ]);
+        $odp = MainCore::create([
+            'parent_id' => $odc->id,
+            'parent_port_out' => 1,
+            'nama_titik' => 'ODP A',
+            'tipe_titik' => 'odp',
+            'spesifikasi' => ['jenis_splitter' => '1:8'],
+        ]);
 
         $this->actingAs($user)->delete("/dashboard/fiber/server/{$server->id}")
             ->assertRedirect('/dashboard/fiber/server')
-            ->assertSessionHas('error');
+            ->assertSessionHas('error', 'Server tidak dapat dihapus karena masih terhubung dengan Rasio 1.');
 
         $this->assertDatabaseHas('main_core', ['id' => $server->id]);
 
+        $this->actingAs($user)->delete("/dashboard/fiber/odc/{$odc->id}")
+            ->assertRedirect('/dashboard/fiber/odc')
+            ->assertSessionHas('error', 'ODC tidak dapat dihapus karena masih terhubung dengan ODP A.');
+
+        $this->actingAs($user)->delete("/dashboard/fiber/odp/{$odp->id}")
+            ->assertRedirect('/dashboard/fiber/odp');
         $this->actingAs($user)->delete("/dashboard/fiber/odc/{$odc->id}")
             ->assertRedirect('/dashboard/fiber/odc');
         $this->actingAs($user)->delete("/dashboard/fiber/rasio/{$rasio->id}")
@@ -604,6 +617,7 @@ class FiberMainCoreTest extends TestCase
         $this->actingAs($user)->delete("/dashboard/fiber/server/{$server->id}")
             ->assertRedirect('/dashboard/fiber/server');
 
+        $this->assertDatabaseMissing('main_core', ['id' => $odp->id]);
         $this->assertDatabaseMissing('main_core', ['id' => $odc->id]);
         $this->assertDatabaseMissing('main_core', ['id' => $rasio->id]);
         $this->assertDatabaseMissing('main_core', ['id' => $server->id]);

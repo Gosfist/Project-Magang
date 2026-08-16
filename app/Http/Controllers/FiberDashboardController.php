@@ -146,8 +146,11 @@ class FiberDashboardController extends Controller
     {
         abort_unless($node->tipe_titik === $type, 404);
 
-        if ($node->children()->exists()) {
-            $message = "{$this->typeLabel($type)} masih memiliki anak. Hapus data dari paling bawah terlebih dahulu.";
+        $connectedChildren = $node->children()->pluck('nama_titik');
+
+        if ($connectedChildren->isNotEmpty()) {
+            $childNames = $connectedChildren->join(', ', ' dan ');
+            $message = "{$this->typeLabel($type)} tidak dapat dihapus karena masih terhubung dengan {$childNames}.";
 
             if ($request->expectsJson()) {
                 return response()->json(['message' => $message], 422);
