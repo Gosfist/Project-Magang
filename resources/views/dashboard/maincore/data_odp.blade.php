@@ -44,7 +44,7 @@
                         @forelse($nodes as $node)
                             <tr class="border-t border-gray-100" data-node-row="{{ $node->id }}" data-odp-row
                                 data-search-name="{{ mb_strtolower($node->nama_titik) }}">
-                                <td class="px-5 py-3" data-row-number>{{ $loop->iteration }}</td>
+                                <td class="px-5 py-3" data-row-number>{{ $nodes->firstItem() + $loop->index }}</td>
                                 <td class="px-5 py-3 font-medium">{{ $node->nama_titik }}</td>
                                 <td class="px-5 py-3">{{ $node->parent?->nama_titik ?? '-' }}</td>
                                 <td class="px-5 py-3">{{ $formatRedaman($node->redaman_in) }}</td>
@@ -75,6 +75,11 @@
                     </tbody>
                 </table>
             </div>
+            @if ($nodes->hasPages())
+                <div class="border-t border-gray-200 px-5 py-4">
+                    {{ $nodes->onEachSide(1)->links('vendor.pagination.main-core') }}
+                </div>
+            @endif
         </div>
     </div>
 
@@ -111,6 +116,7 @@
         const odpSearch = document.getElementById('odpSearch');
         const odpRows = Array.from(document.querySelectorAll('[data-odp-row]'));
         const noOdpSearchResults = document.getElementById('noOdpSearchResults');
+        const odpRowOffset = {{ ($nodes->firstItem() ?? 1) - 1 }};
 
         odpSearch?.addEventListener('input', () => {
             const query = odpSearch.value.trim().toLocaleLowerCase('id-ID');
@@ -123,7 +129,7 @@
                 if (matches) {
                     visibleRows++;
                     const number = row.querySelector('[data-row-number]');
-                    if (number) number.textContent = visibleRows;
+                    if (number) number.textContent = odpRowOffset + visibleRows;
                 }
             });
 

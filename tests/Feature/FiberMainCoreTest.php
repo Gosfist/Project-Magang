@@ -174,6 +174,38 @@ class FiberMainCoreTest extends TestCase
             ->assertViewHas('nodes', fn ($nodes) => $nodes->pluck('nama_titik')->all() === ['Rasio Selatan', 'Rasio Utara']);
     }
 
+    public function test_main_core_lists_are_paginated_five_rows_per_page(): void
+    {
+        $user = $this->user();
+
+        foreach (MainCore::TYPES as $type) {
+            for ($number = 1; $number <= 6; $number++) {
+                MainCore::create([
+                    'nama_titik' => sprintf('%s Page %02d', strtoupper($type), $number),
+                    'tipe_titik' => $type,
+                    'spesifikasi' => $type === 'server' ? null : ['jenis_splitter' => '1:2'],
+                ]);
+            }
+
+            $this->actingAs($user)->get("/dashboard/fiber/{$type}")
+                ->assertOk()
+                ->assertSee('page=2', false)
+                ->assertSee('aria-label="Pagination"', false)
+                ->assertSee('text-blue-600', false)
+                ->assertDontSee('Showing')
+                ->assertViewHas('nodes', fn ($nodes) => $nodes->perPage() === 5
+                    && $nodes->total() === 6
+                    && $nodes->currentPage() === 1
+                    && $nodes->count() === 5);
+
+            $this->actingAs($user)->get("/dashboard/fiber/{$type}?page=2")
+                ->assertOk()
+                ->assertViewHas('nodes', fn ($nodes) => $nodes->currentPage() === 2
+                    && $nodes->firstItem() === 6
+                    && $nodes->count() === 1);
+        }
+    }
+
     public function test_main_core_date_changes_automatically_on_every_update(): void
     {
         $user = $this->user();

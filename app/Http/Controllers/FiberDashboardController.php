@@ -178,7 +178,7 @@ class FiberDashboardController extends Controller
 
         return view($view, [
             'section' => $type,
-            'nodes' => MainCore::with('parent')->type($type)->orderBy('nama_titik')->get(),
+            'nodes' => MainCore::with('parent')->type($type)->orderBy('nama_titik')->paginate(5)->withQueryString(),
             'parents' => $this->parentOptions($type),
             'allParents' => $allParents,
             'existingNames' => MainCore::select('id', 'nama_titik')->orderBy('nama_titik')->get(),

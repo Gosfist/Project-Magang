@@ -36,7 +36,7 @@
                     <tbody id="nodeRows">
                         @forelse($nodes as $node)
                             <tr class="border-t border-gray-100" data-node-row="{{ $node->id }}">
-                                <td class="px-5 py-3">{{ $loop->iteration }}</td>
+                                <td class="px-5 py-3">{{ $nodes->firstItem() + $loop->index }}</td>
                                 <td class="px-5 py-3 font-medium">{{ $node->nama_titik }}</td>
                                 <td class="px-5 py-3">{{ $formatRedaman($node->redaman_in) }}</td>
                                 <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal) }}</td>
@@ -63,6 +63,11 @@
                     </tbody>
                 </table>
             </div>
+            @if ($nodes->hasPages())
+                <div class="border-t border-gray-200 px-5 py-4">
+                    {{ $nodes->onEachSide(1)->links('vendor.pagination.main-core') }}
+                </div>
+            @endif
         </div>
     </div>
 
