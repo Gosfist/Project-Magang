@@ -45,6 +45,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 
     Route::prefix('fiber')->name('fiber.')->group(function () {
         Route::get('/', [FiberDashboardController::class, 'index'])->name('dashboard');
+        Route::get('trace-jalur', [FiberDashboardController::class, 'traceJalur'])->name('trace');
         Route::get('server', [FiberDashboardController::class, 'server'])->name('server');
         Route::get('rasio', [FiberDashboardController::class, 'rasio'])->name('rasio');
         Route::get('odc', [FiberDashboardController::class, 'odc'])->name('odc');

@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Unzanet</title>
+    <link rel="icon" type="image/png" href="{{ asset('img/logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -15,13 +16,7 @@
             {{-- Logo --}}
             <div class="text-center mb-8">
                 <a href="{{ route('home') }}" class="inline-flex items-center gap-2">
-                    <div class="w-12 h-12 bg-blue-700 rounded-lg flex items-center justify-center shadow-sm">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                    </div>
-                    <span class="text-2xl font-bold text-blue-700">Unzanet</span>
+                    <img src="{{ asset('img/logo.png') }}" alt="Unzanet" class="h-24 w-auto object-contain">
                 </a>
             </div>
 

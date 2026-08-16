@@ -6,14 +6,63 @@ use App\Models\MainCore;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class FiberDashboardController extends Controller
 {
     public function index(): RedirectResponse
     {
         return redirect()->route('fiber.server');
+    }
+
+    public function traceJalur(Request $request)
+    {
+        $nodesByCategory = MainCore::query()
+            ->select('id', 'nama_titik', 'tipe_titik')
+            ->orderBy('nama_titik')
+            ->get()
+            ->groupBy('tipe_titik')
+            ->map(fn ($nodes) => $nodes->values());
+
+        $selectedNode = null;
+        $tracePath = collect();
+
+        if ($request->filled('category') || $request->filled('node_id')) {
+            $data = $request->validate([
+                'category' => ['required', Rule::in(MainCore::TYPES)],
+                'node_id' => ['required', 'integer', Rule::exists('main_core', 'id')],
+            ], [
+                'category.required' => 'Kategori wajib dipilih.',
+                'category.in' => 'Kategori tidak valid.',
+                'node_id.required' => 'Nama titik wajib dipilih.',
+                'node_id.exists' => 'Nama titik tidak ditemukan.',
+            ]);
+
+            $selectedNode = MainCore::findOrFail($data['node_id']);
+
+            if ($selectedNode->tipe_titik !== $data['category']) {
+                throw ValidationException::withMessages([
+                    'node_id' => 'Nama titik tidak sesuai dengan kategori yang dipilih.',
+                ]);
+            }
+
+            $current = $selectedNode;
+            $visited = [];
+
+            while ($current && ! isset($visited[$current->id])) {
+                $visited[$current->id] = true;
+                $tracePath->prepend($current);
+                $current = $current->parent;
+            }
+        }
+
+        return view('dashboard.maincore.trace_jalur', [
+            'nodesByCategory' => $nodesByCategory,
+            'selectedNode' => $selectedNode,
+            'tracePath' => $tracePath,
+            'labels' => $this->labels(),
+        ]);
     }
 
     public function server()

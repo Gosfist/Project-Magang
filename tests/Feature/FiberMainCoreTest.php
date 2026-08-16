@@ -158,7 +158,7 @@ class FiberMainCoreTest extends TestCase
             ->assertSee('data-rasio-row', false)
             ->assertSee('data-search-name="rasio utara"', false)
             ->assertSee("addEventListener('input'", false)
-            ->assertViewHas('nodes', fn($nodes) => $nodes->pluck('nama_titik')->all() === ['Rasio Selatan', 'Rasio Utara']);
+            ->assertViewHas('nodes', fn ($nodes) => $nodes->pluck('nama_titik')->all() === ['Rasio Selatan', 'Rasio Utara']);
     }
 
     public function test_main_core_date_changes_automatically_on_every_update(): void
@@ -442,6 +442,50 @@ class FiberMainCoreTest extends TestCase
             ->assertDontSee('Peta Topologi');
     }
 
+    public function test_trace_jalur_has_searchable_category_list_and_displays_path_to_core(): void
+    {
+        $user = $this->user();
+        $server = MainCore::create(['nama_titik' => 'Core Trace', 'tipe_titik' => 'server']);
+        $rasio = MainCore::create([
+            'parent_id' => $server->id,
+            'nama_titik' => 'Rasio Trace',
+            'tipe_titik' => 'rasio',
+            'spesifikasi' => ['jenis_splitter' => '1:2'],
+        ]);
+        $odc = MainCore::create([
+            'parent_id' => $rasio->id,
+            'parent_port_out' => 1,
+            'nama_titik' => 'ODC Trace',
+            'tipe_titik' => 'odc',
+            'spesifikasi' => ['jenis_splitter' => '1:4'],
+        ]);
+        $odp = MainCore::create([
+            'parent_id' => $odc->id,
+            'parent_port_out' => 2,
+            'nama_titik' => 'ODP Trace',
+            'tipe_titik' => 'odp',
+            'spesifikasi' => ['jenis_splitter' => '1:8'],
+        ]);
+
+        $this->actingAs($user)->get('/dashboard/fiber/trace-jalur')
+            ->assertOk()
+            ->assertSee('Trace Jalur')
+            ->assertSee('Pilih kategori')
+            ->assertSee('Cari atau pilih nama...', false)
+            ->assertSee('ODP Trace');
+
+        $this->actingAs($user)->get('/dashboard/fiber/trace-jalur?category=odp&node_id='.$odp->id)
+            ->assertOk()
+            ->assertSee('Hasil Trace Jalur')
+            ->assertSeeInOrder(['Core Trace', 'Rasio Trace', 'ODC Trace', 'ODP Trace'])
+            ->assertSee('4 titik')
+            ->assertSee('Port 2');
+
+        $this->actingAs($user)->get('/dashboard/fiber/server')
+            ->assertOk()
+            ->assertSeeInOrder(['Trace Jalur', 'Server', 'Rasio', 'ODC', 'ODP']);
+    }
+
     public function test_node_delete_removes_row_from_database(): void
     {
         $user = $this->user();
@@ -502,7 +546,7 @@ class FiberMainCoreTest extends TestCase
     {
         return User::create([
             'name' => 'Admin',
-            'email' => uniqid('admin') . '@example.test',
+            'email' => uniqid('admin').'@example.test',
             'password' => 'password',
             'role' => 'admin',
             'status' => 'active',

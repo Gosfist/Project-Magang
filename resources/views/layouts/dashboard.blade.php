@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') - Unzanet</title>
+    <link rel="icon" type="image/png" href="{{ asset('img/logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -16,16 +17,7 @@
             class="fixed inset-y-0 left-0 z-50 w-64 bg-blue-800 text-white transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
             {{-- Logo --}}
             <div class="flex items-center gap-3 border-b border-blue-700/50 bg-blue-900 px-6" style="height: 53px;">
-                <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                </div>
-                <div>
-                    <span class="text-lg font-bold">Unzanet</span>
-
-                </div>
+                <img src="{{ asset('img/logo.png') }}" alt="Unzanet" class="h-11 w-auto object-contain">
             </div>
 
             {{-- Navigation --}}
@@ -65,6 +57,10 @@
                         <span id="mainCoreChevron" class="text-xs {{ request()->routeIs('fiber.*') ? '' : '-rotate-90' }}">v</span>
                     </button>
                     <div id="mainCoreMenu" class="mt-1 space-y-1 pl-11 pr-2 {{ request()->routeIs('fiber.*') ? '' : 'hidden' }}">
+                        <a href="{{ route('fiber.trace') }}"
+                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.trace') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
+                            Trace Jalur
+                        </a>
                         <a href="{{ route('fiber.server') }}"
                             class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.server') || request()->routeIs('fiber.dashboard') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
                             Server
