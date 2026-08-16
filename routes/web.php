@@ -14,9 +14,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/tentang-kami', [HomeController::class, 'about'])->name('about');
-Route::get('/layanan', [HomeController::class, 'services'])->name('services');
-Route::get('/kontak', [HomeController::class, 'contact'])->name('contact');
+Route::redirect('/tentang-kami', '/#tentang-kami')->name('about');
+Route::redirect('/layanan', '/#layanan')->name('services');
+Route::redirect('/kontak', '/#kontak')->name('contact');
 
 /*
 |--------------------------------------------------------------------------
