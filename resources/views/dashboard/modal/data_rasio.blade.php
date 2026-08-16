@@ -78,7 +78,7 @@
 
             <div class="flex justify-end gap-2">
                 <button type="button" data-close-modal="{{ $modalId }}" class="rounded-lg border px-4 py-2" style="cursor: pointer;">Batal</button>
-                <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-white" style="cursor: pointer;">Simpan</button>
+                <button type="submit" class="rounded-lg bg-slate-950 px-4 py-2 text-white" style="cursor: pointer;">Simpan</button>
             </div>
         </form>
     </div>

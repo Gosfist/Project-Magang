@@ -19,7 +19,7 @@
 
                 </div>
                 <button type="button" data-open-modal="createModal"
-                    class="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white" style="cursor: pointer;">Tambah Data</button>
+                    class="rounded-lg bg-slate-950 px-4 py-2 text-sm text-white" style="cursor: pointer;">Tambah Data</button>
             </div>
 
             <div class="overflow-x-auto">
@@ -43,7 +43,7 @@
                                 <td class="px-5 py-3">
                                     <div class="flex justify-end gap-2 whitespace-nowrap">
                                         <button type="button" data-open-modal="editModal{{ $node->id }}"
-                                            class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white"
+                                            class="rounded-lg bg-slate-950 px-3 py-1.5 text-xs text-white"
                                             style="cursor: pointer;">Edit</button>
                                         <form data-maincore-form data-confirm="Yakin ingin menghapus data ini?" method="POST"
                                             action="{{ route('api.maincore.destroy', [$section, $node]) }}">

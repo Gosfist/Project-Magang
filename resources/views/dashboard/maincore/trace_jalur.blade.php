@@ -23,7 +23,7 @@
                 <div>
                     <label for="traceCategory" class="mb-1 block text-sm font-medium text-gray-700">Kategori</label>
                     <select id="traceCategory" data-trace-category name="category" required
-                        class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                        class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200">
                         <option value="">Pilih kategori</option>
                         @foreach ($traceCategories as $value => $label)
                             <option value="{{ $value }}" @selected($selectedCategory === $value)>{{ $label }}</option>
@@ -38,7 +38,7 @@
                     <label for="traceNodeSearch" class="mb-1 block text-sm font-medium text-gray-700">Nama</label>
                     <input id="traceNodeSearch" data-trace-search type="search" value="{{ $selectedNodeName }}" autocomplete="off"
                         placeholder="Pilih kategori terlebih dahulu" disabled
-                        class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-gray-100 disabled:text-gray-400">
+                        class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-gray-100 disabled:text-gray-400">
                     <input id="traceNodeId" data-trace-node-id type="hidden" name="node_id" value="{{ $selectedNodeId }}">
                     <button id="traceDropdownButton" data-trace-dropdown type="button" aria-label="Buka daftar nama" disabled
                         class="absolute bottom-0 right-0 flex h-[42px] w-10 items-center justify-center text-gray-400 disabled:text-gray-300">
@@ -55,7 +55,7 @@
                 </div>
 
                 <button type="submit"
-                    class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                    class="rounded-lg bg-slate-950 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-black"
                     style="cursor: pointer;">
                     Trace Jalur
                 </button>
@@ -69,7 +69,7 @@
                         <h2 class="font-semibold text-gray-900">Hasil Trace Jalur</h2>
                     </div>
                     <span
-                        class="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">{{ $traceNodeCount }} titik</span>
+                        class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-900">{{ $traceNodeCount }} titik</span>
                 </div>
 
                 <div class="space-y-4">
@@ -82,7 +82,7 @@
                             <div class="flex min-w-max items-stretch">
                                 @foreach ($path as $node)
                                     <article
-                                        class="w-52 rounded-lg border {{ $node->is($selectedNode) ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-100' : 'border-gray-200 bg-white' }} p-4">
+                                        class="w-52 rounded-lg border {{ $node->is($selectedNode) ? 'border-slate-900 bg-slate-100 ring-2 ring-slate-300' : 'border-gray-200 bg-white' }} p-4">
                                         <span
                                             class="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold uppercase text-gray-600">{{ $labels[$node->tipe_titik] }}</span>
                                         <h3 class="mt-3 font-semibold text-gray-900">{{ $node->nama_titik }}</h3>
@@ -103,7 +103,7 @@
                                     </article>
 
                                     @unless ($loop->last)
-                                        <div class="flex w-12 shrink-0 items-center justify-center text-blue-500"
+                                        <div class="flex w-12 shrink-0 items-center justify-center text-slate-700"
                                             aria-hidden="true">
                                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

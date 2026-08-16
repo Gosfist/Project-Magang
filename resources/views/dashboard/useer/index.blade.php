@@ -3,20 +3,20 @@
 @section('content')
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
     <form method="GET" class="flex flex-wrap gap-2">
-        <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama atau email..." class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none w-64">
-        <select name="role" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama atau email..." class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-400 focus:border-slate-900 outline-none w-64">
+        <select name="role" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-400 outline-none">
             <option value="">Semua Role</option>
             <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Admin</option>
             <option value="petugas" {{ request('role') == 'petugas' ? 'selected' : '' }}>Petugas</option>
         </select>
-        <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-400 outline-none">
             <option value="">Semua Status</option>
             <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
             <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
         </select>
         <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors">Cari</button>
     </form>
-    <button type="button" data-open-modal="createUserModal" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors" style="cursor: pointer;">
+    <button type="button" data-open-modal="createUserModal" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-950 text-white rounded-lg text-sm font-medium hover:bg-black transition-colors" style="cursor: pointer;">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
         Tambah Petugas
     </button>
@@ -39,11 +39,11 @@
                 <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td class="px-6 py-3 font-medium text-gray-900">{{ $user->name }}</td>
                     <td class="px-6 py-3 text-gray-500">{{ $user->email }}</td>
-                    <td class="px-6 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">{{ ucfirst($user->role) }}</span></td>
-                    <td class="px-6 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full {{ $user->status == 'active' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700' }}">{{ ucfirst($user->status) }}</span></td>
+                    <td class="px-6 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-900">{{ ucfirst($user->role) }}</span></td>
+                    <td class="px-6 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full {{ $user->status == 'active' ? 'bg-slate-200 text-slate-900' : 'bg-red-100 text-red-700' }}">{{ ucfirst($user->status) }}</span></td>
                     <td class="px-6 py-3 text-right">
                         <div class="flex items-center justify-end gap-2">
-                            <button type="button" data-open-modal="editUserModal{{ $user->id }}" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit" style="cursor: pointer;">
+                            <button type="button" data-open-modal="editUserModal{{ $user->id }}" class="p-1.5 text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" title="Edit" style="cursor: pointer;">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                             </button>
                             @if($user->id !== auth()->id())

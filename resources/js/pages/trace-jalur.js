@@ -38,7 +38,7 @@ export function bootTraceJalur() {
             nodes.forEach((node) => {
                 const option = document.createElement('button');
                 option.type = 'button';
-                option.className = 'block w-full rounded-md px-3 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700';
+                option.className = 'block w-full rounded-md px-3 py-2 text-left text-sm text-gray-700 hover:bg-slate-100 hover:text-slate-950';
                 option.textContent = node.nama_titik;
                 option.addEventListener('click', () => selectNode(node));
                 options.appendChild(option);

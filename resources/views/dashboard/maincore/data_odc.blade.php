@@ -21,9 +21,9 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <input id="odcSearch" data-table-search type="search" placeholder="Cari nama ODC..." aria-label="Cari berdasarkan nama ODC"
-                        class="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                        class="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-slate-900 focus:ring-2 focus:ring-slate-200">
                     <button type="button" data-open-modal="createModal"
-                        class="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white" style="cursor: pointer;">Tambah
+                        class="rounded-lg bg-slate-950 px-4 py-2 text-sm text-white" style="cursor: pointer;">Tambah
                         Data</button>
                 </div>
             </div>
@@ -52,7 +52,7 @@
                                 <td class="px-5 py-3">
                                     <div class="flex justify-end gap-2 whitespace-nowrap">
                                         <button type="button" data-open-modal="editModal{{ $node->id }}"
-                                            class="rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white"
+                                            class="rounded-lg bg-slate-950 px-3 py-1.5 text-xs text-white"
                                             style="cursor: pointer;">Edit</button>
                                         <form data-maincore-form data-confirm="Yakin ingin menghapus data ini?" method="POST"
                                             action="{{ route('api.maincore.destroy', [$section, $node]) }}">

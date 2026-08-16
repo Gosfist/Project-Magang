@@ -9,7 +9,7 @@
     <div>
         <label class="mb-1 block text-sm font-medium">Kategori</label>
         <select data-parent-category required
-            class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+            class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200">
             <option value="">Pilih kategori</option>
             @foreach ($labels as $value => $label)
                 <option value="{{ $value }}" @selected($selectedParentCategory === $value)>{{ $label }}</option>
@@ -29,7 +29,7 @@
                 value="{{ $selectedParent?->nama_titik }}"
                 placeholder="{{ $selectedParentCategory ? 'Cari atau pilih sumber jalur...' : 'Pilih kategori terlebih dahulu' }}"
                 @disabled(! $selectedParentCategory)
-                class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 pr-10 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-gray-100 disabled:text-gray-400">
+                class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 pr-10 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-gray-100 disabled:text-gray-400">
             <input type="hidden" name="parent_id" value="{{ $selectedParentId }}" data-parent-id
                 data-current-parent="{{ $node?->parent_id }}">
             <button type="button" data-parent-dropdown-button aria-label="Buka daftar sumber jalur"
@@ -56,7 +56,7 @@
                     data-parent-type="{{ $parent->tipe_titik }}"
                     data-output-count="{{ $parent->jumlah_output ?? 0 }}"
                     data-used-ports="{{ json_encode($usedPorts) }}"
-                    class="block w-full rounded-md px-3 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                    class="block w-full rounded-md px-3 py-2 text-left text-sm text-gray-700 hover:bg-slate-100 hover:text-slate-950">
                     {{ $parent->nama_titik }}
                 </button>
             @endforeach
