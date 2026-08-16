@@ -12,6 +12,7 @@
         $ratioOptions = \App\Models\MainCore::SPLITTER_RATIOS;
     @endphp
 
+    <div data-maincore-feature data-api-url="{{ route('api.maincore.index', $section) }}">
     <div data-maincore-page data-type="rasio" data-row-offset="{{ ($nodes->firstItem() ?? 1) - 1 }}" class="space-y-5">
         <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-5 py-4">
@@ -111,4 +112,5 @@
             'ratioOptions' => $ratioOptions,
         ])
     @endforeach
+    </div>
 @endsection

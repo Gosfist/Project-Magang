@@ -74,6 +74,18 @@ class MainCoreApiTest extends TestCase
                 ]);
         }
 
+        $fragmentResponse = $this->withToken($token)->getJson('/api/maincore/server?fragment=1&per_page=5')
+            ->assertOk()
+            ->assertJsonPath('meta.per_page', 5)
+            ->assertJsonPath('data.0.nama_titik', 'Server API')
+            ->assertJson(fn ($json) => $json
+                ->whereType('fragment', 'string')
+                ->where('fragment', fn (string $fragment) => str_contains($fragment, 'data-maincore-feature'))
+                ->etc());
+
+        $this->assertStringNotContainsString('<script', $fragmentResponse->json('fragment'));
+        $this->assertStringNotContainsString('<link', $fragmentResponse->json('fragment'));
+
         $this->withToken($token)->patchJson("/api/maincore/server/{$serverId}", [
             'nama_titik' => 'Server API Baru',
             'redaman_in' => -2,
@@ -129,6 +141,14 @@ class MainCoreApiTest extends TestCase
         $this->assertStringContainsString(
             "headers.set('Authorization'",
             file_get_contents(resource_path('js/services/api.js')),
+        );
+        $this->assertStringNotContainsString(
+            'window.location.reload()',
+            file_get_contents(resource_path('js/pages/maincore.js')),
+        );
+        $this->assertStringContainsString(
+            "import('./pages/maincore')",
+            file_get_contents(resource_path('js/app.js')),
         );
     }
 

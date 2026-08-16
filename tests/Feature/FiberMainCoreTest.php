@@ -196,7 +196,8 @@ class FiberMainCoreTest extends TestCase
                 ->assertOk()
                 ->assertSee('page=2', false)
                 ->assertSee('aria-label="Pagination"', false)
-                ->assertSee('text-blue-600', false)
+                ->assertSee('data-maincore-pagination', false)
+                ->assertSee('text-slate-900', false)
                 ->assertDontSee('Showing')
                 ->assertViewHas('nodes', fn ($nodes) => $nodes->perPage() === 5
                     && $nodes->total() === 6

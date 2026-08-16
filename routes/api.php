@@ -13,6 +13,8 @@ Route::middleware('jwt')->group(function () {
 
     Route::prefix('maincore')->name('api.maincore.')->group(function () {
         Route::get('{type}', [MainCoreController::class, 'apiIndex'])
+            // Aktifkan sesi Blade hanya untuk merender potongan fitur tanpa reload layout.
+            ->middleware('web')
             ->whereIn('type', ['server', 'rasio', 'odc', 'odp'])
             ->name('index');
         Route::post('{type}', [MainCoreController::class, 'store'])

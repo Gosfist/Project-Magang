@@ -21,6 +21,9 @@ function syncRasioRedamanPorts(splitterSelect) {
 
 export function bootSplitterFields(container) {
     container.querySelectorAll('[data-splitter-select]').forEach((splitterSelect) => {
+        if (splitterSelect.dataset.splitterReady === 'true') return;
+        splitterSelect.dataset.splitterReady = 'true';
+
         syncRasioRedamanPorts(splitterSelect);
         splitterSelect.addEventListener('change', () => syncRasioRedamanPorts(splitterSelect));
     });

@@ -131,11 +131,8 @@ class MainCoreController extends Controller
         abort_unless(in_array($type, MainCore::TYPES, true), 404);
 
         $perPage = min(max($request->integer('per_page', 15), 1), 100);
-        $nodes = MainCore::with('parent')
-            ->type($type)
-            ->orderBy('nama_titik')
-            ->paginate($perPage)
-            ->withQueryString();
+        $viewData = $this->listData($type, $perPage);
+        $nodes = $viewData['nodes'];
 
         $nodes->getCollection()->each(fn (MainCore $node) => $node->append([
             'jenis_splitter',
@@ -144,7 +141,7 @@ class MainCoreController extends Controller
             'rasio_redaman_ports',
         ]));
 
-        return response()->json([
+        $payload = [
             'data' => $nodes->items(),
             'meta' => [
                 'current_page' => $nodes->currentPage(),
@@ -152,7 +149,15 @@ class MainCoreController extends Controller
                 'per_page' => $nodes->perPage(),
                 'total' => $nodes->total(),
             ],
-        ]);
+        ];
+
+        if ($request->boolean('fragment')) {
+            // Muat hanya isi fitur aktif agar asset dan layout dashboard tidak dimuat ulang.
+            $sections = view($this->viewForType($type), $viewData)->renderSections();
+            $payload['fragment'] = $sections['content'] ?? '';
+        }
+
+        return response()->json($payload);
     }
 
     public function store(Request $request, string $type)
@@ -199,23 +204,34 @@ class MainCoreController extends Controller
 
     private function listByType(string $type)
     {
-        $allParents = $this->parentOptions($type, true);
+        return view($this->viewForType($type), $this->listData($type));
+    }
 
-        $view = match ($type) {
+    private function listData(string $type, int $perPage = 5): array
+    {
+        // Siapkan hanya data yang dibutuhkan oleh fitur Main Core yang sedang dibuka.
+        return [
+            'section' => $type,
+            'nodes' => MainCore::with('parent')
+                ->type($type)
+                ->orderBy('nama_titik')
+                ->paginate($perPage)
+                ->withPath(route("fiber.$type")),
+            'parents' => $this->parentOptions($type),
+            'allParents' => $this->parentOptions($type, true),
+            'existingNames' => MainCore::select('id', 'nama_titik')->orderBy('nama_titik')->get(),
+            'labels' => $this->labels(),
+        ];
+    }
+
+    private function viewForType(string $type): string
+    {
+        return match ($type) {
             'server' => 'dashboard.maincore.data_server',
             'odc' => 'dashboard.maincore.data_odc',
             'odp' => 'dashboard.maincore.data_odp',
             'rasio' => 'dashboard.maincore.data_rasio',
         };
-
-        return view($view, [
-            'section' => $type,
-            'nodes' => MainCore::with('parent')->type($type)->orderBy('nama_titik')->paginate(5)->withQueryString(),
-            'parents' => $this->parentOptions($type),
-            'allParents' => $allParents,
-            'existingNames' => MainCore::select('id', 'nama_titik')->orderBy('nama_titik')->get(),
-            'labels' => $this->labels(),
-        ]);
     }
 
     private function validatedNode(Request $request, string $type, ?MainCore $node = null): array

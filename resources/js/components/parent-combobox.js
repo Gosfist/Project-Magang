@@ -63,6 +63,9 @@ function syncParentPort(combobox) {
 }
 
 function initializeParentCombobox(combobox) {
+    if (combobox.dataset.parentComboboxReady === 'true') return;
+    combobox.dataset.parentComboboxReady = 'true';
+
     const form = combobox.closest('form');
     const category = form?.querySelector('[data-parent-category]');
     const search = combobox.querySelector('[data-parent-search]');
@@ -161,12 +164,17 @@ function initializeParentCombobox(combobox) {
     syncParentPort(combobox);
 }
 
-export function bootParentComboboxes() {
-    const comboboxes = Array.from(document.querySelectorAll('[data-parent-combobox]'));
+let outsideClickReady = false;
+
+export function bootParentComboboxes(container = document) {
+    const comboboxes = Array.from(container.querySelectorAll('[data-parent-combobox]'));
     comboboxes.forEach(initializeParentCombobox);
 
+    if (outsideClickReady) return;
+    outsideClickReady = true;
+
     document.addEventListener('click', (event) => {
-        comboboxes.forEach((combobox) => {
+        document.querySelectorAll('[data-parent-combobox]').forEach((combobox) => {
             if (!combobox.contains(event.target)) {
                 combobox.querySelector('[data-parent-options]')?.classList.add('hidden');
             }

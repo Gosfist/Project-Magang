@@ -1,4 +1,4 @@
-import { accessTokenExpiresAt } from '../services/api';
+import { accessTokenExpiresAt, accessTokenWasVerified, markAccessTokenVerified } from '../services/api';
 import { currentUser, forgetAuthentication } from '../services/auth-service';
 
 export function bootDashboard() {
@@ -45,9 +45,14 @@ export function bootDashboard() {
     }
 
     setTimeout(logout, remaining);
+    // Token cukup diperiksa sekali pada kunjungan pertama setelah login.
+    // Navigasi berikutnya memakai sesi yang sama tanpa meminta data pengguna berulang kali.
+    if (accessTokenWasVerified()) return;
+
     currentUser(dashboard.dataset.meUrl).then((payload) => {
         if (!payload?.user) return;
 
+        markAccessTokenVerified();
         document.getElementById('current-user-name').textContent = payload.user.name;
         document.getElementById('current-user-role').textContent = payload.user.role;
         document.getElementById('current-user-initial').textContent = payload.user.name.charAt(0).toUpperCase();
