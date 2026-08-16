@@ -23,7 +23,7 @@
                     <label for="traceCategory" class="mb-1 block text-sm font-medium text-gray-700">Kategori</label>
                     <select id="traceCategory" name="category" required class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
                         <option value="">Pilih kategori</option>
-                        @foreach ($labels as $value => $label)
+                        @foreach ($traceCategories as $value => $label)
                             <option value="{{ $value }}" @selected($selectedCategory === $value)>{{ $label }}</option>
                         @endforeach
                     </select>
@@ -61,40 +61,46 @@
                 <div class="mb-5 flex flex-wrap items-center justify-between gap-2">
                     <div>
                         <h2 class="font-semibold text-gray-900">Hasil Trace Jalur</h2>
-                        <p class="mt-1 text-sm text-gray-500">Jalur dari sumber/Core menuju {{ $selectedNode->nama_titik }}.</p>
                     </div>
-                    <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">{{ $tracePath->count() }} titik</span>
+                    <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">{{ $traceNodeCount }} titik</span>
                 </div>
 
-                <div class="overflow-x-auto pb-2">
-                    <div class="flex min-w-max items-stretch">
-                        @foreach ($tracePath as $node)
-                            <article class="w-52 rounded-lg border {{ $node->is($selectedNode) ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white' }} p-4">
-                                <span class="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold uppercase text-gray-600">{{ $labels[$node->tipe_titik] }}</span>
-                                <h3 class="mt-3 font-semibold text-gray-900">{{ $node->nama_titik }}</h3>
-                                <dl class="mt-3 space-y-1 text-xs text-gray-500">
-                                    @if ($node->parent_port_out)
-                                        <div class="flex justify-between gap-3">
-                                            <dt>Port sumber</dt>
-                                            <dd class="font-medium text-gray-700">Port {{ $node->parent_port_out }}</dd>
-                                        </div>
-                                    @endif
-                                    <div class="flex justify-between gap-3">
-                                        <dt>Redaman In</dt>
-                                        <dd class="font-medium text-gray-700">{{ $formatRedaman($node->redaman_in) }}</dd>
-                                    </div>
-                                </dl>
-                            </article>
+                <div class="space-y-4">
+                    @foreach ($tracePaths as $path)
+                        @if ($tracePaths->count() > 1)
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Cabang {{ $loop->iteration }}</p>
+                        @endif
+                        <div class="overflow-x-auto pb-2">
+                            <div class="flex min-w-max items-stretch">
+                                @foreach ($path as $node)
+                                    <article class="w-52 rounded-lg border {{ $node->is($selectedNode) ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-100' : 'border-gray-200 bg-white' }} p-4">
+                                        <span class="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold uppercase text-gray-600">{{ $labels[$node->tipe_titik] }}</span>
+                                        <h3 class="mt-3 font-semibold text-gray-900">{{ $node->nama_titik }}</h3>
+                                        <dl class="mt-3 space-y-1 text-xs text-gray-500">
+                                            @if ($node->parent_port_out)
+                                                <div class="flex justify-between gap-3">
+                                                    <dt>Port sumber</dt>
+                                                    <dd class="font-medium text-gray-700">Port {{ $node->parent_port_out }}</dd>
+                                                </div>
+                                            @endif
+                                            <div class="flex justify-between gap-3">
+                                                <dt>Redaman In</dt>
+                                                <dd class="font-medium text-gray-700">{{ $formatRedaman($node->redaman_in) }}</dd>
+                                            </div>
+                                        </dl>
+                                    </article>
 
-                            @unless ($loop->last)
-                                <div class="flex w-12 shrink-0 items-center justify-center text-blue-500" aria-hidden="true">
-                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </div>
-                            @endunless
-                        @endforeach
-                    </div>
+                                    @unless ($loop->last)
+                                        <div class="flex w-12 shrink-0 items-center justify-center text-blue-500" aria-hidden="true">
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </div>
+                                    @endunless
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </section>
         @endif
@@ -171,6 +177,7 @@
         });
 
         traceSearch.addEventListener('focus', renderTraceOptions);
+        traceSearch.addEventListener('click', renderTraceOptions);
         traceSearch.addEventListener('input', () => {
             traceNodeId.value = '';
             traceSearch.setCustomValidity('');

@@ -18,6 +18,8 @@ class FiberDashboardController extends Controller
 
     public function traceJalur(Request $request)
     {
+        $traceCategories = $this->labels();
+
         $nodesByCategory = MainCore::query()
             ->select('id', 'nama_titik', 'tipe_titik')
             ->orderBy('nama_titik')
@@ -27,10 +29,12 @@ class FiberDashboardController extends Controller
 
         $selectedNode = null;
         $tracePath = collect();
+        $tracePaths = collect();
+        $traceNodeCount = 0;
 
         if ($request->filled('category') || $request->filled('node_id')) {
             $data = $request->validate([
-                'category' => ['required', Rule::in(MainCore::TYPES)],
+                'category' => ['required', Rule::in(array_keys($traceCategories))],
                 'node_id' => ['required', 'integer', Rule::exists('main_core', 'id')],
             ], [
                 'category.required' => 'Kategori wajib dipilih.',
@@ -55,14 +59,51 @@ class FiberDashboardController extends Controller
                 $tracePath->prepend($current);
                 $current = $current->parent;
             }
+
+            $ancestorPrefix = array_slice($tracePath->values()->all(), 0, -1);
+            $tracePaths = collect($this->pathsToLeafNodes($selectedNode))
+                ->map(fn (array $descendantPath) => collect(array_merge($ancestorPrefix, $descendantPath)));
+            $traceNodeCount = $tracePaths->flatten(1)->unique('id')->count();
         }
 
         return view('dashboard.maincore.trace_jalur', [
             'nodesByCategory' => $nodesByCategory,
             'selectedNode' => $selectedNode,
             'tracePath' => $tracePath,
+            'tracePaths' => $tracePaths,
+            'traceNodeCount' => $traceNodeCount,
+            'traceCategories' => $traceCategories,
             'labels' => $this->labels(),
         ]);
+    }
+
+    /**
+     * Build every path from the selected node through its descendants to a leaf node.
+     *
+     * @return array<int, array<int, MainCore>>
+     */
+    private function pathsToLeafNodes(MainCore $node, array $visited = []): array
+    {
+        if (isset($visited[$node->id])) {
+            return [];
+        }
+
+        $visited[$node->id] = true;
+        $children = $node->children->reject(fn (MainCore $child) => isset($visited[$child->id]));
+
+        if ($children->isEmpty()) {
+            return [[$node]];
+        }
+
+        $paths = [];
+
+        foreach ($children as $child) {
+            foreach ($this->pathsToLeafNodes($child, $visited) as $childPath) {
+                $paths[] = array_merge([$node], $childPath);
+            }
+        }
+
+        return $paths ?: [[$node]];
     }
 
     public function server()
@@ -306,8 +347,7 @@ class FiberDashboardController extends Controller
     {
         return match ($type) {
             'server' => [],
-            'rasio' => ['server', 'rasio', 'odc'],
-            'odc', 'odp' => ['server', 'rasio', 'odc', 'odp'],
+            'rasio', 'odc', 'odp' => MainCore::TYPES,
             default => [],
         };
     }

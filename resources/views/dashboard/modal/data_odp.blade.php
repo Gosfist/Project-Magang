@@ -21,29 +21,7 @@
                     $selectedParentId = old('form_mode') === $mode ? old('parent_id', $node?->parent_id) : $node?->parent_id;
                     $selectedPort = old('form_mode') === $mode ? old('parent_port_out', $node?->parent_port_out) : $node?->parent_port_out;
             @endphp
-                <div>
-                    @if(old('form_mode') === $mode) @error('parent_id')<p class="mb-1 text-xs text-red-600">{{ $message }}</p>@enderror @endif
-                    <label class="mb-1 block text-sm font-medium">Sumber Jalur / Parent</label>
-                    <select name="parent_id" required data-parent-select data-current-parent="{{ $node?->parent_id }}" class="w-full rounded-lg border px-4 py-2">
-                        <option value="">Pilih sumber jalur</option>
-                        @foreach($parents as $parent)
-                            @php
-                                $usedPorts = $parent->children
-                                    ->reject(fn ($child) => $node && $child->id === $node->id)
-                                    ->pluck('parent_port_out')
-                                    ->filter()
-                                    ->values();
-                            @endphp
-                            <option value="{{ $parent->id }}"
-                                data-parent-type="{{ $parent->tipe_titik }}"
-                                data-output-count="{{ $parent->jumlah_output ?? 0 }}"
-                                data-used-ports='@json($usedPorts)'
-                                @selected((string)$selectedParentId === (string)$parent->id)>
-                                {{ strtoupper($parent->tipe_titik) }} - {{ $parent->nama_titik }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                @include('dashboard.modal.partials.parent-picker')
 
                 <div>
                     @if(old('form_mode') === $mode) @error('parent_port_out')<p class="mb-1 text-xs text-red-600">{{ $message }}</p>@enderror @endif

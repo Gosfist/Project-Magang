@@ -84,9 +84,12 @@ class FiberMainCoreTest extends TestCase
         $this->actingAs($user)->get('/dashboard/fiber/rasio')
             ->assertOk()
             ->assertSee('Rasio 01')
-            ->assertSee('1:2')
-            ->assertSee('Jenis Rasio')
-            ->assertSee('10% dan 90%')
+            ->assertSee('data-parent-category', false)
+            ->assertSee('data-parent-search', false)
+            ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Jenis Rasio</th>')
+            ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Rasio Redaman</th>')
+            ->assertSeeHtml('name="spesifikasi[jenis_splitter]"')
+            ->assertSeeHtml('name="spesifikasi[rasio_redaman_ports][1]"')
             ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Port Sumber</th>')
             ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Jumlah Output</th>')
             ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Alamat</th>');
@@ -94,6 +97,11 @@ class FiberMainCoreTest extends TestCase
         $this->actingAs($user)->get('/dashboard/fiber/odc')
             ->assertOk()
             ->assertSee('ODC 01')
+            ->assertSee('Cari nama ODC...')
+            ->assertSee('data-odc-row', false)
+            ->assertSee('data-search-name="odc 01"', false)
+            ->assertSee('data-parent-category', false)
+            ->assertSee('data-parent-search', false)
             ->assertSee('Rasio 01')
             ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Port Sumber</th>')
             ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Jenis Splitter</th>')
@@ -106,6 +114,11 @@ class FiberMainCoreTest extends TestCase
         $this->actingAs($user)->get('/dashboard/fiber/odp')
             ->assertOk()
             ->assertSee('ODP 01')
+            ->assertSee('Cari nama ODP...')
+            ->assertSee('data-odp-row', false)
+            ->assertSee('data-search-name="odp 01"', false)
+            ->assertSee('data-parent-category', false)
+            ->assertSee('data-parent-search', false)
             ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Port Sumber</th>')
             ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Jenis Splitter</th>')
             ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Jumlah Output</th>')
@@ -295,9 +308,9 @@ class FiberMainCoreTest extends TestCase
 
         $this->actingAs($user)->get('/dashboard/fiber/odc')
             ->assertOk()
-            ->assertDontSee('SERVER - Core 1')
-            ->assertSee('SERVER - Core 2')
-            ->assertSee('RASIO - Rasio 1');
+            ->assertDontSee('data-parent-name="Core 1"', false)
+            ->assertSee('data-parent-name="Core 2"', false)
+            ->assertSee('data-parent-name="Rasio 1"', false);
 
         $this->actingAs($user)->post('/dashboard/fiber/odc', [
             'parent_id' => $coreOne->id,
@@ -396,11 +409,15 @@ class FiberMainCoreTest extends TestCase
 
         $this->actingAs($user)->get('/dashboard/fiber/odc')
             ->assertOk()
-            ->assertSee('ODP - ODP Sumber');
+            ->assertSee('data-parent-name="ODP Sumber"', false);
 
         $this->actingAs($user)->get('/dashboard/fiber/odp')
             ->assertOk()
-            ->assertSee('ODP - ODP Sumber');
+            ->assertSee('data-parent-name="ODP Sumber"', false);
+
+        $this->actingAs($user)->get('/dashboard/fiber/rasio')
+            ->assertOk()
+            ->assertSee('data-parent-name="ODP Sumber"', false);
 
         $this->actingAs($user)->post('/dashboard/fiber/odp', [
             'parent_id' => $odpSource->id,
@@ -416,6 +433,13 @@ class FiberMainCoreTest extends TestCase
             'spesifikasi' => ['jenis_splitter' => '1:4'],
         ])->assertRedirect('/dashboard/fiber/odc');
 
+        $this->actingAs($user)->post('/dashboard/fiber/rasio', [
+            'parent_id' => $odpSource->id,
+            'parent_port_out' => 3,
+            'nama_titik' => 'Rasio Lanjutan',
+            'spesifikasi' => ['jenis_splitter' => '1:2'],
+        ])->assertRedirect('/dashboard/fiber/rasio');
+
         $this->assertDatabaseHas('main_core', [
             'parent_id' => $odpSource->id,
             'parent_port_out' => 1,
@@ -427,6 +451,12 @@ class FiberMainCoreTest extends TestCase
             'parent_port_out' => 2,
             'nama_titik' => 'ODC Lanjutan',
             'tipe_titik' => 'odc',
+        ]);
+        $this->assertDatabaseHas('main_core', [
+            'parent_id' => $odpSource->id,
+            'parent_port_out' => 3,
+            'nama_titik' => 'Rasio Lanjutan',
+            'tipe_titik' => 'rasio',
         ]);
     }
 
@@ -471,8 +501,22 @@ class FiberMainCoreTest extends TestCase
             ->assertOk()
             ->assertSee('Trace Jalur')
             ->assertSee('Pilih kategori')
+            ->assertSee('<option value="server"', false)
+            ->assertSee('<option value="rasio"', false)
+            ->assertSee('<option value="odc"', false)
+            ->assertSee('<option value="odp"', false)
             ->assertSee('Cari atau pilih nama...', false)
             ->assertSee('ODP Trace');
+
+        $this->actingAs($user)->get('/dashboard/fiber/trace-jalur?category=server&node_id='.$server->id)
+            ->assertOk()
+            ->assertSeeInOrder(['Core Trace', 'Rasio Trace', 'ODC Trace', 'ODP Trace'])
+            ->assertSee('4 titik');
+
+        $this->actingAs($user)->get('/dashboard/fiber/trace-jalur?category=odc&node_id='.$odc->id)
+            ->assertOk()
+            ->assertSeeInOrder(['Core Trace', 'Rasio Trace', 'ODC Trace', 'ODP Trace'])
+            ->assertSee('4 titik');
 
         $this->actingAs($user)->get('/dashboard/fiber/trace-jalur?category=odp&node_id='.$odp->id)
             ->assertOk()

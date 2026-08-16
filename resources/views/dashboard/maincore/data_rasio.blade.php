@@ -9,19 +9,6 @@
             ? '-'
             : rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.') . ' dBm';
         $formatTanggal = fn($value) => $value?->format('d-m-Y') ?? '-';
-        $formatRasioRedaman = fn($ports) => collect($ports)
-            ->filter(fn($value) => $value !== null && $value !== '')
-            ->map(function ($value) {
-                $value = trim((string) $value);
-
-                return str_ends_with($value, '%') ? $value : $value . '%';
-            })
-            ->implode(' dan ') ?:
-        '-';
-        $fieldValue = fn($node, $key) => old('form_mode') ===
-        ($node ? $section . '_edit_' . $node->id : $section . '_create')
-            ? old($key, data_get($node, $key))
-            : data_get($node, $key);
         $ratioOptions = \App\Models\MainCore::SPLITTER_RATIOS;
     @endphp
 
@@ -48,8 +35,6 @@
                             <th class="w-16 px-5 py-3 text-left">No</th>
                             <th class="px-5 py-3 text-left">Nama Rasio</th>
                             <th class="px-5 py-3 text-left">Sumber Jalur</th>
-                            <th class="px-5 py-3 text-left">Jenis Rasio</th>
-                            <th class="px-5 py-3 text-left">Rasio Redaman</th>
                             <th class="px-5 py-3 text-left">Redaman In</th>
                             <th class="px-5 py-3 text-left">Tanggal</th>
                             <th class="px-5 py-3 text-right">Action</th>
@@ -62,8 +47,6 @@
                                 <td class="px-5 py-3" data-row-number>{{ $loop->iteration }}</td>
                                 <td class="px-5 py-3 font-medium">{{ $node->nama_titik }}</td>
                                 <td class="px-5 py-3">{{ $node->parent?->nama_titik ?? '-' }}</td>
-                                <td class="px-5 py-3">{{ $node->jenis_splitter ?? '-' }}</td>
-                                <td class="px-5 py-3">{{ $formatRasioRedaman($node->rasio_redaman_ports) }}</td>
                                 <td class="px-5 py-3">{{ $formatRedaman($node->redaman_in) }}</td>
                                 <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal) }}</td>
                                 <td class="px-5 py-3">
@@ -83,11 +66,11 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-5 py-8 text-center text-gray-400">Belum ada data Rasio.</td>
+                                <td colspan="6" class="px-5 py-8 text-center text-gray-400">Belum ada data Rasio.</td>
                             </tr>
                         @endforelse
                         <tr id="noRasioSearchResults" class="hidden">
-                            <td colspan="8" class="px-5 py-8 text-center text-gray-400">Nama Rasio tidak ditemukan.</td>
+                            <td colspan="6" class="px-5 py-8 text-center text-gray-400">Nama Rasio tidak ditemukan.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -115,10 +98,10 @@
             'node' => $node,
             'mode' => $section . '_edit_' . $node->id,
             'parents' => $allParents->filter(
-                fn($parent) => $parent->id === $node->parent_id ||
+                fn($parent) => $parent->id !== $node->id && ($parent->id === $node->parent_id ||
                     ($parent->tipe_titik === 'server'
                         ? $parent->children_count === 0
-                        : $parent->children_count < ($parent->jumlah_output ?? 0))),
+                        : $parent->children_count < ($parent->jumlah_output ?? 0)))),
             'existingNames' => $existingNames,
             'ratioOptions' => $ratioOptions,
         ])
@@ -184,11 +167,6 @@
             document.getElementById('modalBackdrop')?.remove();
         }
 
-        document.querySelectorAll('[data-parent-select]').forEach((parentSelect) => {
-            syncPortSelect(parentSelect);
-            parentSelect.addEventListener('change', () => syncPortSelect(parentSelect));
-        });
-
         document.querySelectorAll('[data-splitter-select]').forEach((splitterSelect) => {
             syncRasioRedamanPorts(splitterSelect);
             splitterSelect.addEventListener('change', () => syncRasioRedamanPorts(splitterSelect));
@@ -214,70 +192,6 @@
                     if (!visible) input.value = '';
                 }
             });
-        }
-
-        function syncPortSelect(parentSelect) {
-            const form = parentSelect.closest('form');
-            const portSelect = form?.querySelector('[data-port-select]');
-
-            if (!portSelect) return;
-
-            const option = parentSelect.selectedOptions[0];
-            const parentType = option?.dataset.parentType || '';
-            const outputCount = Number(option?.dataset.outputCount || 0);
-            const currentParent = String(parentSelect.dataset.currentParent || '');
-            const selectedParent = String(parentSelect.value || '');
-            const selectedPort = Number(portSelect.dataset.selectedPort || 0);
-            const currentPort = currentParent && selectedParent === currentParent ? selectedPort : 0;
-            const usedPorts = parseJsonPorts(option?.dataset.usedPorts || '[]');
-
-            portSelect.innerHTML = '';
-
-            if (!selectedParent) {
-                setSinglePortOption(portSelect, 'Pilih sumber jalur terlebih dahulu');
-                return;
-            }
-
-            if (parentType === 'server') {
-                setSinglePortOption(portSelect, 'Server/Core tidak memakai port');
-                return;
-            }
-
-            const availablePorts = [];
-            for (let port = 1; port <= outputCount; port++) {
-                if (!usedPorts.includes(port) || port === currentPort) {
-                    availablePorts.push(port);
-                }
-            }
-
-            if (availablePorts.length === 0) {
-                setSinglePortOption(portSelect, 'Semua port sudah digunakan');
-                return;
-            }
-
-            portSelect.disabled = false;
-            portSelect.required = true;
-            portSelect.appendChild(new Option('Pilih port', ''));
-
-            availablePorts.forEach((port) => {
-                const item = new Option(`Port ${port}`, port);
-                item.selected = port === selectedPort;
-                portSelect.appendChild(item);
-            });
-        }
-
-        function setSinglePortOption(portSelect, label) {
-            portSelect.disabled = true;
-            portSelect.required = false;
-            portSelect.appendChild(new Option(label, ''));
-        }
-
-        function parseJsonPorts(value) {
-            try {
-                return JSON.parse(value).map(Number);
-            } catch {
-                return [];
-            }
         }
 
         document.querySelectorAll('[data-ajax-form]').forEach((form) => {

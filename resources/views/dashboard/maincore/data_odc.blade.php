@@ -9,10 +9,6 @@
             ? '-'
             : rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.') . ' dBm';
         $formatTanggal = fn($value) => $value?->format('d-m-Y') ?? '-';
-        $fieldValue = fn($node, $key) => old('form_mode') ===
-        ($node ? $section . '_edit_' . $node->id : $section . '_create')
-            ? old($key, data_get($node, $key))
-            : data_get($node, $key);
         $ratioOptions = \App\Models\MainCore::SPLITTER_RATIOS;
     @endphp
 
@@ -23,8 +19,13 @@
                     <h2 class="font-semibold">Data {{ $label }}</h2>
 
                 </div>
-                <button type="button" onclick="openModal('createModal')"
-                    class="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white" style="cursor: pointer;">Tambah Data</button>
+                <div class="flex flex-wrap items-center gap-2">
+                    <input id="odcSearch" type="search" placeholder="Cari nama ODC..."
+                        aria-label="Cari berdasarkan nama ODC"
+                        class="w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                    <button type="button" onclick="openModal('createModal')"
+                        class="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white" style="cursor: pointer;">Tambah Data</button>
+                </div>
             </div>
 
             <div class="overflow-x-auto">
@@ -41,8 +42,9 @@
                     </thead>
                     <tbody id="nodeRows">
                         @forelse($nodes as $node)
-                            <tr class="border-t border-gray-100" data-node-row="{{ $node->id }}">
-                                <td class="px-5 py-3">{{ $loop->iteration }}</td>
+                            <tr class="border-t border-gray-100" data-node-row="{{ $node->id }}" data-odc-row
+                                data-search-name="{{ mb_strtolower($node->nama_titik) }}">
+                                <td class="px-5 py-3" data-row-number>{{ $loop->iteration }}</td>
                                 <td class="px-5 py-3 font-medium">{{ $node->nama_titik }}</td>
                                 <td class="px-5 py-3">{{ $node->parent?->nama_titik ?? '-' }}</td>
                                 <td class="px-5 py-3">{{ $formatRedaman($node->redaman_in) }}</td>
@@ -67,6 +69,9 @@
                                 <td colspan="6" class="px-5 py-8 text-center text-gray-400">Belum ada data ODC.</td>
                             </tr>
                         @endforelse
+                        <tr id="noOdcSearchResults" class="hidden">
+                            <td colspan="6" class="px-5 py-8 text-center text-gray-400">Nama ODC tidak ditemukan.</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -93,16 +98,38 @@
             'node' => $node,
             'mode' => $section . '_edit_' . $node->id,
             'parents' => $allParents->filter(
-                fn($parent) => $parent->id === $node->parent_id ||
+                fn($parent) => $parent->id !== $node->id && ($parent->id === $node->parent_id ||
                     ($parent->tipe_titik === 'server'
                         ? $parent->children_count === 0
-                        : $parent->children_count < ($parent->jumlah_output ?? 0))),
+                        : $parent->children_count < ($parent->jumlah_output ?? 0)))),
             'existingNames' => $existingNames,
             'ratioOptions' => $ratioOptions,
         ])
     @endforeach
 
     <script>
+        const odcSearch = document.getElementById('odcSearch');
+        const odcRows = Array.from(document.querySelectorAll('[data-odc-row]'));
+        const noOdcSearchResults = document.getElementById('noOdcSearchResults');
+
+        odcSearch?.addEventListener('input', () => {
+            const query = odcSearch.value.trim().toLocaleLowerCase('id-ID');
+            let visibleRows = 0;
+
+            odcRows.forEach((row) => {
+                const matches = (row.dataset.searchName || '').includes(query);
+                row.classList.toggle('hidden', !matches);
+
+                if (matches) {
+                    visibleRows++;
+                    const number = row.querySelector('[data-row-number]');
+                    if (number) number.textContent = visibleRows;
+                }
+            });
+
+            noOdcSearchResults?.classList.toggle('hidden', query === '' || visibleRows > 0 || odcRows.length === 0);
+        });
+
         function openModal(id) {
             const modal = document.getElementById(id);
             if (!modal) return;
@@ -138,75 +165,6 @@
         function closeModalBackdrop() {
             if (document.querySelector('.fixed.flex[id$="Modal"], #createModal.flex')) return;
             document.getElementById('modalBackdrop')?.remove();
-        }
-
-        document.querySelectorAll('[data-parent-select]').forEach((parentSelect) => {
-            syncPortSelect(parentSelect);
-            parentSelect.addEventListener('change', () => syncPortSelect(parentSelect));
-        });
-
-        function syncPortSelect(parentSelect) {
-            const form = parentSelect.closest('form');
-            const portSelect = form?.querySelector('[data-port-select]');
-
-            if (!portSelect) return;
-
-            const option = parentSelect.selectedOptions[0];
-            const parentType = option?.dataset.parentType || '';
-            const outputCount = Number(option?.dataset.outputCount || 0);
-            const currentParent = String(parentSelect.dataset.currentParent || '');
-            const selectedParent = String(parentSelect.value || '');
-            const selectedPort = Number(portSelect.dataset.selectedPort || 0);
-            const currentPort = currentParent && selectedParent === currentParent ? selectedPort : 0;
-            const usedPorts = parseJsonPorts(option?.dataset.usedPorts || '[]');
-
-            portSelect.innerHTML = '';
-
-            if (!selectedParent) {
-                setSinglePortOption(portSelect, 'Pilih sumber jalur terlebih dahulu');
-                return;
-            }
-
-            if (parentType === 'server') {
-                setSinglePortOption(portSelect, 'Server/Core tidak memakai port');
-                return;
-            }
-
-            const availablePorts = [];
-            for (let port = 1; port <= outputCount; port++) {
-                if (!usedPorts.includes(port) || port === currentPort) {
-                    availablePorts.push(port);
-                }
-            }
-
-            if (availablePorts.length === 0) {
-                setSinglePortOption(portSelect, 'Semua port sudah digunakan');
-                return;
-            }
-
-            portSelect.disabled = false;
-            portSelect.required = true;
-            portSelect.appendChild(new Option('Pilih port', ''));
-
-            availablePorts.forEach((port) => {
-                const item = new Option(`Port ${port}`, port);
-                item.selected = port === selectedPort;
-                portSelect.appendChild(item);
-            });
-        }
-
-        function setSinglePortOption(portSelect, label) {
-            portSelect.disabled = true;
-            portSelect.required = false;
-            portSelect.appendChild(new Option(label, ''));
-        }
-
-        function parseJsonPorts(value) {
-            try {
-                return JSON.parse(value).map(Number);
-            } catch {
-                return [];
-            }
         }
 
         document.querySelectorAll('[data-ajax-form]').forEach((form) => {
