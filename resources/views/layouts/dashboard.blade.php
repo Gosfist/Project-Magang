@@ -14,14 +14,16 @@
     <div class="flex min-h-screen">
         {{-- Sidebar --}}
         <aside id="sidebar"
-            class="fixed inset-y-0 left-0 z-50 w-64 bg-blue-800 text-white transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+            class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-hidden bg-blue-800 text-white transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
             {{-- Logo --}}
-            <div class="flex items-center gap-3 border-b border-blue-700/50 bg-blue-900 px-6" style="height: 53px;">
-                <img src="{{ asset('img/logo.png') }}" alt="Unzanet" class="h-11 w-auto object-contain">
+            <div class="flex h-16 shrink-0 items-center gap-3 overflow-hidden border-b border-blue-700/50 bg-blue-900 px-4">
+                <img src="{{ asset('img/logo.png') }}" alt="Unzanet" class="block shrink-0 object-contain"
+                    style="width: auto; height: 36px;">
+                <span class="truncate text-sm font-bold tracking-wide text-white">PT UNZANET</span>
             </div>
 
             {{-- Navigation --}}
-            <nav class="mt-4 px-3 space-y-1 overflow-y-auto" style="max-height: calc(100vh - 180px);">
+            <nav class="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4">
                 <a href="{{ route('dashboard') }}"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('dashboard') ? 'bg-white/15 text-white shadow-sm' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,7 +56,12 @@
                                 d="M12 3v18m0-18a4 4 0 00-4 4v2a4 4 0 004 4m0-10a4 4 0 014 4v2a4 4 0 01-4 4m-7 4h14" />
                         </svg>
                         <span class="flex-1 text-left">Main Core</span>
-                        <span id="mainCoreChevron" class="text-xs {{ request()->routeIs('fiber.*') ? '' : '-rotate-90' }}">v</span>
+                        <svg id="mainCoreChevron"
+                            class="h-4 w-4 shrink-0 transition-transform {{ request()->routeIs('fiber.*') ? '' : '-rotate-90' }}"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 9l-7 7-7-7" />
+                        </svg>
                     </button>
                     <div id="mainCoreMenu" class="mt-1 space-y-1 pl-11 pr-2 {{ request()->routeIs('fiber.*') ? '' : 'hidden' }}">
                         <a href="{{ route('fiber.trace') }}"
@@ -83,9 +90,9 @@
             </nav>
 
             {{-- User Info --}}
-            <div class="absolute bottom-0 left-0 right-0 p-3 border-t border-blue-700/50">
+            <div class="shrink-0 border-t border-blue-700/50 bg-blue-800 p-3">
                 <div class="flex items-center gap-3 px-3 py-2">
-                    <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm font-bold">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold">
                         {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                     </div>
                     <div class="flex-1 min-w-0">
