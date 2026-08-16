@@ -169,9 +169,14 @@ class FiberMainCoreTest extends TestCase
             ->assertOk()
             ->assertSee('Cari nama rasio...')
             ->assertSee('data-rasio-row', false)
+            ->assertSee('data-table-search', false)
             ->assertSee('data-search-name="rasio utara"', false)
-            ->assertSee("addEventListener('input'", false)
             ->assertViewHas('nodes', fn ($nodes) => $nodes->pluck('nama_titik')->all() === ['Rasio Selatan', 'Rasio Utara']);
+
+        $this->assertStringContainsString(
+            "search.addEventListener('input'",
+            file_get_contents(resource_path('js/components/table-filter.js')),
+        );
     }
 
     public function test_main_core_lists_are_paginated_five_rows_per_page(): void
@@ -537,8 +542,14 @@ class FiberMainCoreTest extends TestCase
             ->assertSee('<option value="rasio"', false)
             ->assertSee('<option value="odc"', false)
             ->assertSee('<option value="odp"', false)
-            ->assertSee('Cari atau pilih nama...', false)
+            ->assertSee('data-trace-form', false)
+            ->assertSee('data-trace-nodes=', false)
             ->assertSee('ODP Trace');
+
+        $this->assertStringContainsString(
+            'Cari atau pilih nama...',
+            file_get_contents(resource_path('js/pages/trace-jalur.js')),
+        );
 
         $this->actingAs($user)->get('/dashboard/fiber/trace-jalur?category=server&node_id='.$server->id)
             ->assertOk()

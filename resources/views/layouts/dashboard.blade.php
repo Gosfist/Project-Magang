@@ -10,7 +10,8 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="font-sans antialiased bg-gray-50 min-h-screen">
+<body data-dashboard data-me-url="{{ route('api.me') }}" data-login-url="{{ route('login') }}"
+    class="font-sans antialiased bg-gray-50 min-h-screen">
     <div class="flex min-h-screen">
         {{-- Sidebar --}}
         <aside id="sidebar"
@@ -49,7 +50,7 @@
                 </div>
 
                 <div>
-                    <button type="button" onclick="toggleMainCoreMenu()"
+                    <button type="button" data-toggle-maincore-menu
                         class="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('fiber.*') ? 'text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -99,7 +100,7 @@
                         <p id="current-user-name" class="text-sm font-medium truncate">{{ auth()->user()->name }}</p>
                         <p id="current-user-role" class="text-xs text-blue-300 capitalize">{{ auth()->user()->role }}</p>
                     </div>
-                    <form id="logout-form" method="POST" action="{{ route('logout') }}">
+                    <form id="logout-form" data-logout-form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit"
                             class="p-1.5 rounded-lg text-blue-300 hover:text-white hover:bg-white/10 transition-colors"
@@ -115,7 +116,7 @@
         </aside>
 
         {{-- Sidebar overlay for mobile --}}
-        <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="toggleSidebar()">
+        <div id="sidebarOverlay" data-toggle-sidebar class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden">
         </div>
 
         {{-- Main Content --}}
@@ -124,7 +125,7 @@
             <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
                 <div class="flex min-w-0 items-center justify-between px-4 sm:px-6 py-3">
                     <div class="flex items-center gap-3">
-                        <button onclick="toggleSidebar()"
+                        <button type="button" data-toggle-sidebar
                             class="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -164,7 +165,7 @@
                             d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span class="text-sm leading-5">{{ session('success') }}</span>
-                    <button onclick="document.getElementById('global-flash')?.remove()"
+                    <button type="button" data-dismiss="global-flash"
                         class="ml-auto text-green-500 hover:text-green-700">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -183,7 +184,7 @@
                             d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span class="text-sm leading-5">{{ session('error') }}</span>
-                    <button onclick="document.getElementById('global-flash')?.remove()"
+                    <button type="button" data-dismiss="global-flash"
                         class="ml-auto text-red-500 hover:text-red-700">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -194,99 +195,6 @@
             @endif
         </div>
     @endif
-
-    <script>
-        const jwtTokenKey = 'unzanet_jwt';
-        const jwtExpiresAtKey = 'unzanet_jwt_expires_at';
-        let automaticLogoutStarted = false;
-
-        function clearJwtToken() {
-            localStorage.removeItem(jwtTokenKey);
-            localStorage.removeItem(jwtExpiresAtKey);
-        }
-
-        function automaticLogout() {
-            if (automaticLogoutStarted) return;
-
-            automaticLogoutStarted = true;
-            clearJwtToken();
-
-            const logoutForm = document.getElementById('logout-form');
-            if (logoutForm) {
-                logoutForm.requestSubmit();
-                return;
-            }
-
-            window.location.href = @json(route('login'));
-        }
-
-        window.apiFetch = async function (input, options = {}) {
-            const token = localStorage.getItem(jwtTokenKey);
-
-            if (!token) {
-                automaticLogout();
-                throw new Error('Token tidak ditemukan. Silakan login kembali.');
-            }
-
-            const headers = new Headers(options.headers || {});
-            headers.set('Authorization', `Bearer ${token}`);
-            headers.set('Accept', 'application/json');
-            headers.set('X-Requested-With', 'XMLHttpRequest');
-
-            const response = await fetch(input, {
-                ...options,
-                headers,
-            });
-
-            if (response.status === 401) {
-                automaticLogout();
-                throw new Error('Token telah kedaluwarsa. Silakan login kembali.');
-            }
-
-            return response;
-        };
-
-        function scheduleJwtExpiration() {
-            const expiresAt = Date.parse(localStorage.getItem(jwtExpiresAtKey) || '');
-            const remaining = expiresAt - Date.now();
-
-            if (!Number.isFinite(expiresAt) || remaining <= 0) {
-                automaticLogout();
-                return false;
-            }
-
-            setTimeout(automaticLogout, remaining);
-            return true;
-        }
-
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            sidebar.classList.toggle('-translate-x-full');
-            overlay.classList.toggle('hidden');
-        }
-
-        function toggleMainCoreMenu() {
-            document.getElementById('mainCoreMenu')?.classList.toggle('hidden');
-            document.getElementById('mainCoreChevron')?.classList.toggle('-rotate-90');
-        }
-
-        setTimeout(() => {
-            document.getElementById('global-flash')?.remove();
-        }, 5000);
-
-        if (scheduleJwtExpiration()) {
-            window.apiFetch(@json(route('api.me')))
-                .then((response) => response.ok ? response.json() : null)
-                .then((payload) => {
-                    if (!payload?.user) return;
-
-                    document.getElementById('current-user-name').textContent = payload.user.name;
-                    document.getElementById('current-user-role').textContent = payload.user.role;
-                    document.getElementById('current-user-initial').textContent = payload.user.name.charAt(0).toUpperCase();
-                }).catch(() => {});
-        }
-    </script>
 
     @stack('scripts')
 </body>

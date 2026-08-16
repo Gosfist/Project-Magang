@@ -36,7 +36,7 @@
                 </div>
 
                 {{-- Mobile menu button --}}
-                <button onclick="document.getElementById('mobileMenu').classList.toggle('hidden')"
+                <button type="button" data-toggle-target="mobileMenu"
                     class="md:hidden p-2 rounded-lg text-gray-600 hover:bg-blue-50">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

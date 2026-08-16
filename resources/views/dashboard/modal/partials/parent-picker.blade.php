@@ -55,7 +55,7 @@
                     data-parent-name="{{ $parent->nama_titik }}"
                     data-parent-type="{{ $parent->tipe_titik }}"
                     data-output-count="{{ $parent->jumlah_output ?? 0 }}"
-                    data-used-ports='@json($usedPorts)'
+                    data-used-ports="{{ json_encode($usedPorts) }}"
                     class="block w-full rounded-md px-3 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
                     {{ $parent->nama_titik }}
                 </button>

@@ -17,11 +17,12 @@
                 <h2 class="font-semibold text-gray-900">Cari Jalur Jaringan</h2>
             </div>
 
-            <form method="GET" action="{{ route('fiber.trace') }}" id="traceForm"
+            <form method="GET" action="{{ route('fiber.trace') }}" id="traceForm" data-trace-form
+                data-trace-nodes="{{ $nodesByCategory->toJson() }}"
                 class="grid items-end gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]">
                 <div>
                     <label for="traceCategory" class="mb-1 block text-sm font-medium text-gray-700">Kategori</label>
-                    <select id="traceCategory" name="category" required
+                    <select id="traceCategory" data-trace-category name="category" required
                         class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
                         <option value="">Pilih kategori</option>
                         @foreach ($traceCategories as $value => $label)
@@ -33,19 +34,19 @@
                     @enderror
                 </div>
 
-                <div class="relative" id="traceNameField">
+                <div class="relative" id="traceNameField" data-trace-name-field>
                     <label for="traceNodeSearch" class="mb-1 block text-sm font-medium text-gray-700">Nama</label>
-                    <input id="traceNodeSearch" type="search" value="{{ $selectedNodeName }}" autocomplete="off"
+                    <input id="traceNodeSearch" data-trace-search type="search" value="{{ $selectedNodeName }}" autocomplete="off"
                         placeholder="Pilih kategori terlebih dahulu" disabled
                         class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-gray-100 disabled:text-gray-400">
-                    <input id="traceNodeId" type="hidden" name="node_id" value="{{ $selectedNodeId }}">
-                    <button id="traceDropdownButton" type="button" aria-label="Buka daftar nama" disabled
+                    <input id="traceNodeId" data-trace-node-id type="hidden" name="node_id" value="{{ $selectedNodeId }}">
+                    <button id="traceDropdownButton" data-trace-dropdown type="button" aria-label="Buka daftar nama" disabled
                         class="absolute bottom-0 right-0 flex h-[42px] w-10 items-center justify-center text-gray-400 disabled:text-gray-300">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
-                    <div id="traceNodeOptions"
+                    <div id="traceNodeOptions" data-trace-options
                         class="absolute z-20 mt-1 hidden max-h-60 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 shadow-lg">
                     </div>
                     @error('node_id')
@@ -119,103 +120,3 @@
         @endif
     </div>
 @endsection
-
-@push('scripts')
-    <script>
-        const traceNodes = @json($nodesByCategory);
-        const traceCategory = document.getElementById('traceCategory');
-        const traceSearch = document.getElementById('traceNodeSearch');
-        const traceNodeId = document.getElementById('traceNodeId');
-        const traceOptions = document.getElementById('traceNodeOptions');
-        const traceDropdownButton = document.getElementById('traceDropdownButton');
-        const traceNameField = document.getElementById('traceNameField');
-        const traceForm = document.getElementById('traceForm');
-
-        function categoryNodes() {
-            return traceNodes[traceCategory.value] || [];
-        }
-
-        function renderTraceOptions() {
-            const keyword = traceSearch.value.trim().toLowerCase();
-            const nodes = categoryNodes().filter((node) => node.nama_titik.toLowerCase().includes(keyword));
-
-            traceOptions.innerHTML = '';
-
-            if (nodes.length === 0) {
-                const empty = document.createElement('p');
-                empty.className = 'px-3 py-2 text-sm text-gray-400';
-                empty.textContent = keyword ? 'Nama tidak ditemukan.' : 'Belum ada data pada kategori ini.';
-                traceOptions.appendChild(empty);
-            } else {
-                nodes.forEach((node) => {
-                    const option = document.createElement('button');
-                    option.type = 'button';
-                    option.className =
-                        'block w-full rounded-md px-3 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700';
-                    option.textContent = node.nama_titik;
-                    option.addEventListener('click', () => selectTraceNode(node));
-                    traceOptions.appendChild(option);
-                });
-            }
-
-            traceOptions.classList.remove('hidden');
-        }
-
-        function selectTraceNode(node) {
-            traceSearch.value = node.nama_titik;
-            traceNodeId.value = node.id;
-            traceSearch.setCustomValidity('');
-            traceOptions.classList.add('hidden');
-        }
-
-        function syncTraceCategory(resetSelection = false) {
-            const enabled = Boolean(traceCategory.value);
-            traceSearch.disabled = !enabled;
-            traceDropdownButton.disabled = !enabled;
-            traceSearch.placeholder = enabled ? 'Cari atau pilih nama...' : 'Pilih kategori terlebih dahulu';
-
-            if (resetSelection) {
-                traceSearch.value = '';
-                traceNodeId.value = '';
-            }
-
-            traceOptions.classList.add('hidden');
-        }
-
-        traceCategory.addEventListener('change', () => {
-            syncTraceCategory(true);
-            if (!traceSearch.disabled) {
-                traceSearch.focus();
-                renderTraceOptions();
-            }
-        });
-
-        traceSearch.addEventListener('focus', renderTraceOptions);
-        traceSearch.addEventListener('click', renderTraceOptions);
-        traceSearch.addEventListener('input', () => {
-            traceNodeId.value = '';
-            traceSearch.setCustomValidity('');
-            renderTraceOptions();
-        });
-        traceDropdownButton.addEventListener('click', () => {
-            traceSearch.focus();
-            renderTraceOptions();
-        });
-
-        traceForm.addEventListener('submit', (event) => {
-            if (!traceNodeId.value) {
-                event.preventDefault();
-                traceSearch.setCustomValidity('Pilih nama dari daftar yang tersedia.');
-                traceSearch.reportValidity();
-            }
-        });
-
-        document.addEventListener('click', (event) => {
-            if (!traceNameField.contains(event.target)) {
-                traceOptions.classList.add('hidden');
-            }
-        });
-
-        syncTraceCategory(false);
-    </script>
-@endpush

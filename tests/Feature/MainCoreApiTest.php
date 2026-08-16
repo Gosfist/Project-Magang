@@ -112,15 +112,24 @@ class MainCoreApiTest extends TestCase
         $this->get('/login')
             ->assertOk()
             ->assertSee(route('api.login'), false)
-            ->assertSee("localStorage.setItem('unzanet_jwt'", false);
+            ->assertSee('data-login-form', false)
+            ->assertDontSee('<script>', false);
 
         foreach (MainCore::TYPES as $type) {
             $this->actingAs($user)->get("/dashboard/fiber/{$type}")
                 ->assertOk()
                 ->assertSee(route('api.maincore.store', $type), false)
-                ->assertSee('window.apiFetch(form.action', false)
-                ->assertSee("headers.set('Authorization'", false);
+                ->assertSee('data-maincore-form', false)
+                ->assertSee('data-open-modal', false)
+                ->assertDontSee('<script>', false);
         }
+
+        $this->assertFileExists(resource_path('js/services/api.js'));
+        $this->assertFileExists(resource_path('js/services/main-core-service.js'));
+        $this->assertStringContainsString(
+            "headers.set('Authorization'",
+            file_get_contents(resource_path('js/services/api.js')),
+        );
     }
 
     private function user(): User

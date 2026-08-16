@@ -32,9 +32,9 @@
                 </div>
             @endif
 
-            <div id="login-error" class="mb-4 hidden rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600"></div>
+            <div id="login-error" data-login-error class="mb-4 hidden rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600"></div>
 
-            <form id="login-form" method="POST" action="{{ route('api.login') }}" class="space-y-5">
+            <form id="login-form" data-login-form method="POST" action="{{ route('api.login') }}" class="space-y-5">
                 @csrf
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
@@ -59,50 +59,6 @@
             <a href="{{ route('home') }}" class="text-blue-600 hover:underline">Kembali ke Beranda</a>
         </p>
     </div>
-
-    <script>
-        localStorage.removeItem('unzanet_jwt');
-        localStorage.removeItem('unzanet_jwt_expires_at');
-
-        document.getElementById('login-form')?.addEventListener('submit', async (event) => {
-            event.preventDefault();
-
-            const form = event.currentTarget;
-            const errorBox = document.getElementById('login-error');
-            const submit = form.querySelector('[type="submit"]');
-
-            errorBox.classList.add('hidden');
-            errorBox.textContent = '';
-            submit.disabled = true;
-
-            try {
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    body: new FormData(form),
-                });
-                const payload = await response.json();
-
-                if (!response.ok) {
-                    const messages = Object.values(payload.errors || {}).flat();
-                    throw new Error(messages.join(' ') || payload.message || 'Login gagal.');
-                }
-
-                localStorage.setItem('unzanet_jwt', payload.access_token);
-                localStorage.setItem('unzanet_jwt_expires_at', payload.expires_at);
-                window.location.href = payload.redirect_url;
-            } catch (error) {
-                errorBox.textContent = error.message || 'Login gagal.';
-                errorBox.classList.remove('hidden');
-            } finally {
-                submit.disabled = false;
-            }
-        });
-    </script>
 </body>
 
 </html>

@@ -16,7 +16,7 @@
         </select>
         <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors">Cari</button>
     </form>
-    <button type="button" onclick="openUserModal('createUserModal')" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors" style="cursor: pointer;">
+    <button type="button" data-open-modal="createUserModal" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors" style="cursor: pointer;">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
         Tambah Petugas
     </button>
@@ -43,11 +43,11 @@
                     <td class="px-6 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full {{ $user->status == 'active' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700' }}">{{ ucfirst($user->status) }}</span></td>
                     <td class="px-6 py-3 text-right">
                         <div class="flex items-center justify-end gap-2">
-                            <button type="button" onclick="openUserModal('editUserModal{{ $user->id }}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit" style="cursor: pointer;">
+                            <button type="button" data-open-modal="editUserModal{{ $user->id }}" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit" style="cursor: pointer;">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                             </button>
                             @if($user->id !== auth()->id())
-                            <form method="POST" action="{{ route('users.destroy', $user) }}" onsubmit="return confirm('Yakin ingin menghapus petugas ini?')">
+                            <form method="POST" action="{{ route('users.destroy', $user) }}" data-confirm-submit="Yakin ingin menghapus petugas ini?">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -87,42 +87,4 @@
         'user' => $user,
     ])
 @endforeach
-
-<script>
-    function openUserModal(id) {
-        const modal = document.getElementById(id);
-        if (!modal) return;
-
-        const backdrop = document.createElement('div');
-        backdrop.id = 'userModalBackdrop';
-        backdrop.style.position = 'fixed';
-        backdrop.style.inset = '0';
-        backdrop.style.zIndex = '9999';
-        backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.50)';
-        backdrop.style.backdropFilter = 'blur(2px)';
-        document.body.appendChild(backdrop);
-        document.body.appendChild(modal);
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        document.body.classList.add('overflow-hidden');
-    }
-
-    function closeUserModal(id) {
-        const modal = document.getElementById(id);
-        if (!modal) return;
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        document.getElementById('userModalBackdrop')?.remove();
-        document.body.classList.remove('overflow-hidden');
-    }
-
-    @if ($errors->any() && old('form_mode') === 'user_create')
-        openUserModal('createUserModal');
-    @endif
-    @foreach ($users as $user)
-        @if ($errors->any() && old('form_mode') === 'user_edit_' . $user->id)
-            openUserModal('editUserModal{{ $user->id }}');
-        @endif
-    @endforeach
-</script>
 @endsection

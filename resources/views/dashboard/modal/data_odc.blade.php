@@ -1,12 +1,12 @@
-<div id="{{ $modalId }}" class="fixed inset-0 hidden items-center justify-center overflow-y-auto px-4 py-6" style="z-index: 10000;">
+<div id="{{ $modalId }}" data-modal @if($errors->any() && old('form_mode') === $mode) data-modal-open-on-load @endif class="fixed inset-0 hidden items-center justify-center overflow-y-auto px-4 py-6" style="z-index: 10000;">
     <div class="w-full max-w-2xl rounded-lg bg-white shadow-xl">
         <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
             <h2 class="font-semibold">{{ $title }}</h2>
-            <button type="button" onclick="closeModal('{{ $modalId }}')" class="text-gray-400 hover:text-gray-700" style="cursor: pointer;">X</button>
+            <button type="button" data-close-modal="{{ $modalId }}" class="text-gray-400 hover:text-gray-700" style="cursor: pointer;">X</button>
         </div>
-        <form data-ajax-form
+        <form data-maincore-form
             data-current-id="{{ $node?->id ?? 0 }}"
-            data-existing-names='@json($existingNames)'
+            data-existing-names="{{ $existingNames->toJson() }}"
             data-unique-message="{{ $nameLabel }} sudah digunakan!"
             method="POST"
             action="{{ $action }}"
@@ -26,7 +26,7 @@
                 <div>
                     @if(old('form_mode') === $mode) @error('parent_port_out')<p class="mb-1 text-xs text-red-600">{{ $message }}</p>@enderror @endif
                     <label class="mb-1 block text-sm font-medium">Pilih Port</label>
-                    <select name="parent_port_out" data-port-select data-selected-port="{{ $selectedPort }}" disabled oninvalid="this.setCustomValidity('Port wajib dipilih.')" oninput="this.setCustomValidity('')" onchange="this.setCustomValidity('')" class="w-full rounded-lg border px-4 py-2 disabled:bg-gray-100 disabled:text-gray-500">
+                    <select name="parent_port_out" data-port-select data-selected-port="{{ $selectedPort }}" disabled class="w-full rounded-lg border px-4 py-2 disabled:bg-gray-100 disabled:text-gray-500">
                         <option value="">Pilih sumber jalur terlebih dahulu</option>
                     </select>
                 </div>
@@ -62,7 +62,7 @@
             </div>
 
             <div class="flex justify-end gap-2">
-                <button type="button" onclick="closeModal('{{ $modalId }}')" class="rounded-lg border px-4 py-2" style="cursor: pointer;">Batal</button>
+                <button type="button" data-close-modal="{{ $modalId }}" class="rounded-lg border px-4 py-2" style="cursor: pointer;">Batal</button>
                 <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-white" style="cursor: pointer;">Simpan</button>
             </div>
         </form>
