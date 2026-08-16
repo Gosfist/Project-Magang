@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') - Unzanet</title>
+    <link rel="icon" type="image/png" href="{{ asset('img/logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -13,23 +14,16 @@
     <div class="flex min-h-screen">
         {{-- Sidebar --}}
         <aside id="sidebar"
-            class="fixed inset-y-0 left-0 z-50 w-64 bg-blue-800 text-white transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+            class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-hidden bg-blue-800 text-white transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
             {{-- Logo --}}
-            <div class="flex items-center gap-3 border-b border-blue-700/50 bg-blue-900 px-6" style="height: 53px;">
-                <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                </div>
-                <div>
-                    <span class="text-lg font-bold">Unzanet</span>
-
-                </div>
+            <div class="flex h-16 shrink-0 items-center gap-3 overflow-hidden border-b border-blue-700/50 bg-blue-900 px-4">
+                <img src="{{ asset('img/logo.png') }}" alt="Unzanet" class="block shrink-0 object-contain"
+                    style="width: auto; height: 36px;">
+                <span class="truncate text-sm font-bold tracking-wide text-white">PT UNZANET</span>
             </div>
 
             {{-- Navigation --}}
-            <nav class="mt-4 px-3 space-y-1 overflow-y-auto" style="max-height: calc(100vh - 180px);">
+            <nav class="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4">
                 <a href="{{ route('dashboard') }}"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('dashboard') ? 'bg-white/15 text-white shadow-sm' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,25 +49,39 @@
                 </div>
 
                 <div>
-                    <a href="{{ route('fiber.server') }}"
-                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('fiber.*') ? 'text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
+                    <button type="button" onclick="toggleMainCoreMenu()"
+                        class="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('fiber.*') ? 'text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 3v18m0-18a4 4 0 00-4 4v2a4 4 0 004 4m0-10a4 4 0 014 4v2a4 4 0 01-4 4m-7 4h14" />
                         </svg>
-                        Main Core Fiber
-                    </a>
-                    <div class="mt-1 space-y-1 pl-11 pr-2">
+                        <span class="flex-1 text-left">Main Core</span>
+                        <svg id="mainCoreChevron"
+                            class="h-4 w-4 shrink-0 transition-transform {{ request()->routeIs('fiber.*') ? '' : '-rotate-90' }}"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div id="mainCoreMenu" class="mt-1 space-y-1 pl-11 pr-2 {{ request()->routeIs('fiber.*') ? '' : 'hidden' }}">
+                        <a href="{{ route('fiber.trace') }}"
+                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.trace') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
+                            Trace Jalur
+                        </a>
                         <a href="{{ route('fiber.server') }}"
                             class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.server') || request()->routeIs('fiber.dashboard') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
                             Server
                         </a>
+                        <a href="{{ route('fiber.rasio') }}"
+                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.rasio') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
+                            Rasio
+                        </a>
                         <a href="{{ route('fiber.odc') }}"
-                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.odc') || request()->routeIs('fiber.odcs.*') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
+                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.odc') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
                             ODC
                         </a>
                         <a href="{{ route('fiber.odp') }}"
-                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.odp') || request()->routeIs('fiber.odps.*') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
+                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.odp') ? 'bg-white/15 text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white' }}">
                             ODP
                         </a>
                     </div>
@@ -82,9 +90,9 @@
             </nav>
 
             {{-- User Info --}}
-            <div class="absolute bottom-0 left-0 right-0 p-3 border-t border-blue-700/50">
+            <div class="shrink-0 border-t border-blue-700/50 bg-blue-800 p-3">
                 <div class="flex items-center gap-3 px-3 py-2">
-                    <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm font-bold">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-bold">
                         {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                     </div>
                     <div class="flex-1 min-w-0">
@@ -111,10 +119,10 @@
         </div>
 
         {{-- Main Content --}}
-        <div class="flex-1 lg:ml-64">
+        <div class="min-w-0 flex-1 lg:ml-64">
             {{-- Top Bar --}}
             <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
-                <div class="flex items-center justify-between px-4 sm:px-6 py-3">
+                <div class="flex min-w-0 items-center justify-between px-4 sm:px-6 py-3">
                     <div class="flex items-center gap-3">
                         <button onclick="toggleSidebar()"
                             class="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100">
@@ -193,6 +201,11 @@
             const overlay = document.getElementById('sidebarOverlay');
             sidebar.classList.toggle('-translate-x-full');
             overlay.classList.toggle('hidden');
+        }
+
+        function toggleMainCoreMenu() {
+            document.getElementById('mainCoreMenu')?.classList.toggle('hidden');
+            document.getElementById('mainCoreChevron')?.classList.toggle('-rotate-90');
         }
 
         setTimeout(() => {

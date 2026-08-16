@@ -8,24 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::dropIfExists('fo_splice');
-        Schema::dropIfExists('fo_splitter_output');
-        Schema::dropIfExists('fo_splitter');
-        Schema::dropIfExists('fo_core_endpoint');
-        Schema::dropIfExists('fo_core');
-        Schema::dropIfExists('fo_kabel');
-        Schema::dropIfExists('fo_closure');
-        Schema::dropIfExists('fo_cables');
-        Schema::dropIfExists('fo_closures');
         Schema::dropIfExists('main_odp_port');
         Schema::dropIfExists('main_odc_output');
         Schema::dropIfExists('main_odc');
         Schema::dropIfExists('main_odp');
         Schema::dropIfExists('main_server_core');
+        Schema::dropIfExists('main_core');
 
         Schema::create('main_core', function (Blueprint $table) {
             $table->id();
             $table->foreignId('parent_id')->nullable()->index()->constrained('main_core')->nullOnDelete();
+            $table->unsignedInteger('parent_port_out')->nullable()->index();
             $table->string('nama_titik')->index()->unique();
             $table->enum('tipe_titik', ['server', 'rasio', 'odc', 'odp'])->index();
             $table->decimal('redaman_in', 5, 2)->nullable();

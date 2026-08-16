@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="PT. Unzanet - Penyedia layanan internet RT/RW Net terpercaya">
     <title>@yield('title', 'PT. Unzanet')</title>
+    <link rel="icon" type="image/png" href="{{ asset('img/logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -16,15 +17,7 @@
             <div class="flex justify-between h-16 items-center">
                 {{-- Logo --}}
                 <a href="{{ route('home') }}" class="flex items-center gap-2">
-                    <div
-                        class="w-9 h-9 bg-blue-700 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                    </div>
-                    <span
-                        class="text-xl font-bold text-blue-700">Unzanet</span>
+                    <img src="{{ asset('img/logo.png') }}" alt="Unzanet" class="h-12 w-auto object-contain">
                 </a>
 
                 {{-- Desktop Nav --}}
@@ -83,14 +76,7 @@
                 {{-- Company Info --}}
                 <div>
                     <div class="flex items-center gap-2 mb-4">
-                        <div
-                            class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                        </div>
-                        <span class="text-lg font-bold">PT. Unzanet</span>
+                        <img src="{{ asset('img/logo.png') }}" alt="PT. Unzanet" class="h-12 w-auto object-contain">
                     </div>
                     <p class="text-gray-400 text-sm leading-relaxed">Penyedia layanan internet RT/RW Net terpercaya
                         dengan jaringan fiber optik berkualitas tinggi.</p>

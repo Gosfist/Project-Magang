@@ -31,12 +31,12 @@ class UserController extends Controller
 
         $users = $query->orderBy('name')->paginate(15)->withQueryString();
 
-        return view('dashboard.users.index', compact('users'));
+        return view('dashboard.useer.index', compact('users'));
     }
 
     public function create()
     {
-        return view('dashboard.users.create');
+        return view('dashboard.useer.create');
     }
 
     public function store(Request $request)
@@ -67,7 +67,7 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        return view('dashboard.users.edit', compact('user'));
+        return view('dashboard.useer.edit', compact('user'));
     }
 
     public function update(Request $request, User $user)
