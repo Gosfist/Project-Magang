@@ -39,6 +39,11 @@ async function bootApplication() {
         loaders.push(import('./pages/trace-jalur').then(({ bootTraceJalur }) => bootTraceJalur()));
     }
 
+    if (document.querySelector('[data-attenuation-calculator]')) {
+        // Kalkulator hanya menghitung di browser dan tidak mengirim data ke server.
+        loaders.push(import('./pages/attenuation-calculator').then(({ bootAttenuationCalculator }) => bootAttenuationCalculator()));
+    }
+
     await Promise.all(loaders);
 }
 

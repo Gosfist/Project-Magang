@@ -32,6 +32,10 @@ export function bootDashboard() {
         document.getElementById('mainCoreMenu')?.classList.toggle('hidden');
         document.getElementById('mainCoreChevron')?.classList.toggle('-rotate-90');
     });
+    document.querySelector('[data-toggle-tools-menu]')?.addEventListener('click', () => {
+        document.getElementById('toolsMenu')?.classList.toggle('hidden');
+        document.getElementById('toolsChevron')?.classList.toggle('-rotate-90');
+    });
     document.querySelectorAll('[data-dismiss]').forEach((button) => {
         button.addEventListener('click', () => document.getElementById(button.dataset.dismiss)?.remove());
     });

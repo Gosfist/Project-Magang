@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MainCoreController;
+use App\Http\Controllers\ToolController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -54,5 +55,10 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::post('{type}', [MainCoreController::class, 'store'])->whereIn('type', ['server', 'rasio', 'odc', 'odp'])->name('nodes.store');
         Route::patch('{type}/{node}', [MainCoreController::class, 'update'])->whereIn('type', ['server', 'rasio', 'odc', 'odp'])->name('nodes.update');
         Route::delete('{type}/{node}', [MainCoreController::class, 'destroy'])->whereIn('type', ['server', 'rasio', 'odc', 'odp'])->name('nodes.destroy');
+    });
+
+    Route::prefix('tools')->name('tools.')->group(function () {
+        Route::get('kalkulator-redaman', [ToolController::class, 'attenuationCalculator'])
+            ->name('attenuation-calculator');
     });
 });

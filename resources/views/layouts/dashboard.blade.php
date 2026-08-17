@@ -89,6 +89,29 @@
                     </div>
                 </div>
 
+                <div>
+                    <button type="button" data-toggle-tools-menu
+                        class="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('tools.*') ? 'text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M14.7 6.3a4 4 0 01-5 5L4 17v3h3l5.7-5.7a4 4 0 005-5l-2.4 2.4-3-3 2.4-2.4z" />
+                        </svg>
+                        <span class="flex-1 text-left">Tool</span>
+                        <svg id="toolsChevron"
+                            class="h-4 w-4 shrink-0 transition-transform {{ request()->routeIs('tools.*') ? '' : '-rotate-90' }}"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div id="toolsMenu" class="mt-1 space-y-1 pl-11 pr-2 {{ request()->routeIs('tools.*') ? '' : 'hidden' }}">
+                        <a href="{{ route('tools.attenuation-calculator') }}"
+                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('tools.attenuation-calculator') ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
+                            Kalkulator Redaman
+                        </a>
+                    </div>
+                </div>
+
             </nav>
 
             {{-- User Info --}}
