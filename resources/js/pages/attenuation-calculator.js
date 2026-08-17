@@ -3,6 +3,7 @@ const asymmetricRatios = {
     '80:20': [80, 20],
     '90:10': [90, 10],
 };
+const safetyMarginDb = 1;
 
 function numericValue(input) {
     const value = Number(input?.value);
@@ -63,7 +64,7 @@ export function bootAttenuationCalculator() {
             ? connectorCount * connectorLossPerUnit
             : NaN;
         const result = source !== null
-            ? source - lossSplitter - lossCable - lossConnector
+            ? source - lossSplitter - lossCable - lossConnector - safetyMarginDb
             : NaN;
 
         setResult(calculator.querySelector('[data-result-splitter]'), lossSplitter);

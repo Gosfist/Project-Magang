@@ -207,7 +207,7 @@ class FiberMainCoreTest extends TestCase
         $odc = MainCore::type('odc')->firstOrFail();
 
         $this->assertSame('100.00', $odc->jarak_kabel);
-        $this->assertSame('-13.04', $odc->redaman_in);
+        $this->assertSame('-14.04', $odc->redaman_in);
         $this->assertSame(8, $odc->jumlah_output);
 
         $this->actingAs($user)->post('/dashboard/fiber/odp', [
@@ -244,7 +244,7 @@ class FiberMainCoreTest extends TestCase
 
         $this->assertDatabaseHas('main_core', [
             'nama_titik' => 'ODP Setelah Splitter 1:4',
-            'redaman_in' => -12.20,
+            'redaman_in' => -13.20,
         ]);
 
         $ratioSource = MainCore::create([
@@ -277,11 +277,11 @@ class FiberMainCoreTest extends TestCase
 
         $this->assertDatabaseHas('main_core', [
             'nama_titik' => 'ODC Jalur 10 Persen',
-            'redaman_in' => -15.18,
+            'redaman_in' => -16.18,
         ]);
         $this->assertDatabaseHas('main_core', [
             'nama_titik' => 'ODC Jalur 90 Persen',
-            'redaman_in' => -5.63,
+            'redaman_in' => -6.63,
         ]);
 
         foreach ([2, 4, 8] as $outputCount) {

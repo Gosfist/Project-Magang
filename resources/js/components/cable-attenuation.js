@@ -1,6 +1,7 @@
 const cableLossDbPerKm = 0.35; // 1310 nm
 const connectorLossDbPerPair = 0.5;
 const odcToOdpConnectorPairs = 2;
+const safetyMarginDb = 1;
 
 function selectedParent(form) {
     const combobox = form.querySelector("[data-parent-combobox]");
@@ -88,7 +89,8 @@ function calculateCableAttenuation(form, force = true) {
         sourceAttenuation -
         sourceSplitterLoss -
         cableLoss -
-        sourceConnectorLoss
+        sourceConnectorLoss -
+        safetyMarginDb
     ).toFixed(2);
 }
 

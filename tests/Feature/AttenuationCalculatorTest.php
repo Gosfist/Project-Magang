@@ -43,5 +43,13 @@ class AttenuationCalculatorTest extends TestCase
             ->assertSee('tidak disimpan ke database');
 
         $this->assertSame($before, MainCore::count());
+        $this->assertStringContainsString(
+            'const safetyMarginDb = 1;',
+            file_get_contents(resource_path('js/pages/attenuation-calculator.js')),
+        );
+        $this->assertStringContainsString(
+            'lossConnector - safetyMarginDb',
+            file_get_contents(resource_path('js/pages/attenuation-calculator.js')),
+        );
     }
 }

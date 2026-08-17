@@ -436,7 +436,10 @@ class MainCoreController extends Controller
             $connectorLoss = $type === 'odp' && $parent?->tipe_titik === 'odc'
                 ? MainCore::ODC_TO_ODP_CONNECTOR_PAIRS * MainCore::CONNECTOR_LOSS_DB_PER_PAIR
                 : 0;
-            $redamanIn = round($sourceRedaman - $splitterLoss - $cableLoss - $connectorLoss, 2);
+            $redamanIn = round(
+                $sourceRedaman - $splitterLoss - $cableLoss - $connectorLoss - MainCore::SAFETY_MARGIN_DB,
+                2,
+            );
         }
 
         if ($type === 'rasio') {

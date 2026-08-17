@@ -25,6 +25,8 @@ class MainCore extends Model
 
     public const ODC_TO_ODP_CONNECTOR_PAIRS = 2;
 
+    public const SAFETY_MARGIN_DB = 1;
+
     protected $table = 'main_core';
 
     protected $fillable = [
