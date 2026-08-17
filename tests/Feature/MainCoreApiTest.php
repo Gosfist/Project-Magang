@@ -115,19 +115,27 @@ class MainCoreApiTest extends TestCase
             'spesifikasi' => ['jenis_splitter' => '1:2'],
         ]));
 
-        // Parent penuh tetap dikirim supaya UI dapat menampilkan port terpakai dengan warna merah.
+        MainCore::create([
+            'parent_id' => $parents->first()->id,
+            'parent_port_out' => 1,
+            'nama_titik' => 'ODP Port Terpakai',
+            'tipe_titik' => 'odp',
+            'spesifikasi' => ['jenis_splitter' => '1:8'],
+        ]);
+
+        // Parent kedua dibuat penuh untuk memastikan namanya tidak keluar dalam daftar sumber.
         foreach ([1, 2] as $port) {
             MainCore::create([
-                'parent_id' => $parents->first()->id,
+                'parent_id' => $parents->get(1)->id,
                 'parent_port_out' => $port,
-                'nama_titik' => "ODP Port {$port}",
+                'nama_titik' => "ODP Parent Penuh {$port}",
                 'tipe_titik' => 'odp',
                 'spesifikasi' => ['jenis_splitter' => '1:8'],
             ]);
         }
 
         $parentResponse = $this->withToken($token)->getJson(
-            '/api/maincore/odp/parents?category=odc&search=Parent',
+            '/api/maincore/odp/parents?category=odc',
         )->assertOk()
             ->assertJsonCount(20, 'data')
             ->assertJsonStructure([
@@ -145,11 +153,12 @@ class MainCoreApiTest extends TestCase
 
         $this->assertSame('ODC Parent 01', $parentResponse->json('data.0.name'));
         $this->assertSame('1:2', $parentResponse->json('data.0.splitter_ratio'));
-        $this->assertSame([1, 2], $parentResponse->json('data.0.used_ports'));
+        $this->assertSame([1], $parentResponse->json('data.0.used_ports'));
+        $this->assertNotContains('ODC Parent 02', $parentResponse->json('data.*.name'));
 
         $odp = MainCore::create([
             'parent_id' => $parents->first()->id,
-            'parent_port_out' => 1,
+            'parent_port_out' => 2,
             'nama_titik' => 'ODP Edit API',
             'tipe_titik' => 'odp',
             'spesifikasi' => ['jenis_splitter' => '1:8'],

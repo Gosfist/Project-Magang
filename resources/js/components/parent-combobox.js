@@ -1,6 +1,5 @@
 import { apiFetch } from '../services/api';
 
-const minimumSearchLength = 2;
 const searchDelay = 250;
 let outsideClickReady = false;
 
@@ -121,11 +120,11 @@ function initializeParentCombobox(combobox) {
         optionsPanel.classList.remove('hidden');
     };
 
-    // Ambil maksimal 20 parent dari API setelah pengguna mengetik minimal dua karakter.
+    // Tampilkan maksimal 20 sumber yang siap dipakai; nama dapat diketik untuk menyaring daftar.
     const loadOptions = async () => {
         const keyword = search.value.trim();
-        if (!category.value || keyword.length < minimumSearchLength) {
-            showMessage('Ketik minimal 2 karakter.');
+        if (!category.value) {
+            showMessage('Pilih kategori terlebih dahulu.');
             return;
         }
 
@@ -164,9 +163,10 @@ function initializeParentCombobox(combobox) {
 
     const syncCategory = (resetParent = false) => {
         const enabled = Boolean(category.value);
+        const categoryLabel = category.selectedOptions[0]?.textContent?.trim() || 'sumber jalur';
         search.disabled = !enabled;
         dropdownButton.disabled = !enabled;
-        search.placeholder = enabled ? 'Ketik minimal 2 karakter...' : 'Pilih kategori terlebih dahulu';
+        search.placeholder = enabled ? `Masukkan nama ${categoryLabel}` : 'Pilih kategori terlebih dahulu';
 
         if (resetParent) clearParent();
         optionsPanel.classList.add('hidden');
@@ -182,13 +182,11 @@ function initializeParentCombobox(combobox) {
         syncCategory(true);
         if (!search.disabled) {
             search.focus();
-            showMessage('Ketik minimal 2 karakter.');
         }
     });
     search.addEventListener('focus', () => {
         optionsPanel.classList.remove('hidden');
-        if (search.value.trim().length >= minimumSearchLength) queueSearch();
-        else showMessage('Ketik minimal 2 karakter.');
+        loadOptions();
     });
     search.addEventListener('input', () => {
         parentInput.value = '';
@@ -198,8 +196,9 @@ function initializeParentCombobox(combobox) {
         queueSearch();
     });
     dropdownButton.addEventListener('click', () => {
+        const wasFocused = document.activeElement === search;
         search.focus();
-        if (search.value.trim().length >= minimumSearchLength) queueSearch();
+        if (wasFocused) loadOptions();
     });
     optionsPanel.addEventListener('click', (event) => {
         const option = event.target.closest('[data-parent-option]');

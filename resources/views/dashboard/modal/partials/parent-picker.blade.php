@@ -38,7 +38,7 @@
         <div class="relative">
             <input type="search" data-parent-search autocomplete="off" required
                 value="{{ $selectedParent?->nama_titik }}"
-                placeholder="{{ $selectedParentCategory ? 'Ketik minimal 2 karakter...' : 'Pilih kategori terlebih dahulu' }}"
+                placeholder="{{ $selectedParentCategory ? 'Masukkan nama '.($labels[$selectedParentCategory] ?? 'sumber jalur') : 'Pilih kategori terlebih dahulu' }}"
                 @disabled(! $selectedParentCategory)
                 class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 pr-10 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-gray-100 disabled:text-gray-400">
             <input type="hidden" name="parent_id" value="{{ $node?->parent_id }}" data-parent-id
@@ -68,7 +68,7 @@
                     {{ $selectedParent->nama_titik }}
                 </button>
             @endif
-            <p data-parent-empty class="hidden px-3 py-2 text-sm text-gray-400">Ketik minimal 2 karakter.</p>
+            <p data-parent-empty class="hidden px-3 py-2 text-sm text-gray-400">Data sumber jalur tidak ditemukan.</p>
         </div>
     </div>
 @unless ($parentPickerInline ?? false)

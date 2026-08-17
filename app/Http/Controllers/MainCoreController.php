@@ -169,7 +169,7 @@ class MainCoreController extends Controller
         // Validasi kategori dan kata kunci sebelum menjalankan pencarian parent.
         $data = $request->validate([
             'category' => ['required', Rule::in($this->allowedParentTypes($type))],
-            'search' => ['required', 'string', 'min:2', 'max:100'],
+            'search' => ['nullable', 'string', 'max:100'],
             'current_node_id' => ['nullable', 'integer', Rule::exists('main_core', 'id')],
             'current_parent_id' => ['nullable', 'integer', Rule::exists('main_core', 'id')],
         ]);
@@ -182,16 +182,16 @@ class MainCoreController extends Controller
             ->with(['children:id,parent_id,parent_port_out'])
             ->withCount('children')
             ->where('tipe_titik', $data['category'])
-            ->where('nama_titik', 'like', '%'.$data['search'].'%')
+            ->when(filled($data['search'] ?? null), fn ($query) => $query
+                ->where('nama_titik', 'like', '%'.$data['search'].'%'))
             ->when($currentNodeId > 0, fn ($query) => $query->whereKeyNot($currentNodeId))
             ->orderBy('nama_titik')
             ->limit(60)
             ->get()
-            // Splitter yang penuh tetap ditampilkan agar status semua port dapat dilihat.
-            // Server tetap disembunyikan setelah tersambung karena tidak mempunyai pilihan port.
-            ->filter(fn (MainCore $parent) => $parent->tipe_titik !== 'server'
-                || $parent->id === $currentParentId
-                || $parent->children_count === 0)
+            // Hanya tampilkan sumber yang masih mempunyai port kosong.
+            // Parent aktif tetap ditampilkan ketika pengguna sedang mengedit data.
+            ->filter(fn (MainCore $parent) => $parent->id === $currentParentId
+                || $this->hasAvailableOutput($parent))
             ->take(20)
             ->values()
             ->map(function (MainCore $parent) use ($currentNodeId) {
@@ -484,6 +484,17 @@ class MainCoreController extends Controller
             'rasio', 'odc', 'odp' => MainCore::TYPES,
             default => [],
         };
+    }
+
+    private function hasAvailableOutput(MainCore $parent): bool
+    {
+        if ($parent->tipe_titik === 'server') {
+            return $parent->children_count === 0;
+        }
+
+        $outputCount = $parent->jumlah_output ?? 0;
+
+        return $outputCount > 0 && $parent->children_count < $outputCount;
     }
 
     private function splitterRatios(string $type): array
