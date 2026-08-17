@@ -115,15 +115,37 @@ class MainCoreApiTest extends TestCase
             'spesifikasi' => ['jenis_splitter' => '1:2'],
         ]));
 
+        // Parent penuh tetap dikirim supaya UI dapat menampilkan port terpakai dengan warna merah.
+        foreach ([1, 2] as $port) {
+            MainCore::create([
+                'parent_id' => $parents->first()->id,
+                'parent_port_out' => $port,
+                'nama_titik' => "ODP Port {$port}",
+                'tipe_titik' => 'odp',
+                'spesifikasi' => ['jenis_splitter' => '1:8'],
+            ]);
+        }
+
         $parentResponse = $this->withToken($token)->getJson(
             '/api/maincore/odp/parents?category=odc&search=Parent',
         )->assertOk()
             ->assertJsonCount(20, 'data')
             ->assertJsonStructure([
-                'data' => [['id', 'name', 'type', 'output_count', 'used_ports']],
+                'data' => [[
+                    'id',
+                    'name',
+                    'type',
+                    'redaman_in',
+                    'splitter_ratio',
+                    'rasio_redaman_ports',
+                    'output_count',
+                    'used_ports',
+                ]],
             ]);
 
         $this->assertSame('ODC Parent 01', $parentResponse->json('data.0.name'));
+        $this->assertSame('1:2', $parentResponse->json('data.0.splitter_ratio'));
+        $this->assertSame([1, 2], $parentResponse->json('data.0.used_ports'));
 
         $odp = MainCore::create([
             'parent_id' => $parents->first()->id,

@@ -9,6 +9,9 @@
         $formatRedaman = fn($value) => $value === null
             ? '-'
             : rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.') . ' dBm';
+        $formatJarak = fn($value) => $value === null
+            ? '-'
+            : rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.') . ' m';
     @endphp
 
     <div class="space-y-5">
@@ -103,9 +106,12 @@
                                     </article>
 
                                     @unless ($loop->last)
-                                        <div class="flex w-12 shrink-0 items-center justify-center text-slate-700"
-                                            aria-hidden="true">
-                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        @php($nextNode = $path->get($loop->index + 1))
+                                        <div class="flex w-20 shrink-0 flex-col items-center justify-center gap-1 text-slate-700">
+                                            <span data-trace-distance class="whitespace-nowrap text-xs font-medium text-gray-600">
+                                                {{ $formatJarak($nextNode?->jarak_kabel) }}
+                                            </span>
+                                            <svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M9 5l7 7-7 7" />
                                             </svg>

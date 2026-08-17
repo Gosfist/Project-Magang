@@ -187,7 +187,11 @@ class MainCoreController extends Controller
             ->orderBy('nama_titik')
             ->limit(60)
             ->get()
-            ->filter(fn (MainCore $parent) => $parent->id === $currentParentId || $this->hasAvailableOutput($parent))
+            // Splitter yang penuh tetap ditampilkan agar status semua port dapat dilihat.
+            // Server tetap disembunyikan setelah tersambung karena tidak mempunyai pilihan port.
+            ->filter(fn (MainCore $parent) => $parent->tipe_titik !== 'server'
+                || $parent->id === $currentParentId
+                || $parent->children_count === 0)
             ->take(20)
             ->values()
             ->map(function (MainCore $parent) use ($currentNodeId) {
@@ -202,6 +206,9 @@ class MainCoreController extends Controller
                     'id' => $parent->id,
                     'name' => $parent->nama_titik,
                     'type' => $parent->tipe_titik,
+                    'redaman_in' => $parent->redaman_in !== null ? (float) $parent->redaman_in : null,
+                    'splitter_ratio' => $parent->jenis_splitter,
+                    'rasio_redaman_ports' => $parent->rasio_redaman_ports,
                     'output_count' => $parent->jumlah_output ?? 0,
                     'used_ports' => $usedPorts,
                 ];
@@ -315,7 +322,7 @@ class MainCoreController extends Controller
             'mode' => $type.'_edit_'.$node->id,
             'nameLabel' => $this->nameLabel($type),
             'labels' => $this->labels(),
-            'ratioOptions' => $type === 'odp' ? MainCore::ODP_RATIOS : MainCore::SPLITTER_RATIOS,
+            'ratioOptions' => $this->splitterRatios($type),
         ];
     }
 
@@ -331,14 +338,15 @@ class MainCoreController extends Controller
             'parent_port_out' => ['nullable', 'integer', 'min:1'],
             'nama_titik' => ['required', 'string', 'max:255', Rule::unique('main_core', 'nama_titik')->ignore($node?->id)],
             'redaman_in' => ['nullable', 'numeric', 'between:-99.99,99.99'],
+            'jarak_kabel' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
         ];
 
         if ($type !== 'server') {
-            $rules['alamat'] = ['nullable', 'string'];
+            $rules['alamat'] = ['required', 'string', 'max:1000'];
         }
 
-        if (in_array($type, ['rasio', 'odc', 'odp'], true)) {
-            $ratios = $type === 'odp' ? MainCore::ODP_RATIOS : MainCore::SPLITTER_RATIOS;
+        if (in_array($type, ['odc', 'odp'], true)) {
+            $ratios = $this->splitterRatios($type);
             $rules['spesifikasi.jenis_splitter'] = ['required', Rule::in($ratios)];
         }
 
@@ -351,10 +359,17 @@ class MainCoreController extends Controller
             'nama_titik.unique' => "{$this->nameLabel($type)} sudah digunakan!",
             'parent_id.required' => 'Sumber jalur wajib dipilih.',
             'spesifikasi.jenis_splitter.required' => 'Jenis splitter wajib dipilih.',
-            'spesifikasi.jenis_splitter.in' => $type === 'odp'
+            'spesifikasi.jenis_splitter.in' => in_array($type, ['odc', 'odp'], true)
                 ? 'Jenis splitter hanya boleh 1:2, 1:4, atau 1:8.'
                 : 'Jenis splitter hanya boleh 1:2 atau 1:4.',
         ]);
+
+        if ($type === 'rasio') {
+            $data['spesifikasi'] = is_array($data['spesifikasi'] ?? null) ? $data['spesifikasi'] : [];
+            $data['spesifikasi']['rasio_redaman_ports'] = $this->validatedRasioPorts(
+                $data['spesifikasi']['rasio_redaman_ports'] ?? [],
+            );
+        }
 
         $parentPortOut = null;
 
@@ -412,8 +427,21 @@ class MainCoreController extends Controller
 
         $specification = $data['spesifikasi'] ?? null;
 
-        if ($type === 'rasio' && is_array($specification)) {
-            $outputCount = (int) str_replace('1:', '', $specification['jenis_splitter'] ?? '0');
+        $redamanIn = $data['redaman_in'] ?? null;
+
+        if ($type !== 'server' && $redamanIn === null && isset($data['jarak_kabel'])) {
+            $sourceRedaman = (float) ($parent?->redaman_in ?? 0);
+            $splitterLoss = $parent?->splitterLossForPort($parentPortOut) ?? 0;
+            $cableLoss = ((float) $data['jarak_kabel'] / 1000) * MainCore::CABLE_LOSS_DB_PER_KM;
+            $connectorLoss = $type === 'odp' && $parent?->tipe_titik === 'odc'
+                ? MainCore::ODC_TO_ODP_CONNECTOR_PAIRS * MainCore::CONNECTOR_LOSS_DB_PER_PAIR
+                : 0;
+            $redamanIn = round($sourceRedaman - $splitterLoss - $cableLoss - $connectorLoss, 2);
+        }
+
+        if ($type === 'rasio') {
+            $specification = is_array($specification) ? $specification : [];
+            $outputCount = 2;
             $ports = collect($specification['rasio_redaman_ports'] ?? [])
                 ->only(range(1, $outputCount))
                 ->map(fn ($value) => is_string($value) ? trim($value) : $value)
@@ -421,6 +449,7 @@ class MainCoreController extends Controller
                 ->all();
 
             unset($specification['rasio_redaman']);
+            $specification['jenis_splitter'] = MainCore::RASIO_SPLITTER;
             $specification['rasio_redaman_ports'] = $ports;
         }
 
@@ -429,7 +458,8 @@ class MainCoreController extends Controller
             'parent_port_out' => $type === 'server' ? null : $parentPortOut,
             'nama_titik' => $data['nama_titik'],
             'tipe_titik' => $type,
-            'redaman_in' => $data['redaman_in'] ?? null,
+            'redaman_in' => $redamanIn,
+            'jarak_kabel' => $type === 'server' ? null : ($data['jarak_kabel'] ?? null),
             'alamat' => $type === 'server' ? null : ($data['alamat'] ?? null),
             'spesifikasi' => $specification,
         ];
@@ -447,17 +477,6 @@ class MainCoreController extends Controller
         return redirect()->route("fiber.{$node->tipe_titik}")->with('success', $message);
     }
 
-    private function hasAvailableOutput(MainCore $parent): bool
-    {
-        if ($parent->tipe_titik === 'server') {
-            return $parent->children_count === 0;
-        }
-
-        $outputCount = $parent->jumlah_output ?? 0;
-
-        return $outputCount > 0 && $parent->children_count < $outputCount;
-    }
-
     private function allowedParentTypes(string $type): array
     {
         return match ($type) {
@@ -465,6 +484,59 @@ class MainCoreController extends Controller
             'rasio', 'odc', 'odp' => MainCore::TYPES,
             default => [],
         };
+    }
+
+    private function splitterRatios(string $type): array
+    {
+        return match ($type) {
+            'odc' => MainCore::ODC_RATIOS,
+            'odp' => MainCore::ODP_RATIOS,
+            default => [MainCore::RASIO_SPLITTER],
+        };
+    }
+
+    private function validatedRasioPorts(array $ports): array
+    {
+        $firstValue = $ports[1] ?? null;
+        $secondValue = $ports[2] ?? null;
+        $hasSubmittedValue = filled($firstValue) || filled($secondValue);
+
+        if (! $hasSubmittedValue) {
+            return [1 => '10%', 2 => '90%'];
+        }
+
+        $firstPercentage = MainCore::parsePercentage($firstValue);
+        $secondPercentage = MainCore::parsePercentage($secondValue);
+        $errors = [];
+
+        if ($firstPercentage === null) {
+            $errors['spesifikasi.rasio_redaman_ports.1'] = 'Persentase Port 1 harus lebih dari 0 sampai 100.';
+        }
+
+        if ($secondPercentage === null) {
+            $errors['spesifikasi.rasio_redaman_ports.2'] = 'Persentase Port 2 harus lebih dari 0 sampai 100.';
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        if (abs($firstPercentage + $secondPercentage - 100) > 0.001) {
+            throw ValidationException::withMessages([
+                'spesifikasi.rasio_redaman_ports.1' => 'Total persentase Port 1 dan Port 2 harus 100%.',
+                'spesifikasi.rasio_redaman_ports.2' => 'Total persentase Port 1 dan Port 2 harus 100%.',
+            ]);
+        }
+
+        return [
+            1 => $this->formatPercentage($firstPercentage),
+            2 => $this->formatPercentage($secondPercentage),
+        ];
+    }
+
+    private function formatPercentage(float $percentage): string
+    {
+        return rtrim(rtrim(number_format($percentage, 2, '.', ''), '0'), '.').'%';
     }
 
     private function labels(): array

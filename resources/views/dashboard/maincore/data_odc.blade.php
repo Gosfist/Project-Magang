@@ -9,7 +9,7 @@
             ? '-'
             : rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.') . ' dBm';
         $formatTanggal = fn($value) => $value?->format('d-m-Y') ?? '-';
-        $ratioOptions = \App\Models\MainCore::SPLITTER_RATIOS;
+        $ratioOptions = \App\Models\MainCore::ODC_RATIOS;
     @endphp
 
     <div data-maincore-feature data-api-url="{{ route('api.maincore.index', $section) }}">

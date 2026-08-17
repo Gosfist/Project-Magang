@@ -21,7 +21,7 @@ function setSinglePortOption(portSelect, label) {
     portSelect.appendChild(new Option(label, ''));
 }
 
-// Susun pilihan port berdasarkan parent yang dipilih dan port yang sudah terpakai.
+// Tampilkan semua port; port terpakai tetap terlihat tetapi tidak dapat dipilih.
 function syncParentPort(combobox) {
     const form = combobox.closest('form');
     const parentInput = combobox.querySelector('[data-parent-id]');
@@ -47,28 +47,21 @@ function syncParentPort(combobox) {
     const selectedPort = Number(portSelect.dataset.selectedPort || 0);
     const currentParent = String(parentInput.dataset.currentParent || '');
     const currentPort = currentParent === parentInput.value ? selectedPort : 0;
-    const availablePorts = [];
-
-    for (let port = 1; port <= outputCount; port++) {
-        if (!usedPorts.includes(port) || port === currentPort) availablePorts.push(port);
-    }
-
-    if (availablePorts.length === 0) {
-        setSinglePortOption(portSelect, 'Semua port sudah digunakan');
-        return;
-    }
-
     portSelect.innerHTML = '';
     portSelect.disabled = false;
     portSelect.required = true;
     portSelect.setCustomValidity('');
     portSelect.appendChild(new Option('Pilih port', ''));
 
-    availablePorts.forEach((port) => {
+    for (let port = 1; port <= outputCount; port++) {
+        const isUsed = usedPorts.includes(port) && port !== currentPort;
         const option = new Option(`Port ${port}`, port);
+
+        option.disabled = isUsed;
+        option.style.color = isUsed ? '#dc2626' : '#16a34a';
         option.selected = port === currentPort;
         portSelect.appendChild(option);
-    });
+    }
 }
 
 // Buat tombol parent dengan DOM API agar teks dari server tidak disisipkan sebagai HTML.
@@ -79,6 +72,9 @@ function createParentOption(parent) {
     option.dataset.parentIdValue = String(parent.id);
     option.dataset.parentName = parent.name;
     option.dataset.parentType = parent.type;
+    option.dataset.parentRedaman = parent.redaman_in ?? '';
+    option.dataset.parentSplitter = parent.splitter_ratio || '';
+    option.dataset.parentRasioPorts = JSON.stringify(parent.rasio_redaman_ports || {});
     option.dataset.outputCount = String(parent.output_count || 0);
     option.dataset.usedPorts = JSON.stringify(parent.used_ports || []);
     option.className = 'block w-full rounded-md px-3 py-2 text-left text-sm text-gray-700 hover:bg-slate-100 hover:text-slate-950';
@@ -163,6 +159,7 @@ function initializeParentCombobox(combobox) {
         search.value = '';
         search.setCustomValidity('');
         syncParentPort(combobox);
+        form.dispatchEvent(new CustomEvent('maincore:parent-changed'));
     };
 
     const syncCategory = (resetParent = false) => {
@@ -197,6 +194,7 @@ function initializeParentCombobox(combobox) {
         parentInput.value = '';
         search.setCustomValidity('');
         syncParentPort(combobox);
+        form.dispatchEvent(new CustomEvent('maincore:parent-changed'));
         queueSearch();
     });
     dropdownButton.addEventListener('click', () => {
@@ -212,6 +210,7 @@ function initializeParentCombobox(combobox) {
         search.setCustomValidity('');
         optionsPanel.classList.add('hidden');
         syncParentPort(combobox);
+        form.dispatchEvent(new CustomEvent('maincore:parent-changed'));
     });
     form.addEventListener('submit', (event) => {
         if (parentInput.value) return;

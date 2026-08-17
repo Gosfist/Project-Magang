@@ -1,10 +1,10 @@
 <div id="{{ $modalId }}" data-modal @if($errors->any() && old('form_mode') === $mode) data-modal-open-on-load @endif class="fixed inset-0 hidden items-center justify-center overflow-y-auto px-4 py-6" style="z-index: 10000;">
-    <div class="w-full max-w-2xl rounded-lg bg-white shadow-xl">
+    <div class="w-full max-w-4xl rounded-lg bg-white shadow-xl">
         <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
             <h2 class="font-semibold">{{ $title }}</h2>
             <button type="button" data-close-modal="{{ $modalId }}" class="text-gray-400 hover:text-gray-700" style="cursor: pointer;">X</button>
         </div>
-        <form data-maincore-form
+        <form data-maincore-form data-node-type="{{ $section }}"
             method="POST"
             action="{{ $action }}"
             class="space-y-4 p-5">
@@ -17,8 +17,8 @@
             @php
                     $selectedPort = old('form_mode') === $mode ? old('parent_port_out', $node?->parent_port_out) : $node?->parent_port_out;
             @endphp
-                @include('dashboard.modal.partials.parent-picker')
-
+            <div class="grid gap-4 md:grid-cols-3">
+                @include('dashboard.modal.partials.parent-picker', ['parentPickerInline' => true])
                 <div>
                     @if(old('form_mode') === $mode) @error('parent_port_out')<p class="mb-1 text-xs text-red-600">{{ $message }}</p>@enderror @endif
                     <label class="mb-1 block text-sm font-medium">Pilih Port</label>
@@ -26,21 +26,28 @@
                         <option value="">Pilih sumber jalur terlebih dahulu</option>
                     </select>
                 </div>
+            </div>
             <p data-field-error="nama_titik" class="hidden text-xs text-red-600"></p>
-            <div class="grid gap-4 sm:grid-cols-2">
+            <div class="grid gap-4 md:grid-cols-3">
                 <div>
                     @if(old('form_mode') === $mode) @error('nama_titik')<p class="mb-1 text-xs text-red-600">{{ $message }}</p>@enderror @endif
                     <label class="mb-1 block text-sm font-medium">{{ $nameLabel }}</label>
                     <input name="nama_titik" value="{{ old('form_mode') === $mode ? old('nama_titik', $node?->nama_titik) : $node?->nama_titik }}" required class="w-full rounded-lg border px-4 py-2">
                 </div>
                 <div>
+                    @if(old('form_mode') === $mode) @error('jarak_kabel')<p class="mb-1 text-xs text-red-600">{{ $message }}</p>@enderror @endif
+                    <label class="mb-1 block text-sm font-medium">Jarak Kabel (meter)</label>
+                    <input name="jarak_kabel" value="{{ old('form_mode') === $mode ? old('jarak_kabel', $node?->jarak_kabel) : $node?->jarak_kabel }}" type="number" min="0" step="0.01" data-cable-distance class="w-full rounded-lg border px-4 py-2">
+                </div>
+                <div>
                     @if(old('form_mode') === $mode) @error('redaman_in')<p class="mb-1 text-xs text-red-600">{{ $message }}</p>@enderror @endif
                     <label class="mb-1 block text-sm font-medium">Redaman In (dBm)</label>
-                    <input name="redaman_in" value="{{ old('form_mode') === $mode ? old('redaman_in', $node?->redaman_in) : $node?->redaman_in }}" type="number" step="0.01" class="w-full rounded-lg border px-4 py-2">
+                    <input name="redaman_in" value="{{ old('form_mode') === $mode ? old('redaman_in', $node?->redaman_in) : $node?->redaman_in }}" type="number" step="0.01" data-attenuation-input class="w-full rounded-lg border px-4 py-2">
                 </div>
             </div>
 
-            <div>
+            <div class="grid items-start gap-4 md:grid-cols-2">
+                <div>
                     @if(old('form_mode') === $mode) @error('spesifikasi.jenis_splitter')<p class="mb-1 text-xs text-red-600">{{ $message }}</p>@enderror @endif
                     <label class="mb-1 block text-sm font-medium">Jenis Splitter</label>
                     <select name="spesifikasi[jenis_splitter]" required class="w-full rounded-lg border px-4 py-2">
@@ -49,12 +56,13 @@
                             <option value="{{ $ratio }}" @selected((string)(old('form_mode') === $mode ? old('spesifikasi.jenis_splitter', $node?->jenis_splitter) : $node?->jenis_splitter) === $ratio)>{{ $ratio }}</option>
                         @endforeach
                     </select>
-            </div>
+                </div>
 
-            <div>
+                <div>
                     @if(old('form_mode') === $mode) @error('alamat')<p class="mb-1 text-xs text-red-600">{{ $message }}</p>@enderror @endif
                     <label class="mb-1 block text-sm font-medium">Alamat</label>
-                    <textarea name="alamat" rows="3" class="w-full rounded-lg border px-4 py-2">{{ old('form_mode') === $mode ? old('alamat', $node?->alamat) : $node?->alamat }}</textarea>
+                    <input name="alamat" required value="{{ old('form_mode') === $mode ? old('alamat', $node?->alamat) : $node?->alamat }}" class="w-full rounded-lg border px-4 py-2">
+                </div>
             </div>
 
             <div class="flex justify-end gap-2">

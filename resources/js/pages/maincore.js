@@ -2,7 +2,7 @@ import { closeModal, openModal } from '../components/modal';
 import { showFormErrors } from '../components/form-errors';
 import { showNotice } from '../components/notification';
 import { bootParentComboboxes } from '../components/parent-combobox';
-import { bootSplitterFields } from '../components/splitter-fields';
+import { bootCableAttenuation } from '../components/cable-attenuation';
 import { bootTableFilter } from '../components/table-filter';
 import {
     loadMainCoreEditModal,
@@ -114,7 +114,7 @@ function bootEditButtons(feature) {
                 // Hapus salinan lama agar hanya satu modal untuk baris ini berada di dokumen.
                 document.getElementById(modal.id)?.remove();
                 document.body.appendChild(modal);
-                bootSplitterFields(modal);
+                bootCableAttenuation(modal);
                 bootParentComboboxes(modal);
                 bootForm(modal.querySelector('[data-maincore-form]'), feature);
                 openModal(modal.id);
@@ -135,7 +135,7 @@ function bootFeature(feature) {
 
     // Aktifkan ulang hanya komponen yang baru diganti oleh respons API.
     bootTableFilter(page);
-    bootSplitterFields(feature);
+    bootCableAttenuation(feature);
     bootParentComboboxes(feature);
     bootForms(feature);
     bootEditButtons(feature);

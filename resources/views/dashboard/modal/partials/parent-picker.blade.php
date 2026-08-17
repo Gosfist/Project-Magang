@@ -11,7 +11,9 @@
         : collect();
 @endphp
 
-<div class="grid gap-4 sm:grid-cols-2">
+@unless ($parentPickerInline ?? false)
+    <div class="grid gap-4 sm:grid-cols-2">
+@endunless
     <div>
         <label class="mb-1 block text-sm font-medium">Kategori</label>
         <select data-parent-category required
@@ -57,6 +59,9 @@
                 <button type="button" data-parent-option data-parent-id-value="{{ $selectedParent->id }}"
                     data-parent-name="{{ $selectedParent->nama_titik }}"
                     data-parent-type="{{ $selectedParent->tipe_titik }}"
+                    data-parent-redaman="{{ $selectedParent->redaman_in }}"
+                    data-parent-splitter="{{ $selectedParent->jenis_splitter }}"
+                    data-parent-rasio-ports="{{ json_encode($selectedParent->rasio_redaman_ports) }}"
                     data-output-count="{{ $selectedParent->jumlah_output ?? 0 }}"
                     data-used-ports="{{ json_encode($selectedUsedPorts) }}"
                     class="block w-full rounded-md px-3 py-2 text-left text-sm text-gray-700 hover:bg-slate-100 hover:text-slate-950">
@@ -66,4 +71,6 @@
             <p data-parent-empty class="hidden px-3 py-2 text-sm text-gray-400">Ketik minimal 2 karakter.</p>
         </div>
     </div>
-</div>
+@unless ($parentPickerInline ?? false)
+    </div>
+@endunless
