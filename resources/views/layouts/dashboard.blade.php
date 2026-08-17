@@ -69,6 +69,7 @@
                             class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.trace') ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
                             Trace Jalur
                         </a>
+                        {{-- Navigasi Main Core memakai perpindahan halaman Laravel biasa, bukan SPA. --}}
                         <a href="{{ route('fiber.server') }}"
                             class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('fiber.server') || request()->routeIs('fiber.dashboard') ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
                             Server

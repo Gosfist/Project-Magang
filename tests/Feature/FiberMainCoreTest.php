@@ -346,9 +346,11 @@ class FiberMainCoreTest extends TestCase
 
         $this->actingAs($user)->get('/dashboard/fiber/odc')
             ->assertOk()
+            // Kandidat parent tidak lagi dikirim sekaligus bersama halaman.
             ->assertDontSee('data-parent-name="Core 1"', false)
-            ->assertSee('data-parent-name="Core 2"', false)
-            ->assertSee('data-parent-name="Rasio 1"', false);
+            ->assertDontSee('data-parent-name="Core 2"', false)
+            ->assertDontSee('data-parent-name="Rasio 1"', false)
+            ->assertSee('data-parent-api-url', false);
 
         $this->actingAs($user)->post('/dashboard/fiber/odc', [
             'parent_id' => $coreOne->id,
@@ -445,17 +447,13 @@ class FiberMainCoreTest extends TestCase
 
         $odpSource = MainCore::type('odp')->where('nama_titik', 'ODP Sumber')->firstOrFail();
 
-        $this->actingAs($user)->get('/dashboard/fiber/odc')
-            ->assertOk()
-            ->assertSee('data-parent-name="ODP Sumber"', false);
-
-        $this->actingAs($user)->get('/dashboard/fiber/odp')
-            ->assertOk()
-            ->assertSee('data-parent-name="ODP Sumber"', false);
-
-        $this->actingAs($user)->get('/dashboard/fiber/rasio')
-            ->assertOk()
-            ->assertSee('data-parent-name="ODP Sumber"', false);
+        // Pilihan ODP sumber akan dicari melalui endpoint parent ketika pengguna mengetik.
+        foreach (['odc', 'odp', 'rasio'] as $type) {
+            $this->actingAs($user)->get("/dashboard/fiber/{$type}")
+                ->assertOk()
+                ->assertDontSee('data-parent-name="ODP Sumber"', false)
+                ->assertSee('data-parent-api-url', false);
+        }
 
         $this->actingAs($user)->post('/dashboard/fiber/odp', [
             'parent_id' => $odpSource->id,

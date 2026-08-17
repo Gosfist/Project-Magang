@@ -5,9 +5,6 @@
             <button type="button" data-close-modal="{{ $modalId }}" class="text-gray-400 hover:text-gray-700" style="cursor: pointer;">X</button>
         </div>
         <form data-maincore-form
-            data-current-id="{{ $node?->id ?? 0 }}"
-            data-existing-names="{{ $existingNames->toJson() }}"
-            data-unique-message="{{ $nameLabel }} sudah digunakan!"
             method="POST"
             action="{{ $action }}"
             class="space-y-4 p-5">

@@ -77,7 +77,7 @@ class MainCoreApiTest extends TestCase
         $fragmentResponse = $this->withToken($token)->getJson('/api/maincore/server?fragment=1&per_page=5')
             ->assertOk()
             ->assertJsonPath('meta.per_page', 5)
-            ->assertJsonPath('data.0.nama_titik', 'Server API')
+            ->assertJsonMissingPath('data')
             ->assertJson(fn ($json) => $json
                 ->whereType('fragment', 'string')
                 ->where('fragment', fn (string $fragment) => str_contains($fragment, 'data-maincore-feature'))
@@ -85,6 +85,9 @@ class MainCoreApiTest extends TestCase
 
         $this->assertStringNotContainsString('<script', $fragmentResponse->json('fragment'));
         $this->assertStringNotContainsString('<link', $fragmentResponse->json('fragment'));
+        $this->assertStringNotContainsString('data-existing-names', $fragmentResponse->json('fragment'));
+        $this->assertStringContainsString('data-load-edit-modal', $fragmentResponse->json('fragment'));
+        $this->assertStringNotContainsString('id="editModal', $fragmentResponse->json('fragment'));
 
         $this->withToken($token)->patchJson("/api/maincore/server/{$serverId}", [
             'nama_titik' => 'Server API Baru',
@@ -98,6 +101,49 @@ class MainCoreApiTest extends TestCase
             ->assertJsonPath('message', 'Server berhasil dihapus.');
 
         $this->assertDatabaseMissing('main_core', ['id' => $serverId]);
+    }
+
+    public function test_parent_search_is_limited_and_edit_modal_is_loaded_on_demand(): void
+    {
+        $user = $this->user();
+        $token = $this->tokenFor($user);
+
+        // Buat lebih dari batas respons untuk membuktikan API hanya mengirim 20 kandidat.
+        $parents = collect(range(1, 25))->map(fn (int $number) => MainCore::create([
+            'nama_titik' => sprintf('ODC Parent %02d', $number),
+            'tipe_titik' => 'odc',
+            'spesifikasi' => ['jenis_splitter' => '1:2'],
+        ]));
+
+        $parentResponse = $this->withToken($token)->getJson(
+            '/api/maincore/odp/parents?category=odc&search=Parent',
+        )->assertOk()
+            ->assertJsonCount(20, 'data')
+            ->assertJsonStructure([
+                'data' => [['id', 'name', 'type', 'output_count', 'used_ports']],
+            ]);
+
+        $this->assertSame('ODC Parent 01', $parentResponse->json('data.0.name'));
+
+        $odp = MainCore::create([
+            'parent_id' => $parents->first()->id,
+            'parent_port_out' => 1,
+            'nama_titik' => 'ODP Edit API',
+            'tipe_titik' => 'odp',
+            'spesifikasi' => ['jenis_splitter' => '1:8'],
+        ]);
+
+        $editResponse = $this->withToken($token)->getJson("/api/maincore/odp/{$odp->id}/edit")
+            ->assertOk()
+            ->assertJson(fn ($json) => $json
+                ->whereType('fragment', 'string')
+                ->where('fragment', fn (string $fragment) => str_contains($fragment, 'editModal'.$odp->id))
+                ->etc());
+
+        $this->assertStringContainsString('ODP Edit API', $editResponse->json('fragment'));
+        $this->assertStringContainsString('ODC Parent 01', $editResponse->json('fragment'));
+        $this->assertStringNotContainsString('<script', $editResponse->json('fragment'));
+        $this->assertStringNotContainsString('<link', $editResponse->json('fragment'));
     }
 
     public function test_jwt_expires_after_seven_days(): void
@@ -131,6 +177,9 @@ class MainCoreApiTest extends TestCase
             $this->actingAs($user)->get("/dashboard/fiber/{$type}")
                 ->assertOk()
                 ->assertSee(route('api.maincore.store', $type), false)
+                ->assertSee(route('api.maincore.index', $type), false)
+                ->assertSee(route("fiber.{$type}"), false)
+                ->assertDontSee('data-maincore-link', false)
                 ->assertSee('data-maincore-form', false)
                 ->assertSee('data-open-modal', false)
                 ->assertDontSee('<script>', false);
@@ -144,6 +193,18 @@ class MainCoreApiTest extends TestCase
         );
         $this->assertStringNotContainsString(
             'window.location.reload()',
+            file_get_contents(resource_path('js/pages/maincore.js')),
+        );
+        $this->assertStringNotContainsString(
+            'navigateToFeature',
+            file_get_contents(resource_path('js/pages/maincore.js')),
+        );
+        $this->assertStringContainsString(
+            'loadMainCoreEditModal',
+            file_get_contents(resource_path('js/pages/maincore.js')),
+        );
+        $this->assertStringNotContainsString(
+            'validateUniqueName',
             file_get_contents(resource_path('js/pages/maincore.js')),
         );
         $this->assertStringContainsString(

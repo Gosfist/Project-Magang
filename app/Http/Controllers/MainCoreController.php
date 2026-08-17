@@ -142,7 +142,6 @@ class MainCoreController extends Controller
         ]));
 
         $payload = [
-            'data' => $nodes->items(),
             'meta' => [
                 'current_page' => $nodes->currentPage(),
                 'last_page' => $nodes->lastPage(),
@@ -152,12 +151,74 @@ class MainCoreController extends Controller
         ];
 
         if ($request->boolean('fragment')) {
-            // Muat hanya isi fitur aktif agar asset dan layout dashboard tidak dimuat ulang.
+            // Fragmen sudah memuat lima baris aktif, jadi data JSON tidak dikirim ulang dua kali.
             $sections = view($this->viewForType($type), $viewData)->renderSections();
             $payload['fragment'] = $sections['content'] ?? '';
+        } else {
+            // Endpoint data biasa tetap menyediakan record JSON untuk pemakai API lainnya.
+            $payload['data'] = $nodes->items();
         }
 
         return response()->json($payload);
+    }
+
+    public function apiParents(Request $request, string $type): JsonResponse
+    {
+        abort_unless(in_array($type, MainCore::TYPES, true), 404);
+
+        // Validasi kategori dan kata kunci sebelum menjalankan pencarian parent.
+        $data = $request->validate([
+            'category' => ['required', Rule::in($this->allowedParentTypes($type))],
+            'search' => ['required', 'string', 'min:2', 'max:100'],
+            'current_node_id' => ['nullable', 'integer', Rule::exists('main_core', 'id')],
+            'current_parent_id' => ['nullable', 'integer', Rule::exists('main_core', 'id')],
+        ]);
+
+        $currentNodeId = (int) ($data['current_node_id'] ?? 0);
+        $currentParentId = (int) ($data['current_parent_id'] ?? 0);
+
+        // Ambil kandidat terbatas agar pencarian tetap ringan walaupun tabel berisi ribuan data.
+        $parents = MainCore::query()
+            ->with(['children:id,parent_id,parent_port_out'])
+            ->withCount('children')
+            ->where('tipe_titik', $data['category'])
+            ->where('nama_titik', 'like', '%'.$data['search'].'%')
+            ->when($currentNodeId > 0, fn ($query) => $query->whereKeyNot($currentNodeId))
+            ->orderBy('nama_titik')
+            ->limit(60)
+            ->get()
+            ->filter(fn (MainCore $parent) => $parent->id === $currentParentId || $this->hasAvailableOutput($parent))
+            ->take(20)
+            ->values()
+            ->map(function (MainCore $parent) use ($currentNodeId) {
+                // Port milik node yang sedang diedit tidak dihitung sebagai port terpakai.
+                $usedPorts = $parent->children
+                    ->reject(fn (MainCore $child) => $child->id === $currentNodeId)
+                    ->pluck('parent_port_out')
+                    ->filter()
+                    ->values();
+
+                return [
+                    'id' => $parent->id,
+                    'name' => $parent->nama_titik,
+                    'type' => $parent->tipe_titik,
+                    'output_count' => $parent->jumlah_output ?? 0,
+                    'used_ports' => $usedPorts,
+                ];
+            });
+
+        return response()->json(['data' => $parents]);
+    }
+
+    public function apiEdit(string $type, MainCore $node): JsonResponse
+    {
+        abort_unless($node->tipe_titik === $type, 404);
+
+        // Modal Edit dimuat satu kali saat tombol Edit ditekan, bukan untuk setiap baris tabel.
+        $node->load(['parent.children:id,parent_id,parent_port_out']);
+        $fragment = view($this->modalViewForType($type), $this->editModalData($type, $node))->render();
+
+        return response()->json(['fragment' => $fragment]);
     }
 
     public function store(Request $request, string $type)
@@ -217,9 +278,6 @@ class MainCoreController extends Controller
                 ->orderBy('nama_titik')
                 ->paginate($perPage)
                 ->withPath(route("fiber.$type")),
-            'parents' => $this->parentOptions($type),
-            'allParents' => $this->parentOptions($type, true),
-            'existingNames' => MainCore::select('id', 'nama_titik')->orderBy('nama_titik')->get(),
             'labels' => $this->labels(),
         ];
     }
@@ -232,6 +290,33 @@ class MainCoreController extends Controller
             'odp' => 'dashboard.maincore.data_odp',
             'rasio' => 'dashboard.maincore.data_rasio',
         };
+    }
+
+    private function modalViewForType(string $type): string
+    {
+        return match ($type) {
+            'server' => 'dashboard.modal.data_server',
+            'odc' => 'dashboard.modal.data_odc',
+            'odp' => 'dashboard.modal.data_odp',
+            'rasio' => 'dashboard.modal.data_rasio',
+        };
+    }
+
+    private function editModalData(string $type, MainCore $node): array
+    {
+        // Susun data kecil yang diperlukan satu modal Edit sesuai jenis fiturnya.
+        return [
+            'section' => $type,
+            'modalId' => 'editModal'.$node->id,
+            'title' => 'Edit Data '.$this->typeLabel($type),
+            'action' => route('api.maincore.update', [$type, $node]),
+            'method' => 'PATCH',
+            'node' => $node,
+            'mode' => $type.'_edit_'.$node->id,
+            'nameLabel' => $this->nameLabel($type),
+            'labels' => $this->labels(),
+            'ratioOptions' => $type === 'odp' ? MainCore::ODP_RATIOS : MainCore::SPLITTER_RATIOS,
+        ];
     }
 
     private function validatedNode(Request $request, string $type, ?MainCore $node = null): array
@@ -360,24 +445,6 @@ class MainCoreController extends Controller
         }
 
         return redirect()->route("fiber.{$node->tipe_titik}")->with('success', $message);
-    }
-
-    private function parentOptions(string $type, bool $includeConnected = false)
-    {
-        $types = $this->allowedParentTypes($type);
-
-        if ($types === []) {
-            return collect();
-        }
-
-        return MainCore::with(['children:id,parent_id,parent_port_out'])
-            ->withCount('children')
-            ->whereIn('tipe_titik', $types)
-            ->orderBy('tipe_titik')
-            ->orderBy('nama_titik')
-            ->get()
-            ->filter(fn (MainCore $parent) => $includeConnected || $this->hasAvailableOutput($parent))
-            ->values();
     }
 
     private function hasAvailableOutput(MainCore $parent): bool

@@ -5,9 +5,6 @@
             <button type="button" data-close-modal="{{ $modalId }}" class="text-gray-400 hover:text-gray-700" style="cursor: pointer;">X</button>
         </div>
         <form data-maincore-form
-            data-current-id="{{ $node?->id ?? 0 }}"
-            data-existing-names="{{ $existingNames->toJson() }}"
-            data-unique-message="{{ $nameLabel }} sudah digunakan!"
             method="POST"
             action="{{ $action }}"
             class="space-y-4 p-5">
@@ -18,7 +15,6 @@
             <input type="hidden" name="form_mode" value="{{ $mode }}">
 
             @php
-                    $selectedParentId = old('form_mode') === $mode ? old('parent_id', $node?->parent_id) : $node?->parent_id;
                     $selectedPort = old('form_mode') === $mode ? old('parent_port_out', $node?->parent_port_out) : $node?->parent_port_out;
             @endphp
                 @include('dashboard.modal.partials.parent-picker')

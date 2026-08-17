@@ -52,7 +52,9 @@
                                 <td class="px-5 py-3 whitespace-nowrap">{{ $formatTanggal($node->tanggal) }}</td>
                                 <td class="px-5 py-3">
                                     <div class="flex justify-end gap-2 whitespace-nowrap">
-                                        <button type="button" data-open-modal="editModal{{ $node->id }}"
+                                        {{-- Modal Edit diminta dari API hanya ketika tombol ini diklik. --}}
+                                        <button type="button" data-load-edit-modal
+                                            data-edit-url="{{ route('api.maincore.edit', [$section, $node]) }}"
                                             class="rounded-lg bg-slate-950 px-3 py-1.5 text-xs text-white"
                                             style="cursor: pointer;">Edit</button>
                                         <form data-maincore-form data-confirm="Yakin ingin menghapus data ini?" method="POST"
@@ -91,26 +93,7 @@
         'method' => 'POST',
         'node' => null,
         'mode' => $section . '_create',
-        'existingNames' => $existingNames,
         'ratioOptions' => $ratioOptions,
     ])
-
-    @foreach ($nodes as $node)
-        @include('dashboard.modal.data_rasio', [
-            'modalId' => 'editModal' . $node->id,
-            'title' => 'Edit Data ' . $label,
-            'action' => route('api.maincore.update', [$section, $node]),
-            'method' => 'PATCH',
-            'node' => $node,
-            'mode' => $section . '_edit_' . $node->id,
-            'parents' => $allParents->filter(
-                fn($parent) => $parent->id !== $node->id && ($parent->id === $node->parent_id ||
-                    ($parent->tipe_titik === 'server'
-                        ? $parent->children_count === 0
-                        : $parent->children_count < ($parent->jumlah_output ?? 0)))),
-            'existingNames' => $existingNames,
-            'ratioOptions' => $ratioOptions,
-        ])
-    @endforeach
     </div>
 @endsection

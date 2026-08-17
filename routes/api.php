@@ -12,11 +12,21 @@ Route::middleware('jwt')->group(function () {
     Route::get('me', [LoginController::class, 'me'])->name('api.me');
 
     Route::prefix('maincore')->name('api.maincore.')->group(function () {
-        Route::get('{type}', [MainCoreController::class, 'apiIndex'])
-            // Aktifkan sesi Blade hanya untuk merender potongan fitur tanpa reload layout.
-            ->middleware('web')
-            ->whereIn('type', ['server', 'rasio', 'odc', 'odp'])
-            ->name('index');
+        Route::middleware('web')->group(function () {
+            // Endpoint GET memakai sesi Blade untuk merender fragment tanpa asset layout.
+            Route::get('{type}', [MainCoreController::class, 'apiIndex'])
+                ->whereIn('type', ['server', 'rasio', 'odc', 'odp'])
+                ->name('index');
+            Route::get('{type}/parents', [MainCoreController::class, 'apiParents'])
+                ->whereIn('type', ['rasio', 'odc', 'odp'])
+                ->name('parents');
+            Route::get('{type}/{node}/edit', [MainCoreController::class, 'apiEdit'])
+                ->whereIn('type', ['server', 'rasio', 'odc', 'odp'])
+                ->whereNumber('node')
+                ->name('edit');
+        });
+
+        // Endpoint perubahan data tetap memakai JWT dan tidak merender halaman penuh.
         Route::post('{type}', [MainCoreController::class, 'store'])
             ->whereIn('type', ['server', 'rasio', 'odc', 'odp'])
             ->name('store');
