@@ -102,9 +102,7 @@ function bootEditButtons(feature) {
         button.dataset.editButtonReady = 'true';
 
         button.addEventListener('click', async () => {
-            const originalText = button.textContent;
             button.disabled = true;
-            button.textContent = 'Memuat...';
 
             try {
                 const html = await loadMainCoreEditModal(button.dataset.editUrl);
@@ -122,7 +120,6 @@ function bootEditButtons(feature) {
                 showNotice(error.message || 'Form edit gagal dimuat.', 'error');
             } finally {
                 button.disabled = false;
-                button.textContent = originalText;
             }
         });
     });
