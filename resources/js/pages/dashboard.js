@@ -36,6 +36,10 @@ export function bootDashboard() {
         document.getElementById('toolsMenu')?.classList.toggle('hidden');
         document.getElementById('toolsChevron')?.classList.toggle('-rotate-90');
     });
+    document.querySelector('[data-toggle-pppoe-menu]')?.addEventListener('click', () => {
+        document.getElementById('pppoeMenu')?.classList.toggle('hidden');
+        document.getElementById('pppoeChevron')?.classList.toggle('-rotate-90');
+    });
     document.querySelectorAll('[data-dismiss]').forEach((button) => {
         button.addEventListener('click', () => document.getElementById(button.dataset.dismiss)?.remove());
     });

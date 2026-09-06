@@ -90,6 +90,31 @@
                 </div>
 
                 <div>
+                    <button type="button" data-toggle-pppoe-menu
+                        class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 {{ request()->routeIs('pppoe.*') ? 'text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5v14M4 7h16v10H4z" />
+                        </svg>
+                        <span class="flex-1 text-left">PPPoE</span>
+                        <svg id="pppoeChevron"
+                            class="h-4 w-4 shrink-0 transition-transform {{ request()->routeIs('pppoe.*') ? '' : '-rotate-90' }}"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div id="pppoeMenu" class="mt-1 space-y-1 pl-11 pr-2 {{ request()->routeIs('pppoe.*') ? '' : 'hidden' }}">
+                        <a href="{{ route('pppoe.packages.index') }}"
+                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('pppoe.packages.*') ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
+                            Daftar Paket
+                        </a>
+                        <a href="{{ route('pppoe.accounts.index') }}"
+                            class="block rounded-md px-3 py-2 text-sm font-medium transition-colors {{ request()->routeIs('pppoe.accounts.*') ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
+                            Akun PPPoE
+                        </a>
+                    </div>
+                </div>
+
+                <div>
                     <button type="button" data-toggle-tools-menu
                         class="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 {{ request()->routeIs('tools.*') ? 'text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white' }}">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

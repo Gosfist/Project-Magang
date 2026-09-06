@@ -4,6 +4,8 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MainCoreController;
+use App\Http\Controllers\PppoeAccountController;
+use App\Http\Controllers\PppoePackageController;
 use App\Http\Controllers\ToolController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -55,6 +57,13 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
         Route::post('{type}', [MainCoreController::class, 'store'])->whereIn('type', ['server', 'rasio', 'odc', 'odp'])->name('nodes.store');
         Route::patch('{type}/{node}', [MainCoreController::class, 'update'])->whereIn('type', ['server', 'rasio', 'odc', 'odp'])->name('nodes.update');
         Route::delete('{type}/{node}', [MainCoreController::class, 'destroy'])->whereIn('type', ['server', 'rasio', 'odc', 'odp'])->name('nodes.destroy');
+    });
+
+    Route::prefix('pppoe')->name('pppoe.')->group(function () {
+        Route::patch('packages/{package}/status', [PppoePackageController::class, 'toggleStatus'])
+            ->name('packages.toggle-status');
+        Route::resource('packages', PppoePackageController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::resource('accounts', PppoeAccountController::class)->only(['index', 'store', 'update', 'destroy']);
     });
 
     Route::prefix('tools')->name('tools.')->group(function () {
