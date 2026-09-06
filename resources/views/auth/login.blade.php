@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Login - Unzanet</title>
     <link rel="icon" type="image/png" href="{{ asset('img/logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -31,7 +32,9 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('login') }}" class="space-y-5">
+            <div id="login-error" data-login-error class="mb-4 hidden rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600"></div>
+
+            <form id="login-form" data-login-form method="POST" action="{{ route('api.login') }}" class="space-y-5">
                 @csrf
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>

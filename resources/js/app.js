@@ -1,184 +1,54 @@
-function parsePorts(value) {
-    try {
-        return JSON.parse(value).map(Number);
-    } catch {
-        return [];
-    }
-}
+async function bootApplication() {
+    const loaders = [];
 
-function setSinglePortOption(portSelect, label) {
-    portSelect.innerHTML = '';
-    portSelect.disabled = true;
-    portSelect.required = false;
-    portSelect.appendChild(new Option(label, ''));
-}
+    // File Vite yang memiliki nama hash disimpan oleh cache browser.
+    // Di sini aplikasi hanya memilih modul yang dibutuhkan halaman, bukan memuat semua fitur.
 
-function syncParentPort(combobox) {
-    const form = combobox.closest('form');
-    const parentInput = combobox.querySelector('[data-parent-id]');
-    const portSelect = form?.querySelector('[data-port-select]');
-
-    if (!parentInput || !portSelect) return;
-
-    const selectedParent = Array.from(combobox.querySelectorAll('[data-parent-option]'))
-        .find((option) => option.dataset.parentIdValue === parentInput.value);
-
-    if (!selectedParent) {
-        setSinglePortOption(portSelect, 'Pilih sumber jalur terlebih dahulu');
-        return;
+    // Muat navigasi landing page hanya ketika elemen navigasinya tersedia.
+    if (document.querySelector('[data-toggle-target]')) {
+        loaders.push(import('./pages/public').then(({ bootPublicPages }) => bootPublicPages()));
     }
 
-    if (selectedParent.dataset.parentType === 'server') {
-        setSinglePortOption(portSelect, 'Server/Core tidak memakai port');
-        return;
+    // Muat proses login hanya pada halaman login.
+    if (document.querySelector('[data-login-form]')) {
+        loaders.push(import('./pages/login').then(({ bootLogin }) => bootLogin()));
     }
 
-    const outputCount = Number(selectedParent.dataset.outputCount || 0);
-    const usedPorts = parsePorts(selectedParent.dataset.usedPorts || '[]');
-    const selectedPort = Number(portSelect.dataset.selectedPort || 0);
-    const currentParent = String(parentInput.dataset.currentParent || '');
-    const currentPort = currentParent === parentInput.value ? selectedPort : 0;
-    const availablePorts = [];
-
-    for (let port = 1; port <= outputCount; port++) {
-        if (!usedPorts.includes(port) || port === currentPort) availablePorts.push(port);
+    if (document.querySelector('[data-dashboard]')) {
+        // Muat kerangka dashboard satu kali setelah pengguna berhasil login.
+        loaders.push(import('./pages/dashboard').then(({ bootDashboard }) => bootDashboard()));
     }
 
-    if (availablePorts.length === 0) {
-        setSinglePortOption(portSelect, 'Semua port sudah digunakan');
-        return;
+    if (document.querySelector('[data-modal]')) {
+        // Muat pengendali modal hanya pada halaman yang memiliki modal.
+        loaders.push(import('./components/modal').then(({ bootModals }) => bootModals()));
     }
 
-    portSelect.innerHTML = '';
-    portSelect.disabled = false;
-    portSelect.required = true;
-    portSelect.setCustomValidity('');
-    portSelect.appendChild(new Option('Pilih port', ''));
+    if (document.querySelector('[data-confirm-submit]')) {
+        // Muat konfirmasi form umum hanya ketika dibutuhkan.
+        loaders.push(import('./components/confirm-form').then(({ bootConfirmForms }) => bootConfirmForms()));
+    }
 
-    availablePorts.forEach((port) => {
-        const option = new Option(`Port ${port}`, port);
-        option.selected = port === currentPort;
-        portSelect.appendChild(option);
-    });
-}
+    if (document.querySelector('[data-maincore-page]')) {
+        // Muat asset fitur Main Core hanya pada fitur yang sedang dibuka.
+        loaders.push(import('./pages/maincore').then(({ bootMainCore }) => bootMainCore()));
+    }
 
-function initializeParentCombobox(combobox) {
-    const form = combobox.closest('form');
-    const category = form?.querySelector('[data-parent-category]');
-    const search = combobox.querySelector('[data-parent-search]');
-    const parentInput = combobox.querySelector('[data-parent-id]');
-    const dropdownButton = combobox.querySelector('[data-parent-dropdown-button]');
-    const optionsPanel = combobox.querySelector('[data-parent-options]');
-    const emptyMessage = combobox.querySelector('[data-parent-empty]');
-    const options = Array.from(combobox.querySelectorAll('[data-parent-option]'));
+    if (document.querySelector('[data-trace-form]')) {
+        // Muat pencarian Trace Jalur hanya pada halaman Trace Jalur.
+        loaders.push(import('./pages/trace-jalur').then(({ bootTraceJalur }) => bootTraceJalur()));
+    }
 
-    if (!form || !category || !search || !parentInput || !dropdownButton || !optionsPanel || !emptyMessage) return;
+    if (document.querySelector('[data-attenuation-calculator]')) {
+        // Kalkulator hanya menghitung di browser dan tidak mengirim data ke server.
+        loaders.push(import('./pages/attenuation-calculator').then(({ bootAttenuationCalculator }) => bootAttenuationCalculator()));
+    }
 
-    const renderOptions = () => {
-        if (!category.value || search.disabled) return;
-
-        const keyword = search.value.trim().toLocaleLowerCase('id-ID');
-        let visibleOptions = 0;
-
-        options.forEach((option) => {
-            const matchesCategory = option.dataset.parentType === category.value;
-            const matchesKeyword = (option.dataset.parentName || '')
-                .toLocaleLowerCase('id-ID')
-                .includes(keyword);
-            const visible = matchesCategory && matchesKeyword;
-
-            option.classList.toggle('hidden', !visible);
-            if (visible) visibleOptions++;
-        });
-
-        emptyMessage.textContent = keyword
-            ? 'Sumber jalur tidak ditemukan.'
-            : 'Belum ada sumber jalur pada kategori ini.';
-        emptyMessage.classList.toggle('hidden', visibleOptions > 0);
-        optionsPanel.classList.remove('hidden');
-    };
-
-    const clearParent = () => {
-        parentInput.value = '';
-        search.value = '';
-        search.setCustomValidity('');
-        syncParentPort(combobox);
-    };
-
-    const syncCategory = (resetParent = false) => {
-        const enabled = Boolean(category.value);
-
-        search.disabled = !enabled;
-        dropdownButton.disabled = !enabled;
-        search.placeholder = enabled
-            ? 'Cari atau pilih sumber jalur...'
-            : 'Pilih kategori terlebih dahulu';
-
-        if (resetParent) clearParent();
-        optionsPanel.classList.add('hidden');
-    };
-
-    category.addEventListener('change', () => {
-        syncCategory(true);
-
-        if (!search.disabled) {
-            search.focus();
-            renderOptions();
-        }
-    });
-
-    search.addEventListener('focus', renderOptions);
-    search.addEventListener('click', renderOptions);
-    search.addEventListener('input', () => {
-        parentInput.value = '';
-        search.setCustomValidity('');
-        syncParentPort(combobox);
-        renderOptions();
-    });
-
-    dropdownButton.addEventListener('click', () => {
-        search.focus();
-        renderOptions();
-    });
-
-    options.forEach((option) => {
-        option.addEventListener('click', () => {
-            parentInput.value = option.dataset.parentIdValue || '';
-            search.value = option.dataset.parentName || '';
-            search.setCustomValidity('');
-            optionsPanel.classList.add('hidden');
-            syncParentPort(combobox);
-        });
-    });
-
-    form.addEventListener('submit', (event) => {
-        if (parentInput.value) return;
-
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        search.setCustomValidity('Pilih sumber jalur dari daftar yang tersedia.');
-        search.reportValidity();
-    }, true);
-
-    syncCategory(false);
-    syncParentPort(combobox);
-}
-
-function bootParentComboboxes() {
-    const comboboxes = Array.from(document.querySelectorAll('[data-parent-combobox]'));
-    comboboxes.forEach(initializeParentCombobox);
-
-    document.addEventListener('click', (event) => {
-        comboboxes.forEach((combobox) => {
-            if (!combobox.contains(event.target)) {
-                combobox.querySelector('[data-parent-options]')?.classList.add('hidden');
-            }
-        });
-    });
+    await Promise.all(loaders);
 }
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bootParentComboboxes);
+    document.addEventListener('DOMContentLoaded', bootApplication, { once: true });
 } else {
-    bootParentComboboxes();
+    bootApplication();
 }

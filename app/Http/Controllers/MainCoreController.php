@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
-class FiberDashboardController extends Controller
+class MainCoreController extends Controller
 {
     public function index(): RedirectResponse
     {
@@ -126,6 +126,108 @@ class FiberDashboardController extends Controller
         return $this->listByType('odp');
     }
 
+    public function apiIndex(Request $request, string $type): JsonResponse
+    {
+        abort_unless(in_array($type, MainCore::TYPES, true), 404);
+
+        $perPage = min(max($request->integer('per_page', 15), 1), 100);
+        $viewData = $this->listData($type, $perPage);
+        $nodes = $viewData['nodes'];
+
+        $nodes->getCollection()->each(fn (MainCore $node) => $node->append([
+            'jenis_splitter',
+            'jumlah_output',
+            'rasio_redaman',
+            'rasio_redaman_ports',
+        ]));
+
+        $payload = [
+            'meta' => [
+                'current_page' => $nodes->currentPage(),
+                'last_page' => $nodes->lastPage(),
+                'per_page' => $nodes->perPage(),
+                'total' => $nodes->total(),
+            ],
+        ];
+
+        if ($request->boolean('fragment')) {
+            // Fragmen sudah memuat lima baris aktif, jadi data JSON tidak dikirim ulang dua kali.
+            $sections = view($this->viewForType($type), $viewData)->renderSections();
+            $payload['fragment'] = $sections['content'] ?? '';
+        } else {
+            // Endpoint data biasa tetap menyediakan record JSON untuk pemakai API lainnya.
+            $payload['data'] = $nodes->items();
+        }
+
+        return response()->json($payload);
+    }
+
+    public function apiParents(Request $request, string $type): JsonResponse
+    {
+        abort_unless(in_array($type, MainCore::TYPES, true), 404);
+
+        // Validasi kategori dan kata kunci sebelum menjalankan pencarian parent.
+        $data = $request->validate([
+            'category' => ['required', Rule::in($this->allowedParentTypes($type))],
+            'search' => ['nullable', 'string', 'max:100'],
+            'current_node_id' => ['nullable', 'integer', Rule::exists('main_core', 'id')],
+            'current_parent_id' => ['nullable', 'integer', Rule::exists('main_core', 'id')],
+        ]);
+
+        $currentNodeId = (int) ($data['current_node_id'] ?? 0);
+        $currentParentId = (int) ($data['current_parent_id'] ?? 0);
+
+        // Ambil kandidat terbatas agar pencarian tetap ringan walaupun tabel berisi ribuan data.
+        $parents = MainCore::query()
+            ->with(['children:id,parent_id,parent_port_out'])
+            ->withCount('children')
+            ->where('tipe_titik', $data['category'])
+            ->when(filled($data['search'] ?? null), fn ($query) => $query
+                ->where('nama_titik', 'like', '%'.$data['search'].'%'))
+            ->when($currentNodeId > 0, fn ($query) => $query->whereKeyNot($currentNodeId))
+            ->orderBy('nama_titik')
+            ->limit(60)
+            ->get()
+            // Hanya tampilkan sumber yang masih mempunyai port kosong.
+            // Parent aktif tetap ditampilkan ketika pengguna sedang mengedit data.
+            ->filter(fn (MainCore $parent) => $parent->id === $currentParentId
+                || $this->hasAvailableOutput($parent))
+            ->take(20)
+            ->values()
+            ->map(function (MainCore $parent) use ($currentNodeId) {
+                // Port milik node yang sedang diedit tidak dihitung sebagai port terpakai.
+                $usedPorts = $parent->children
+                    ->reject(fn (MainCore $child) => $child->id === $currentNodeId)
+                    ->pluck('parent_port_out')
+                    ->filter()
+                    ->values();
+
+                return [
+                    'id' => $parent->id,
+                    'name' => $parent->nama_titik,
+                    'type' => $parent->tipe_titik,
+                    'redaman_in' => $parent->redaman_in !== null ? (float) $parent->redaman_in : null,
+                    'splitter_ratio' => $parent->jenis_splitter,
+                    'rasio_redaman_ports' => $parent->rasio_redaman_ports,
+                    'output_count' => $parent->jumlah_output ?? 0,
+                    'used_ports' => $usedPorts,
+                ];
+            });
+
+        return response()->json(['data' => $parents]);
+    }
+
+    public function apiEdit(string $type, MainCore $node): JsonResponse
+    {
+        abort_unless($node->tipe_titik === $type, 404);
+
+        // Modal Edit dimuat satu kali saat tombol Edit ditekan, bukan untuk setiap baris tabel.
+        $node->load(['parent.children:id,parent_id,parent_port_out']);
+        $fragment = view($this->modalViewForType($type), $this->editModalData($type, $node))->render();
+
+        return response()->json(['fragment' => $fragment]);
+    }
+
     public function store(Request $request, string $type)
     {
         $node = MainCore::create($this->validatedNode($request, $type));
@@ -146,8 +248,11 @@ class FiberDashboardController extends Controller
     {
         abort_unless($node->tipe_titik === $type, 404);
 
-        if ($node->children()->exists()) {
-            $message = "{$this->typeLabel($type)} masih memiliki anak. Hapus data dari paling bawah terlebih dahulu.";
+        $connectedChildren = $node->children()->pluck('nama_titik');
+
+        if ($connectedChildren->isNotEmpty()) {
+            $childNames = $connectedChildren->join(', ', ' dan ');
+            $message = "{$this->typeLabel($type)} tidak dapat dihapus karena masih terhubung dengan {$childNames}.";
 
             if ($request->expectsJson()) {
                 return response()->json(['message' => $message], 422);
@@ -167,23 +272,58 @@ class FiberDashboardController extends Controller
 
     private function listByType(string $type)
     {
-        $allParents = $this->parentOptions($type, true);
+        return view($this->viewForType($type), $this->listData($type));
+    }
 
-        $view = match ($type) {
+    private function listData(string $type, int $perPage = 5): array
+    {
+        // Siapkan hanya data yang dibutuhkan oleh fitur Main Core yang sedang dibuka.
+        return [
+            'section' => $type,
+            'nodes' => MainCore::with('parent')
+                ->type($type)
+                ->orderBy('nama_titik')
+                ->paginate($perPage)
+                ->withPath(route("fiber.$type")),
+            'labels' => $this->labels(),
+        ];
+    }
+
+    private function viewForType(string $type): string
+    {
+        return match ($type) {
             'server' => 'dashboard.maincore.data_server',
             'odc' => 'dashboard.maincore.data_odc',
             'odp' => 'dashboard.maincore.data_odp',
             'rasio' => 'dashboard.maincore.data_rasio',
         };
+    }
 
-        return view($view, [
+    private function modalViewForType(string $type): string
+    {
+        return match ($type) {
+            'server' => 'dashboard.modal.data_server',
+            'odc' => 'dashboard.modal.data_odc',
+            'odp' => 'dashboard.modal.data_odp',
+            'rasio' => 'dashboard.modal.data_rasio',
+        };
+    }
+
+    private function editModalData(string $type, MainCore $node): array
+    {
+        // Susun data kecil yang diperlukan satu modal Edit sesuai jenis fiturnya.
+        return [
             'section' => $type,
-            'nodes' => MainCore::with('parent')->type($type)->orderBy('nama_titik')->paginate(5)->withQueryString(),
-            'parents' => $this->parentOptions($type),
-            'allParents' => $allParents,
-            'existingNames' => MainCore::select('id', 'nama_titik')->orderBy('nama_titik')->get(),
+            'modalId' => 'editModal'.$node->id,
+            'title' => 'Edit Data '.$this->typeLabel($type),
+            'action' => route('api.maincore.update', [$type, $node]),
+            'method' => 'PATCH',
+            'node' => $node,
+            'mode' => $type.'_edit_'.$node->id,
+            'nameLabel' => $this->nameLabel($type),
             'labels' => $this->labels(),
-        ]);
+            'ratioOptions' => $this->splitterRatios($type),
+        ];
     }
 
     private function validatedNode(Request $request, string $type, ?MainCore $node = null): array
@@ -198,14 +338,15 @@ class FiberDashboardController extends Controller
             'parent_port_out' => ['nullable', 'integer', 'min:1'],
             'nama_titik' => ['required', 'string', 'max:255', Rule::unique('main_core', 'nama_titik')->ignore($node?->id)],
             'redaman_in' => ['nullable', 'numeric', 'between:-99.99,99.99'],
+            'jarak_kabel' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
         ];
 
         if ($type !== 'server') {
-            $rules['alamat'] = ['nullable', 'string'];
+            $rules['alamat'] = ['required', 'string', 'max:1000'];
         }
 
-        if (in_array($type, ['rasio', 'odc', 'odp'], true)) {
-            $ratios = $type === 'odp' ? MainCore::ODP_RATIOS : MainCore::SPLITTER_RATIOS;
+        if (in_array($type, ['odc', 'odp'], true)) {
+            $ratios = $this->splitterRatios($type);
             $rules['spesifikasi.jenis_splitter'] = ['required', Rule::in($ratios)];
         }
 
@@ -218,10 +359,17 @@ class FiberDashboardController extends Controller
             'nama_titik.unique' => "{$this->nameLabel($type)} sudah digunakan!",
             'parent_id.required' => 'Sumber jalur wajib dipilih.',
             'spesifikasi.jenis_splitter.required' => 'Jenis splitter wajib dipilih.',
-            'spesifikasi.jenis_splitter.in' => $type === 'odp'
+            'spesifikasi.jenis_splitter.in' => in_array($type, ['odc', 'odp'], true)
                 ? 'Jenis splitter hanya boleh 1:2, 1:4, atau 1:8.'
                 : 'Jenis splitter hanya boleh 1:2 atau 1:4.',
         ]);
+
+        if ($type === 'rasio') {
+            $data['spesifikasi'] = is_array($data['spesifikasi'] ?? null) ? $data['spesifikasi'] : [];
+            $data['spesifikasi']['rasio_redaman_ports'] = $this->validatedRasioPorts(
+                $data['spesifikasi']['rasio_redaman_ports'] ?? [],
+            );
+        }
 
         $parentPortOut = null;
 
@@ -279,8 +427,24 @@ class FiberDashboardController extends Controller
 
         $specification = $data['spesifikasi'] ?? null;
 
-        if ($type === 'rasio' && is_array($specification)) {
-            $outputCount = (int) str_replace('1:', '', $specification['jenis_splitter'] ?? '0');
+        $redamanIn = $data['redaman_in'] ?? null;
+
+        if ($type !== 'server' && $redamanIn === null && isset($data['jarak_kabel'])) {
+            $sourceRedaman = (float) ($parent?->redaman_in ?? 0);
+            $splitterLoss = $parent?->splitterLossForPort($parentPortOut) ?? 0;
+            $cableLoss = ((float) $data['jarak_kabel'] / 1000) * MainCore::CABLE_LOSS_DB_PER_KM;
+            $connectorLoss = $type === 'odp' && $parent?->tipe_titik === 'odc'
+                ? MainCore::ODC_TO_ODP_CONNECTOR_PAIRS * MainCore::CONNECTOR_LOSS_DB_PER_PAIR
+                : 0;
+            $redamanIn = round(
+                $sourceRedaman - $splitterLoss - $cableLoss - $connectorLoss - MainCore::SAFETY_MARGIN_DB,
+                2,
+            );
+        }
+
+        if ($type === 'rasio') {
+            $specification = is_array($specification) ? $specification : [];
+            $outputCount = 2;
             $ports = collect($specification['rasio_redaman_ports'] ?? [])
                 ->only(range(1, $outputCount))
                 ->map(fn ($value) => is_string($value) ? trim($value) : $value)
@@ -288,6 +452,7 @@ class FiberDashboardController extends Controller
                 ->all();
 
             unset($specification['rasio_redaman']);
+            $specification['jenis_splitter'] = MainCore::RASIO_SPLITTER;
             $specification['rasio_redaman_ports'] = $ports;
         }
 
@@ -296,7 +461,8 @@ class FiberDashboardController extends Controller
             'parent_port_out' => $type === 'server' ? null : $parentPortOut,
             'nama_titik' => $data['nama_titik'],
             'tipe_titik' => $type,
-            'redaman_in' => $data['redaman_in'] ?? null,
+            'redaman_in' => $redamanIn,
+            'jarak_kabel' => $type === 'server' ? null : ($data['jarak_kabel'] ?? null),
             'alamat' => $type === 'server' ? null : ($data['alamat'] ?? null),
             'spesifikasi' => $specification,
         ];
@@ -314,22 +480,13 @@ class FiberDashboardController extends Controller
         return redirect()->route("fiber.{$node->tipe_titik}")->with('success', $message);
     }
 
-    private function parentOptions(string $type, bool $includeConnected = false)
+    private function allowedParentTypes(string $type): array
     {
-        $types = $this->allowedParentTypes($type);
-
-        if ($types === []) {
-            return collect();
-        }
-
-        return MainCore::with(['children:id,parent_id,parent_port_out'])
-            ->withCount('children')
-            ->whereIn('tipe_titik', $types)
-            ->orderBy('tipe_titik')
-            ->orderBy('nama_titik')
-            ->get()
-            ->filter(fn (MainCore $parent) => $includeConnected || $this->hasAvailableOutput($parent))
-            ->values();
+        return match ($type) {
+            'server' => [],
+            'rasio', 'odc', 'odp' => MainCore::TYPES,
+            default => [],
+        };
     }
 
     private function hasAvailableOutput(MainCore $parent): bool
@@ -343,13 +500,57 @@ class FiberDashboardController extends Controller
         return $outputCount > 0 && $parent->children_count < $outputCount;
     }
 
-    private function allowedParentTypes(string $type): array
+    private function splitterRatios(string $type): array
     {
         return match ($type) {
-            'server' => [],
-            'rasio', 'odc', 'odp' => MainCore::TYPES,
-            default => [],
+            'odc' => MainCore::ODC_RATIOS,
+            'odp' => MainCore::ODP_RATIOS,
+            default => [MainCore::RASIO_SPLITTER],
         };
+    }
+
+    private function validatedRasioPorts(array $ports): array
+    {
+        $firstValue = $ports[1] ?? null;
+        $secondValue = $ports[2] ?? null;
+        $hasSubmittedValue = filled($firstValue) || filled($secondValue);
+
+        if (! $hasSubmittedValue) {
+            return [1 => '10%', 2 => '90%'];
+        }
+
+        $firstPercentage = MainCore::parsePercentage($firstValue);
+        $secondPercentage = MainCore::parsePercentage($secondValue);
+        $errors = [];
+
+        if ($firstPercentage === null) {
+            $errors['spesifikasi.rasio_redaman_ports.1'] = 'Persentase Port 1 harus lebih dari 0 sampai 100.';
+        }
+
+        if ($secondPercentage === null) {
+            $errors['spesifikasi.rasio_redaman_ports.2'] = 'Persentase Port 2 harus lebih dari 0 sampai 100.';
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        if (abs($firstPercentage + $secondPercentage - 100) > 0.001) {
+            throw ValidationException::withMessages([
+                'spesifikasi.rasio_redaman_ports.1' => 'Total persentase Port 1 dan Port 2 harus 100%.',
+                'spesifikasi.rasio_redaman_ports.2' => 'Total persentase Port 1 dan Port 2 harus 100%.',
+            ]);
+        }
+
+        return [
+            1 => $this->formatPercentage($firstPercentage),
+            2 => $this->formatPercentage($secondPercentage),
+        ];
+    }
+
+    private function formatPercentage(float $percentage): string
+    {
+        return rtrim(rtrim(number_format($percentage, 2, '.', ''), '0'), '.').'%';
     }
 
     private function labels(): array

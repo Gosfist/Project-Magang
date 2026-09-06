@@ -58,7 +58,7 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Pesan</label>
                         <textarea rows="4" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none" placeholder="Tulis pesan Anda..."></textarea>
                     </div>
-                    <button type="button" onclick="alert('Fitur ini belum aktif. Silakan hubungi kami via WhatsApp.')" class="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all">
+                    <button type="button" data-alert-message="Fitur ini belum aktif. Silakan hubungi kami via WhatsApp." class="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all">
                         Kirim Pesan
                     </button>
                 </form>

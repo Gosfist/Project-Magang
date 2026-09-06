@@ -69,7 +69,7 @@ class FiberMainCoreTest extends TestCase
         ]);
 
         $this->assertSame(2, $rasio->jumlah_output);
-        $this->assertSame('Port 1: 10 Dan Port 2: 90', $rasio->rasio_redaman);
+        $this->assertSame('Port 1: 10% Dan Port 2: 90%', $rasio->rasio_redaman);
         $this->assertSame(4, $odc->jumlah_output);
         $this->assertSame(8, MainCore::type('odp')->firstOrFail()->jumlah_output);
 
@@ -84,12 +84,29 @@ class FiberMainCoreTest extends TestCase
         $this->actingAs($user)->get('/dashboard/fiber/rasio')
             ->assertOk()
             ->assertSee('Rasio 01')
+            ->assertSeeInOrder([
+                'Kategori',
+                'Sumber Jalur',
+                'Pilih Port',
+                'Nama Rasio',
+                'Jarak Kabel (meter)',
+                'Redaman In (dBm)',
+                'Hasil Rasio',
+                'Port 1',
+                'Port 2',
+                'Alamat',
+            ])
+            ->assertSee('grid gap-4 md:grid-cols-3', false)
             ->assertSee('data-parent-category', false)
             ->assertSee('data-parent-search', false)
+            ->assertDontSee('Otomatis: redaman sumber')
             ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Jenis Rasio</th>')
             ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Rasio Redaman</th>')
-            ->assertSeeHtml('name="spesifikasi[jenis_splitter]"')
+            ->assertDontSeeHtml('name="spesifikasi[jenis_splitter]"')
             ->assertSeeHtml('name="spesifikasi[rasio_redaman_ports][1]"')
+            ->assertSeeHtml('name="spesifikasi[rasio_redaman_ports][2]"')
+            ->assertDontSeeHtml('name="spesifikasi[rasio_redaman_ports][3]"')
+            ->assertSeeHtml('name="alamat" required')
             ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Port Sumber</th>')
             ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Jumlah Output</th>')
             ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Alamat</th>');
@@ -109,7 +126,10 @@ class FiberMainCoreTest extends TestCase
             ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Alamat</th>')
             ->assertSeeHtml('name="parent_port_out"')
             ->assertSeeHtml('name="spesifikasi[jenis_splitter]"')
-            ->assertSeeHtml('name="alamat"');
+            ->assertDontSee('Hasil Jenis Splitter')
+            ->assertDontSee('data-equal-splitter-results', false)
+            ->assertDontSee('Otomatis: redaman sumber')
+            ->assertSeeHtml('name="alamat" required');
 
         $this->actingAs($user)->get('/dashboard/fiber/odp')
             ->assertOk()
@@ -125,7 +145,10 @@ class FiberMainCoreTest extends TestCase
             ->assertDontSeeHtml('<th class="px-5 py-3 text-left">Alamat</th>')
             ->assertSeeHtml('name="parent_port_out"')
             ->assertSeeHtml('name="spesifikasi[jenis_splitter]"')
-            ->assertSeeHtml('name="alamat"');
+            ->assertDontSee('Hasil Jenis Splitter')
+            ->assertDontSee('data-equal-splitter-results', false)
+            ->assertDontSee('Otomatis: redaman sumber')
+            ->assertSeeHtml('name="alamat" required');
     }
 
     public function test_json_ajax_create_returns_node_payload(): void
@@ -139,11 +162,143 @@ class FiberMainCoreTest extends TestCase
         $this->actingAs($user)->postJson('/dashboard/fiber/odc', [
             'parent_id' => $server->id,
             'nama_titik' => 'ODC AJAX',
+            'alamat' => 'Alamat AJAX',
             'redaman_in' => -3.25,
             'spesifikasi' => ['jenis_splitter' => '1:4'],
         ])->assertOk()
             ->assertJsonPath('message', 'ODC berhasil ditambahkan.')
             ->assertJsonPath('node.nama_titik', 'ODC AJAX');
+    }
+
+    public function test_cable_distance_calculates_editable_attenuation_and_odc_supports_one_to_eight(): void
+    {
+        $user = $this->user();
+        $server = MainCore::create([
+            'nama_titik' => 'Core Redaman',
+            'tipe_titik' => 'server',
+        ]);
+        $source = MainCore::create([
+            'parent_id' => $server->id,
+            'nama_titik' => 'Rasio Sumber',
+            'tipe_titik' => 'rasio',
+            'redaman_in' => -3,
+            'spesifikasi' => ['jenis_splitter' => '1:2'],
+        ]);
+
+        $this->assertSame([1 => '10%', 2 => '90%'], $source->rasio_redaman_ports);
+
+        foreach (['rasio', 'odc', 'odp'] as $type) {
+            $this->actingAs($user)->get("/dashboard/fiber/{$type}")
+                ->assertOk()
+                ->assertSee('Jarak Kabel (meter)')
+                ->assertSee('data-cable-distance', false)
+                ->assertSee('data-attenuation-input', false);
+        }
+
+        $this->actingAs($user)->post('/dashboard/fiber/odc', [
+            'parent_id' => $source->id,
+            'parent_port_out' => 1,
+            'nama_titik' => 'ODC 100 Meter',
+            'alamat' => 'Alamat ODC',
+            'jarak_kabel' => 100,
+            'spesifikasi' => ['jenis_splitter' => '1:8'],
+        ])->assertRedirect('/dashboard/fiber/odc');
+
+        $odc = MainCore::type('odc')->firstOrFail();
+
+        $this->assertSame('100.00', $odc->jarak_kabel);
+        $this->assertSame('-14.04', $odc->redaman_in);
+        $this->assertSame(8, $odc->jumlah_output);
+
+        $this->actingAs($user)->post('/dashboard/fiber/odp', [
+            'parent_id' => $odc->id,
+            'parent_port_out' => 1,
+            'nama_titik' => 'ODP Koreksi Manual',
+            'alamat' => 'Alamat ODP',
+            'jarak_kabel' => 100,
+            'redaman_in' => -9.99,
+            'spesifikasi' => ['jenis_splitter' => '1:8'],
+        ])->assertRedirect('/dashboard/fiber/odp');
+
+        $this->assertDatabaseHas('main_core', [
+            'nama_titik' => 'ODP Koreksi Manual',
+            'jarak_kabel' => 100,
+            'redaman_in' => -9.99,
+        ]);
+
+        $odcSource = MainCore::create([
+            'nama_titik' => 'ODC Sumber 1:4',
+            'tipe_titik' => 'odc',
+            'redaman_in' => -5,
+            'spesifikasi' => ['jenis_splitter' => '1:4'],
+        ]);
+
+        $this->actingAs($user)->post('/dashboard/fiber/odp', [
+            'parent_id' => $odcSource->id,
+            'parent_port_out' => 1,
+            'nama_titik' => 'ODP Setelah Splitter 1:4',
+            'alamat' => 'Alamat ODP Splitter',
+            'jarak_kabel' => 500,
+            'spesifikasi' => ['jenis_splitter' => '1:8'],
+        ])->assertRedirect('/dashboard/fiber/odp');
+
+        $this->assertDatabaseHas('main_core', [
+            'nama_titik' => 'ODP Setelah Splitter 1:4',
+            'redaman_in' => -13.20,
+        ]);
+
+        $ratioSource = MainCore::create([
+            'nama_titik' => 'Rasio 10 90',
+            'tipe_titik' => 'rasio',
+            'redaman_in' => -5,
+            'spesifikasi' => [
+                'jenis_splitter' => '1:2',
+                'rasio_redaman_ports' => [1 => '10%', 2 => '90%'],
+            ],
+        ]);
+
+        $this->actingAs($user)->post('/dashboard/fiber/odc', [
+            'parent_id' => $ratioSource->id,
+            'parent_port_out' => 1,
+            'nama_titik' => 'ODC Jalur 10 Persen',
+            'alamat' => 'Alamat ODC 10',
+            'jarak_kabel' => 500,
+            'spesifikasi' => ['jenis_splitter' => '1:4'],
+        ])->assertRedirect('/dashboard/fiber/odc');
+
+        $this->actingAs($user)->post('/dashboard/fiber/odc', [
+            'parent_id' => $ratioSource->id,
+            'parent_port_out' => 2,
+            'nama_titik' => 'ODC Jalur 90 Persen',
+            'alamat' => 'Alamat ODC 90',
+            'jarak_kabel' => 500,
+            'spesifikasi' => ['jenis_splitter' => '1:4'],
+        ])->assertRedirect('/dashboard/fiber/odc');
+
+        $this->assertDatabaseHas('main_core', [
+            'nama_titik' => 'ODC Jalur 10 Persen',
+            'redaman_in' => -16.18,
+        ]);
+        $this->assertDatabaseHas('main_core', [
+            'nama_titik' => 'ODC Jalur 90 Persen',
+            'redaman_in' => -6.63,
+        ]);
+
+        foreach ([2, 4, 8] as $outputCount) {
+            $equalSplitter = new MainCore([
+                'tipe_titik' => 'odc',
+                'spesifikasi' => ['jenis_splitter' => "1:{$outputCount}"],
+            ]);
+
+            $this->assertEqualsWithDelta(
+                10 * log10($outputCount),
+                $equalSplitter->splitterLossForPort(1),
+                0.0001,
+            );
+        }
+
+        $this->assertEqualsWithDelta(10, $ratioSource->splitterLossForPort(1), 0.0001);
+        $this->assertEqualsWithDelta(-10 * log10(0.9), $ratioSource->splitterLossForPort(2), 0.0001);
     }
 
     public function test_rasio_list_has_responsive_name_filter(): void
@@ -169,9 +324,14 @@ class FiberMainCoreTest extends TestCase
             ->assertOk()
             ->assertSee('Cari nama rasio...')
             ->assertSee('data-rasio-row', false)
+            ->assertSee('data-table-search', false)
             ->assertSee('data-search-name="rasio utara"', false)
-            ->assertSee("addEventListener('input'", false)
             ->assertViewHas('nodes', fn ($nodes) => $nodes->pluck('nama_titik')->all() === ['Rasio Selatan', 'Rasio Utara']);
+
+        $this->assertStringContainsString(
+            "search.addEventListener('input'",
+            file_get_contents(resource_path('js/components/table-filter.js')),
+        );
     }
 
     public function test_main_core_lists_are_paginated_five_rows_per_page(): void
@@ -191,7 +351,8 @@ class FiberMainCoreTest extends TestCase
                 ->assertOk()
                 ->assertSee('page=2', false)
                 ->assertSee('aria-label="Pagination"', false)
-                ->assertSee('text-blue-600', false)
+                ->assertSee('data-maincore-pagination', false)
+                ->assertSee('text-slate-900', false)
                 ->assertDontSee('Showing')
                 ->assertViewHas('nodes', fn ($nodes) => $nodes->perPage() === 5
                     && $nodes->total() === 6
@@ -266,24 +427,78 @@ class FiberMainCoreTest extends TestCase
     public function test_splitter_and_odp_specific_validation_follow_prd(): void
     {
         $user = $this->user();
+        $invalidRatioServer = MainCore::create([
+            'nama_titik' => 'Server Rasio Invalid',
+            'tipe_titik' => 'server',
+        ]);
+
+        $this->actingAs($user)->post('/dashboard/fiber/rasio', [
+            'parent_id' => $invalidRatioServer->id,
+            'nama_titik' => 'Rasio Total Invalid',
+            'alamat' => 'Alamat Rasio Invalid',
+            'spesifikasi' => [
+                'rasio_redaman_ports' => [1 => '20%', 2 => '70%'],
+            ],
+        ])->assertSessionHasErrors([
+            'spesifikasi.rasio_redaman_ports.1',
+            'spesifikasi.rasio_redaman_ports.2',
+        ]);
+
         $server = MainCore::create([
             'nama_titik' => 'Server Pusat',
             'tipe_titik' => 'server',
         ]);
 
-        $this->actingAs($user)->post('/dashboard/fiber/odc', [
+        $this->actingAs($user)->post('/dashboard/fiber/rasio', [
             'parent_id' => $server->id,
-            'nama_titik' => 'ODC invalid',
+            'nama_titik' => 'Rasio Tetap 1:2',
+            'alamat' => 'Alamat Rasio',
             'spesifikasi' => ['jenis_splitter' => '1:8'],
-        ])->assertSessionHasErrors('spesifikasi.jenis_splitter');
+        ])->assertRedirect('/dashboard/fiber/rasio');
+
+        $rasio = MainCore::type('rasio')->firstOrFail();
+
+        $this->assertSame('1:2', $rasio->jenis_splitter);
+        $this->assertSame([1 => '10%', 2 => '90%'], $rasio->rasio_redaman_ports);
+
+        $serverForOdp = MainCore::create([
+            'nama_titik' => 'Server ODP',
+            'tipe_titik' => 'server',
+        ]);
 
         $this->actingAs($user)->post('/dashboard/fiber/odp', [
-            'parent_id' => $server->id,
+            'parent_id' => $serverForOdp->id,
             'nama_titik' => 'ODP valid 1:8',
+            'alamat' => 'Alamat ODP',
             'spesifikasi' => ['jenis_splitter' => '1:8'],
         ])->assertRedirect('/dashboard/fiber/odp');
 
         $this->assertSame(8, MainCore::type('odp')->firstOrFail()->jumlah_output);
+    }
+
+    public function test_address_is_required_for_rasio_odc_and_odp(): void
+    {
+        $user = $this->user();
+
+        foreach (['rasio', 'odc', 'odp'] as $type) {
+            $server = MainCore::create([
+                'nama_titik' => "Server Alamat {$type}",
+                'tipe_titik' => 'server',
+            ]);
+
+            $payload = [
+                'parent_id' => $server->id,
+                'nama_titik' => "Data Tanpa Alamat {$type}",
+            ];
+
+            if ($type !== 'rasio') {
+                $payload['spesifikasi'] = ['jenis_splitter' => '1:2'];
+            }
+
+            $this->actingAs($user)
+                ->post("/dashboard/fiber/{$type}", $payload)
+                ->assertSessionHasErrors('alamat');
+        }
     }
 
     public function test_rasio_port_redaman_changes_main_core_date(): void
@@ -313,6 +528,7 @@ class FiberMainCoreTest extends TestCase
         $this->actingAs($user)->patch("/dashboard/fiber/rasio/{$rasio->id}", [
             'parent_id' => $server->id,
             'nama_titik' => 'Rasio Bertanggal',
+            'alamat' => 'Alamat Rasio Bertanggal',
             'spesifikasi' => [
                 'jenis_splitter' => '1:2',
                 'rasio_redaman_ports' => [1 => '20%', 2 => '80%'],
@@ -340,13 +556,16 @@ class FiberMainCoreTest extends TestCase
 
         $this->actingAs($user)->get('/dashboard/fiber/odc')
             ->assertOk()
+            // Kandidat parent tidak lagi dikirim sekaligus bersama halaman.
             ->assertDontSee('data-parent-name="Core 1"', false)
-            ->assertSee('data-parent-name="Core 2"', false)
-            ->assertSee('data-parent-name="Rasio 1"', false);
+            ->assertDontSee('data-parent-name="Core 2"', false)
+            ->assertDontSee('data-parent-name="Rasio 1"', false)
+            ->assertSee('data-parent-api-url', false);
 
         $this->actingAs($user)->post('/dashboard/fiber/odc', [
             'parent_id' => $coreOne->id,
             'nama_titik' => 'ODC salah',
+            'alamat' => 'Alamat ODC',
             'spesifikasi' => ['jenis_splitter' => '1:4'],
         ])->assertSessionHasErrors('parent_id');
     }
@@ -366,6 +585,7 @@ class FiberMainCoreTest extends TestCase
             'parent_id' => $rasio->id,
             'parent_port_out' => 1,
             'nama_titik' => 'ODC port 1',
+            'alamat' => 'Alamat ODC 1',
             'spesifikasi' => ['jenis_splitter' => '1:4'],
         ])->assertRedirect('/dashboard/fiber/odc');
 
@@ -373,6 +593,7 @@ class FiberMainCoreTest extends TestCase
             'parent_id' => $rasio->id,
             'parent_port_out' => 1,
             'nama_titik' => 'ODC port duplicate',
+            'alamat' => 'Alamat ODC Duplikat',
             'spesifikasi' => ['jenis_splitter' => '1:4'],
         ])->assertSessionHasErrors('parent_port_out');
 
@@ -380,6 +601,7 @@ class FiberMainCoreTest extends TestCase
             'parent_id' => $rasio->id,
             'parent_port_out' => 2,
             'nama_titik' => 'ODC port 2',
+            'alamat' => 'Alamat ODC 2',
             'spesifikasi' => ['jenis_splitter' => '1:4'],
         ])->assertRedirect('/dashboard/fiber/odc');
 
@@ -410,6 +632,7 @@ class FiberMainCoreTest extends TestCase
             'parent_id' => $odc->id,
             'parent_port_out' => 1,
             'nama_titik' => 'ODP 2',
+            'alamat' => 'Alamat ODP 2',
             'spesifikasi' => ['jenis_splitter' => '1:8'],
         ])->assertRedirect('/dashboard/fiber/odp');
 
@@ -417,6 +640,7 @@ class FiberMainCoreTest extends TestCase
             'parent_id' => $odc->id,
             'parent_port_out' => 2,
             'nama_titik' => 'ODP 2',
+            'alamat' => 'Alamat ODP Duplikat',
             'spesifikasi' => ['jenis_splitter' => '1:8'],
         ])->assertSessionHasErrors([
             'nama_titik' => 'Nama ODP sudah digunakan!',
@@ -434,27 +658,25 @@ class FiberMainCoreTest extends TestCase
         $this->actingAs($user)->post('/dashboard/fiber/odp', [
             'parent_id' => $server->id,
             'nama_titik' => 'ODP Sumber',
+            'alamat' => 'Alamat ODP Sumber',
             'spesifikasi' => ['jenis_splitter' => '1:8'],
         ])->assertRedirect('/dashboard/fiber/odp');
 
         $odpSource = MainCore::type('odp')->where('nama_titik', 'ODP Sumber')->firstOrFail();
 
-        $this->actingAs($user)->get('/dashboard/fiber/odc')
-            ->assertOk()
-            ->assertSee('data-parent-name="ODP Sumber"', false);
-
-        $this->actingAs($user)->get('/dashboard/fiber/odp')
-            ->assertOk()
-            ->assertSee('data-parent-name="ODP Sumber"', false);
-
-        $this->actingAs($user)->get('/dashboard/fiber/rasio')
-            ->assertOk()
-            ->assertSee('data-parent-name="ODP Sumber"', false);
+        // Pilihan ODP sumber akan dicari melalui endpoint parent ketika pengguna mengetik.
+        foreach (['odc', 'odp', 'rasio'] as $type) {
+            $this->actingAs($user)->get("/dashboard/fiber/{$type}")
+                ->assertOk()
+                ->assertDontSee('data-parent-name="ODP Sumber"', false)
+                ->assertSee('data-parent-api-url', false);
+        }
 
         $this->actingAs($user)->post('/dashboard/fiber/odp', [
             'parent_id' => $odpSource->id,
             'parent_port_out' => 1,
             'nama_titik' => 'ODP Lanjutan',
+            'alamat' => 'Alamat ODP Lanjutan',
             'spesifikasi' => ['jenis_splitter' => '1:8'],
         ])->assertRedirect('/dashboard/fiber/odp');
 
@@ -462,6 +684,7 @@ class FiberMainCoreTest extends TestCase
             'parent_id' => $odpSource->id,
             'parent_port_out' => 2,
             'nama_titik' => 'ODC Lanjutan',
+            'alamat' => 'Alamat ODC Lanjutan',
             'spesifikasi' => ['jenis_splitter' => '1:4'],
         ])->assertRedirect('/dashboard/fiber/odc');
 
@@ -469,6 +692,7 @@ class FiberMainCoreTest extends TestCase
             'parent_id' => $odpSource->id,
             'parent_port_out' => 3,
             'nama_titik' => 'Rasio Lanjutan',
+            'alamat' => 'Alamat Rasio Lanjutan',
             'spesifikasi' => ['jenis_splitter' => '1:2'],
         ])->assertRedirect('/dashboard/fiber/rasio');
 
@@ -512,6 +736,7 @@ class FiberMainCoreTest extends TestCase
             'parent_id' => $server->id,
             'nama_titik' => 'Rasio Trace',
             'tipe_titik' => 'rasio',
+            'jarak_kabel' => 50,
             'spesifikasi' => ['jenis_splitter' => '1:2'],
         ]);
         $odc = MainCore::create([
@@ -519,6 +744,7 @@ class FiberMainCoreTest extends TestCase
             'parent_port_out' => 1,
             'nama_titik' => 'ODC Trace',
             'tipe_titik' => 'odc',
+            'jarak_kabel' => 100,
             'spesifikasi' => ['jenis_splitter' => '1:4'],
         ]);
         $odp = MainCore::create([
@@ -526,6 +752,7 @@ class FiberMainCoreTest extends TestCase
             'parent_port_out' => 2,
             'nama_titik' => 'ODP Trace',
             'tipe_titik' => 'odp',
+            'jarak_kabel' => 250,
             'spesifikasi' => ['jenis_splitter' => '1:8'],
         ]);
 
@@ -537,8 +764,14 @@ class FiberMainCoreTest extends TestCase
             ->assertSee('<option value="rasio"', false)
             ->assertSee('<option value="odc"', false)
             ->assertSee('<option value="odp"', false)
-            ->assertSee('Cari atau pilih nama...', false)
+            ->assertSee('data-trace-form', false)
+            ->assertSee('data-trace-nodes=', false)
             ->assertSee('ODP Trace');
+
+        $this->assertStringContainsString(
+            'Cari atau pilih nama...',
+            file_get_contents(resource_path('js/pages/trace-jalur.js')),
+        );
 
         $this->actingAs($user)->get('/dashboard/fiber/trace-jalur?category=server&node_id='.$server->id)
             ->assertOk()
@@ -553,8 +786,9 @@ class FiberMainCoreTest extends TestCase
         $this->actingAs($user)->get('/dashboard/fiber/trace-jalur?category=odp&node_id='.$odp->id)
             ->assertOk()
             ->assertSee('Hasil Trace Jalur')
-            ->assertSeeInOrder(['Core Trace', 'Rasio Trace', 'ODC Trace', 'ODP Trace'])
+            ->assertSeeInOrder(['Core Trace', '50 m', 'Rasio Trace', '100 m', 'ODC Trace', '250 m', 'ODP Trace'])
             ->assertSee('4 titik')
+            ->assertSee('data-trace-distance', false)
             ->assertSee('Port 2');
 
         $this->actingAs($user)->get('/dashboard/fiber/server')
@@ -590,13 +824,26 @@ class FiberMainCoreTest extends TestCase
             'tipe_titik' => 'odc',
             'spesifikasi' => ['jenis_splitter' => '1:4'],
         ]);
+        $odp = MainCore::create([
+            'parent_id' => $odc->id,
+            'parent_port_out' => 1,
+            'nama_titik' => 'ODP A',
+            'tipe_titik' => 'odp',
+            'spesifikasi' => ['jenis_splitter' => '1:8'],
+        ]);
 
         $this->actingAs($user)->delete("/dashboard/fiber/server/{$server->id}")
             ->assertRedirect('/dashboard/fiber/server')
-            ->assertSessionHas('error');
+            ->assertSessionHas('error', 'Server tidak dapat dihapus karena masih terhubung dengan Rasio 1.');
 
         $this->assertDatabaseHas('main_core', ['id' => $server->id]);
 
+        $this->actingAs($user)->delete("/dashboard/fiber/odc/{$odc->id}")
+            ->assertRedirect('/dashboard/fiber/odc')
+            ->assertSessionHas('error', 'ODC tidak dapat dihapus karena masih terhubung dengan ODP A.');
+
+        $this->actingAs($user)->delete("/dashboard/fiber/odp/{$odp->id}")
+            ->assertRedirect('/dashboard/fiber/odp');
         $this->actingAs($user)->delete("/dashboard/fiber/odc/{$odc->id}")
             ->assertRedirect('/dashboard/fiber/odc');
         $this->actingAs($user)->delete("/dashboard/fiber/rasio/{$rasio->id}")
@@ -604,6 +851,7 @@ class FiberMainCoreTest extends TestCase
         $this->actingAs($user)->delete("/dashboard/fiber/server/{$server->id}")
             ->assertRedirect('/dashboard/fiber/server');
 
+        $this->assertDatabaseMissing('main_core', ['id' => $odp->id]);
         $this->assertDatabaseMissing('main_core', ['id' => $odc->id]);
         $this->assertDatabaseMissing('main_core', ['id' => $rasio->id]);
         $this->assertDatabaseMissing('main_core', ['id' => $server->id]);
