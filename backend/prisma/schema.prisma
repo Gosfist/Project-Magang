@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  name     String
+  email    String @unique
+  password String
+  role     String @default("petugas")
+  status   String @default("active")
+
+  @@map("users")
+}
+
+model MainCore {
+  id            BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  parentId      BigInt?    @map("parent_id") @db.UnsignedBigInt
+  parentPortOut Int?       @map("parent_port_out") @db.UnsignedInt
+  namaTitik     String     @unique @map("nama_titik")
+  tipeTitik     String     @map("tipe_titik")
+  redamanIn     Decimal?   @map("redaman_in") @db.Decimal(5, 2)
+  jarakKabel    Decimal?   @map("jarak_kabel") @db.Decimal(10, 2)
+  alamat        String?    @db.Text
+  spesifikasi   Json?
+  tanggal       DateTime?  @db.Date
+  createdAt     DateTime?  @map("created_at")
+  updatedAt     DateTime?  @map("updated_at")
+  deletedAt     DateTime?  @map("deleted_at")
+  parent        MainCore?  @relation("MainCoreTree", fields: [parentId], references: [id])
+  children      MainCore[] @relation("MainCoreTree")
+
+  @@index([parentId])
+  @@index([parentPortOut])
+  @@index([tipeTitik])
+  @@map("main_core")
+}
+
+model PppoePackage {
+  id           BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  name         String         @unique
+  downloadMbps Int            @map("download_mbps") @db.UnsignedInt
+  uploadMbps   Int            @map("upload_mbps") @db.UnsignedInt
+  price        BigInt         @default(0) @db.UnsignedBigInt
+  addressPool  String?        @map("address_pool")
+  isActive     Boolean        @default(true) @map("is_active")
+  createdAt    DateTime?      @map("created_at")
+  updatedAt    DateTime?      @map("updated_at")
+  accounts     PppoeAccount[]
+
+  @@map("pppoe_packages")
+}
+
+model PppoeAccount {
+  id             BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  pppoePackageId BigInt       @map("pppoe_package_id") @db.UnsignedBigInt
+  customerName   String       @map("customer_name")
+  username       String       @unique @db.VarChar(64)
+  password       String       @db.Text
+  phone          String?      @db.VarChar(30)
+  address        String?      @db.Text
+  expiresAt      DateTime?    @map("expires_at") @db.Date
+  isActive       Boolean      @default(true) @map("is_active")
+  notes          String?      @db.Text
+  createdAt      DateTime?    @map("created_at")
+  updatedAt      DateTime?    @map("updated_at")
+  package        PppoePackage @relation(fields: [pppoePackageId], references: [id], onDelete: Restrict)
+
+  @@index([pppoePackageId])
+  @@map("pppoe_accounts")
+}
+
+model Radcheck {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  username  String @default("") @db.VarChar(64)
+  attribute String @default("") @db.VarChar(64)
+  op        String @default("==") @db.Char(2)
+  value     String @default("") @db.VarChar(253)
+
+  @@index([username])
+  @@map("radcheck")
+}
+
+model Radreply {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  username  String @default("") @db.VarChar(64)
+  attribute String @default("") @db.VarChar(64)
+  op        String @default("=") @db.Char(2)
+  value     String @default("") @db.VarChar(253)
+
+  @@index([username])
+  @@map("radreply")
+}
+
+model Radgroupcheck {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  groupname String @default("") @db.VarChar(64)
+  attribute String @default("") @db.VarChar(64)
+  op        String @default("==") @db.Char(2)
+  value     String @default("") @db.VarChar(253)
+
+  @@index([groupname])
+  @@map("radgroupcheck")
+}
+
+model Radgroupreply {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  groupname String @default("") @db.VarChar(64)
+  attribute String @default("") @db.VarChar(64)
+  op        String @default("=") @db.Char(2)
+  value     String @default("") @db.VarChar(253)
+
+  @@index([groupname])
+  @@map("radgroupreply")
+}
+
+model Radusergroup {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  username  String @default("") @db.VarChar(64)
+  groupname String @default("") @db.VarChar(64)
+  priority  Int    @default(1)
+
+  @@index([username])
+  @@map("radusergroup")
+}
+
+model Radacct {
+  radacctid           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  acctsessionid       String    @default("") @db.VarChar(64)
+  acctuniqueid        String    @unique @db.VarChar(32)
+  username            String    @default("") @db.VarChar(64)
+  groupname           String    @default("") @db.VarChar(64)
+  realm               String?   @db.VarChar(64)
+  nasipaddress        String    @default("") @db.VarChar(45)
+  nasportid           String?   @db.VarChar(32)
+  nasporttype         String?   @db.VarChar(32)
+  acctstarttime       DateTime?
+  acctupdatetime      DateTime?
+  acctstoptime        DateTime?
+  acctinterval        Int?
+  acctsessiontime     Int?      @db.UnsignedInt
+  acctauthentic       String?   @db.VarChar(32)
+  connectinfo_start   String?   @db.VarChar(50)
+  connectinfo_stop    String?   @db.VarChar(50)
+  acctinputoctets     BigInt?   @db.UnsignedBigInt
+  acctoutputoctets    BigInt?   @db.UnsignedBigInt
+  calledstationid     String    @default("") @db.VarChar(50)
+  callingstationid    String    @default("") @db.VarChar(50)
+  acctterminatecause  String    @default("") @db.VarChar(32)
+  servicetype         String?   @db.VarChar(32)
+  framedprotocol      String?   @db.VarChar(32)
+  framedipaddress     String    @default("") @db.VarChar(45)
+  framedipv6address   String    @default("") @db.VarChar(45)
+  framedipv6prefix    String    @default("") @db.VarChar(45)
+  framedinterfaceid   String    @default("") @db.VarChar(44)
+  delegatedipv6prefix String    @default("") @db.VarChar(45)
+  class               String?   @db.VarChar(64)
+
+  @@index([acctsessionid])
+  @@index([username])
+  @@index([nasipaddress])
+  @@index([acctstarttime])
+  @@index([acctstoptime])
+  @@map("radacct")
+}
+
+model Radpostauth {
+  id       BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  username String   @default("") @db.VarChar(64)
+  pass     String   @default("") @db.VarChar(64)
+  reply    String   @default("") @db.VarChar(32)
+  authdate DateTime @default(now())
+  class    String   @default("") @db.VarChar(64)
+
+  @@map("radpostauth")
+}
+
+model Nas {
+  id              Int     @id @default(autoincrement()) @db.UnsignedInt
+  nasname         String  @db.VarChar(128)
+  shortname       String? @db.VarChar(32)
+  type            String  @default("other") @db.VarChar(30)
+  ports           Int?    @db.UnsignedSmallInt
+  secret          String  @default("secret") @db.VarChar(60)
+  server          String? @db.VarChar(64)
+  community       String? @db.VarChar(50)
+  description     String  @default("RADIUS Client") @db.VarChar(200)
+  requireMa       String  @default("auto") @map("require_ma") @db.VarChar(4)
+  limitProxyState String  @default("auto") @map("limit_proxy_state") @db.VarChar(4)
+
+  @@index([nasname])
+  @@map("nas")
+}
+
+model Nasreload {
+  nasipaddress String   @id @db.VarChar(45)
+  reloadtime   DateTime
+
+  @@map("nasreload")
+}
