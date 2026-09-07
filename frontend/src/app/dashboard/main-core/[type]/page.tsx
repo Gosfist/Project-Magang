@@ -1,24 +1,526 @@
-'use client';
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
-import { api } from '@/lib/api';
-import type { MainCoreNode, PageMeta } from '@/lib/types';
-import { Modal } from '@/components/modal'; import { Pagination } from '@/components/pagination'; import { Toast } from '@/components/toast';
+"use client";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { api } from "@/lib/api";
+import type { MainCoreNode, PageMeta } from "@/lib/types";
+import { Modal } from "@/components/modal";
+import { Pagination } from "@/components/pagination";
+import { Toast } from "@/components/toast";
 
-type ParentOption={id:string;name:string;type:string;redamanIn:number|null;splitterRatio:string|null;rasioRedamanPorts:Record<string,string>;outputCount:number;usedPorts:number[]};
-const labels={server:'Server',rasio:'Rasio',odc:'ODC',odp:'ODP'} as const;
-const empty={parentId:'',parentPortOut:'',namaTitik:'',redamanIn:'',jarakKabel:'',alamat:'',splitter:'1:2',ratio1:'10%',ratio2:'90%'};
-export default function MainCorePage(){
- const params=useParams<{type:string}>(); const router=useRouter(); const type=params.type as keyof typeof labels; const valid=type in labels;
- const [items,setItems]=useState<MainCoreNode[]>([]); const [meta,setMeta]=useState<PageMeta>({currentPage:1,lastPage:1,perPage:5,total:0}); const [search,setSearch]=useState(''); const [page,setPage]=useState(1); const [open,setOpen]=useState(false); const [editing,setEditing]=useState<MainCoreNode|null>(null); const [form,setForm]=useState(empty); const [parentSearch,setParentSearch]=useState(''); const [parents,setParents]=useState<ParentOption[]>([]); const [toast,setToast]=useState<{message:string;type:'success'|'error'}|null>(null);
- const load=useCallback(()=>{if(!valid)return;api<{data:MainCoreNode[];meta:PageMeta}>(`/main-core/${type}?search=${encodeURIComponent(search)}&page=${page}`).then(r=>{setItems(r.data);setMeta(r.meta)}).catch(e=>setToast({message:e.message,type:'error'}))},[valid,type,search,page]); useEffect(()=>{if(!valid)router.replace('/dashboard/main-core/server');else load()},[valid,router,load]);
- useEffect(()=>{if(!open||type==='server')return;const timer=setTimeout(()=>api<{data:ParentOption[]}>(`/main-core/${type}/parents?search=${encodeURIComponent(parentSearch)}${editing?`&currentNodeId=${editing.id}&currentParentId=${editing.parentId??''}`:''}`).then(r=>setParents(r.data)).catch(()=>setParents([])),250);return()=>clearTimeout(timer)},[open,type,parentSearch,editing]);
- const selectedParent=parents.find(p=>p.id===form.parentId); const availablePorts=useMemo(()=>Array.from({length:selectedParent?.outputCount??0},(_,i)=>i+1).filter(p=>!selectedParent?.usedPorts.includes(p)||String(p)===form.parentPortOut),[selectedParent,form.parentPortOut]);
- function autoRedaman(distanceValue:string,portValue:string){if(type==='server'||!selectedParent||distanceValue==='')return form.redamanIn;const distance=Number(distanceValue);let splitterLoss=0;if(selectedParent.type==='rasio'&&portValue){const raw=selectedParent.rasioRedamanPorts[portValue]??'';const pct=Number(raw.replace('%','').replace(',','.'));if(pct>0)splitterLoss=-10*Math.log10(pct/100)}else if(selectedParent.type!=='server'&&selectedParent.outputCount)splitterLoss=10*Math.log10(selectedParent.outputCount);const connector=type==='odp'&&selectedParent.type==='odc'?1:0;return((selectedParent.redamanIn??0)-splitterLoss-(distance/1000*.35)-connector-1).toFixed(2)}
- function show(node?:MainCoreNode){setEditing(node??null);setParentSearch('');setForm(node?{parentId:node.parentId??'',parentPortOut:String(node.parentPortOut??''),namaTitik:node.namaTitik,redamanIn:String(node.redamanIn??''),jarakKabel:String(node.jarakKabel??''),alamat:node.alamat??'',splitter:node.jenisSplitter??'1:2',ratio1:node.rasioRedamanPorts?.['1']??'10%',ratio2:node.rasioRedamanPorts?.['2']??'90%'}:empty);setOpen(true)}
- async function save(e:FormEvent){e.preventDefault();const body={parentId:form.parentId||undefined,parentPortOut:form.parentPortOut?Number(form.parentPortOut):undefined,namaTitik:form.namaTitik,redamanIn:form.redamanIn===''?undefined:Number(form.redamanIn),jarakKabel:form.jarakKabel===''?undefined:Number(form.jarakKabel),alamat:form.alamat||undefined,spesifikasi:type==='rasio'?{rasio_redaman_ports:{'1':form.ratio1,'2':form.ratio2}}:(type==='odc'||type==='odp'?{jenis_splitter:form.splitter}:undefined)};try{const r=await api<{message:string}>(editing?`/main-core/${type}/${editing.id}`:`/main-core/${type}`,{method:editing?'PATCH':'POST',body:JSON.stringify(body)});setOpen(false);setToast({message:r.message,type:'success'});load()}catch(e){setToast({message:e instanceof Error?e.message:'Gagal menyimpan.',type:'error'})}}
- async function remove(node:MainCoreNode){if(!confirm(`Hapus ${node.namaTitik}?`))return;try{const r=await api<{message:string}>(`/main-core/${type}/${node.id}`,{method:'DELETE'});setToast({message:r.message,type:'success'});load()}catch(e){setToast({message:e instanceof Error?e.message:'Gagal menghapus.',type:'error'})}}
- const nameLabel=type==='server'?'Nama Core':`Nama ${labels[type]}`;
- return <div className="space-y-4"><div className="card flex flex-col gap-3 p-4 sm:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-3 text-slate-400" size={18}/><input className="input input-with-icon" placeholder={`Cari ${labels[type]}...`} value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}}/></div><button className="btn-primary" onClick={()=>show()}><Plus size={18}/>Tambah {labels[type]}</button></div><div className="table-wrap"><table><thead><tr><th>{nameLabel}</th>{type!=='server'&&<><th>Sumber Jalur</th><th>Port</th></>}{(type==='rasio'||type==='odc'||type==='odp')&&<th>{type==='rasio'?'Rasio Redaman':'Splitter'}</th>}<th>Redaman</th>{type!=='server'&&<th>Alamat</th>}<th>Tanggal</th><th className="text-right">Aksi</th></tr></thead><tbody>{items.map(node=><tr key={node.id}><td className="font-medium text-slate-900">{node.namaTitik}</td>{type!=='server'&&<><td>{node.parent?.namaTitik??'—'}</td><td>{node.parentPortOut??'—'}</td></>}{(type==='rasio'||type==='odc'||type==='odp')&&<td>{type==='rasio'?(node.rasioRedaman??'Port 1: 10% Dan Port 2: 90%'):(node.jenisSplitter??'—')}</td>}<td>{node.redamanIn===null?'—':`${node.redamanIn} dBm`}</td>{type!=='server'&&<td>{node.alamat??'—'}</td>}<td>{node.tanggal?new Date(node.tanggal).toLocaleDateString('id-ID'):'—'}</td><td><div className="flex justify-end gap-2"><button className="btn-secondary px-3" onClick={()=>show(node)}><Pencil size={15}/></button><button className="btn-danger" onClick={()=>remove(node)}><Trash2 size={15}/></button></div></td></tr>)}{!items.length&&<tr><td colSpan={9} className="py-8 text-center text-slate-400">Data {labels[type]} belum tersedia.</td></tr>}</tbody></table></div><Pagination meta={meta} onPage={setPage}/><Modal open={open} title={`${editing?'Edit':'Tambah'} Data ${labels[type]}`} onClose={()=>setOpen(false)}><form onSubmit={save} className="space-y-4"><div><label className="label">{nameLabel} *</label><input className="input" required value={form.namaTitik} onChange={e=>setForm({...form,namaTitik:e.target.value})}/></div>{type!=='server'&&<><div><label className="label">Cari Sumber Jalur</label><input className="input" placeholder="Ketik nama sumber..." value={parentSearch} onChange={e=>setParentSearch(e.target.value)}/></div><div><label className="label">Sumber Jalur *</label><select required className="input" value={form.parentId} onChange={e=>setForm({...form,parentId:e.target.value,parentPortOut:'',redamanIn:''})}><option value="">Pilih sumber</option>{parents.map(p=><option key={p.id} value={p.id}>{p.name} ({p.type.toUpperCase()})</option>)}</select></div>{selectedParent&&selectedParent.type!=='server'&&<div><label className="label">Port Sumber *</label><select required className="input" value={form.parentPortOut} onChange={e=>setForm({...form,parentPortOut:e.target.value,redamanIn:autoRedaman(form.jarakKabel,e.target.value)})}><option value="">Pilih port</option>{availablePorts.map(p=><option key={p} value={p}>Port {p}</option>)}</select></div>}<div><label className="label">Jarak Kabel (meter)</label><input className="input" type="number" min="0" step="0.01" value={form.jarakKabel} onChange={e=>setForm({...form,jarakKabel:e.target.value,redamanIn:autoRedaman(e.target.value,form.parentPortOut)})}/></div></>}{type==='rasio'&&<div className="grid grid-cols-2 gap-4"><div><label className="label">Port 1</label><input className="input" value={form.ratio1} onChange={e=>setForm({...form,ratio1:e.target.value})}/></div><div><label className="label">Port 2</label><input className="input" value={form.ratio2} onChange={e=>setForm({...form,ratio2:e.target.value})}/></div></div>}{(type==='odc'||type==='odp')&&<div><label className="label">Jenis Splitter *</label><select className="input" value={form.splitter} onChange={e=>setForm({...form,splitter:e.target.value})}>{['1:2','1:4','1:8'].map(v=><option key={v}>{v}</option>)}</select></div>}<div><label className="label">Redaman In (dBm)</label><input className="input" type="number" step="0.01" value={form.redamanIn} onChange={e=>setForm({...form,redamanIn:e.target.value})}/></div>{type!=='server'&&<div><label className="label">Alamat *</label><textarea className="input" required rows={3} value={form.alamat} onChange={e=>setForm({...form,alamat:e.target.value})}/></div>}<div className="flex justify-end gap-3"><button type="button" className="btn-secondary" onClick={()=>setOpen(false)}>Batal</button><button className="btn-primary">Simpan</button></div></form></Modal>{toast&&<Toast {...toast} onClose={()=>setToast(null)}/>}</div>;
+type ParentOption = {
+    id: string;
+    name: string;
+    type: string;
+    redamanIn: number | null;
+    splitterRatio: string | null;
+    rasioRedamanPorts: Record<string, string>;
+    outputCount: number;
+    usedPorts: number[];
+};
+const labels = {
+    server: "Server",
+    rasio: "Rasio",
+    odc: "ODC",
+    odp: "ODP",
+} as const;
+const empty = {
+    parentId: "",
+    parentPortOut: "",
+    namaTitik: "",
+    redamanIn: "",
+    jarakKabel: "",
+    alamat: "",
+    splitter: "1:2",
+    ratio1: "10%",
+    ratio2: "90%",
+};
+export default function MainCorePage() {
+    const params = useParams<{ type: string }>();
+    const router = useRouter();
+    const type = params.type as keyof typeof labels;
+    const valid = type in labels;
+    const [items, setItems] = useState<MainCoreNode[]>([]);
+    const [meta, setMeta] = useState<PageMeta>({
+        currentPage: 1,
+        lastPage: 1,
+        perPage: 5,
+        total: 0,
+    });
+    const [search, setSearch] = useState("");
+    const [page, setPage] = useState(1);
+    const [open, setOpen] = useState(false);
+    const [editing, setEditing] = useState<MainCoreNode | null>(null);
+    const [form, setForm] = useState(empty);
+    const [parentSearch, setParentSearch] = useState("");
+    const [parents, setParents] = useState<ParentOption[]>([]);
+    const [toast, setToast] = useState<{
+        message: string;
+        type: "success" | "error";
+    } | null>(null);
+    const load = useCallback(() => {
+        if (!valid) return;
+        api<{ data: MainCoreNode[]; meta: PageMeta }>(
+            `/main-core/${type}?search=${encodeURIComponent(search)}&page=${page}`,
+        )
+            .then((r) => {
+                setItems(r.data);
+                setMeta(r.meta);
+            })
+            .catch((e) => setToast({ message: e.message, type: "error" }));
+    }, [valid, type, search, page]);
+    useEffect(() => {
+        if (!valid) router.replace("/dashboard/main-core/server");
+        else load();
+    }, [valid, router, load]);
+    useEffect(() => {
+        if (!open || type === "server") return;
+        const timer = setTimeout(
+            () =>
+                api<{ data: ParentOption[] }>(
+                    `/main-core/${type}/parents?search=${encodeURIComponent(parentSearch)}${editing ? `&currentNodeId=${editing.id}&currentParentId=${editing.parentId ?? ""}` : ""}`,
+                )
+                    .then((r) => setParents(r.data))
+                    .catch(() => setParents([])),
+            250,
+        );
+        return () => clearTimeout(timer);
+    }, [open, type, parentSearch, editing]);
+    const selectedParent = parents.find((p) => p.id === form.parentId);
+    const availablePorts = useMemo(
+        () =>
+            Array.from(
+                { length: selectedParent?.outputCount ?? 0 },
+                (_, i) => i + 1,
+            ).filter(
+                (p) =>
+                    !selectedParent?.usedPorts.includes(p) ||
+                    String(p) === form.parentPortOut,
+            ),
+        [selectedParent, form.parentPortOut],
+    );
+    function autoRedaman(distanceValue: string, portValue: string) {
+        if (type === "server" || !selectedParent || distanceValue === "")
+            return form.redamanIn;
+        const distance = Number(distanceValue);
+        let splitterLoss = 0;
+        if (selectedParent.type === "rasio" && portValue) {
+            const raw = selectedParent.rasioRedamanPorts[portValue] ?? "";
+            const pct = Number(raw.replace("%", "").replace(",", "."));
+            if (pct > 0) splitterLoss = -10 * Math.log10(pct / 100);
+        } else if (
+            selectedParent.type !== "server" &&
+            selectedParent.outputCount
+        )
+            splitterLoss = 10 * Math.log10(selectedParent.outputCount);
+        const connector =
+            type === "odp" && selectedParent.type === "odc" ? 1 : 0;
+        return (
+            (selectedParent.redamanIn ?? 0) -
+            splitterLoss -
+            (distance / 1000) * 0.35 -
+            connector -
+            1
+        ).toFixed(2);
+    }
+    function show(node?: MainCoreNode) {
+        setEditing(node ?? null);
+        setParentSearch("");
+        setForm(
+            node
+                ? {
+                      parentId: node.parentId ?? "",
+                      parentPortOut: String(node.parentPortOut ?? ""),
+                      namaTitik: node.namaTitik,
+                      redamanIn: String(node.redamanIn ?? ""),
+                      jarakKabel: String(node.jarakKabel ?? ""),
+                      alamat: node.alamat ?? "",
+                      splitter: node.jenisSplitter ?? "1:2",
+                      ratio1: node.rasioRedamanPorts?.["1"] ?? "10%",
+                      ratio2: node.rasioRedamanPorts?.["2"] ?? "90%",
+                  }
+                : empty,
+        );
+        setOpen(true);
+    }
+    async function save(e: FormEvent) {
+        e.preventDefault();
+        const body = {
+            parentId: form.parentId || undefined,
+            parentPortOut: form.parentPortOut
+                ? Number(form.parentPortOut)
+                : undefined,
+            namaTitik: form.namaTitik,
+            redamanIn:
+                form.redamanIn === "" ? undefined : Number(form.redamanIn),
+            jarakKabel:
+                form.jarakKabel === "" ? undefined : Number(form.jarakKabel),
+            alamat: form.alamat || undefined,
+            spesifikasi:
+                type === "rasio"
+                    ? {
+                          rasio_redaman_ports: {
+                              "1": form.ratio1,
+                              "2": form.ratio2,
+                          },
+                      }
+                    : type === "odc" || type === "odp"
+                      ? { jenis_splitter: form.splitter }
+                      : undefined,
+        };
+        try {
+            const r = await api<{ message: string }>(
+                editing
+                    ? `/main-core/${type}/${editing.id}`
+                    : `/main-core/${type}`,
+                {
+                    method: editing ? "PATCH" : "POST",
+                    body: JSON.stringify(body),
+                },
+            );
+            setOpen(false);
+            setToast({ message: r.message, type: "success" });
+            load();
+        } catch (e) {
+            setToast({
+                message: e instanceof Error ? e.message : "Gagal menyimpan.",
+                type: "error",
+            });
+        }
+    }
+    async function remove(node: MainCoreNode) {
+        if (!confirm(`Hapus ${node.namaTitik}?`)) return;
+        try {
+            const r = await api<{ message: string }>(
+                `/main-core/${type}/${node.id}`,
+                { method: "DELETE" },
+            );
+            setToast({ message: r.message, type: "success" });
+            load();
+        } catch (e) {
+            setToast({
+                message: e instanceof Error ? e.message : "Gagal menghapus.",
+                type: "error",
+            });
+        }
+    }
+    const nameLabel = type === "server" ? "Nama Core" : `Nama ${labels[type]}`;
+    return (
+        <div className="space-y-4">
+            <div className="card flex flex-col gap-3 p-4 sm:flex-row">
+                <div className="relative flex-1">
+                    <Search
+                        className="absolute left-3 top-3 text-slate-400"
+                        size={18}
+                    />
+                    <input
+                        className="input input-with-icon"
+                        placeholder={`Cari ${labels[type]}...`}
+                        value={search}
+                        onChange={(e) => {
+                            setSearch(e.target.value);
+                            setPage(1);
+                        }}
+                    />
+                </div>
+                <button className="btn-primary" onClick={() => show()}>
+                    <Plus size={18} />
+                    Tambah {labels[type]}
+                </button>
+            </div>
+            <div className="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{nameLabel}</th>
+                            {type !== "server" && (
+                                <>
+                                    <th>Sumber Jalur</th>
+                                    <th>Port</th>
+                                </>
+                            )}
+                            {(type === "rasio" ||
+                                type === "odc" ||
+                                type === "odp") && (
+                                <th>
+                                    {type === "rasio"
+                                        ? "Rasio Redaman"
+                                        : "Splitter"}
+                                </th>
+                            )}
+                            <th>Redaman</th>
+                            {type !== "server" && <th>Alamat</th>}
+                            <th>Tanggal</th>
+                            <th className="text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {items.map((node) => (
+                            <tr key={node.id}>
+                                <td className="font-medium text-slate-900">
+                                    {node.namaTitik}
+                                </td>
+                                {type !== "server" && (
+                                    <>
+                                        <td>{node.parent?.namaTitik ?? "—"}</td>
+                                        <td>{node.parentPortOut ?? "—"}</td>
+                                    </>
+                                )}
+                                {(type === "rasio" ||
+                                    type === "odc" ||
+                                    type === "odp") && (
+                                    <td>
+                                        {type === "rasio"
+                                            ? (node.rasioRedaman ??
+                                              "Port 1: 10% Dan Port 2: 90%")
+                                            : (node.jenisSplitter ?? "—")}
+                                    </td>
+                                )}
+                                <td>
+                                    {node.redamanIn === null
+                                        ? "—"
+                                        : `${node.redamanIn} dBm`}
+                                </td>
+                                {type !== "server" && (
+                                    <td>{node.alamat ?? "—"}</td>
+                                )}
+                                <td>
+                                    {node.tanggal
+                                        ? new Date(
+                                              node.tanggal,
+                                          ).toLocaleDateString("id-ID")
+                                        : "—"}
+                                </td>
+                                <td>
+                                    <div className="flex justify-end gap-2">
+                                        <button
+                                            className="btn-secondary px-3"
+                                            onClick={() => show(node)}
+                                        >
+                                            <Pencil size={15} />
+                                        </button>
+                                        <button
+                                            className="btn-danger"
+                                            onClick={() => remove(node)}
+                                        >
+                                            <Trash2 size={15} />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                        {!items.length && (
+                            <tr>
+                                <td
+                                    colSpan={9}
+                                    className="py-8 text-center text-slate-400"
+                                >
+                                    Data {labels[type]} belum tersedia.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+            <Pagination meta={meta} onPage={setPage} />
+            <Modal
+                open={open}
+                title={`${editing ? "Edit" : "Tambah"} Data ${labels[type]}`}
+                onClose={() => setOpen(false)}
+            >
+                <form onSubmit={save} className="space-y-4">
+                    <div>
+                        <label className="label">{nameLabel} *</label>
+                        <input
+                            className="input"
+                            required
+                            value={form.namaTitik}
+                            onChange={(e) =>
+                                setForm({ ...form, namaTitik: e.target.value })
+                            }
+                        />
+                    </div>
+                    {type !== "server" && (
+                        <>
+                            <div>
+                                <label className="label">
+                                    Cari Sumber Jalur
+                                </label>
+                                <input
+                                    className="input"
+                                    placeholder="Ketik nama sumber..."
+                                    value={parentSearch}
+                                    onChange={(e) =>
+                                        setParentSearch(e.target.value)
+                                    }
+                                />
+                            </div>
+                            <div>
+                                <label className="label">Sumber Jalur *</label>
+                                <select
+                                    required
+                                    className="input"
+                                    value={form.parentId}
+                                    onChange={(e) =>
+                                        setForm({
+                                            ...form,
+                                            parentId: e.target.value,
+                                            parentPortOut: "",
+                                            redamanIn: "",
+                                        })
+                                    }
+                                >
+                                    <option value="">Pilih sumber</option>
+                                    {parents.map((p) => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.name} ({p.type.toUpperCase()})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            {selectedParent &&
+                                selectedParent.type !== "server" && (
+                                    <div>
+                                        <label className="label">
+                                            Port Sumber *
+                                        </label>
+                                        <select
+                                            required
+                                            className="input"
+                                            value={form.parentPortOut}
+                                            onChange={(e) =>
+                                                setForm({
+                                                    ...form,
+                                                    parentPortOut:
+                                                        e.target.value,
+                                                    redamanIn: autoRedaman(
+                                                        form.jarakKabel,
+                                                        e.target.value,
+                                                    ),
+                                                })
+                                            }
+                                        >
+                                            <option value="">Pilih port</option>
+                                            {availablePorts.map((p) => (
+                                                <option key={p} value={p}>
+                                                    Port {p}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            <div>
+                                <label className="label">
+                                    Jarak Kabel (meter)
+                                </label>
+                                <input
+                                    className="input"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={form.jarakKabel}
+                                    onChange={(e) =>
+                                        setForm({
+                                            ...form,
+                                            jarakKabel: e.target.value,
+                                            redamanIn: autoRedaman(
+                                                e.target.value,
+                                                form.parentPortOut,
+                                            ),
+                                        })
+                                    }
+                                />
+                            </div>
+                        </>
+                    )}
+                    {type === "rasio" && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="label">Port 1</label>
+                                <input
+                                    className="input"
+                                    value={form.ratio1}
+                                    onChange={(e) =>
+                                        setForm({
+                                            ...form,
+                                            ratio1: e.target.value,
+                                        })
+                                    }
+                                />
+                            </div>
+                            <div>
+                                <label className="label">Port 2</label>
+                                <input
+                                    className="input"
+                                    value={form.ratio2}
+                                    onChange={(e) =>
+                                        setForm({
+                                            ...form,
+                                            ratio2: e.target.value,
+                                        })
+                                    }
+                                />
+                            </div>
+                        </div>
+                    )}
+                    {(type === "odc" || type === "odp") && (
+                        <div>
+                            <label className="label">Jenis Splitter *</label>
+                            <select
+                                className="input"
+                                value={form.splitter}
+                                onChange={(e) =>
+                                    setForm({
+                                        ...form,
+                                        splitter: e.target.value,
+                                    })
+                                }
+                            >
+                                {["1:2", "1:4", "1:8"].map((v) => (
+                                    <option key={v}>{v}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                    <div>
+                        <label className="label">Redaman In (dBm)</label>
+                        <input
+                            className="input"
+                            type="number"
+                            step="0.01"
+                            value={form.redamanIn}
+                            onChange={(e) =>
+                                setForm({ ...form, redamanIn: e.target.value })
+                            }
+                        />
+                    </div>
+                    {type !== "server" && (
+                        <div>
+                            <label className="label">Alamat *</label>
+                            <textarea
+                                className="input"
+                                required
+                                rows={3}
+                                value={form.alamat}
+                                onChange={(e) =>
+                                    setForm({ ...form, alamat: e.target.value })
+                                }
+                            />
+                        </div>
+                    )}
+                    <div className="flex justify-end gap-3">
+                        <button
+                            type="button"
+                            className="btn-secondary"
+                            onClick={() => setOpen(false)}
+                        >
+                            Batal
+                        </button>
+                        <button className="btn-primary">Simpan</button>
+                    </div>
+                </form>
+            </Modal>
+            {toast && <Toast {...toast} onClose={() => setToast(null)} />}
+        </div>
+    );
 }
