@@ -6,11 +6,13 @@ export function Modal({
     title,
     children,
     onClose,
+    wide = false,
 }: {
     open: boolean;
     title: string;
     children: React.ReactNode;
     onClose: () => void;
+    wide?: boolean;
 }) {
     if (!open) return null;
     return (
@@ -19,7 +21,7 @@ export function Modal({
             onMouseDown={onClose}
         >
             <div
-                className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-2xl"
+                className={`max-h-[92vh] w-full overflow-y-auto rounded-xl bg-white shadow-2xl ${wide ? "max-w-6xl" : "max-w-2xl"}`}
                 onMouseDown={(event) => event.stopPropagation()}
             >
                 <div className="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4">

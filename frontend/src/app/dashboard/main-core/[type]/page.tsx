@@ -53,6 +53,7 @@ export default function MainCorePage() {
     const [editing, setEditing] = useState<MainCoreNode | null>(null);
     const [form, setForm] = useState(empty);
     const [parentSearch, setParentSearch] = useState("");
+    const [parentCategory, setParentCategory] = useState("");
     const [parents, setParents] = useState<ParentOption[]>([]);
     const [toast, setToast] = useState<{
         message: string;
@@ -74,18 +75,23 @@ export default function MainCorePage() {
         else load();
     }, [valid, router, load]);
     useEffect(() => {
-        if (!open || type === "server") return;
+        if (
+            !open ||
+            type === "server" ||
+            (type === "rasio" && !parentCategory)
+        )
+            return;
         const timer = setTimeout(
             () =>
                 api<{ data: ParentOption[] }>(
-                    `/main-core/${type}/parents?search=${encodeURIComponent(parentSearch)}${editing ? `&currentNodeId=${editing.id}&currentParentId=${editing.parentId ?? ""}` : ""}`,
+                    `/main-core/${type}/parents?search=${encodeURIComponent(parentSearch)}${parentCategory ? `&category=${encodeURIComponent(parentCategory)}` : ""}${editing ? `&currentNodeId=${editing.id}&currentParentId=${editing.parentId ?? ""}` : ""}`,
                 )
                     .then((r) => setParents(r.data))
                     .catch(() => setParents([])),
             250,
         );
         return () => clearTimeout(timer);
-    }, [open, type, parentSearch, editing]);
+    }, [open, type, parentSearch, parentCategory, editing]);
     const selectedParent = parents.find((p) => p.id === form.parentId);
     const availablePorts = useMemo(
         () =>
@@ -126,6 +132,8 @@ export default function MainCorePage() {
     function show(node?: MainCoreNode) {
         setEditing(node ?? null);
         setParentSearch("");
+        setParentCategory(node?.parent?.tipeTitik ?? "");
+        setParents([]);
         setForm(
             node
                 ? {
@@ -327,6 +335,7 @@ export default function MainCorePage() {
                 open={open}
                 title={`${editing ? "Edit" : "Tambah"} Data ${labels[type]}`}
                 onClose={() => setOpen(false)}
+                wide={type === "rasio"}
             >
                 <form onSubmit={save} className="space-y-4">
                     <div>

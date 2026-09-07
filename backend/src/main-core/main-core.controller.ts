@@ -10,8 +10,8 @@ export class MainCoreController {
 
   @Get('options') options() { return this.mainCore.allOptions(); }
   @Get('trace') trace(@Query('category') category: string, @Query('nodeId') nodeId: string) { return this.mainCore.trace(category, nodeId); }
-  @Get(':type/parents') parents(@Param('type') type: string, @Query('search') search = '', @Query('currentNodeId') nodeId?: string, @Query('currentParentId') parentId?: string) {
-    return this.mainCore.parents(type, search, nodeId, parentId);
+  @Get(':type/parents') parents(@Param('type') type: string, @Query('search') search = '', @Query('currentNodeId') nodeId?: string, @Query('currentParentId') parentId?: string, @Query('category') category = '') {
+    return this.mainCore.parents(type, search, nodeId, parentId, category);
   }
   @Get(':type') list(@Param('type') type: string, @Query('search') search = '', @Query('page', new ParseIntPipe({ optional: true })) page = 1) {
     return this.mainCore.list(type, search.trim(), Math.max(1, page));
