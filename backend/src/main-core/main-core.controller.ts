@@ -6,7 +6,7 @@ import { MainCoreService } from './main-core.service.js';
 @Controller('main-core')
 @UseGuards(JwtAuthGuard)
 export class MainCoreController {
-  constructor(private readonly mainCore: MainCoreService) {}
+  constructor(private readonly mainCore: MainCoreService) { }
 
   @Get('options') options() { return this.mainCore.allOptions(); }
   @Get('trace') trace(@Query('category') category: string, @Query('nodeId') nodeId: string) { return this.mainCore.trace(category, nodeId); }

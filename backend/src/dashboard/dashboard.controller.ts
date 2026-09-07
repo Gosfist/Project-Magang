@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 @Controller('dashboard')
 @UseGuards(JwtAuthGuard)
 export class DashboardController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   @Get('stats')
   async stats(@Req() request: AuthRequest) {

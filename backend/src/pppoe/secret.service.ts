@@ -4,7 +4,7 @@ import { createCipheriv, createDecipheriv, createHmac, createHash, randomBytes, 
 
 @Injectable()
 export class SecretService {
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly config: ConfigService) { }
 
   encrypt(value: string) {
     const key = this.key();

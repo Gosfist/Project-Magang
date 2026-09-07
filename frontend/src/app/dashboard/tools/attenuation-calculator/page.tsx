@@ -1,11 +1,189 @@
-'use client';
-import { useMemo, useState } from 'react';
-const ratios:Record<string,number[]>={'70:30':[70,30],'80:20':[80,20],'90:10':[90,10]};
-export default function AttenuationCalculator(){
- const[source,setSource]=useState('');const[distance,setDistance]=useState('');const[splitter,setSplitter]=useState('1:2');const[path,setPath]=useState('70');const[connectors,setConnectors]=useState('2');const[connectorLoss,setConnectorLoss]=useState('0.5');const[cablePerKm,setCablePerKm]=useState('0.35');
- const result=useMemo(()=>{const asymmetric=ratios[splitter];const percentage=Number(path);const splitterLoss=asymmetric?-10*Math.log10(percentage/100):10*Math.log10(Number(splitter.replace('1:','')));const cable=distance===''?NaN:Number(distance)/1000*Number(cablePerKm);const connector=Number(connectors)*Number(connectorLoss);const redaman=source===''?NaN:Number(source)-splitterLoss-cable-connector-1;return{splitterLoss,cable,connector,redaman}},[source,distance,splitter,path,connectors,connectorLoss,cablePerKm]);
- const show=(n:number,d=2)=>Number.isFinite(n)?n.toFixed(d).replace('.',','):'-';
- return <div className="mx-auto max-w-5xl space-y-5"><div className="card p-5 sm:p-6"><h2 className="text-lg font-semibold">Kalkulator Redaman</h2><p className="mb-5 mt-1 text-sm text-slate-500">Perhitungan dilakukan langsung di halaman ini dan tidak disimpan ke database.</p><div className="grid gap-4 md:grid-cols-3"><Field label="Redaman Sumber (dBm)"><input className="input" type="number" step=".01" value={source} onChange={e=>setSource(e.target.value)}/></Field><Field label="Jarak Kabel (meter)"><input className="input" type="number" min="0" step=".01" value={distance} onChange={e=>setDistance(e.target.value)}/></Field><Field label="Jenis Splitter/Rasio"><select className="input" value={splitter} onChange={e=>{setSplitter(e.target.value);setPath(String(ratios[e.target.value]?.[0]??''))}}>{['1:2','1:4','1:8','70:30','80:20','90:10'].map(v=><option key={v}>{v}</option>)}</select></Field>{ratios[splitter]&&<Field label="Jalur Rasio"><select className="input" value={path} onChange={e=>setPath(e.target.value)}>{ratios[splitter].map(v=><option key={v} value={v}>Jalur {v}%</option>)}</select></Field>}<Field label="Jumlah Connector"><input className="input" type="number" min="0" value={connectors} onChange={e=>setConnectors(e.target.value)}/></Field><Field label="Loss per Connector (dB)"><input className="input" type="number" min="0" step=".01" value={connectorLoss} onChange={e=>setConnectorLoss(e.target.value)}/></Field><Field label="Loss Kabel per km (dB)"><input className="input" type="number" min="0" step=".01" value={cablePerKm} onChange={e=>setCablePerKm(e.target.value)}/></Field></div></div><div className="card p-5 sm:p-6"><h2 className="mb-4 text-lg font-semibold">Hasil Perhitungan</h2><div className="grid gap-3 sm:grid-cols-3"><Result label="Loss Splitter/Rasio" value={`${show(result.splitterLoss)} dB`}/><Result label="Loss Kabel" value={`${show(result.cable,3)} dB`}/><Result label="Loss Connector" value={`${show(result.connector)} dB`}/></div><div className="mt-4 rounded-xl bg-slate-950 p-5 text-white"><p className="text-sm text-slate-300">Hasil Redaman</p><p className="mt-1 text-3xl font-bold">{show(result.redaman)} dBm</p></div></div></div>;
+"use client";
+import { useMemo, useState } from "react";
+const ratios: Record<string, number[]> = {
+    "70:30": [70, 30],
+    "80:20": [80, 20],
+    "90:10": [90, 10],
+};
+export default function AttenuationCalculator() {
+    const [source, setSource] = useState("");
+    const [distance, setDistance] = useState("");
+    const [splitter, setSplitter] = useState("1:2");
+    const [path, setPath] = useState("70");
+    const [connectors, setConnectors] = useState("2");
+    const [connectorLoss, setConnectorLoss] = useState("0.5");
+    const [cablePerKm, setCablePerKm] = useState("0.35");
+    const result = useMemo(() => {
+        const asymmetric = ratios[splitter];
+        const percentage = Number(path);
+        const splitterLoss = asymmetric
+            ? -10 * Math.log10(percentage / 100)
+            : 10 * Math.log10(Number(splitter.replace("1:", "")));
+        const cable =
+            distance === ""
+                ? NaN
+                : (Number(distance) / 1000) * Number(cablePerKm);
+        const connector = Number(connectors) * Number(connectorLoss);
+        const redaman =
+            source === ""
+                ? NaN
+                : Number(source) - splitterLoss - cable - connector - 1;
+        return { splitterLoss, cable, connector, redaman };
+    }, [
+        source,
+        distance,
+        splitter,
+        path,
+        connectors,
+        connectorLoss,
+        cablePerKm,
+    ]);
+    const show = (n: number, d = 2) =>
+        Number.isFinite(n) ? n.toFixed(d).replace(".", ",") : "-";
+    return (
+        <div className="mx-auto max-w-5xl space-y-5">
+            <div className="card p-5 sm:p-6">
+                <h2 className="text-lg font-semibold">Kalkulator Redaman</h2>
+                <p className="mb-5 mt-1 text-sm text-slate-500">
+                    Perhitungan dilakukan langsung di halaman ini dan tidak
+                    disimpan ke database.
+                </p>
+                <div className="grid gap-4 md:grid-cols-3">
+                    <Field label="Redaman Sumber (dBm)">
+                        <input
+                            className="input"
+                            type="number"
+                            step=".01"
+                            value={source}
+                            onChange={(e) => setSource(e.target.value)}
+                        />
+                    </Field>
+                    <Field label="Jarak Kabel (meter)">
+                        <input
+                            className="input"
+                            type="number"
+                            min="0"
+                            step=".01"
+                            value={distance}
+                            onChange={(e) => setDistance(e.target.value)}
+                        />
+                    </Field>
+                    <Field label="Jenis Splitter/Rasio">
+                        <select
+                            className="input"
+                            value={splitter}
+                            onChange={(e) => {
+                                setSplitter(e.target.value);
+                                setPath(
+                                    String(ratios[e.target.value]?.[0] ?? ""),
+                                );
+                            }}
+                        >
+                            {[
+                                "1:2",
+                                "1:4",
+                                "1:8",
+                                "70:30",
+                                "80:20",
+                                "90:10",
+                            ].map((v) => (
+                                <option key={v}>{v}</option>
+                            ))}
+                        </select>
+                    </Field>
+                    {ratios[splitter] && (
+                        <Field label="Jalur Rasio">
+                            <select
+                                className="input"
+                                value={path}
+                                onChange={(e) => setPath(e.target.value)}
+                            >
+                                {ratios[splitter].map((v) => (
+                                    <option key={v} value={v}>
+                                        Jalur {v}%
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+                    )}
+                    <Field label="Jumlah Connector">
+                        <input
+                            className="input"
+                            type="number"
+                            min="0"
+                            value={connectors}
+                            onChange={(e) => setConnectors(e.target.value)}
+                        />
+                    </Field>
+                    <Field label="Loss per Connector (dB)">
+                        <input
+                            className="input"
+                            type="number"
+                            min="0"
+                            step=".01"
+                            value={connectorLoss}
+                            onChange={(e) => setConnectorLoss(e.target.value)}
+                        />
+                    </Field>
+                    <Field label="Loss Kabel per km (dB)">
+                        <input
+                            className="input"
+                            type="number"
+                            min="0"
+                            step=".01"
+                            value={cablePerKm}
+                            onChange={(e) => setCablePerKm(e.target.value)}
+                        />
+                    </Field>
+                </div>
+            </div>
+            <div className="card p-5 sm:p-6">
+                <h2 className="mb-4 text-lg font-semibold">
+                    Hasil Perhitungan
+                </h2>
+                <div className="grid gap-3 sm:grid-cols-3">
+                    <Result
+                        label="Loss Splitter/Rasio"
+                        value={`${show(result.splitterLoss)} dB`}
+                    />
+                    <Result
+                        label="Loss Kabel"
+                        value={`${show(result.cable, 3)} dB`}
+                    />
+                    <Result
+                        label="Loss Connector"
+                        value={`${show(result.connector)} dB`}
+                    />
+                </div>
+                <div className="mt-4 rounded-xl bg-slate-950 p-5 text-white">
+                    <p className="text-sm text-slate-300">Hasil Redaman</p>
+                    <p className="mt-1 text-3xl font-bold">
+                        {show(result.redaman)} dBm
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
 }
-function Field({label,children}:{label:string;children:React.ReactNode}){return <div><label className="label">{label}</label>{children}</div>}
-function Result({label,value}:{label:string;value:string}){return <div className="rounded-lg border bg-slate-50 p-4"><p className="text-sm text-slate-500">{label}</p><p className="mt-1 text-xl font-semibold">{value}</p></div>}
+function Field({
+    label,
+    children,
+}: {
+    label: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <div>
+            <label className="label">{label}</label>
+            {children}
+        </div>
+    );
+}
+function Result({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="rounded-lg border bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">{label}</p>
+            <p className="mt-1 text-xl font-semibold">{value}</p>
+        </div>
+    );
+}

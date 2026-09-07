@@ -4,7 +4,7 @@ import { SecretService } from './secret.service.js';
 
 @Injectable()
 export class RadiusService {
-  constructor(private readonly secrets: SecretService) {}
+  constructor(private readonly secrets: SecretService) { }
 
   async sync(tx: Prisma.TransactionClient, account: PppoeAccount & { package: PppoePackage }, oldUsername = account.username) {
     await tx.radcheck.deleteMany({ where: { username: oldUsername } });

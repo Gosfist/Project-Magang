@@ -15,7 +15,7 @@ type Spec = { jenis_splitter?: string; rasio_redaman_ports?: Record<string, stri
 
 @Injectable()
 export class MainCoreService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   ensureType(type: string): asserts type is NodeType {
     if (!TYPES.includes(type as NodeType)) throw new NotFoundException('Kategori Main Core tidak ditemukan.');

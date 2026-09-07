@@ -20,4 +20,4 @@ import { AdminGuard } from './roles.guard.js';
   providers: [AuthService, JwtAuthGuard, AdminGuard],
   exports: [JwtModule, JwtAuthGuard, AdminGuard],
 })
-export class AuthModule {}
+export class AuthModule { }

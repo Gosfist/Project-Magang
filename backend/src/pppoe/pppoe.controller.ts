@@ -6,7 +6,7 @@ import { PppoeService } from './pppoe.service.js';
 @Controller('pppoe')
 @UseGuards(JwtAuthGuard)
 export class PppoeController {
-  constructor(private readonly pppoe: PppoeService) {}
+  constructor(private readonly pppoe: PppoeService) { }
   @Get('packages/options') packageOptions() { return this.pppoe.packageOptions(); }
   @Get('packages') packages(@Query('search') search = '', @Query('page', new ParseIntPipe({ optional: true })) page = 1) { return this.pppoe.packages(search.trim(), Math.max(1, page)); }
   @Post('packages') createPackage(@Body() dto: SavePackageDto) { return this.pppoe.createPackage(dto); }

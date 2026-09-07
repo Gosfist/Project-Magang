@@ -6,7 +6,7 @@ export type AuthRequest = Request & { user: { id: string; role: string } };
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly jwt: JwtService) {}
+  constructor(private readonly jwt: JwtService) { }
 
   async canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest<AuthRequest>();

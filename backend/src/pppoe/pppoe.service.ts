@@ -8,7 +8,7 @@ import { SecretService } from './secret.service.js';
 
 @Injectable()
 export class PppoeService {
-  constructor(private readonly prisma: PrismaService, private readonly radius: RadiusService, private readonly secrets: SecretService) {}
+  constructor(private readonly prisma: PrismaService, private readonly radius: RadiusService, private readonly secrets: SecretService) { }
 
   async packages(search = '', page = 1) {
     const where = search ? { name: { contains: search } } : {};

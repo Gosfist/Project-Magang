@@ -7,7 +7,7 @@ import { serialize } from '../common/serialize.js';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService, private readonly jwt: JwtService) {}
+  constructor(private readonly prisma: PrismaService, private readonly jwt: JwtService) { }
 
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });

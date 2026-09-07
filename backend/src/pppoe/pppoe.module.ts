@@ -6,4 +6,4 @@ import { RadiusService } from './radius.service.js';
 import { SecretService } from './secret.service.js';
 
 @Module({ imports: [AuthModule], controllers: [PppoeController], providers: [PppoeService, RadiusService, SecretService] })
-export class PppoeModule {}
+export class PppoeModule { }
