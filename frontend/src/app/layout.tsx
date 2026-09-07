@@ -5,7 +5,10 @@ import { AuthProvider } from "@/components/auth-provider";
 export const metadata: Metadata = {
   title: "PT UNZANET",
   description: "Internet fiber optik cepat dan stabil.",
-  icons: { icon: "/logo.png" },
+  icons: {
+    icon: "/favico.ico?v=1",
+    shortcut: "/favico.ico?v=1",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
