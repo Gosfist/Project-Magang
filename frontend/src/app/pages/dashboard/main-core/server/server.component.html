@@ -1,0 +1,79 @@
+<div class="space-y-4">
+  <div class="card flex flex-col gap-3 p-4 sm:flex-row">
+    <div class="relative flex-1">
+      <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
+      <input
+        class="input input-with-icon"
+        placeholder="Cari Server..."
+        [(ngModel)]="search"
+        (ngModelChange)="page.set(1); load()"
+      />
+    </div>
+    <button class="btn-primary" (click)="show()">
+      <svg lucidePlus [size]="18"></svg>
+      Tambah Server
+    </button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nama Core</th>
+          <th>Redaman</th>
+          <th>Tanggal</th>
+          <th class="text-right">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (node of items(); track node.id) {
+          <tr>
+            <td class="font-medium text-slate-900">{{ node.namaTitik }}</td>
+            <td>{{ node.redamanIn === null ? '—' : node.redamanIn + ' dBm' }}</td>
+            <td>{{ node.tanggal ? formatDate(node.tanggal) : '—' }}</td>
+            <td>
+              <div class="flex justify-end gap-2">
+                <button class="btn-secondary px-3" (click)="show(node)">
+                  <svg lucidePencil [size]="15"></svg>
+                </button>
+                <button class="btn-danger" (click)="remove(node)">
+                  <svg lucideTrash2 [size]="15"></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+        @if (items().length === 0) {
+          <tr><td colspan="4" class="py-8 text-center text-slate-400">Data Server belum tersedia.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
+
+  <app-modal
+    [open]="open()"
+    [title]="(editing() ? 'Edit' : 'Tambah') + ' Data Server'"
+    (closeModal)="open.set(false)"
+  >
+    <form (ngSubmit)="save()" class="space-y-4">
+      <div>
+        <label class="label">Nama Core *</label>
+        <input class="input" required [(ngModel)]="form.namaTitik" name="namaTitik" />
+      </div>
+      <div>
+        <label class="label">Redaman In (dBm)</label>
+        <input class="input" type="number" step="0.01" [(ngModel)]="form.redamanIn" name="redamanIn" />
+      </div>
+      <div class="flex justify-end gap-3">
+        <button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button>
+        <button class="btn-primary">Simpan</button>
+      </div>
+    </form>
+  </app-modal>
+
+  @if (toast()) {
+    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
+  }
+</div>
