@@ -204,3 +204,25 @@ model Nasreload {
 
   @@map("nasreload")
 }
+
+model MonitoringError {
+  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  createdAt DateTime @default(now()) @map("created_at")
+  method String @db.VarChar(16)
+  route String @db.VarChar(255)
+  status Int
+  @@map("monitoring_errors")
+}
+
+model ActivityLog {
+  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  createdAt DateTime @default(now()) @map("created_at")
+  userName String @map("user_name") @db.VarChar(255)
+  role String @db.VarChar(30)
+  module String @db.VarChar(40)
+  action String @db.VarChar(40)
+  description String @db.VarChar(500)
+  status String @db.VarChar(20)
+  @@index([createdAt])
+  @@map("activity_logs")
+}

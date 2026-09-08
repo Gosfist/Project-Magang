@@ -19,6 +19,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', component: HomeComponent },
+      { path: 'monitoring/server', loadComponent: () => import('./pages/dashboard/monitoring/server/server.component').then((m) => m.ServerMonitoringComponent) },
       { path: 'users', component: UsersComponent, canActivate: [adminGuard] },
       {
         path: 'mainCore',
