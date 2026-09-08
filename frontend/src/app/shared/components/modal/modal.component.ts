@@ -11,5 +11,6 @@ export class ModalComponent {
   @Input() open = false;
   @Input() title = '';
   @Input() wide = false;
+  @Input() maxWidth: string | null = null;
   @Output() closeModal = new EventEmitter<void>();
 }

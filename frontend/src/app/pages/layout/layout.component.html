@@ -1,0 +1,16 @@
+@if (auth.loading() || !auth.user()) {
+  <div class="flex min-h-screen items-center justify-center text-slate-500">
+    Memuat dashboard...
+  </div>
+} @else {
+  <div class="min-h-screen">
+    <app-sidebar [(mobile)]="mobile" />
+    <div class="lg:ml-64">
+      <app-header (openSidebar)="mobile.set(true)" />
+      <!-- konten -->
+      <main class="p-4 sm:p-6">
+        <router-outlet />
+      </main>
+    </div>
+  </div>
+}

@@ -1,0 +1,82 @@
+<div class="space-y-4">
+  <div class="card flex flex-col gap-3 p-4 sm:flex-row">
+    <div class="relative flex-1">
+      <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
+      <input class="input input-with-icon" placeholder="Cari Rasio..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
+    </div>
+    <button class="btn-primary" (click)="show()"><svg lucidePlus [size]="18"></svg>Tambah Rasio</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Nama Rasio</th><th>Sumber Jalur</th><th>Port</th><th>Rasio Redaman</th><th>Redaman</th><th>Alamat</th><th>Tanggal</th><th class="text-right">Aksi</th></tr></thead>
+      <tbody>
+        @for (node of items(); track node.id) {
+          <tr>
+            <td class="font-medium text-slate-900">{{ node.namaTitik }}</td>
+            <td>{{ node.parent?.namaTitik ?? '—' }}</td>
+            <td>{{ node.parentPortOut ?? '—' }}</td>
+            <td>{{ node.rasioRedaman ?? 'Port 1: 10% Dan Port 2: 90%' }}</td>
+            <td>{{ node.redamanIn === null ? '—' : node.redamanIn + ' dBm' }}</td>
+            <td>{{ node.alamat ?? '—' }}</td>
+            <td>{{ node.tanggal ? formatDate(node.tanggal) : '—' }}</td>
+            <td><div class="flex justify-end gap-2"><button class="btn-secondary px-3" (click)="show(node)"><svg lucidePencil [size]="15"></svg></button><button class="btn-danger" (click)="remove(node)"><svg lucideTrash2 [size]="15"></svg></button></div></td>
+          </tr>
+        }
+        @if (items().length === 0) { <tr><td colspan="8" class="py-8 text-center text-slate-400">Data Rasio belum tersedia.</td></tr> }
+      </tbody>
+    </table>
+  </div>
+  <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
+
+  <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Data Rasio'" (closeModal)="open.set(false)">
+    <form (ngSubmit)="save()" class="space-y-4">
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div><label class="label">Nama Rasio *</label><input class="input" required [(ngModel)]="form.namaTitik" name="namaTitik" /></div>
+        <div>
+          <label class="label">Kategori Main Core *</label>
+          <select class="input" required [(ngModel)]="parentCategory" name="parentCategory" (ngModelChange)="onParentCategoryChange()">
+            <option value="">Pilih kategori</option>
+            <option value="server">Server</option>
+            <option value="odc">ODC</option>
+            <option value="odp">ODP</option>
+          </select>
+        </div>
+        <div class="min-w-0 space-y-2">
+          <label class="label">Sumber Jalur *</label>
+          <div class="relative" #sourcePicker (focusout)="onSourceFocusOut($event, sourcePicker)" (keydown.escape)="parentDropdownOpen.set(false); sourceTrigger.focus(); $event.stopPropagation()">
+            <button #sourceTrigger type="button" class="input flex items-center justify-between gap-2 text-left disabled:cursor-not-allowed disabled:opacity-60" [disabled]="!parentCategory" [attr.aria-expanded]="parentDropdownOpen()" aria-controls="rasio-source-options" (click)="parentDropdownOpen.set(!parentDropdownOpen())">
+              <span class="truncate">{{ selectedParent()?.name || (parentCategory ? 'Pilih sumber' : 'Pilih kategori terlebih dahulu') }}</span>
+              <svg aria-hidden="true" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            @if (parentDropdownOpen()) {
+              <div id="rasio-source-options" class="absolute left-0 right-0 top-full z-20 mt-1 rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
+                <input class="input" aria-label="Cari sumber jalur" placeholder="Cari nama sumber..." [(ngModel)]="parentSearch" name="parentSearch" (ngModelChange)="onParentSearchChange()" (keydown.enter)="$event.preventDefault()" />
+                <div class="mt-2 max-h-48 overflow-y-auto">
+                  @for (parent of parents(); track parent.id) {
+                    <button type="button" class="block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-slate-100 focus:bg-slate-100" [class.bg-slate-100]="form.parentId === parent.id" (click)="selectSource(parent); sourceTrigger.focus()">{{ parent.name }}</button>
+                  } @empty {
+                    <p class="px-3 py-2 text-sm text-slate-500">Sumber tidak ditemukan.</p>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+          @if (selectedParent() && selectedParent()!.type !== 'server') {
+            <div><label class="label">Port Sumber *</label><select required class="input" [(ngModel)]="form.parentPortOut" name="parentPortOut" (ngModelChange)="onPortSelect()"><option value="">Pilih port</option>@for (port of availablePorts(); track port) { <option [value]="port">Port {{ port }}</option> }</select></div>
+          }
+        </div>
+        <div class="lg:col-span-2"><label class="label">Jarak Kabel (meter)</label><input class="input" type="number" min="0" step="0.01" [(ngModel)]="form.jarakKabel" name="jarakKabel" (ngModelChange)="onDistanceChange()" /></div>
+        <div class="grid min-w-0 grid-cols-3 gap-2">
+          <div class="min-w-0"><label class="label">Port 1</label><input class="input" [(ngModel)]="form.ratio1" name="ratio1" /></div>
+          <div class="min-w-0"><label class="label">Port 2</label><input class="input" [(ngModel)]="form.ratio2" name="ratio2" /></div>
+          <div class="min-w-0"><label class="label" title="Redaman In (dBm)">Redaman</label><input aria-label="Redaman In (dBm)" class="input" type="number" step="0.01" [(ngModel)]="form.redamanIn" name="redamanIn" /></div>
+        </div>
+        <div class="lg:col-span-3"><label class="label">Alamat *</label><textarea class="input" required rows="3" [(ngModel)]="form.alamat" name="alamat"></textarea></div>
+      </div>
+      <div class="flex justify-end gap-3"><button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button><button class="btn-primary">Simpan</button></div>
+    </form>
+  </app-modal>
+
+  @if (toast()) { <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast> }
+</div>

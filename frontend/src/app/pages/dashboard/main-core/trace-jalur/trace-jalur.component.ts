@@ -1,22 +1,22 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideArrowRight, LucideGitBranch, LucideSearch } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
-import { MainCoreNode } from '../../../../shared/models/types';
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
+import { MainCoreNode } from '../../../../shared/models/types';
 
-type Option = { id: string; namaTitik: string; tipeTitik: string };
+type TraceOption = { id: string; namaTitik: string; tipeTitik: string };
 
 @Component({
-  selector: 'app-trace',
+  selector: 'app-trace-jalur',
   standalone: true,
   imports: [FormsModule, LucideArrowRight, LucideGitBranch, LucideSearch, ToastComponent],
-  templateUrl: './trace.component.html',
+  templateUrl: './trace-jalur.component.html',
 })
-export class TraceComponent implements OnInit {
+export class TraceJalurComponent implements OnInit {
   private api = inject(ApiService);
 
-  options = signal<Option[]>([]);
+  options = signal<TraceOption[]>([]);
   category = '';
   search = '';
   nodeId = '';
@@ -25,34 +25,33 @@ export class TraceComponent implements OnInit {
     paths: MainCoreNode[][];
     traceNodeCount: number;
   } | null>(null);
-
   toast = signal<{ message: string; type: 'error' } | null>(null);
 
   filteredOptions = computed(() => {
-    const cat = this.category;
-    const q = this.search.toLowerCase();
+    const query = this.search.toLowerCase();
     return this.options().filter(
-      (n) => n.tipeTitik === cat && n.namaTitik.toLowerCase().includes(q)
+      (node) => node.tipeTitik === this.category && node.namaTitik.toLowerCase().includes(query)
     );
   });
 
   ngOnInit(): void {
-    this.api.get<{ data: Option[] }>('/main-core/options').subscribe({
-      next: (r) => this.options.set(r.data),
-      error: (e) => this.toast.set({ message: e.message, type: 'error' }),
+    this.api.get<{ data: TraceOption[] }>('/main-core/options').subscribe({
+      next: (response) => this.options.set(response.data),
+      error: (error) => this.toast.set({ message: error.message, type: 'error' }),
     });
   }
 
   onCategoryChange(): void {
     this.search = '';
     this.nodeId = '';
+    this.result.set(null);
   }
 
   onSearchChange(): void {
-    const found = this.options().find(
-      (n) => n.tipeTitik === this.category && n.namaTitik === this.search
+    const selected = this.options().find(
+      (node) => node.tipeTitik === this.category && node.namaTitik === this.search
     );
-    this.nodeId = found?.id ?? '';
+    this.nodeId = selected?.id ?? '';
   }
 
   submit(): void {
@@ -68,8 +67,8 @@ export class TraceComponent implements OnInit {
         traceNodeCount: number;
       }>(`/main-core/trace?category=${this.category}&nodeId=${this.nodeId}`)
       .subscribe({
-        next: (res) => this.result.set(res),
-        error: (e) => this.toast.set({ message: e.message, type: 'error' }),
+        next: (response) => this.result.set(response),
+        error: (error) => this.toast.set({ message: error.message, type: 'error' }),
       });
   }
 }
