@@ -25,7 +25,7 @@
     <table>
       <thead>
         <tr>
-          <th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th class="text-right">Aksi</th>
+          <th>Nama</th><th>Email</th><th>Nomor HP</th><th>Role</th><th>Status</th><th class="text-right">Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -33,6 +33,7 @@
           <tr>
             <td class="font-medium text-slate-900">{{ user.name }}</td>
             <td>{{ user.email }}</td>
+            <td>{{ user.phone || '-' }}</td>
             <td class="capitalize">{{ user.role }}</td>
             <td>
               <span [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (user.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')">{{ user.status }}</span>
@@ -50,7 +51,7 @@
           </tr>
         }
         @if (items().length === 0) {
-          <tr><td colspan="5" class="py-8 text-center text-slate-400">Data petugas belum tersedia.</td></tr>
+          <tr><td colspan="6" class="py-8 text-center text-slate-400">Data petugas belum tersedia.</td></tr>
         }
       </tbody>
     </table>
@@ -67,6 +68,10 @@
       <div>
         <label class="label">Email *</label>
         <input class="input" type="email" required [(ngModel)]="form.email" name="email" />
+      </div>
+      <div>
+        <label class="label">Nomor HP</label>
+        <input class="input" type="tel" autocomplete="tel" maxlength="30" placeholder="08xxxxxxxxxx" [(ngModel)]="form.phone" name="phone" />
       </div>
       <div>
         <label class="label">Password @if (editing()) { <small class="text-slate-400">(kosongkan jika tidak diubah)</small> }</label>
