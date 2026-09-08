@@ -11,6 +11,7 @@ model User {
   id       BigInt @id @default(autoincrement()) @db.UnsignedBigInt
   name     String
   email    String @unique
+  phone    String? @db.VarChar(30)
   password String
   role     String @default("petugas")
   status   String @default("active")
