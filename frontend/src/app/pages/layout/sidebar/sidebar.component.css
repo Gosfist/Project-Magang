@@ -1,0 +1,12 @@
+nav {
+  scrollbar-width: thin;
+  scrollbar-color: #3b82f6 #1e293b;
+}
+nav::-webkit-scrollbar { width: 6px; }
+nav::-webkit-scrollbar-track { background: #1e293b; border-radius: 999px; }
+nav::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 999px; }
+nav::-webkit-scrollbar-thumb:hover { background: #60a5fa; }
+nav::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+@supports selector(::-webkit-scrollbar) {
+  nav { scrollbar-width: auto; scrollbar-color: auto; }
+}

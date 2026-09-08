@@ -38,7 +38,8 @@ export class AuthService {
     this.router.navigate(['/dashboard']);
   }
 
-  logout(): void {
+  async logout(): Promise<void> {
+    try { await firstValueFrom(this.api.post('/auth/logout', {})); } catch { /* Local logout remains available when offline. */ }
     localStorage.removeItem('unzanet_token');
     this.user.set(null);
     this.router.navigate(['/login']);

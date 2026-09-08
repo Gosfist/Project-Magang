@@ -1,3 +1,4 @@
+import { MonitoringModule } from './monitoring/monitoring.module.js';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -16,6 +17,7 @@ import { PppoeModule } from './pppoe/pppoe.module.js';
     UsersModule,
     MainCoreModule,
     PppoeModule,
+    MonitoringModule,
   ],
 })
 export class AppModule {}

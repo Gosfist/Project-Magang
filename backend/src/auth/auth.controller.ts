@@ -14,6 +14,10 @@ export class AuthController {
     return this.auth.login(dto);
   }
 
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  logout() { return { message: 'Logout berhasil.' }; }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   me(@Req() request: AuthRequest) {

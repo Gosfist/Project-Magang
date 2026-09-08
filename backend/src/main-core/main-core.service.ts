@@ -116,7 +116,7 @@ export class MainCoreService {
       throw new BadRequestException(`${LABELS[type]} tidak dapat dihapus karena masih terhubung dengan ${children.map((item) => item.namaTitik).join(', ')}.`);
     }
     await this.prisma.mainCore.delete({ where: { id: node.id } });
-    return { message: `${LABELS[type]} berhasil dihapus.` };
+    return { message: `${LABELS[type]} berhasil dihapus.`, node: { namaTitik: node.namaTitik } };
   }
 
   async trace(category: string, nodeId: string) {
