@@ -1,0 +1,121 @@
+@if (auth.loading() || !auth.user()) {
+  <div class="flex min-h-screen items-center justify-center text-slate-500">Memuat dashboard...</div>
+} @else {
+  <div class="min-h-screen">
+    <!-- Sidebar -->
+    <aside [class]="'fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-slate-950 text-white transition-transform lg:translate-x-0 ' + (mobile() ? 'translate-x-0' : '-translate-x-full')">
+      <div class="flex h-16 items-center justify-between border-b border-slate-800 px-4">
+        <a routerLink="/" class="flex items-center gap-3">
+          <img src="logo.png" width="86" height="36" alt="Unzanet" />
+          <span class="text-sm font-bold">PT UNZANET</span>
+        </a>
+        <button class="lg:hidden" (click)="mobile.set(false)">
+          <svg lucideX [size]="24"></svg>
+        </button>
+      </div>
+
+      <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        <a routerLink="/dashboard" routerLinkActive="bg-white/15 text-white" [routerLinkActiveOptions]="{exact: true}"
+           class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+           (click)="mobile.set(false)">
+          <svg lucideLayoutDashboard [size]="20"></svg> Dashboard
+        </a>
+
+        @if (auth.isAdmin()) {
+          <a routerLink="/dashboard/users" routerLinkActive="bg-white/15 text-white"
+             class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+             (click)="mobile.set(false)">
+            <svg lucideUsers [size]="20"></svg> Data Petugas
+          </a>
+        }
+
+        <p class="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Data Jaringan</p>
+
+        <!-- Main Core -->
+        <button class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10" (click)="coreOpen.set(!coreOpen())">
+          <svg lucideGitBranch [size]="20"></svg>
+          <span class="flex-1 text-left">Main Core</span>
+          <svg lucideChevronDown [size]="16" [class]="!coreOpen() ? '-rotate-90' : ''"></svg>
+        </button>
+        @if (coreOpen()) {
+          <div class="mt-1 space-y-1 pl-11 pr-2">
+            @for (link of coreLinks; track link[1]) {
+              <a [routerLink]="link[1]" routerLinkActive="bg-white/15 text-white"
+                 class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+                 (click)="mobile.set(false)">{{ link[0] }}</a>
+            }
+          </div>
+        }
+
+        <!-- PPPoE -->
+        <button class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10" (click)="pppoeOpen.set(!pppoeOpen())">
+          <svg lucideNetwork [size]="20"></svg>
+          <span class="flex-1 text-left">PPPoE</span>
+          <svg lucideChevronDown [size]="16" [class]="!pppoeOpen() ? '-rotate-90' : ''"></svg>
+        </button>
+        @if (pppoeOpen()) {
+          <div class="mt-1 space-y-1 pl-11 pr-2">
+            @for (link of pppoeLinks; track link[1]) {
+              <a [routerLink]="link[1]" routerLinkActive="bg-white/15 text-white"
+                 class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+                 (click)="mobile.set(false)">{{ link[0] }}</a>
+            }
+          </div>
+        }
+
+        <!-- Tool -->
+        <button class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10" (click)="toolOpen.set(!toolOpen())">
+          <svg lucideCalculator [size]="20"></svg>
+          <span class="flex-1 text-left">Tool</span>
+          <svg lucideChevronDown [size]="16" [class]="!toolOpen() ? '-rotate-90' : ''"></svg>
+        </button>
+        @if (toolOpen()) {
+          <div class="mt-1 space-y-1 pl-11 pr-2">
+            <a routerLink="/dashboard/tools/attenuation-calculator" routerLinkActive="bg-white/15 text-white"
+               class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+               (click)="mobile.set(false)">Kalkulator Redaman</a>
+          </div>
+        }
+      </nav>
+
+      <!-- User Badge -->
+      <div class="border-t border-slate-800 p-3">
+        <div class="flex items-center gap-3 px-3 py-2">
+          <span class="flex h-9 w-9 items-center justify-center rounded-full bg-white font-bold text-slate-950">{{ auth.user()!.name[0].toUpperCase() }}</span>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-medium">{{ auth.user()!.name }}</p>
+            <p class="text-xs capitalize text-slate-400">{{ auth.user()!.role }}</p>
+          </div>
+          <button (click)="auth.logout()" title="Logout" class="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white">
+            <svg lucideLogOut [size]="20"></svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Mobile Overlay -->
+    @if (mobile()) {
+      <button aria-label="Tutup sidebar" class="fixed inset-0 z-40 bg-black/50 lg:hidden" (click)="mobile.set(false)"></button>
+    }
+
+    <!-- Content -->
+    <div class="lg:ml-64">
+      <header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-white px-4 shadow-sm sm:px-6">
+        <div class="flex items-center gap-3">
+          <button class="rounded-lg p-2 hover:bg-slate-100 lg:hidden" (click)="mobile.set(true)">
+            <svg lucideMenu [size]="24"></svg>
+          </button>
+          <h1 class="text-lg font-semibold">{{ title() }}</h1>
+        </div>
+        <!-- DateTime Widget -->
+        <div class="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 sm:text-sm">
+          <svg lucideClock3 [size]="15" class="shrink-0 text-blue-600"></svg>
+          <span class="whitespace-nowrap">{{ dateTime() }}</span>
+        </div>
+      </header>
+      <main class="p-4 sm:p-6">
+        <router-outlet></router-outlet>
+      </main>
+    </div>
+  </div>
+}

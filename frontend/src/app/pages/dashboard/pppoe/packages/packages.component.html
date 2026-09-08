@@ -1,0 +1,91 @@
+<div class="space-y-4">
+  <div class="card flex gap-3 p-4">
+    <div class="relative flex-1">
+      <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
+      <input class="input pl-10" placeholder="Cari nama paket..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
+    </div>
+    <button class="btn-primary" (click)="show()">
+      <svg lucidePlus [size]="18"></svg> Tambah Paket
+    </button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nama Paket & Harga</th><th>Kecepatan</th><th>Address Pool</th><th>Akun</th><th>Status</th><th class="text-right">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of items(); track item.id) {
+          <tr>
+            <td>
+              <p class="font-semibold text-slate-900">{{ item.name }}</p>
+              <p class="text-xs text-slate-500">Rp {{ formatPrice(item.price) }}</p>
+            </td>
+            <td>{{ item.downloadMbps }}M ↓ / {{ item.uploadMbps }}M ↑</td>
+            <td>{{ item.addressPool ?? '—' }}</td>
+            <td>{{ item.accountsCount ?? 0 }}</td>
+            <td>
+              <button (click)="toggleStatus(item)" [class]="'relative h-6 w-11 rounded-full ' + (item.isActive ? 'bg-green-500' : 'bg-slate-300')" title="Ubah status">
+                <span [class]="'absolute top-1 h-4 w-4 rounded-full bg-white transition-all ' + (item.isActive ? 'left-6' : 'left-1')"></span>
+              </button>
+            </td>
+            <td>
+              <div class="flex justify-end gap-2">
+                <button class="btn-secondary px-3" (click)="show(item)">
+                  <svg lucidePencil [size]="15"></svg>
+                </button>
+                <button class="btn-danger" (click)="remove(item)">
+                  <svg lucideTrash2 [size]="15"></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+        @if (items().length === 0) {
+          <tr><td colspan="6" class="py-8 text-center text-slate-400">Paket PPPoE belum tersedia.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
+
+  <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Paket PPPoE'" (closeModal)="open.set(false)">
+    <form (ngSubmit)="save()" class="space-y-4">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="label">Nama Paket *</label>
+          <input class="input" required [(ngModel)]="form.name" name="name" />
+        </div>
+        <div>
+          <label class="label">Harga *</label>
+          <input class="input" type="number" min="0" required [(ngModel)]="form.price" name="price" />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="label">Download (Mbps) *</label>
+          <input class="input" type="number" min="1" required [(ngModel)]="form.downloadMbps" name="downloadMbps" />
+        </div>
+        <div>
+          <label class="label">Upload (Mbps) *</label>
+          <input class="input" type="number" min="1" required [(ngModel)]="form.uploadMbps" name="uploadMbps" />
+        </div>
+      </div>
+      <div>
+        <label class="label">Address Pool MikroTik</label>
+        <input class="input" placeholder="Harus sama persis dengan nama pool di CHR1" [(ngModel)]="form.addressPool" name="addressPool" />
+      </div>
+      <div class="flex justify-end gap-3">
+        <button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button>
+        <button class="btn-primary">Simpan</button>
+      </div>
+    </form>
+  </app-modal>
+
+  @if (toast()) {
+    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
+  }
+</div>

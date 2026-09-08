@@ -1,0 +1,106 @@
+<div class="mx-auto max-w-5xl space-y-5">
+  <div class="card p-5 sm:p-6">
+    <h2 class="text-lg font-semibold">Kalkulator Redaman</h2>
+    <p class="mb-5 mt-1 text-sm text-slate-500">
+      Perhitungan dilakukan langsung di halaman ini dan tidak disimpan ke database.
+    </p>
+
+    <div class="grid gap-4 md:grid-cols-3">
+      <div>
+        <label class="label">Redaman Sumber (dBm)</label>
+        <input
+          class="input"
+          type="number"
+          step="0.01"
+          [(ngModel)]="source"
+        />
+      </div>
+
+      <div>
+        <label class="label">Jarak Kabel (meter)</label>
+        <input
+          class="input"
+          type="number"
+          min="0"
+          step="0.01"
+          [(ngModel)]="distance"
+        />
+      </div>
+
+      <div>
+        <label class="label">Jenis Splitter/Rasio</label>
+        <select class="input" [(ngModel)]="splitter" (ngModelChange)="onSplitterChange($event)">
+          @for (v of splitterOptions; track v) {
+            <option [value]="v">{{ v }}</option>
+          }
+        </select>
+      </div>
+
+      @if (currentRatios()) {
+        <div>
+          <label class="label">Jalur Rasio</label>
+          <select class="input" [(ngModel)]="path">
+            @for (v of currentRatios(); track v) {
+              <option [value]="v">Jalur {{ v }}%</option>
+            }
+          </select>
+        </div>
+      }
+
+      <div>
+        <label class="label">Jumlah Connector</label>
+        <input
+          class="input"
+          type="number"
+          min="0"
+          [(ngModel)]="connectors"
+        />
+      </div>
+
+      <div>
+        <label class="label">Loss per Connector (dB)</label>
+        <input
+          class="input"
+          type="number"
+          min="0"
+          step="0.01"
+          [(ngModel)]="connectorLoss"
+        />
+      </div>
+
+      <div>
+        <label class="label">Loss Kabel per km (dB)</label>
+        <input
+          class="input"
+          type="number"
+          min="0"
+          step="0.01"
+          [(ngModel)]="cablePerKm"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-5 sm:p-6">
+    <h2 class="mb-4 text-lg font-semibold">Hasil Perhitungan</h2>
+    <div class="grid gap-3 sm:grid-cols-3">
+      <div class="rounded-lg border bg-slate-50 p-4">
+        <p class="text-sm text-slate-500">Loss Splitter/Rasio</p>
+        <p class="mt-1 text-xl font-semibold">{{ show(result().splitterLoss) }} dB</p>
+      </div>
+      <div class="rounded-lg border bg-slate-50 p-4">
+        <p class="text-sm text-slate-500">Loss Kabel</p>
+        <p class="mt-1 text-xl font-semibold">{{ show(result().cable, 3) }} dB</p>
+      </div>
+      <div class="rounded-lg border bg-slate-50 p-4">
+        <p class="text-sm text-slate-500">Loss Connector</p>
+        <p class="mt-1 text-xl font-semibold">{{ show(result().connector) }} dB</p>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded-xl bg-slate-950 p-5 text-white">
+      <p class="text-sm text-slate-300">Hasil Redaman</p>
+      <p class="mt-1 text-3xl font-bold">{{ show(result().redaman) }} dBm</p>
+    </div>
+  </div>
+</div>

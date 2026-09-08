@@ -1,0 +1,35 @@
+<div class="space-y-5">
+  <div class="card p-5">
+    <h2 class="text-xl font-semibold">Selamat datang, {{ auth.user()?.name }}</h2>
+    <p class="mt-1 text-sm text-slate-500">Ringkasan data jaringan PT UNZANET.</p>
+  </div>
+  <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    @for (card of cards(); track card.label) {
+      <div class="card flex items-center gap-4 p-5">
+        <span class="rounded-xl bg-blue-50 p-3 text-blue-700">
+          @switch (card.type) {
+            @case ('server') {
+              <svg lucideServer [size]="24"></svg>
+            }
+            @case ('odc') {
+              <svg lucideNetwork [size]="24"></svg>
+            }
+            @case ('odp') {
+              <svg lucideGitBranch [size]="24"></svg>
+            }
+            @case ('redaman') {
+              <svg lucideGitBranch [size]="24"></svg>
+            }
+            @case ('users') {
+              <svg lucideUsers [size]="24"></svg>
+            }
+          }
+        </span>
+        <div>
+          <p class="text-sm text-slate-500">{{ card.label }}</p>
+          <p class="text-2xl font-bold">{{ card.value ?? '—' }}</p>
+        </div>
+      </div>
+    }
+  </div>
+</div>
