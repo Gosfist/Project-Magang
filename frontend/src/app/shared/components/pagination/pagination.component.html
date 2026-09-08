@@ -1,0 +1,18 @@
+@if (meta && meta.lastPage > 1) {
+  <div class="mt-4 flex justify-end gap-1">
+    <button class="h-9 rounded-lg border px-3 disabled:opacity-40"
+            [disabled]="meta.currentPage === 1"
+            (click)="pageChange.emit(meta.currentPage - 1)">‹</button>
+    @for (page of pages; track page; let i = $index) {
+      @if (i > 0 && page - pages[i - 1] > 1) {
+        <span class="px-1 py-2">…</span>
+      }
+      <button [class]="'h-9 min-w-9 rounded-lg border px-2 ' +
+        (page === meta.currentPage ? 'border-blue-600 bg-blue-600 text-white' : 'bg-white')"
+              (click)="pageChange.emit(page)">{{ page }}</button>
+    }
+    <button class="h-9 rounded-lg border px-3 disabled:opacity-40"
+            [disabled]="meta.currentPage === meta.lastPage"
+            (click)="pageChange.emit(meta.currentPage + 1)">›</button>
+  </div>
+}

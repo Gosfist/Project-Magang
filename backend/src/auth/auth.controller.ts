@@ -6,7 +6,7 @@ import type { AuthRequest } from './jwt-auth.guard.js';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(private readonly auth: AuthService) { }
 
   @Post('login')
   @HttpCode(200)

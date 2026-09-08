@@ -1,0 +1,101 @@
+<div class="space-y-4">
+  <div class="card p-4">
+    <div class="grid gap-3 md:grid-cols-[1fr_180px_180px_auto]">
+      <div class="relative">
+        <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
+        <input class="input pl-10" placeholder="Cari nama atau email..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
+      </div>
+      <select class="input" [(ngModel)]="role" (ngModelChange)="load()">
+        <option value="">Semua role</option>
+        <option value="admin">Admin</option>
+        <option value="petugas">Petugas</option>
+      </select>
+      <select class="input" [(ngModel)]="status" (ngModelChange)="load()">
+        <option value="">Semua status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+      <button class="btn-primary" (click)="show()">
+        <svg lucidePlus [size]="18"></svg> Tambah
+      </button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th class="text-right">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (user of items(); track user.id) {
+          <tr>
+            <td class="font-medium text-slate-900">{{ user.name }}</td>
+            <td>{{ user.email }}</td>
+            <td class="capitalize">{{ user.role }}</td>
+            <td>
+              <span [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (user.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')">{{ user.status }}</span>
+            </td>
+            <td>
+              <div class="flex justify-end gap-2">
+                <button class="btn-secondary px-3" (click)="show(user)">
+                  <svg lucidePencil [size]="15"></svg>
+                </button>
+                <button class="btn-danger" (click)="remove(user)">
+                  <svg lucideTrash2 [size]="15"></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+        @if (items().length === 0) {
+          <tr><td colspan="5" class="py-8 text-center text-slate-400">Data petugas belum tersedia.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
+
+  <app-modal [open]="open()" [title]="editing() ? 'Edit Data Petugas' : 'Tambah Petugas'" (closeModal)="open.set(false)">
+    <form (ngSubmit)="save()" class="space-y-4">
+      <div>
+        <label class="label">Nama *</label>
+        <input class="input" required [(ngModel)]="form.name" name="name" />
+      </div>
+      <div>
+        <label class="label">Email *</label>
+        <input class="input" type="email" required [(ngModel)]="form.email" name="email" />
+      </div>
+      <div>
+        <label class="label">Password @if (editing()) { <small class="text-slate-400">(kosongkan jika tidak diubah)</small> }</label>
+        <input class="input" type="password" [required]="!editing()" minlength="6" [(ngModel)]="form.password" name="password" />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="label">Role</label>
+          <select class="input" [(ngModel)]="form.role" name="role">
+            <option value="admin">Admin</option>
+            <option value="petugas">Petugas</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">Status</label>
+          <select class="input" [(ngModel)]="form.status" name="status">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button>
+        <button class="btn-primary">Simpan</button>
+      </div>
+    </form>
+  </app-modal>
+
+  @if (toast()) {
+    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
+  }
+</div>

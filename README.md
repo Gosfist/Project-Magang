@@ -2,7 +2,7 @@
 
 Aplikasi PT UNZANET telah dimigrasikan penuh dari Laravel/Blade ke TypeScript dengan dua proyek:
 
-- `frontend`: Next.js 16, React 19, TypeScript, Tailwind CSS.
+- `frontend`: Angular 19, TypeScript, Tailwind CSS.
 - `backend`: NestJS 12, TypeScript, Prisma ORM, MySQL.
 
 Fitur yang dipertahankan: web profile, login JWT, dashboard, role admin/petugas, data petugas, Main Core (Server, Rasio, ODC, ODP), Trace Jalur, kalkulator redaman, paket PPPoE, akun PPPoE, dan sinkronisasi FreeRADIUS.
@@ -13,9 +13,8 @@ Gunakan dua terminal.
 
 ```powershell
 cd frontend
-Copy-Item .env.example .env.local
 npm install
-npm run dev
+npm start
 ```
 
 ```powershell

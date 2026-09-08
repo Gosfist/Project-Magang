@@ -15,7 +15,7 @@ type Spec = { jenis_splitter?: string; rasio_redaman_ports?: Record<string, stri
 
 @Injectable()
 export class MainCoreService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   ensureType(type: string): asserts type is NodeType {
     if (!TYPES.includes(type as NodeType)) throw new NotFoundException('Kategori Main Core tidak ditemukan.');
@@ -50,12 +50,14 @@ export class MainCoreService {
     return serialize({ data: nodes });
   }
 
-  async parents(type: string, search = '', currentNodeId?: string, currentParentId?: string) {
+  async parents(type: string, search = '', currentNodeId?: string, currentParentId?: string, category = '') {
     this.ensureType(type);
     if (type === 'server') return { data: [] };
+    if (category && !TYPES.includes(category as NodeType)) throw new BadRequestException('Jenis kategori sumber tidak valid.');
     const candidates = await this.prisma.mainCore.findMany({
       where: {
         deletedAt: null,
+        ...(category ? { tipeTitik: category } : {}),
         ...(search ? { namaTitik: { contains: search } } : {}),
         ...(currentNodeId ? { id: { not: BigInt(currentNodeId) } } : {}),
       },
