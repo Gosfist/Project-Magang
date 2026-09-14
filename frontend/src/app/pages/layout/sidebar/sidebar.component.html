@@ -42,6 +42,22 @@
       </div>
     }
 
+    <!-- Router -->
+    <button class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10" (click)="routerOpen.set(!routerOpen())">
+      <svg lucideRouter [size]="20"></svg>
+      <span class="flex-1 text-left">Router</span>
+      <svg lucideChevronDown [size]="16" [class]="!routerOpen() ? '-rotate-90' : ''"></svg>
+    </button>
+    @if (routerOpen()) {
+      <div class="mt-1 space-y-1 pl-11 pr-2">
+        @for (link of routerLinks; track link[1]) {
+          <a [routerLink]="link[1]" routerLinkActive="bg-white/15 text-white"
+             class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+             (click)="mobile.set(false)">{{ link[0] }}</a>
+        }
+      </div>
+    }
+
     <!-- PPPoE -->
     <button class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10" (click)="pppoeOpen.set(!pppoeOpen())">
       <svg lucideNetwork [size]="20"></svg>

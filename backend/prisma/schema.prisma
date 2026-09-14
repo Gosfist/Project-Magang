@@ -48,12 +48,17 @@ model PppoePackage {
   downloadMbps Int            @map("download_mbps") @db.UnsignedInt
   uploadMbps   Int            @map("upload_mbps") @db.UnsignedInt
   price        BigInt         @default(0) @db.UnsignedBigInt
+  costPrice    BigInt         @default(0) @map("cost_price") @db.UnsignedBigInt
   addressPool  String?        @map("address_pool")
+  ipPoolId     BigInt?        @map("ip_pool_id") @db.UnsignedBigInt
+  validityDays Int            @default(30) @map("validity_days") @db.UnsignedInt
   isActive     Boolean        @default(true) @map("is_active")
   createdAt    DateTime?      @map("created_at")
   updatedAt    DateTime?      @map("updated_at")
   accounts     PppoeAccount[]
+  ipPool       IpPool?        @relation(fields: [ipPoolId], references: [id], onDelete: SetNull)
 
+  @@index([ipPoolId])
   @@map("pppoe_packages")
 }
 
@@ -61,19 +66,65 @@ model PppoeAccount {
   id             BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
   pppoePackageId BigInt       @map("pppoe_package_id") @db.UnsignedBigInt
   customerName   String       @map("customer_name")
+  idCardNumber     String?    @map("id_card_number") @db.VarChar(50)
+  idCardPhoto      String?    @map("id_card_photo") @db.VarChar(500)
   username       String       @unique @db.VarChar(64)
   password       String       @db.Text
   phone          String?      @db.VarChar(30)
   address        String?      @db.Text
+  latitude         Float?
+  longitude        Float?
+  subscriptionType String     @default("POSTPAID") @map("subscription_type") @db.VarChar(10)
+  billingDay       Int        @default(1) @map("billing_day") @db.UnsignedInt
+  discount         BigInt     @default(0) @db.UnsignedBigInt
+  odp              String?    @db.VarChar(100)
+  routerNasId      Int?       @map("router_nas_id") @db.UnsignedInt
   expiresAt      DateTime?    @map("expires_at") @db.Date
   isActive       Boolean      @default(true) @map("is_active")
   notes          String?      @db.Text
   createdAt      DateTime?    @map("created_at")
   updatedAt      DateTime?    @map("updated_at")
   package        PppoePackage @relation(fields: [pppoePackageId], references: [id], onDelete: Restrict)
+  routerNas        Nas?       @relation(fields: [routerNasId], references: [id], onDelete: SetNull)
+  invoices         Invoice[]
 
   @@index([pppoePackageId])
+  @@index([routerNasId])
   @@map("pppoe_accounts")
+}
+
+model IpPool {
+  id           BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  name         String         @unique @db.VarChar(100)
+  networkStart String         @map("network_start") @db.VarChar(45)
+  networkEnd   String         @map("network_end") @db.VarChar(45)
+  createdAt    DateTime?      @map("created_at")
+  updatedAt    DateTime?      @map("updated_at")
+  packages     PppoePackage[]
+
+  @@map("ip_pools")
+}
+
+model Invoice {
+  id             BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  pppoeAccountId BigInt       @map("pppoe_account_id") @db.UnsignedBigInt
+  invoiceNumber  String       @unique @map("invoice_number") @db.VarChar(50)
+  amount         BigInt       @default(0) @db.UnsignedBigInt
+  baseAmount     BigInt       @default(0) @map("base_amount") @db.UnsignedBigInt
+  discount       BigInt       @default(0) @db.UnsignedBigInt
+  invoiceType    String       @default("MONTHLY") @map("invoice_type") @db.VarChar(10)
+  status         String       @default("PENDING") @db.VarChar(10)
+  dueDate        DateTime     @map("due_date") @db.Date
+  paidAt         DateTime?    @map("paid_at")
+  notes          String?      @db.Text
+  createdAt      DateTime?    @map("created_at")
+  updatedAt      DateTime?    @map("updated_at")
+  account        PppoeAccount @relation(fields: [pppoeAccountId], references: [id], onDelete: Cascade)
+
+  @@index([pppoeAccountId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("invoices")
 }
 
 model Radcheck {
@@ -181,20 +232,75 @@ model Radpostauth {
   @@map("radpostauth")
 }
 
+model VpnServer {
+  id           BigInt      @id @default(autoincrement()) @db.UnsignedBigInt
+  name         String      @db.VarChar(100)
+  host         String      @db.VarChar(100)
+  subnet       String      @default("10.200.0.0/24") @db.VarChar(50)
+  wgPort       Int         @default(51820) @map("wg_port") @db.UnsignedInt
+  wgPublicKey  String      @map("wg_public_key") @db.Text
+  wgPrivateKey String?     @map("wg_private_key") @db.Text
+  poolStart    Int         @default(10) @map("pool_start") @db.UnsignedInt
+  poolEnd      Int         @default(254) @map("pool_end") @db.UnsignedInt
+  gateway      String?     @db.VarChar(45)
+  isActive     Boolean     @default(true) @map("is_active")
+  createdAt    DateTime?   @default(now()) @map("created_at")
+  updatedAt    DateTime?   @default(now()) @updatedAt @map("updated_at")
+  clients      VpnClient[]
+
+  @@map("vpn_servers")
+}
+
+model VpnClient {
+  id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name             String    @db.VarChar(100)
+  vpnServerId      BigInt    @map("vpn_server_id") @db.UnsignedBigInt
+  vpnIp            String    @map("vpn_ip") @db.VarChar(45)
+  clientPublicKey  String    @map("client_public_key") @db.Text
+  clientPrivateKey String?   @map("client_private_key") @db.Text
+  allowedIps       String    @default("10.200.0.0/24") @map("allowed_ips") @db.VarChar(100)
+  description      String?   @db.Text
+  isRadiusServer   Boolean   @default(false) @map("is_radius_server")
+  isActive         Boolean   @default(true) @map("is_active")
+  createdAt        DateTime? @default(now()) @map("created_at")
+  updatedAt        DateTime? @default(now()) @updatedAt @map("updated_at")
+  vpnServer        VpnServer @relation(fields: [vpnServerId], references: [id], onDelete: Cascade)
+  routers          Nas[]
+
+  @@index([vpnServerId])
+  @@index([vpnIp])
+  @@map("vpn_clients")
+}
+
 model Nas {
-  id              Int     @id @default(autoincrement()) @db.UnsignedInt
-  nasname         String  @db.VarChar(128)
-  shortname       String? @db.VarChar(32)
-  type            String  @default("other") @db.VarChar(30)
-  ports           Int?    @db.UnsignedSmallInt
-  secret          String  @default("secret") @db.VarChar(60)
-  server          String? @db.VarChar(64)
-  community       String? @db.VarChar(50)
-  description     String  @default("RADIUS Client") @db.VarChar(200)
-  requireMa       String  @default("auto") @map("require_ma") @db.VarChar(4)
-  limitProxyState String  @default("auto") @map("limit_proxy_state") @db.VarChar(4)
+  id              Int            @id @default(autoincrement()) @db.UnsignedInt
+  name            String?        @db.VarChar(100)
+  nasname         String         @db.VarChar(128)
+  shortname       String?        @db.VarChar(32)
+  type            String         @default("mikrotik") @db.VarChar(30)
+  authMode        String         @default("radius") @map("auth_mode") @db.VarChar(20)
+  ipAddress       String?        @map("ip_address") @db.VarChar(45)
+  username        String?        @db.VarChar(64)
+  password        String?        @db.Text
+  port            Int?           @default(8728) @db.UnsignedInt
+  ports           Int?           @default(1812) @db.UnsignedSmallInt
+  secret          String         @default("secret") @db.VarChar(60)
+  server          String?        @db.VarChar(64)
+  community       String?        @db.VarChar(50)
+  description     String?        @default("RADIUS Client") @db.VarChar(200)
+  vpnClientId     BigInt?        @map("vpn_client_id") @db.UnsignedBigInt
+  latitude        Float?
+  longitude       Float?
+  isActive        Boolean        @default(true) @map("is_active")
+  requireMa       String         @default("auto") @map("require_ma") @db.VarChar(4)
+  limitProxyState String         @default("auto") @map("limit_proxy_state") @db.VarChar(4)
+  createdAt       DateTime?      @default(now()) @map("created_at")
+  updatedAt       DateTime?      @default(now()) @updatedAt @map("updated_at")
+  accounts        PppoeAccount[]
+  vpnClient       VpnClient?     @relation(fields: [vpnClientId], references: [id], onDelete: SetNull)
 
   @@index([nasname])
+  @@index([vpnClientId])
   @@map("nas")
 }
 

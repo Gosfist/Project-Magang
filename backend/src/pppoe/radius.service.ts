@@ -6,7 +6,7 @@ import { SecretService } from './secret.service.js';
 export class RadiusService {
   constructor(private readonly secrets: SecretService) { }
 
-  async sync(tx: Prisma.TransactionClient, account: PppoeAccount & { package: PppoePackage }, oldUsername = account.username) {
+  async sync(tx: Prisma.TransactionClient, account: PppoeAccount & { package: PppoePackage & { ipPool?: any } }, oldUsername = account.username) {
     await tx.radcheck.deleteMany({ where: { username: oldUsername } });
     await tx.radreply.deleteMany({ where: { username: oldUsername } });
     if (!account.isActive || !account.package.isActive) return;
@@ -20,7 +20,10 @@ export class RadiusService {
     }
     await tx.radcheck.createMany({ data: checks });
     const replies = [{ username: account.username, attribute: 'Mikrotik-Rate-Limit', op: ':=', value: `${account.package.uploadMbps}M/${account.package.downloadMbps}M` }];
-    if (account.package.addressPool) replies.push({ username: account.username, attribute: 'Framed-Pool', op: ':=', value: account.package.addressPool });
+
+    const poolName = account.package.ipPool?.name || account.package.addressPool;
+    if (poolName) replies.push({ username: account.username, attribute: 'Framed-Pool', op: ':=', value: poolName });
+
     await tx.radreply.createMany({ data: replies });
   }
 

@@ -13,7 +13,7 @@
     <table>
       <thead>
         <tr>
-          <th>Nama Paket & Harga</th><th>Kecepatan</th><th>Address Pool</th><th>Akun</th><th>Status</th><th class="text-right">Aksi</th>
+          <th>Nama Paket & Harga</th><th>Kecepatan</th><th>IP Pool</th><th>Masa Aktif</th><th>Akun</th><th>Status</th><th class="text-right">Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -21,10 +21,11 @@
           <tr>
             <td>
               <p class="font-semibold text-slate-900">{{ item.name }}</p>
-              <p class="text-xs text-slate-500">Rp {{ formatPrice(item.price) }}</p>
+              <p class="text-xs text-slate-500">Harga: Rp {{ formatPrice(item.price) }} | Modal: Rp {{ formatPrice(item.costPrice || 0) }}</p>
             </td>
             <td>{{ item.downloadMbps }}M ↓ / {{ item.uploadMbps }}M ↑</td>
-            <td>{{ item.addressPool ?? '—' }}</td>
+            <td>{{ item.ipPool?.name || item.addressPool || '—' }}</td>
+            <td>{{ item.validityDays }} hari</td>
             <td>{{ item.accountsCount ?? 0 }}</td>
             <td>
               <button (click)="toggleStatus(item)" [class]="'relative h-6 w-11 rounded-full ' + (item.isActive ? 'bg-green-500' : 'bg-slate-300')" title="Ubah status">
@@ -44,7 +45,7 @@
           </tr>
         }
         @if (items().length === 0) {
-          <tr><td colspan="6" class="py-8 text-center text-slate-400">Paket PPPoE belum tersedia.</td></tr>
+          <tr><td colspan="7" class="py-8 text-center text-slate-400">Paket PPPoE belum tersedia.</td></tr>
         }
       </tbody>
     </table>
@@ -54,14 +55,18 @@
 
   <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Paket PPPoE'" (closeModal)="open.set(false)">
     <form (ngSubmit)="save()" class="space-y-4">
-      <div class="grid gap-4 sm:grid-cols-2">
+      <div class="grid gap-4 sm:grid-cols-3">
         <div>
           <label class="label">Nama Paket *</label>
           <input class="input" required [(ngModel)]="form.name" name="name" />
         </div>
         <div>
-          <label class="label">Harga *</label>
+          <label class="label">Harga Jual *</label>
           <input class="input" type="number" min="0" required [(ngModel)]="form.price" name="price" />
+        </div>
+        <div>
+          <label class="label">Harga Modal *</label>
+          <input class="input" type="number" min="0" required [(ngModel)]="form.costPrice" name="costPrice" />
         </div>
       </div>
       <div class="grid grid-cols-2 gap-4">
@@ -74,9 +79,20 @@
           <input class="input" type="number" min="1" required [(ngModel)]="form.uploadMbps" name="uploadMbps" />
         </div>
       </div>
-      <div>
-        <label class="label">Address Pool MikroTik</label>
-        <input class="input" placeholder="Harus sama persis dengan nama pool di CHR1" [(ngModel)]="form.addressPool" name="addressPool" />
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="label">IP Pool</label>
+          <select class="input" [(ngModel)]="form.ipPoolId" name="ipPoolId">
+            <option value="">-- Pilih IP Pool --</option>
+            @for (pool of ipPools(); track pool.id) {
+              <option [value]="pool.id">{{ pool.name }} ({{ pool.networkStart }} - {{ pool.networkEnd }})</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="label">Masa Aktif (hari) *</label>
+          <input class="input" type="number" min="1" required [(ngModel)]="form.validityDays" name="validityDays" />
+        </div>
       </div>
       <div class="flex justify-end gap-3">
         <button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button>

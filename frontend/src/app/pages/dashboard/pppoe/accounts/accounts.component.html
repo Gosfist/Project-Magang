@@ -13,7 +13,7 @@
     <table>
       <thead>
         <tr>
-          <th>Pelanggan</th><th>Username</th><th>Paket</th><th>Nomor Telepon</th><th>Status</th><th class="text-right">Aksi</th>
+          <th>Pelanggan</th><th>Username</th><th>Paket</th><th>Tipe</th><th>Nomor Telepon</th><th>Status</th><th class="text-right">Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -25,12 +25,16 @@
             </td>
             <td class="font-mono">{{ item.username }}</td>
             <td>{{ item.package.name }}</td>
+            <td>
+              <span [class]="'rounded-full px-2 py-0.5 text-xs font-semibold ' + (item.subscriptionType === 'POSTPAID' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700')">{{ item.subscriptionType }}</span>
+            </td>
             <td>{{ item.phone ?? '—' }}</td>
             <td>
               <span [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')">{{ item.isActive ? 'Active' : 'Inactive' }}</span>
             </td>
             <td>
               <div class="flex justify-end gap-2">
+                <button class="btn-secondary px-3" [disabled]="disconnecting() !== null" (click)="disconnect(item)">Putus Sesi</button>
                 <button class="btn-secondary px-3" (click)="show(item)">
                   <svg lucidePencil [size]="15"></svg>
                 </button>
@@ -42,7 +46,7 @@
           </tr>
         }
         @if (items().length === 0) {
-          <tr><td colspan="6" class="py-8 text-center text-slate-400">Akun PPPoE belum tersedia.</td></tr>
+          <tr><td colspan="7" class="py-8 text-center text-slate-400">Akun PPPoE belum tersedia.</td></tr>
         }
       </tbody>
     </table>
@@ -52,49 +56,158 @@
 
   <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Akun PPPoE'" (closeModal)="open.set(false)">
     <form (ngSubmit)="save()" class="space-y-4">
-      <div>
-        <label class="label">Paket *</label>
-        <select class="input" required [(ngModel)]="form.pppoePackageId" name="pppoePackageId">
-          <option value="">Pilih paket</option>
-          @for (p of packages(); track p.id) {
-            <option [value]="p.id">{{ p.name }} — {{ p.downloadMbps }}/{{ p.uploadMbps }} Mbps</option>
-          }
-        </select>
+      <div class="mb-6 flex items-center justify-center gap-2">
+        @for (s of [1,2,3]; track s) {
+          <div class="flex items-center gap-2">
+            <div [class]="'flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ' + (step() >= s ? 'bg-slate-950 text-white' : 'bg-slate-200 text-slate-500')">{{ s }}</div>
+            <span [class]="'text-sm font-medium ' + (step() >= s ? 'text-slate-900' : 'text-slate-400')">{{ s === 1 ? 'Data Pelanggan' : s === 2 ? 'Pembayaran' : 'Secret & Jaringan' }}</span>
+            @if (s < 3) { <div class="mx-2 h-px w-8 bg-slate-300"></div> }
+          </div>
+        }
       </div>
-      <div>
-        <label class="label">Nama Pelanggan *</label>
-        <input class="input" required [(ngModel)]="form.customerName" name="customerName" />
-      </div>
-      <div class="grid gap-4 sm:grid-cols-2">
+
+      @if (step() === 1) {
         <div>
-          <label class="label">Username *</label>
-          <input class="input" required [(ngModel)]="form.username" name="username" />
+          <label class="label">Nama Pelanggan *</label>
+          <input class="input" required [(ngModel)]="form.customerName" name="customerName" />
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="label">Nomor Telepon</label>
+            <input class="input" [(ngModel)]="form.phone" name="phone" />
+          </div>
+          <div>
+            <label class="label">No KTP</label>
+            <input class="input" [(ngModel)]="form.idCardNumber" name="idCardNumber" />
+          </div>
         </div>
         <div>
-          <label class="label">Password @if (editing()) { <small class="text-slate-400">(kosongkan jika tetap)</small> }</label>
-          <input type="password" class="input" [required]="!editing()" minlength="6" [(ngModel)]="form.password" name="password" />
+          <label class="label">Foto KTP (Path)</label>
+          <input class="input" [(ngModel)]="form.idCardPhoto" name="idCardPhoto" />
         </div>
-      </div>
-      <div>
-        <label class="label">Nomor Telepon</label>
-        <input class="input" [(ngModel)]="form.phone" name="phone" />
-      </div>
-      <div>
-        <label class="label">Alamat</label>
-        <textarea class="input" rows="2" [(ngModel)]="form.address" name="address"></textarea>
-      </div>
-      @if (editing()) {
-        <label class="flex items-center gap-3 rounded-lg border p-3">
-          <input type="checkbox" [(ngModel)]="form.isActive" name="isActive" />
-          <span>
-            <b class="block text-sm">Akun aktif</b>
-            <small class="text-slate-500">Akun aktif disinkronkan ke FreeRADIUS.</small>
-          </span>
-        </label>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="label">Latitude</label>
+            <input class="input" type="number" step="any" [(ngModel)]="form.latitude" name="latitude" />
+          </div>
+          <div>
+            <label class="label">Longitude</label>
+            <input class="input" type="number" step="any" [(ngModel)]="form.longitude" name="longitude" />
+          </div>
+        </div>
+        <div>
+          <label class="label">Alamat</label>
+          <textarea class="input" rows="2" [(ngModel)]="form.address" name="address"></textarea>
+        </div>
       }
-      <div class="flex justify-end gap-3">
-        <button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button>
-        <button class="btn-primary">Simpan</button>
+
+      @if (step() === 2) {
+        <div>
+          <label class="label">Paket Internet *</label>
+          <select class="input" required [(ngModel)]="form.pppoePackageId" name="pppoePackageId" (ngModelChange)="calculateProrate()">
+            <option value="">Pilih paket</option>
+            @for (p of packages(); track p.id) {
+              <option [value]="p.id">{{ p.name }} — {{ p.downloadMbps }}/{{ p.uploadMbps }} Mbps</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="label">Tipe Langganan *</label>
+          <div class="grid grid-cols-2 gap-3">
+            <label [class]="'cursor-pointer rounded-lg border-2 p-3 text-center transition-all ' + (form.subscriptionType === 'POSTPAID' ? 'border-slate-950 bg-slate-50' : 'border-slate-200 hover:border-slate-400')">
+              <input type="radio" name="subscriptionType" value="POSTPAID" [(ngModel)]="form.subscriptionType" (ngModelChange)="calculateProrate()" class="sr-only" />
+              <span class="text-sm font-semibold">Postpaid</span>
+              <p class="mt-1 text-xs text-slate-500">Bayar setelah pemakaian</p>
+            </label>
+            <label [class]="'cursor-pointer rounded-lg border-2 p-3 text-center transition-all ' + (form.subscriptionType === 'PREPAID' ? 'border-slate-950 bg-slate-50' : 'border-slate-200 hover:border-slate-400')">
+              <input type="radio" name="subscriptionType" value="PREPAID" [(ngModel)]="form.subscriptionType" (ngModelChange)="calculateProrate()" class="sr-only" />
+              <span class="text-sm font-semibold">Prepaid</span>
+              <p class="mt-1 text-xs text-slate-500">Bayar di muka</p>
+            </label>
+          </div>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="label">Tanggal Tagihan (1-28)</label>
+            <input class="input" type="number" min="1" max="28" [(ngModel)]="form.billingDay" name="billingDay" (ngModelChange)="calculateProrate()" />
+          </div>
+          <div>
+            <label class="label">Diskon (Rp)</label>
+            <input class="input" type="number" min="0" [(ngModel)]="form.discount" name="discount" (ngModelChange)="calculateProrate()" />
+          </div>
+        </div>
+        @if (form.subscriptionType === 'PREPAID' && !editing()) {
+          <p class="text-sm text-slate-600">Tagihan pertama prepaid menggunakan harga penuh paket setelah diskon.</p>
+        }
+        @if (prorateEstimate() && form.subscriptionType === 'POSTPAID' && !editing()) {
+          <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+            <p class="text-sm font-semibold text-emerald-800">Estimasi Tagihan Pertama (Prorate)</p>
+            <p class="mt-1 text-2xl font-bold text-emerald-700">Rp {{ prorateEstimate()!.amount.toLocaleString('id-ID') }}</p>
+            <p class="mt-1 text-xs text-emerald-600">{{ prorateEstimate()!.daysActive }} hari aktif dari {{ prorateEstimate()!.daysInMonth }} hari (s/d tanggal {{ prorateEstimate()!.nextBilling.getDate() }})</p>
+          </div>
+        }
+      }
+
+      @if (step() === 3) {
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="label">Username PPPoE *</label>
+            <input class="input" required [(ngModel)]="form.username" name="username" />
+          </div>
+          <div>
+            <label class="label">Password PPPoE @if (editing()) { <small class="text-slate-400">(kosongkan jika tetap)</small> }</label>
+            <input type="password" class="input" [required]="!editing()" [(ngModel)]="form.password" name="password" />
+          </div>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="label">Router NAS</label>
+            <select class="input" [(ngModel)]="form.routerNasId" name="routerNasId">
+              <option value="">Pilih NAS</option>
+              @for (nas of nasOptions(); track nas.id) {
+                <option [value]="nas.id">{{ nas.shortname || nas.nasname }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label class="label">ODP</label>
+            <select class="input" [(ngModel)]="form.odp" name="odp">
+              <option value="">Pilih ODP</option>
+              @for (o of odpOptions(); track o.id) {
+                <option [value]="o.id">{{ o.namaTitik }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="label">Catatan</label>
+          <textarea class="input" rows="2" [(ngModel)]="form.notes" name="notes"></textarea>
+        </div>
+        @if (editing()) {
+          <label class="flex items-center gap-3 rounded-lg border p-3">
+            <input type="checkbox" [(ngModel)]="form.isActive" name="isActive" />
+            <span>
+              <b class="block text-sm">Akun aktif</b>
+              <small class="text-slate-500">Akun aktif disinkronkan ke FreeRADIUS.</small>
+            </span>
+          </label>
+        }
+      }
+
+      <div class="flex justify-between gap-3 pt-4">
+        <div>
+          @if (step() > 1) {
+            <button type="button" class="btn-secondary" (click)="prevStep()">Sebelumnya</button>
+          }
+        </div>
+        <div class="flex gap-3">
+          <button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button>
+          @if (step() < 3) {
+            <button type="button" class="btn-primary" (click)="nextStep()">Selanjutnya</button>
+          } @else {
+            <button type="submit" class="btn-primary">Simpan</button>
+          }
+        </div>
       </div>
     </form>
   </app-modal>
