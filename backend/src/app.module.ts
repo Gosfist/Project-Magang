@@ -7,6 +7,7 @@ import { DashboardModule } from './dashboard/dashboard.module.js';
 import { UsersModule } from './users/users.module.js';
 import { MainCoreModule } from './main-core/main-core.module.js';
 import { PppoeModule } from './pppoe/pppoe.module.js';
+import { RouterModule } from './router/router.module.js';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PppoeModule } from './pppoe/pppoe.module.js';
     MainCoreModule,
     PppoeModule,
     MonitoringModule,
+    RouterModule,
   ],
 })
 export class AppModule {}

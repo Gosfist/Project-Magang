@@ -1,0 +1,19 @@
+CREATE TABLE IF NOT EXISTS invoices (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  pppoe_account_id BIGINT UNSIGNED NOT NULL,
+  invoice_number VARCHAR(50) NOT NULL UNIQUE,
+  amount BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  base_amount BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  discount BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  invoice_type VARCHAR(10) NOT NULL DEFAULT 'MONTHLY',
+  status VARCHAR(10) NOT NULL DEFAULT 'PENDING',
+  due_date DATE NOT NULL,
+  paid_at DATETIME DEFAULT NULL,
+  notes TEXT DEFAULT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_invoices_account FOREIGN KEY (pppoe_account_id) REFERENCES pppoe_accounts(id) ON DELETE CASCADE,
+  INDEX idx_invoices_account (pppoe_account_id),
+  INDEX idx_invoices_status (status),
+  INDEX idx_invoices_due_date (due_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

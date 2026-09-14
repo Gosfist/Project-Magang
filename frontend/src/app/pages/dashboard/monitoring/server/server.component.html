@@ -1,34 +1,197 @@
 <div class="monitoring-page flex min-h-0 flex-col gap-4">
-  @if (error()) { <div role="alert" class="rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ error() }}</div> }
+  @if (error()) {
+    <div role="alert" class="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+      {{ error() }}
+    </div>
+  }
   @if (data(); as server) {
     <div class="grid shrink-0 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-      <section class="card min-w-0 space-y-3 p-4"><h3 class="font-semibold">Uptime</h3><p class="text-lg font-bold text-blue-600">{{ duration(server.appUptime) }}</p><p [class]="error() ? 'text-red-600 text-sm' : 'text-green-600 text-sm'">{{ error() ? 'Koneksi terputus' : 'Server online' }}</p></section>
-      <section class="card min-w-0 space-y-3 p-4"><h3 class="font-semibold">CPU</h3><p class="text-2xl font-bold text-blue-600">{{ server.cpu.percent }}%</p><div class="h-2 overflow-hidden rounded bg-slate-100"><div class="h-full bg-blue-500" [style.width.%]="server.cpu.percent"></div></div><p class="text-xs text-slate-500">{{ server.cpu.cores }} logical core</p></section>
-      <section class="card min-w-0 space-y-3 p-4"><h3 class="font-semibold">RAM</h3><p class="text-2xl font-bold text-blue-600">{{ server.memory.percent }}%</p><div class="h-2 overflow-hidden rounded bg-slate-100"><div class="h-full bg-blue-500" [style.width.%]="server.memory.percent"></div></div><p class="text-xs text-slate-500">{{ gib(server.memory.used) | number:'1.1-1' }} / {{ gib(server.memory.total) | number:'1.1-1' }} GB</p></section>
-      <section class="card min-w-0 space-y-3 p-4"><h3 class="font-semibold">Network</h3><div><p class="text-xs text-slate-500">Download</p><p class="font-bold text-blue-600">{{ server.traffic.download === null ? '-' : (server.traffic.download | number:'1.2-2') }} Mbps</p></div><div><p class="text-xs text-slate-500">Upload</p><p class="font-bold text-blue-600">{{ server.traffic.upload === null ? '-' : (server.traffic.upload | number:'1.2-2') }} Mbps</p></div></section>
-      <section class="card min-w-0 space-y-3 p-4"><h3 class="font-semibold">Disk</h3>@if (server.disk; as disk) { <p class="text-xl font-bold text-blue-600">{{ disk.used / 1000000000 | number:'1.1-1' }} / {{ disk.total / 1000000000 | number:'1.1-1' }} GB</p> } @else { <p class="text-sm text-slate-500">Kapasitas disk belum tersedia.</p> }</section>
+      <section class="card min-w-0 space-y-3 p-4">
+        <h3 class="font-semibold">Uptime</h3>
+        <p class="text-lg font-bold text-blue-600">
+          {{ duration(server.appUptime) }}
+        </p>
+        <p
+          [class]="error() ? 'text-red-600 text-sm' : 'text-green-600 text-sm'"
+        >
+          {{ error() ? "Koneksi terputus" : "Server online" }}
+        </p>
+      </section>
+      <section class="card min-w-0 space-y-3 p-4">
+        <h3 class="font-semibold">CPU</h3>
+        <p class="text-2xl font-bold text-blue-600">
+          {{ server.cpu.percent }}%
+        </p>
+        <div class="h-2 overflow-hidden rounded bg-slate-100">
+          <div
+            class="h-full bg-blue-500"
+            [style.width.%]="server.cpu.percent"
+          ></div>
+        </div>
+        <p class="text-xs text-slate-500">
+          {{ server.cpu.cores }} logical core
+        </p>
+      </section>
+      <section class="card min-w-0 space-y-3 p-4">
+        <h3 class="font-semibold">RAM</h3>
+        <p class="text-2xl font-bold text-blue-600">
+          {{ server.memory.percent }}%
+        </p>
+        <div class="h-2 overflow-hidden rounded bg-slate-100">
+          <div
+            class="h-full bg-blue-500"
+            [style.width.%]="server.memory.percent"
+          ></div>
+        </div>
+        <p class="text-xs text-slate-500">
+          {{ gib(server.memory.used) | number: "1.1-1" }} /
+          {{ gib(server.memory.total) | number: "1.1-1" }} GB
+        </p>
+      </section>
+      <section class="card min-w-0 space-y-3 p-4">
+        <h3 class="font-semibold">Network</h3>
+        <div>
+          <p class="text-xs text-slate-500">Download</p>
+          <p class="font-bold text-blue-600">
+            {{
+              server.traffic.download === null
+                ? "-"
+                : (server.traffic.download | number: "1.2-2")
+            }}
+            Mbps
+          </p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500">Upload</p>
+          <p class="font-bold text-blue-600">
+            {{
+              server.traffic.upload === null
+                ? "-"
+                : (server.traffic.upload | number: "1.2-2")
+            }}
+            Mbps
+          </p>
+        </div>
+      </section>
+      <section class="card min-w-0 space-y-3 p-4">
+        <h3 class="font-semibold">Disk</h3>
+        @if (server.disk; as disk) {
+          <p class="text-xl font-bold text-blue-600">
+            {{ disk.used / 1000000000 | number: "1.1-1" }} /
+            {{ disk.total / 1000000000 | number: "1.1-1" }} GB
+          </p>
+        } @else {
+          <p class="text-sm text-slate-500">Kapasitas disk belum tersedia.</p>
+        }
+      </section>
     </div>
   }
   <section class="logs-card card flex min-h-0 flex-1 flex-col overflow-hidden">
     <div class="shrink-0 space-y-3 p-4">
       <h3 class="font-semibold">Log Aktivitas</h3>
-      @if (activityError()) { <p role="alert" class="text-sm text-red-600">{{ activityError() }}</p> }
+      @if (activityError()) {
+        <p role="alert" class="text-sm text-red-600">{{ activityError() }}</p>
+      }
     </div>
-    <div class="min-h-0 flex-1 overflow-auto" tabindex="0" aria-label="Log aktivitas">
-      <table><thead class="sticky top-0 z-10 bg-slate-50"><tr><th>Waktu</th><th>Pengguna</th><th>Modul</th><th>Aksi</th><th>Deskripsi</th><th>Status</th></tr></thead><tbody>
-      @for (log of activities(); track log.id) { <tr><td class="whitespace-nowrap">{{ log.createdAt | date:'dd MMM yyyy, HH:mm:ss':'+0700' }}</td><td><span class="font-medium">{{ log.userName }}</span><p class="text-xs capitalize text-slate-500">{{ log.role }}</p></td><td>{{ log.module }}</td><td>{{ log.action }}</td><td>{{ log.description }}</td><td><span [class]="log.status === 'SUCCESS' ? 'rounded bg-green-100 px-2 py-1 text-xs text-green-700' : 'rounded bg-red-100 px-2 py-1 text-xs text-red-700'">{{ log.status }}</span></td></tr> } @empty { <tr><td colspan="6" class="py-8 text-center text-slate-500">Belum ada aktivitas tercatat.</td></tr> }
-      </tbody></table>
+    <div
+      class="min-h-0 flex-1 overflow-auto"
+      tabindex="0"
+      aria-label="Log aktivitas"
+    >
+      <table>
+        <thead class="sticky top-0 z-10 bg-slate-50">
+          <tr>
+            <th>Waktu</th>
+            <th>Pengguna</th>
+            <th>Modul</th>
+            <th>Aksi</th>
+            <th>Deskripsi</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (log of activities(); track log.id) {
+            <tr>
+              <td class="whitespace-nowrap">
+                {{ log.createdAt | date: "dd MMM yyyy, HH:mm:ss" : "+0700" }}
+              </td>
+              <td>
+                <span class="font-medium">{{ log.userName }}</span>
+                <p class="text-xs capitalize text-slate-500">{{ log.role }}</p>
+              </td>
+              <td>{{ log.module }}</td>
+              <td>{{ log.action }}</td>
+              <td>{{ log.description }}</td>
+              <td>
+                <span
+                  [class]="
+                    log.status === 'SUCCESS'
+                      ? 'rounded bg-green-100 px-2 py-1 text-xs text-green-700'
+                      : 'rounded bg-red-100 px-2 py-1 text-xs text-red-700'
+                  "
+                  >{{ log.status }}</span
+                >
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="py-8 text-center text-slate-500">
+                Belum ada aktivitas tercatat.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
     </div>
-    <nav aria-label="Halaman log aktivitas" class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-slate-200 p-3 text-sm">
+    <nav
+      aria-label="Halaman log aktivitas"
+      class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-slate-200 p-3 text-sm"
+    >
       <span>Halaman {{ page }} / {{ lastPage }}</span>
       <div class="flex items-center gap-1">
-        <button class="page-button" aria-label="Halaman pertama" [disabled]="page <= 1" (click)="goToPage(1)">&laquo;</button>
-        <button class="page-button" aria-label="Halaman sebelumnya" [disabled]="page <= 1" (click)="goToPage(page - 1)">&lsaquo;</button>
+        <button
+          class="page-button"
+          aria-label="Halaman pertama"
+          [disabled]="page <= 1"
+          (click)="goToPage(1)"
+        >
+          &laquo;
+        </button>
+        <button
+          class="page-button"
+          aria-label="Halaman sebelumnya"
+          [disabled]="page <= 1"
+          (click)="goToPage(page - 1)"
+        >
+          &lsaquo;
+        </button>
         @for (number of pageNumbers(); track number) {
-          <button class="page-button" [class.page-active]="number === page" [attr.aria-current]="number === page ? 'page' : null" [attr.aria-label]="'Halaman ' + number" (click)="goToPage(number)">{{ number }}</button>
+          <button
+            class="page-button"
+            [class.page-active]="number === page"
+            [attr.aria-current]="number === page ? 'page' : null"
+            [attr.aria-label]="'Halaman ' + number"
+            (click)="goToPage(number)"
+          >
+            {{ number }}
+          </button>
         }
-        <button class="page-button" aria-label="Halaman berikutnya" [disabled]="page >= lastPage" (click)="goToPage(page + 1)">&rsaquo;</button>
-        <button class="page-button" aria-label="Halaman terakhir" [disabled]="page >= lastPage" (click)="goToPage(lastPage)">&raquo;</button>
+        <button
+          class="page-button"
+          aria-label="Halaman berikutnya"
+          [disabled]="page >= lastPage"
+          (click)="goToPage(page + 1)"
+        >
+          &rsaquo;
+        </button>
+        <button
+          class="page-button"
+          aria-label="Halaman terakhir"
+          [disabled]="page >= lastPage"
+          (click)="goToPage(lastPage)"
+        >
+          &raquo;
+        </button>
       </div>
     </nav>
   </section>

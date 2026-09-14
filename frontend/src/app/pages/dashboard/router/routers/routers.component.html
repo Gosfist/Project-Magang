@@ -1,0 +1,308 @@
+<div class="space-y-4">
+  <div class="card flex gap-3 p-4">
+    <div class="relative flex-1">
+      <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
+      <input
+        class="input pl-10"
+        placeholder="Cari nama router, IP, atau shortname..."
+        [(ngModel)]="search"
+        (ngModelChange)="page.set(1); load()"
+      />
+    </div>
+    <button class="btn-primary" (click)="show()">
+      <svg lucidePlus [size]="18"></svg> Tambah Router
+    </button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Router</th>
+          <th>IP Address</th>
+          <th>Auth Mode</th>
+          <th>Port API / RADIUS</th>
+          <th>RADIUS Secret</th>
+          <th>Status</th>
+          <th class="text-right">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of items(); track item.id) {
+          <tr>
+            <td>
+              <div class="flex items-center gap-2">
+                <span class="font-semibold text-slate-900">{{ item.name || item.nasname }}</span>
+                <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-slate-600">
+                  {{ item.type }}
+                </span>
+              </div>
+              <p class="text-xs text-slate-500">{{ item.description || item.shortname || '—' }}</p>
+              @if (testResults()[item.id]) {
+                <p [class]="'mt-1 text-xs ' + (testResults()[item.id].success ? 'text-emerald-600' : 'text-red-600')">
+                  {{ testResults()[item.id].message }}
+                </p>
+              }
+            </td>
+            <td>
+              <p class="font-mono text-xs text-slate-800">API: {{ item.ipAddress || '—' }}</p>
+              <p class="font-mono text-xs text-slate-500">NAS: {{ item.nasname }}</p>
+              @if (item.vpnClient) {
+                <span class="inline-block mt-0.5 rounded bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700">
+                  WG: {{ item.vpnClient.vpnIp }}
+                </span>
+              }
+            </td>
+            <td>
+              <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">
+                RADIUS Only
+              </span>
+            </td>
+            <td>
+              <span class="font-mono text-xs text-slate-700">API: {{ item.port || 8728 }}</span>
+              <span class="text-slate-400"> / </span>
+              <span class="font-mono text-xs text-slate-700">Auth: {{ item.ports || 1812 }}</span>
+            </td>
+            <td>
+              <code class="rounded bg-slate-100 px-2 py-1 font-mono text-xs text-slate-800">{{ item.secret }}</code>
+            </td>
+            <td>
+              <span
+                [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')"
+              >
+                {{ item.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td>
+              <div class="flex justify-end gap-1.5">
+                <button
+                  class="btn-secondary px-2.5 py-1.5 text-xs"
+                  (click)="testConnection(item)"
+                  [disabled]="testingId() === item.id"
+                  title="Test koneksi API MikroTik"
+                >
+                  <svg lucideWifi [size]="14"></svg>
+                  @if (testingId() === item.id) {
+                    <span>...</span>
+                  }
+                </button>
+                <button
+                  class="btn-secondary px-2.5 py-1.5 text-xs text-indigo-700"
+                  (click)="openScript(item)"
+                  title="Setup Script MikroTik"
+                >
+                  <svg lucideTerminal [size]="14"></svg>
+                </button>
+                <button class="btn-secondary px-2.5 py-1.5 text-xs" (click)="show(item)" title="Edit">
+                  <svg lucidePencil [size]="14"></svg>
+                </button>
+                <button class="btn-danger px-2.5 py-1.5 text-xs" (click)="remove(item)" title="Hapus">
+                  <svg lucideTrash2 [size]="14"></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+        @if (items().length === 0) {
+          <tr>
+            <td colspan="7" class="py-8 text-center text-slate-400">Router NAS belum tersedia.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
+
+  <!-- Modal Tambah / Edit Router -->
+  <app-modal
+    [open]="open()"
+    [title]="(editing() ? 'Edit' : 'Tambah') + ' Router NAS'"
+    (closeModal)="open.set(false)"
+  >
+    <form (ngSubmit)="save()" class="space-y-4">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="label">Nama Router *</label>
+          <input class="input" required [(ngModel)]="form.name" name="name" placeholder="Contoh: MikroTik Utama ODP 1" />
+        </div>
+        <div>
+          <label class="label">Tipe Router *</label>
+          <select class="input" required [(ngModel)]="form.type" name="type">
+            <option value="mikrotik">MikroTik Router</option>
+            <option value="gateway">Gateway VPS</option>
+            <option value="other">Other NAS Device</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Authentication Mode (RADIUS Only - Hardcoded) -->
+      <div class="rounded-xl border border-indigo-200 bg-indigo-50/70 p-3.5">
+        <div class="flex items-center justify-between">
+          <label class="text-sm font-semibold text-indigo-950">Authentication Mode *</label>
+          <span class="rounded-full bg-indigo-600 px-2.5 py-0.5 text-xs font-bold text-white tracking-wide">
+            RADIUS ONLY
+          </span>
+        </div>
+        <p class="mt-1 text-xs text-indigo-800 leading-relaxed">
+          Semua autentikasi pelanggan dialihkan ke FreeRADIUS Server (Local auth dinonaktifkan sesuai konfigurasi PT UNZANET).
+        </p>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="label">IP Address (Koneksi API) *</label>
+          <input
+            class="input"
+            required
+            [(ngModel)]="form.ipAddress"
+            (ngModelChange)="onIpAddressChange()"
+            name="ipAddress"
+            placeholder="192.168.88.1 atau IP WireGuard"
+          />
+        </div>
+        <div>
+          <label class="label">NAS IP (FreeRADIUS Client IP) *</label>
+          <input
+            class="input"
+            required
+            [(ngModel)]="form.nasname"
+            name="nasname"
+            placeholder="IP sumber RADIUS request"
+          />
+        </div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="label">API Username</label>
+          <input class="input" [(ngModel)]="form.username" name="username" placeholder="admin" />
+        </div>
+        <div>
+          <label class="label">
+            API Password @if (editing()) { <small class="text-slate-400">(kosongkan jika tetap)</small> }
+          </label>
+          <input type="password" class="input" [(ngModel)]="form.password" name="password" />
+        </div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="label">Port API MikroTik</label>
+          <input type="number" class="input" [(ngModel)]="form.port" name="port" placeholder="8728" />
+        </div>
+        <div>
+          <label class="label">Port Auth RADIUS</label>
+          <input type="number" class="input" [(ngModel)]="form.ports" name="ports" placeholder="1812" />
+        </div>
+      </div>
+
+      <div>
+        <label class="label">RADIUS Secret *</label>
+        <div class="flex gap-2">
+          <input class="input font-mono" required [(ngModel)]="form.secret" name="secret" />
+          <button type="button" class="btn-secondary whitespace-nowrap" (click)="randomizeSecret()">
+            <svg lucideRefreshCw [size]="15"></svg> Acak
+          </button>
+        </div>
+      </div>
+
+      @if (vpnClients().length > 0) {
+        <div>
+          <label class="label">Hubungkan ke WireGuard VPN Client (Opsional)</label>
+          <select class="input" [(ngModel)]="form.vpnClientId" name="vpnClientId">
+            <option value="">-- Tanpa Tunnel WireGuard (Koneksi Langsung/Publik) --</option>
+            @for (vc of vpnClients(); track vc.id) {
+              <option [value]="vc.id">{{ vc.name }} ({{ vc.vpnIp }})</option>
+            }
+          </select>
+        </div>
+      }
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="label">Latitude</label>
+          <input class="input" type="number" step="any" [(ngModel)]="form.latitude" name="latitude" />
+        </div>
+        <div>
+          <label class="label">Longitude</label>
+          <input class="input" type="number" step="any" [(ngModel)]="form.longitude" name="longitude" />
+        </div>
+      </div>
+
+      <div>
+        <label class="label">Deskripsi / Catatan</label>
+        <textarea class="input" rows="2" [(ngModel)]="form.description" name="description"></textarea>
+      </div>
+
+      @if (editing()) {
+        <label class="flex items-center gap-3 rounded-lg border p-3">
+          <input type="checkbox" [(ngModel)]="form.isActive" name="isActive" />
+          <span>
+            <b class="block text-sm">Router Aktif</b>
+            <small class="text-slate-500">Router aktif dapat menerima autentikasi FreeRADIUS.</small>
+          </span>
+        </label>
+      }
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button>
+        <button class="btn-primary">Simpan Router</button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Modal Script Setup MikroTik -->
+  <app-modal
+    [open]="scriptModalOpen()"
+    [title]="'Setup Script MikroTik — ' + (scriptData()?.routerName || '')"
+    (closeModal)="scriptModalOpen.set(false)"
+  >
+    @if (scriptData()) {
+      <div class="space-y-4">
+        <!-- Tab Switcher -->
+        <div class="flex rounded-lg border border-slate-200 bg-slate-100 p-1">
+          <button
+            type="button"
+            (click)="scriptTab.set('ros7')"
+            [class]="'flex-1 rounded-md py-1.5 text-xs font-semibold transition-all ' + (scriptTab() === 'ros7' ? 'bg-white shadow text-slate-900' : 'text-slate-600 hover:text-slate-900')"
+          >
+            RouterOS 7.x (Recommended)
+          </button>
+          <button
+            type="button"
+            (click)="scriptTab.set('ros6')"
+            [class]="'flex-1 rounded-md py-1.5 text-xs font-semibold transition-all ' + (scriptTab() === 'ros6' ? 'bg-white shadow text-slate-900' : 'text-slate-600 hover:text-slate-900')"
+          >
+            RouterOS 6.x
+          </button>
+        </div>
+
+        <div class="relative">
+          <pre class="max-h-[380px] overflow-x-auto rounded-xl bg-slate-950 p-4 font-mono text-xs text-slate-100 leading-relaxed">{{ scriptTab() === 'ros7' ? scriptData()!.scriptRos7 : scriptData()!.scriptRos6 }}</pre>
+          <button
+            type="button"
+            class="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/25 transition-all"
+            (click)="copyScript()"
+          >
+            @if (copied()) {
+              <svg lucideCheck [size]="14" class="text-green-400"></svg>
+              <span>Tersalin!</span>
+            } @else {
+              <svg lucideCopy [size]="14"></svg>
+              <span>Salin Script</span>
+            }
+          </button>
+        </div>
+
+        <div class="rounded-lg bg-amber-50 p-3 border border-amber-200 text-xs text-amber-800">
+          <b>Petunjuk:</b> Buka <b>Terminal</b> pada Winbox / SSH MikroTik Anda, tempel (paste) script di atas, lalu tekan <b>Enter</b>. Konfigurasi RADIUS client akan langsung aktif.
+        </div>
+      </div>
+    }
+  </app-modal>
+
+  @if (toast()) {
+    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
+  }
+</div>

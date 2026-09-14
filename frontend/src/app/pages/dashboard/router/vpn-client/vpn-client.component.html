@@ -1,0 +1,215 @@
+<div class="space-y-4">
+  <div class="card flex gap-3 p-4">
+    <div class="relative flex-1">
+      <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
+      <input
+        class="input pl-10"
+        placeholder="Cari client WireGuard, IP, atau server..."
+        [(ngModel)]="search"
+        (ngModelChange)="page.set(1); load()"
+      />
+    </div>
+    <button class="btn-primary" (click)="show()">
+      <svg lucidePlus [size]="18"></svg> Tambah Client WireGuard
+    </button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nama Client</th>
+          <th>Server WireGuard</th>
+          <th>IP WireGuard Tunnel</th>
+          <th>Public Key</th>
+          <th>Allowed IPs</th>
+          <th>RADIUS Gateway</th>
+          <th>Status</th>
+          <th class="text-right">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of items(); track item.id) {
+          <tr>
+            <td>
+              <p class="font-semibold text-slate-900">{{ item.name }}</p>
+              <p class="text-xs text-slate-500">{{ item.description || '—' }}</p>
+            </td>
+            <td>
+              <span class="text-xs font-medium text-slate-800">{{ item.vpnServer?.name || '—' }}</span>
+              <p class="font-mono text-[11px] text-slate-500">{{ item.vpnServer?.host }}:{{ item.vpnServer?.wgPort }}</p>
+            </td>
+            <td>
+              <span class="font-mono font-semibold text-xs text-sky-700 bg-sky-50 px-2 py-0.5 rounded">
+                {{ item.vpnIp }}
+              </span>
+            </td>
+            <td>
+              <code class="rounded bg-slate-100 px-2 py-1 font-mono text-[11px] text-slate-700" [title]="item.clientPublicKey">
+                {{ item.clientPublicKey.slice(0, 14) }}...
+              </code>
+            </td>
+            <td>
+              <span class="font-mono text-xs text-slate-600">{{ item.allowedIps }}</span>
+            </td>
+            <td>
+              @if (item.isRadiusServer) {
+                <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+                  ★ RADIUS
+                </span>
+              } @else {
+                <span class="text-xs text-slate-400">—</span>
+              }
+            </td>
+            <td>
+              <span
+                [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')"
+              >
+                {{ item.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td>
+              <div class="flex justify-end gap-1.5">
+                <button
+                  class="btn-secondary px-2.5 py-1.5 text-xs text-indigo-700"
+                  (click)="openScript(item)"
+                  title="Script MikroTik ROS 7"
+                >
+                  <svg lucideTerminal [size]="14"></svg>
+                </button>
+                <button class="btn-secondary px-2.5 py-1.5 text-xs" (click)="show(item)" title="Edit">
+                  <svg lucidePencil [size]="14"></svg>
+                </button>
+                <button class="btn-danger px-2.5 py-1.5 text-xs" (click)="remove(item)" title="Hapus">
+                  <svg lucideTrash2 [size]="14"></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+        @if (items().length === 0) {
+          <tr>
+            <td colspan="8" class="py-8 text-center text-slate-400">Client WireGuard belum tersedia.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
+
+  <!-- Modal Tambah / Edit Client WireGuard -->
+  <app-modal
+    [open]="open()"
+    [title]="(editing() ? 'Edit' : 'Tambah') + ' Client WireGuard'"
+    (closeModal)="open.set(false)"
+  >
+    <form (ngSubmit)="save()" class="space-y-4">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="label">Nama Client / Router *</label>
+          <input class="input" required [(ngModel)]="form.name" name="name" placeholder="Contoh: MikroTik ODP 1" />
+        </div>
+        <div>
+          <label class="label">Pilih Server WireGuard *</label>
+          <select class="input" required [(ngModel)]="form.vpnServerId" name="vpnServerId">
+            <option value="">-- Pilih Server --</option>
+            @for (srv of servers(); track srv.id) {
+              <option [value]="srv.id">{{ srv.name }} ({{ srv.host }}:{{ srv.wgPort }})</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="label">IP WireGuard Client *</label>
+          <input class="input font-mono" required [(ngModel)]="form.vpnIp" name="vpnIp" placeholder="10.200.0.2" />
+        </div>
+        <div>
+          <label class="label">Allowed IPs</label>
+          <input class="input font-mono" [(ngModel)]="form.allowedIps" name="allowedIps" placeholder="10.200.0.0/24" />
+        </div>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label class="label mb-0">Client Public Key *</label>
+          <button type="button" class="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium" (click)="generateKeypair()">
+            <svg lucideRefreshCw [size]="13"></svg> Generate Keypair Baru
+          </button>
+        </div>
+        <input class="input font-mono text-xs" required [(ngModel)]="form.clientPublicKey" name="clientPublicKey" />
+      </div>
+
+      <div>
+        <label class="label">Client Private Key</label>
+        <input type="password" class="input font-mono text-xs" [(ngModel)]="form.clientPrivateKey" name="clientPrivateKey" placeholder="Digunakan untuk script MikroTik" />
+      </div>
+
+      <label class="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50/50 p-3 cursor-pointer">
+        <input type="checkbox" [(ngModel)]="form.isRadiusServer" name="isRadiusServer" class="rounded" />
+        <div>
+          <b class="block text-sm text-amber-900">Tandai sebagai Gateway RADIUS Server</b>
+          <small class="text-amber-700">Gunakan IP client ini sebagai target server RADIUS pada router lain di jaringan VPN.</small>
+        </div>
+      </label>
+
+      <div>
+        <label class="label">Deskripsi / Lokasi</label>
+        <textarea class="input" rows="2" [(ngModel)]="form.description" name="description"></textarea>
+      </div>
+
+      @if (editing()) {
+        <label class="flex items-center gap-3 rounded-lg border p-3">
+          <input type="checkbox" [(ngModel)]="form.isActive" name="isActive" />
+          <span>
+            <b class="block text-sm">Client Aktif</b>
+            <small class="text-slate-500">Nonaktifkan jika client ditangguhkan.</small>
+          </span>
+        </label>
+      }
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button>
+        <button class="btn-primary">Simpan Client</button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Modal Script Koneksi WireGuard MikroTik -->
+  <app-modal
+    [open]="scriptModalOpen()"
+    [title]="'Script WireGuard MikroTik ROS 7 — ' + (scriptData()?.clientName || '')"
+    (closeModal)="scriptModalOpen.set(false)"
+  >
+    @if (scriptData()) {
+      <div class="space-y-4">
+        <div class="relative">
+          <pre class="max-h-[380px] overflow-x-auto rounded-xl bg-slate-950 p-4 font-mono text-xs text-slate-100 leading-relaxed">{{ scriptData()!.script }}</pre>
+          <button
+            type="button"
+            class="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/25 transition-all"
+            (click)="copyScript()"
+          >
+            @if (copied()) {
+              <svg lucideCheck [size]="14" class="text-green-400"></svg>
+              <span>Tersalin!</span>
+            } @else {
+              <svg lucideCopy [size]="14"></svg>
+              <span>Salin Script</span>
+            }
+          </button>
+        </div>
+
+        <div class="rounded-lg bg-sky-50 p-3 border border-sky-200 text-xs text-sky-800">
+          <b>Petunjuk:</b> Buka <b>Terminal</b> MikroTik (RouterOS v7+), tempel (paste) script di atas untuk membuat interface WireGuard dan menghubungkan MikroTik ke server VPN tunnel.
+        </div>
+      </div>
+    }
+  </app-modal>
+
+  @if (toast()) {
+    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
+  }
+</div>

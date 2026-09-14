@@ -1,0 +1,74 @@
+<div class="space-y-4">
+  <p class="text-sm text-slate-600">Pool otomatis disinkronkan ke seluruh NAS aktif saat disimpan. Gunakan Sinkronkan setelah menambah router atau jika koneksi sebelumnya gagal.</p>
+  <div class="card flex gap-3 p-4">
+    <div class="relative flex-1">
+      <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
+      <input class="input pl-10" placeholder="Cari IP pool..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
+    </div>
+    <button class="btn-primary" (click)="show()">
+      <svg lucidePlus [size]="18"></svg> Tambah IP Pool
+    </button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nama Pool</th><th>Network Start</th><th>Network End</th><th class="text-right">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of items(); track item.id) {
+          <tr>
+            <td><p class="font-semibold text-slate-900">{{ item.name }}</p></td>
+            <td>{{ item.networkStart }}</td>
+            <td>{{ item.networkEnd }}</td>
+            <td>
+              <div class="flex justify-end gap-2">
+                <button class="btn-secondary px-3" [disabled]="syncing() !== null" (click)="sync(item)">{{ syncing() === item.id ? 'Menyinkronkan...' : 'Sinkronkan' }}</button>
+                <button class="btn-secondary px-3" (click)="show(item)">
+                  <svg lucidePencil [size]="15"></svg>
+                </button>
+                <button class="btn-danger" (click)="remove(item)">
+                  <svg lucideTrash2 [size]="15"></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+        @if (items().length === 0) {
+          <tr><td colspan="4" class="py-8 text-center text-slate-400">IP Pool belum tersedia.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
+
+  <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' IP Pool'" (closeModal)="open.set(false)">
+    <form (ngSubmit)="save()" class="space-y-4">
+      <div>
+        <label class="label">Nama Pool *</label>
+        <input class="input" required [(ngModel)]="form.name" name="name" />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="label">Network Start *</label>
+          <input class="input" required [(ngModel)]="form.networkStart" name="networkStart" placeholder="192.168.1.1" />
+        </div>
+        <div>
+          <label class="label">Network End *</label>
+          <input class="input" required [(ngModel)]="form.networkEnd" name="networkEnd" placeholder="192.168.1.254" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button>
+        <button class="btn-primary">Simpan</button>
+      </div>
+    </form>
+  </app-modal>
+
+  @if (toast()) {
+    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
+  }
+</div>

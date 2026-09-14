@@ -7,6 +7,7 @@ import {
   LucideLayoutDashboard,
   LucideLogOut,
   LucideNetwork,
+  LucideRouter,
   LucideUsers,
   LucideX,
 } from '@lucide/angular';
@@ -24,6 +25,7 @@ import { AuthService } from '../../../core/services/auth.service';
     LucideLayoutDashboard,
     LucideLogOut,
     LucideNetwork,
+    LucideRouter,
     LucideUsers,
     LucideX,
   ],
@@ -37,6 +39,7 @@ export class SidebarComponent implements OnInit {
   // Sidebar state
   mobile = model(false);
   coreOpen = signal(false);
+  routerOpen = signal(false);
   pppoeOpen = signal(false);
   toolOpen = signal(false);
   monitoringOpen = signal(false);
@@ -49,14 +52,21 @@ export class SidebarComponent implements OnInit {
     ['ODC', '/dashboard/mainCore/odc'],
     ['ODP', '/dashboard/mainCore/odp'],
   ];
+  readonly routerLinks = [
+    ['Router / NAS', '/dashboard/router/routers'],
+    ['VPN Server', '/dashboard/router/vpn-server'],
+    ['VPN Client', '/dashboard/router/vpn-client'],
+  ];
   readonly pppoeLinks = [
-    ['Daftar Paket', '/dashboard/pppoe/packages'],
-    ['Akun PPPoE', '/dashboard/pppoe/accounts'],
+    ['Data Pelanggan', '/dashboard/pppoe/accounts'],
+    ['Paket Layanan', '/dashboard/pppoe/packages'],
+    ['IP Pool', '/dashboard/pppoe/ip-pools'],
   ];
 
   ngOnInit(): void {
     const url = this.router.url;
     if (url.includes('/mainCore')) this.coreOpen.set(true);
+    if (url.includes('/router')) this.routerOpen.set(true);
     if (url.includes('/pppoe')) this.pppoeOpen.set(true);
     if (url.includes('/monitoring')) this.monitoringOpen.set(true);
     if (url.includes('/tools')) this.toolOpen.set(true);
