@@ -37,7 +37,10 @@ export class PackagesComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
-    this.api.get<{ data: IpPool[] }>('/pppoe/ip-pools/options').subscribe({ next: (r) => this.ipPools.set(r.data) });
+    this.api.get<{ data: IpPool[]; warnings?: string[] }>('/pppoe/ip-pools/options').subscribe({ next: (r) => {
+      this.ipPools.set(r.data.filter((pool, index, all) => all.findIndex((p) => p.name === pool.name) === index));
+      if (r.warnings?.length) this.toast.set({ message: r.warnings.join(' '), type: 'error' });
+    }, error: (e) => this.toast.set({ message: e.message, type: 'error' }) });
   }
 
   formatPrice(price: number): string {
@@ -67,7 +70,7 @@ export class PackagesComponent implements OnInit {
           uploadMbps: String(item.uploadMbps),
           price: String(item.price),
           costPrice: String(item.costPrice ?? ''),
-          addressPool: item.addressPool ?? '',
+          addressPool: item.addressPool || item.ipPool?.name || '',
           ipPoolId: item.ipPool?.id ?? '',
           validityDays: String(item.validityDays ?? 30),
         }
@@ -83,7 +86,6 @@ export class PackagesComponent implements OnInit {
       price: Number(this.form.price),
       costPrice: Number(this.form.costPrice),
       addressPool: this.form.addressPool || undefined,
-      ipPoolId: this.form.ipPoolId || undefined,
       validityDays: Number(this.form.validityDays),
     };
     const req = this.editing()

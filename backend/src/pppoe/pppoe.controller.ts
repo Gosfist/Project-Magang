@@ -12,7 +12,6 @@ export class PppoeController {
   @Get('ip-pools/options') ipPoolOptions() { return this.pppoe.ipPoolOptions(); }
   @Get('ip-pools') ipPools(@Query('search') search = '', @Query('page', new ParseIntPipe({ optional: true })) page = 1) { return this.pppoe.ipPools(search.trim(), Math.max(1, page)); }
   @Post('ip-pools') createIpPool(@Body() dto: SaveIpPoolDto) { return this.pppoe.createIpPool(dto); }
-  @Post('ip-pools/:id/sync') syncIpPool(@Param('id') id: string) { return this.pppoe.syncIpPool(id); }
   @Patch('ip-pools/:id') updateIpPool(@Param('id') id: string, @Body() dto: SaveIpPoolDto) { return this.pppoe.updateIpPool(id, dto); }
   @Delete('ip-pools/:id') removeIpPool(@Param('id') id: string) { return this.pppoe.removeIpPool(id); }
 

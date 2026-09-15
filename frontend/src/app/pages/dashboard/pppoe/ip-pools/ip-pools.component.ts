@@ -31,22 +31,29 @@ export class IpPoolsComponent implements OnInit {
   page = signal(1);
   open = signal(false);
   editing = signal<IpPool | null>(null);
-  form = { name: '', networkStart: '', networkEnd: '' };
+  routers = signal<{ id: number; nasname: string; shortname: string }[]>([]);
+  saving = signal(false);
+  form = { routerNasId: 0, name: '', networkStart: '', networkEnd: '' };
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
   ngOnInit(): void {
     this.load();
+    this.api.get<{ data: { id: number; nasname: string; shortname: string }[] }>('/pppoe/nas/options').subscribe({
+      next: (r) => this.routers.set(r.data),
+      error: (e) => this.toast.set({ message: e.message, type: 'error' }),
+    });
   }
 
   load(): void {
     this.api
-      .get<{ data: IpPool[]; meta: PageMeta }>(
+      .get<{ data: IpPool[]; meta: PageMeta; warnings?: string[] }>(
         `/pppoe/ip-pools?search=${encodeURIComponent(this.search)}&page=${this.page()}`
       )
       .subscribe({
         next: (r) => {
           this.items.set(r.data);
           this.meta.set(r.meta);
+          if (r.warnings?.length) this.toast.set({ message: r.warnings.join(" "), type: "error" });
         },
         error: (e) => this.toast.set({ message: e.message, type: 'error' }),
       });
@@ -56,16 +63,20 @@ export class IpPoolsComponent implements OnInit {
     this.editing.set(item ?? null);
     this.form = item
       ? {
+          routerNasId: item.routerNasId,
           name: item.name,
           networkStart: item.networkStart,
           networkEnd: item.networkEnd,
         }
-      : { name: '', networkStart: '', networkEnd: '' };
+      : { routerNasId: 0, name: '', networkStart: '', networkEnd: '' };
     this.open.set(true);
   }
 
   save(): void {
+    if (this.saving()) return;
+    this.saving.set(true);
     const body = {
+      routerNasId: Number(this.form.routerNasId),
       name: this.form.name,
       networkStart: this.form.networkStart,
       networkEnd: this.form.networkEnd,
@@ -75,25 +86,12 @@ export class IpPoolsComponent implements OnInit {
       : this.api.post<{ message: string; warnings?: string[] }>('/pppoe/ip-pools', body);
     req.subscribe({
       next: (r) => {
+        this.saving.set(false);
         this.open.set(false);
         this.toast.set({ message: r.message, type: r.warnings?.length ? 'error' : 'success' });
         this.load();
       },
-      error: (e) => this.toast.set({ message: e.message, type: 'error' }),
-    });
-  }
-
-  syncing = signal<string | null>(null);
-
-  sync(item: IpPool): void {
-    if (this.syncing()) return;
-    this.syncing.set(String(item.id));
-    this.api.post<{ message: string; warnings?: string[] }>(`/pppoe/ip-pools/${item.id}/sync`, {}).subscribe({
-      next: (r) => {
-        this.syncing.set(null);
-        this.toast.set({ message: r.message, type: r.warnings?.length ? 'error' : 'success' });
-      },
-      error: (e) => { this.syncing.set(null); this.toast.set({ message: e.message, type: 'error' }); },
+      error: (e) => { this.saving.set(false); this.toast.set({ message: e.message, type: 'error' }); },
     });
   }
 

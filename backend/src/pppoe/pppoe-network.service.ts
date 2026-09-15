@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import type { IpPool, Nas } from '@prisma/client';
+import { BadRequestException, BadGatewayException, NotFoundException, Injectable } from '@nestjs/common';
+import type { Nas } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { MikrotikService } from '../router/mikrotik.service.js';
 
@@ -9,19 +9,34 @@ export interface NetworkResult { warnings: string[]; completed: number }
 export class PppoeNetworkService {
   constructor(private readonly prisma: PrismaService, private readonly mikrotik: MikrotikService) {}
 
-  async syncPool(pool: IpPool): Promise<NetworkResult> {
-    // Pools are global in this application's schema, so deploy to every active NAS.
+  async listPools() {
     const routers = await this.prisma.nas.findMany({ where: { isActive: true } });
-    if (!routers.length) return { completed: 0, warnings: ['Belum ada Router/NAS aktif. Tambahkan router lalu gunakan Sinkronkan.'] };
-    return this.onRouters(routers, (router) => this.mikrotik.withRouter(router, async (write) => {
-      const existing = await write('/ip/pool/print', [`?name=${pool.name}`, '=.proplist=.id,name,ranges']);
-      const ranges = `${pool.networkStart}-${pool.networkEnd}`;
-      if (existing.length) {
-        if (existing[0].ranges !== ranges) await write('/ip/pool/set', [`=.id=${existing[0]['.id']}`, `=ranges=${ranges}`]);
-      } else {
-        await write('/ip/pool/add', [`=name=${pool.name}`, `=ranges=${ranges}`, '=comment=UNZANET PPPoE']);
+    const data: { id: string; routerNasId: number; routerName: string; name: string; ranges: string; networkStart: string; networkEnd: string }[] = [];
+    const result = await this.onRouters(routers, (router) => this.mikrotik.withRouter(router, async (write) => {
+      const rows = await write('/ip/pool/print', ['=.proplist=.id,name,ranges']);
+      for (const row of rows) {
+        const simple = /^(\d+\.\d+\.\d+\.\d+)-(\d+\.\d+\.\d+\.\d+)$/.exec(row.ranges);
+        data.push({ id: `${router.id}:${row['.id']}`, routerNasId: router.id, routerName: router.name || router.nasname,
+          name: row.name, ranges: row.ranges, networkStart: simple?.[1] || '', networkEnd: simple?.[2] || '' });
       }
     }));
+    return { data: data.sort((a, b) => a.name.localeCompare(b.name) || a.routerNasId - b.routerNasId), warnings: result.warnings };
+  }
+
+  async poolRouter<T>(routerNasId: number, action: Parameters<MikrotikService['withRouter']>[1]): Promise<T> {
+    const router = await this.prisma.nas.findUnique({ where: { id: routerNasId } });
+    if (!router || !router.isActive) throw new BadRequestException('Pilih Router/NAS aktif.');
+    try { return await this.mikrotik.withRouter(router, action) as T; }
+    catch (error) {
+      if (error instanceof BadRequestException || error instanceof NotFoundException) throw error;
+      throw new BadGatewayException(this.mikrotik.errorMessage(error));
+    }
+  }
+
+  poolIdentity(id: string) {
+    const match = /^(\d+):(\*[0-9a-fA-F]+)$/.exec(id);
+    if (!match) throw new BadRequestException('ID pool MikroTik tidak valid. Muat ulang daftar pool.');
+    return { routerNasId: Number(match[1]), routerId: match[2] };
   }
 
   async disconnect(username: string, routerNasId: number | null): Promise<NetworkResult> {

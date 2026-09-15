@@ -13,48 +13,41 @@ export class PppoeService {
   constructor(private readonly prisma: PrismaService, private readonly radius: RadiusService, private readonly secrets: SecretService, private readonly network: PppoeNetworkService) { }
 
   async ipPools(search = '', page = 1) {
-    const where = search ? { name: { contains: search } } : {};
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.ipPool.findMany({ where, orderBy: { name: 'asc' }, skip: (page - 1) * 10, take: 10 }),
-      this.prisma.ipPool.count({ where }),
-    ]);
-    return serialize({ data: items, meta: pageMeta(page, 10, total) });
+    const result = await this.network.listPools();
+    const items = result.data.filter((pool) => `${pool.name} ${pool.routerName}`.toLowerCase().includes(search.toLowerCase()));
+    return { data: items.slice((page - 1) * 10, page * 10), meta: pageMeta(page, 10, items.length), warnings: result.warnings };
   }
 
-  async ipPoolOptions() {
-    const data = await this.prisma.ipPool.findMany({ orderBy: { name: 'asc' } });
-    return serialize({ data });
-  }
+  async ipPoolOptions() { return this.network.listPools(); }
 
   async createIpPool(dto: SaveIpPoolDto) {
     this.validatePoolRange(dto);
-    try {
-      const now = new Date();
-      const item = await this.prisma.ipPool.create({ data: { ...dto, createdAt: now, updatedAt: now } });
-      const sync = await this.network.syncPool(item);
-      return serialize({ message: this.networkMessage('IP Pool tersimpan.', sync.warnings), warnings: sync.warnings, syncedRouters: sync.completed, pool: item });
-    } catch (error) { this.unique(error, 'Nama IP Pool sudah digunakan.'); }
+    await this.network.poolRouter(dto.routerNasId, async (write) => {
+      const rows = await write('/ip/pool/print', [`?name=${dto.name}`, '=.proplist=.id,name']);
+      if (rows.some((row) => row.name === dto.name)) throw new BadRequestException('Nama pool sudah digunakan di MikroTik ini.');
+      await write('/ip/pool/add', [`=name=${dto.name}`, `=ranges=${dto.networkStart}-${dto.networkEnd}`, '=comment=UNZANET PPPoE']);
+    });
+    return { message: 'IP Pool berhasil dibuat langsung di MikroTik.' };
   }
 
   async updateIpPool(id: string, dto: SaveIpPoolDto) {
     this.validatePoolRange(dto);
-    const pool = await this.prisma.ipPool.findUnique({ where: { id: BigInt(id) } });
-    if (!pool) throw new NotFoundException('IP Pool tidak ditemukan.');
-    if (pool.name !== dto.name && await this.prisma.pppoePackage.count({ where: { OR: [{ ipPoolId: pool.id }, { addressPool: pool.name }] } })) {
-      throw new BadRequestException('Nama pool yang sedang digunakan paket tidak dapat diganti. Buat pool baru lalu pindahkan paket.');
-    }
-    try {
-      const item = await this.prisma.ipPool.update({ where: { id: BigInt(id) }, data: { ...dto, updatedAt: new Date() } });
-      const sync = await this.network.syncPool(item);
-      return serialize({ message: this.networkMessage('IP Pool diperbarui.', sync.warnings), warnings: sync.warnings, syncedRouters: sync.completed, pool: item });
-    } catch (error) { this.unique(error, 'Nama IP Pool sudah digunakan.'); }
+    const identity = this.network.poolIdentity(id);
+    if (identity.routerNasId !== dto.routerNasId) throw new BadRequestException('Router pool tidak dapat dipindahkan.');
+    await this.network.poolRouter(identity.routerNasId, async (write) => {
+      const rows = await write('/ip/pool/print', [`?.id=${identity.routerId}`, '=.proplist=.id,name']);
+      const pool = rows.find((row) => row['.id'] === identity.routerId);
+      if (!pool) throw new NotFoundException('IP Pool tidak ditemukan di MikroTik.');
+      if (pool.name !== dto.name) await this.assertPoolUnused(pool.name);
+      await write('/ip/pool/set', [`=.id=${identity.routerId}`, `=name=${dto.name}`, `=ranges=${dto.networkStart}-${dto.networkEnd}`]);
+    });
+    return { message: 'IP Pool berhasil diperbarui di MikroTik.' };
   }
 
-  async syncIpPool(id: string) {
-    const pool = await this.prisma.ipPool.findUnique({ where: { id: BigInt(id) } });
-    if (!pool) throw new NotFoundException('IP Pool tidak ditemukan.');
-    const result = await this.network.syncPool(pool);
-    return { ...result, message: this.networkMessage(`Sinkronisasi selesai pada ${result.completed} router.`, result.warnings) };
+  private async assertPoolUnused(name: string) {
+    if (await this.prisma.pppoePackage.count({ where: { OR: [{ addressPool: name }, { ipPool: { name } }] } })) {
+      throw new BadRequestException('IP Pool masih digunakan paket PPPoE. Pindahkan paket sebelum mengganti nama atau menghapus pool.');
+    }
   }
 
   private validatePoolRange(dto: SaveIpPoolDto) {
@@ -67,10 +60,15 @@ export class PppoeService {
   }
 
   async removeIpPool(id: string) {
-    const count = await this.prisma.pppoePackage.count({ where: { ipPoolId: BigInt(id) } });
-    if (count > 0) throw new BadRequestException('IP Pool masih digunakan oleh paket PPPoE dan tidak dapat dihapus.');
-    await this.prisma.ipPool.delete({ where: { id: BigInt(id) } });
-    return { message: 'IP Pool berhasil dihapus.' };
+    const identity = this.network.poolIdentity(id);
+    await this.network.poolRouter(identity.routerNasId, async (write) => {
+      const rows = await write('/ip/pool/print', [`?.id=${identity.routerId}`, '=.proplist=.id,name']);
+      const pool = rows.find((row) => row['.id'] === identity.routerId);
+      if (!pool) throw new NotFoundException('IP Pool tidak ditemukan di MikroTik.');
+      await this.assertPoolUnused(pool.name);
+      await write('/ip/pool/remove', [`=.id=${identity.routerId}`]);
+    });
+    return { message: 'IP Pool berhasil dihapus dari MikroTik.' };
   }
 
   async nasOptions() {
@@ -106,7 +104,7 @@ export class PppoeService {
           addressPool: dto.addressPool?.trim() || null,
           price: BigInt(dto.price),
           costPrice: BigInt(dto.costPrice || 0),
-          ipPoolId: dto.ipPoolId ? BigInt(dto.ipPoolId) : null,
+          ipPoolId: null,
           validityDays: dto.validityDays ?? 30,
           isActive: true,
           createdAt: now,
@@ -129,7 +127,7 @@ export class PppoeService {
             addressPool: dto.addressPool?.trim() || null,
             price: BigInt(dto.price),
             costPrice: BigInt(dto.costPrice || 0),
-            ipPoolId: dto.ipPoolId ? BigInt(dto.ipPoolId) : null,
+            ipPoolId: null,
             validityDays: dto.validityDays ?? 30,
             updatedAt: new Date()
           },

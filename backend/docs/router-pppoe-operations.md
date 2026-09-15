@@ -8,11 +8,11 @@ API biasa menggunakan port 8728. Port 8729 menggunakan TLS dengan verifikasi ser
 
 ## IP Pool
 
-Menyimpan atau mengedit pool otomatis membuat/memperbarui `/ip/pool` di seluruh NAS aktif, karena pool dalam schema aplikasi ini bersifat global. Nama pool MikroTik sama dengan atribut `Framed-Pool`. Operasi menggunakan API terstruktur, bukan skrip shell. Rentang IPv4 divalidasi. Pool yang sedang dipakai paket tidak dapat diganti namanya; buat pool baru lalu pindahkan paket.
+Daftar pool dibaca langsung melalui `/ip/pool/print` pada NAS aktif. Tambah pool meminta Router/NAS tujuan dan menjalankan `/ip/pool/add`; edit dan hapus menggunakan `.id` MikroTik pada router tersebut. Tidak ada penyimpanan konfigurasi pool baru ke tabel `ip_pools` atau langkah Sinkronkan. Kegagalan API membuat operasi gagal, bukan dilaporkan sebagai berhasil.
 
-Data database tetap tersimpan ketika suatu NAS tidak terjangkau. Respons mengandung `warnings` dan UI menampilkan pesan kegagalan. Tombol **Sinkronkan** (`POST /api/pppoe/ip-pools/:id/sync`) dapat dipakai setelah memperbaiki koneksi atau menambahkan NAS baru. Sinkronisasi ulang tidak menduplikasi pool. Penghapusan data pool dari aplikasi tidak menghapus pool perangkat secara otomatis.
+Paket menyimpan nama pool pada `addressPool` untuk atribut RADIUS `Framed-Pool`. Pool bernama sama harus tersedia pada setiap MikroTik yang melayani paket tersebut. Relasi dan data pool lama dipertahankan untuk kompatibilitas paket lama; pool yang hanya ada di database tidak tampil pada daftar perangkat. Buat melalui aplikasi jika belum ada di router. Nama atau penghapusan pool yang dipakai paket diblokir.
 
-Perbedaan dengan referensi Salfanet: menu IP Pool referensi mengelola `radippool` untuk alokasi oleh FreeRADIUS. Perubahan ini memenuhi kebutuhan sinkronisasi MikroTik pada arsitektur `Framed-Pool` aplikasi yang sudah ada; tidak mengubahnya menjadi `sqlippool`.
+Rentang IPv4 awal/akhir divalidasi. Rentang kompleks dari MikroTik tetap ditampilkan utuh; form edit hanya mendukung satu rentang IPv4. Router yang gagal dibaca ditampilkan sebagai peringatan, sehingga daftar mungkin tidak lengkap. Pengaturan Router/NAS tetap menyimpan koneksi API dalam database.
 
 ## Menonaktifkan pelanggan
 
