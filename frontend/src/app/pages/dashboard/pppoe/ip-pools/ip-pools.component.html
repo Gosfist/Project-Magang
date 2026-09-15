@@ -1,5 +1,5 @@
 <div class="space-y-4">
-  <p class="text-sm text-slate-600">Pool otomatis disinkronkan ke seluruh NAS aktif saat disimpan. Gunakan Sinkronkan setelah menambah router atau jika koneksi sebelumnya gagal.</p>
+  <p class="text-sm text-slate-600">IP Pool dibaca dan disimpan langsung di MikroTik yang dipilih. Tidak perlu membuat pool manual melalui Winbox.</p>
   <div class="card flex gap-3 p-4">
     <div class="relative flex-1">
       <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
@@ -14,19 +14,18 @@
     <table>
       <thead>
         <tr>
-          <th>Nama Pool</th><th>Network Start</th><th>Network End</th><th class="text-right">Aksi</th>
+          <th>Router/NAS</th><th>Nama Pool</th><th>Rentang IP</th><th class="text-right">Aksi</th>
         </tr>
       </thead>
       <tbody>
         @for (item of items(); track item.id) {
           <tr>
+            <td>{{ item.routerName }}</td>
             <td><p class="font-semibold text-slate-900">{{ item.name }}</p></td>
-            <td>{{ item.networkStart }}</td>
-            <td>{{ item.networkEnd }}</td>
+            <td>{{ item.ranges }}</td>
             <td>
               <div class="flex justify-end gap-2">
-                <button class="btn-secondary px-3" [disabled]="syncing() !== null" (click)="sync(item)">{{ syncing() === item.id ? 'Menyinkronkan...' : 'Sinkronkan' }}</button>
-                <button class="btn-secondary px-3" (click)="show(item)">
+                <button class="btn-secondary px-3" [disabled]="!item.networkStart || !item.networkEnd" title="Edit tersedia untuk satu rentang IPv4" (click)="show(item)">
                   <svg lucidePencil [size]="15"></svg>
                 </button>
                 <button class="btn-danger" (click)="remove(item)">
@@ -48,6 +47,15 @@
   <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' IP Pool'" (closeModal)="open.set(false)">
     <form (ngSubmit)="save()" class="space-y-4">
       <div>
+        <label class="label">Router/NAS *</label>
+        <select class="input" required [(ngModel)]="form.routerNasId" name="routerNasId" [disabled]="editing() !== null">
+          <option [ngValue]="0" disabled>Pilih Router/NAS</option>
+          @for (router of routers(); track router.id) {
+            <option [ngValue]="router.id">{{ router.shortname || router.nasname }}</option>
+          }
+        </select>
+      </div>
+      <div>
         <label class="label">Nama Pool *</label>
         <input class="input" required [(ngModel)]="form.name" name="name" />
       </div>
@@ -63,7 +71,7 @@
       </div>
       <div class="flex justify-end gap-3">
         <button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button>
-        <button class="btn-primary">Simpan</button>
+        <button class="btn-primary" [disabled]="saving() || !form.routerNasId">{{ saving() ? 'Menyimpan...' : 'Simpan ke MikroTik' }}</button>
       </div>
     </form>
   </app-modal>

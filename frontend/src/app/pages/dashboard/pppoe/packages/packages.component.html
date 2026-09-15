@@ -82,10 +82,11 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="label">IP Pool</label>
-          <select class="input" [(ngModel)]="form.ipPoolId" name="ipPoolId">
+          <select class="input" [(ngModel)]="form.addressPool" name="addressPool">
             <option value="">-- Pilih IP Pool --</option>
+            @if (form.addressPool) { <option [value]="form.addressPool">{{ form.addressPool }}</option> }
             @for (pool of ipPools(); track pool.id) {
-              <option [value]="pool.id">{{ pool.name }} ({{ pool.networkStart }} - {{ pool.networkEnd }})</option>
+              <option [value]="pool.name">{{ pool.name }} ({{ pool.networkStart }} - {{ pool.networkEnd }})</option>
             }
           </select>
         </div>

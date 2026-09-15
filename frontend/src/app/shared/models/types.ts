@@ -7,7 +7,7 @@ export type MainCoreNode = {
   jenisSplitter: string | null; jumlahOutput: number | null; rasioRedaman: string | null;
   rasioRedamanPorts: Record<string, string>; parent?: MainCoreNode | null;
 };
-export type IpPool = { id: string; name: string; networkStart: string; networkEnd: string };
+export type IpPool = { routerNasId: number; routerName: string; ranges: string; id: string; name: string; networkStart: string; networkEnd: string };
 export type NasOption = { id: string; nasname: string; shortname: string | null; description: string };
 export type OdpOption = { id: string; namaTitik: string; alamat: string | null };
 export type Invoice = { id: string; pppoeAccountId: string; invoiceNumber: string; amount: number; baseAmount: number; discount: number; invoiceType: 'PRORATE' | 'MONTHLY'; status: 'PENDING' | 'PAID' | 'CANCELLED'; dueDate: string; paidAt: string | null; notes: string | null };
