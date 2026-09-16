@@ -22,8 +22,31 @@
 .account-form p.text-xs { font-size: 10px; line-height: 1.35; }
 .account-form p[role=status] { font-size: 11px; line-height: 1.35; }
 .account-form [role=alert] { padding: 6px 8px; font-size: 12px; }
-.account-steps { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 4px; padding: 2px 0 6px; }
-.account-step { display: flex; align-items: center; gap: clamp(3px, 1vw, 8px); min-width: 0; }
+.account-steps { display: flex; flex-wrap: nowrap; align-items: flex-start; justify-content: center; gap: clamp(6px, 2vw, 18px); padding: 2px 0 6px; }
+.account-step { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; }
 .step-number { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: clamp(18px, 5vw, 28px); height: clamp(18px, 5vw, 28px); font-size: clamp(10px, 2.5vw, 13px); }
 .step-label { white-space: nowrap; font-size: clamp(8px, 2.2vw, 12px); }
-.step-line { height: 1px; width: clamp(5px, 2vw, 26px); flex-shrink: 0; }
+.step-line { height: 2px; width: clamp(12px, 4vw, 35px); flex-shrink: 0; margin-top: clamp(9px, 2.5vw, 14px); }
+.ktp-card { padding: 7px 9px; border: 1px solid #dbe3ee; border-radius: 10px; background: #f8fafc; }
+.ktp-picker { display: flex; width: 100%; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: clamp(60px, 10dvh, 84px); border: 1px dashed #b9c7db; border-radius: 8px; background: #eef2f8; color: #64748b; font-size: 10px; cursor: pointer; }
+.ktp-picker:hover { border-color: #6366f1; background: #eef2ff; }
+.ktp-picker:focus-visible, .ktp-image-button:focus-visible, .ktp-remove:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; }
+.ktp-picker:disabled, .ktp-remove:disabled, .ktp-image-button:disabled { cursor: wait; opacity: .6; }
+.ktp-preview { position: relative; padding-right: 30px; }
+.ktp-image-button { display: block; width: min(100%, 240px); border: 1px solid #10b981; border-radius: 8px; overflow: hidden; cursor: pointer; }
+.ktp-image-button img { display: block; width: 100%; height: clamp(60px, 11dvh, 100px); object-fit: contain; background: #e2e8f0; }
+.ktp-remove { position: absolute; right: 0; top: 2px; display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #f43f5e; color: white; cursor: pointer; }
+.ktp-hint, .ktp-ready { margin-top: 3px; font-size: 10px; line-height: 1.3; }
+.ktp-ready { color: #059669; }
+@media (max-height: 700px) {
+  .account-form { --form-gap: 6px; }
+  .account-form .input { height: 32px; }
+  .account-form textarea.input { height: 40px; }
+  .account-steps { padding-bottom: 2px; }
+  .step-number { width: 22px; height: 22px; }
+  .step-line { margin-top: 11px; }
+  .ktp-card { padding: 4px 7px; }
+  .ktp-picker { min-height: 48px; gap: 1px; }
+  .ktp-picker svg { width: 16px; height: 16px; }
+  .ktp-image-button img { height: 58px; }
+}

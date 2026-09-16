@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ID_CARD_MAX_BYTES, storeIdCardPhoto } from './id-card-photo.js';
+import { ID_CARD_MAX_BYTES, readIdCardPhoto, storeIdCardPhoto } from './id-card-photo.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { SaveAccountDto, SavePackageDto } from './pppoe.dto.js';
 import { SaveIpPoolDto } from './ip-pool.dto.js';
@@ -14,6 +14,11 @@ export class PppoeController {
   @Post('id-card-photo')
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: ID_CARD_MAX_BYTES, files: 1 } }))
   uploadIdCardPhoto(@UploadedFile() file?: { buffer: Buffer }) { return storeIdCardPhoto(file); }
+
+  @Get('id-card-photo/:filename')
+  @Header('Cache-Control', 'private, no-store')
+  @Header('X-Content-Type-Options', 'nosniff')
+  idCardPhoto(@Param('filename') filename: string) { return readIdCardPhoto(filename); }
 
   @Get('ip-pools/options') ipPoolOptions() { return this.pppoe.ipPoolOptions(); }
   @Get('ip-pools') ipPools(@Query('search') search = '', @Query('page', new ParseIntPipe({ optional: true })) page = 1) { return this.pppoe.ipPools(search.trim(), Math.max(1, page)); }

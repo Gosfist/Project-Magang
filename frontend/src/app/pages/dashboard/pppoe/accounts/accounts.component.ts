@@ -1,6 +1,6 @@
-import { ChangeDetectorRef, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
+import { LucideCamera, LucidePencil, LucidePlus, LucideSearch, LucideTrash2, LucideX } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
 import { PppoeAccount, PppoePackage, PageMeta, NasOption, OdpOption } from '../../../../shared/models/types';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
@@ -12,6 +12,8 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
   standalone: true,
   imports: [
     FormsModule,
+    LucideCamera,
+    LucideX,
     LucidePencil,
     LucidePlus,
     LucideSearch,
@@ -23,7 +25,7 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
   templateUrl: './accounts.component.html',
   styleUrl: './accounts.component.css',
 })
-export class AccountsComponent implements OnInit {
+export class AccountsComponent implements OnInit, OnDestroy {
   private api = inject(ApiService);
   private changeDetector = inject(ChangeDetectorRef);
   editTab = signal<'customer' | 'account'>('customer');
@@ -41,6 +43,48 @@ export class AccountsComponent implements OnInit {
   uploading = signal(false);
   saving = signal(false);
   formError = signal('');
+  photoPreview = signal('');
+  photoLoading = signal(false);
+  photoError = signal('');
+  private photoRequest = 0;
+
+  private clearPreview(): void {
+    if (this.photoPreview()) URL.revokeObjectURL(this.photoPreview());
+    this.photoPreview.set('');
+    this.photoLoading.set(false);
+    this.photoError.set('');
+    this.photoRequest++;
+  }
+
+  ngOnDestroy(): void { this.clearPreview(); }
+
+  removePhoto(): void {
+    if (this.uploading() || this.saving()) return;
+    this.clearPreview();
+    this.form.idCardPhoto = '';
+  }
+
+  private loadPhoto(): void {
+    if (!this.form.idCardPhoto) return;
+    if (!/^id-cards\/[a-f0-9-]{36}\.(jpg|png|webp)$/.test(this.form.idCardPhoto)) {
+      this.photoError.set('Foto lama tidak dapat ditampilkan. Pilih gambar untuk menggantinya.');
+      return;
+    }
+    const request = ++this.photoRequest;
+    this.photoLoading.set(true);
+    this.api.getBlob(`/pppoe/id-card-photo/${encodeURIComponent(this.form.idCardPhoto.slice(9))}`).subscribe({
+      next: blob => {
+        if (request !== this.photoRequest) return;
+        this.photoPreview.set(URL.createObjectURL(blob));
+        this.photoLoading.set(false);
+      },
+      error: () => {
+        if (request !== this.photoRequest) return;
+        this.photoLoading.set(false);
+        this.photoError.set('Preview foto tidak tersedia. Coba buka ulang atau pilih gambar lain.');
+      },
+    });
+  }
   prorateEstimate = signal<{amount: number, daysActive: number, daysInMonth: number, nextBilling: Date} | null>(null);
 
   form: any = {
@@ -76,6 +120,7 @@ export class AccountsComponent implements OnInit {
 
   show(item?: PppoeAccount): void {
     if (this.uploading() || this.saving()) return;
+    this.clearPreview();
     this.formError.set('');
     this.editing.set(item ?? null);
     this.step.set(1);
@@ -110,6 +155,7 @@ export class AccountsComponent implements OnInit {
         };
     this.calculateProrate();
     this.open.set(true);
+    this.loadPhoto();
   }
 
   customerValid(): boolean {
@@ -147,14 +193,22 @@ export class AccountsComponent implements OnInit {
     const body = new FormData();
     body.append('file', file);
     this.uploading.set(true);
+    ++this.photoRequest;
+    this.photoLoading.set(false);
     this.api.post<{ path: string }>('/pppoe/id-card-photo', body).subscribe({
-      next: result => { this.form.idCardPhoto = result.path; this.uploading.set(false); },
+      next: result => {
+        this.clearPreview();
+        this.form.idCardPhoto = result.path;
+        this.photoPreview.set(URL.createObjectURL(file));
+        this.uploading.set(false);
+        input.value = '';
+      },
       error: error => { this.formError.set(error.message); this.uploading.set(false); input.value = ''; },
     });
   }
 
   close(): void {
-    if (!this.uploading() && !this.saving()) this.open.set(false);
+    if (!this.uploading() && !this.saving()) { this.open.set(false); this.clearPreview(); }
   }
 
   submit(element: HTMLFormElement): void {
@@ -232,6 +286,7 @@ export class AccountsComponent implements OnInit {
       next: (r) => {
         this.saving.set(false);
         this.open.set(false);
+        this.clearPreview();
         this.toast.set({ message: r.message, type: r.warnings?.length ? 'error' : 'success' });
         this.load();
       },

@@ -13,6 +13,10 @@ export class ApiService {
     return this.http.get<T>(`${this.baseUrl}${path}`).pipe(catchError(this.handleError));
   }
 
+  getBlob(path: string): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}${path}`, { responseType: 'blob' }).pipe(catchError(this.handleError));
+  }
+
   post<T>(path: string, body: unknown): Observable<T> {
     return this.http.post<T>(`${this.baseUrl}${path}`, body).pipe(catchError(this.handleError));
   }

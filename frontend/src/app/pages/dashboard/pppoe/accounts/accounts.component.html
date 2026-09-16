@@ -69,11 +69,11 @@
       @if (!editing()) {
       <div class="account-steps">
         @for (s of [1,2,3]; track s) {
-          <div class="account-step">
-            <div [class]="'step-number rounded-full font-bold ' + (step() >= s ? 'bg-slate-950 text-white' : 'bg-slate-200 text-slate-500')">{{ s }}</div>
-            <span [class]="'step-label font-medium ' + (step() >= s ? 'text-slate-900' : 'text-slate-400')">{{ s === 1 ? 'Data Pelanggan' : s === 2 ? 'Pembayaran' : 'Secret & Jaringan' }}</span>
-            @if (s < 3) { <div class="step-line bg-slate-300"></div> }
+          <div class="account-step" [attr.aria-current]="step() === s ? 'step' : null">
+            <div [class]="'step-number rounded-full font-bold ' + (step() >= s ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400')">{{ s }}</div>
+            <span [class]="'step-label font-medium ' + (step() >= s ? 'text-slate-900' : 'text-slate-400')">{{ s === 1 ? 'Data Pelanggan' : s === 2 ? 'Data Pembayaran' : 'Data Secret' }}</span>
           </div>
+          @if (s < 3) { <div class="step-line bg-slate-300"></div> }
         }
       </div>
       }
@@ -94,12 +94,27 @@
             <input class="input" maxlength="50" [required]="!editing()" [(ngModel)]="form.idCardNumber" name="idCardNumber" />
           </div>
         </div>
-        <div>
+        <div class="ktp-card">
           <label class="label" for="idCardPhoto">Foto KTP @if (!editing()) { * }</label>
-          <input id="idCardPhoto" class="input" type="file" accept="image/jpeg,image/png,image/webp" [disabled]="uploading() || saving()" [required]="!editing() && !form.idCardPhoto" (change)="uploadPhoto($event)" />
-          <p class="mt-1 text-xs text-slate-500">JPG, PNG, atau WebP. Maksimal 5 MB.</p>
-          @if (uploading()) { <p class="mt-1 text-sm text-slate-600" role="status">Mengunggah foto KTP...</p> }
-          @else if (form.idCardPhoto) { <p class="mt-1 text-sm text-emerald-700" role="status">Foto KTP tersimpan. Pilih gambar untuk menggantinya.</p> }
+          <input #photoInput id="idCardPhoto" class="hidden" type="file" accept="image/jpeg,image/png,image/webp" [disabled]="uploading() || saving()" (change)="uploadPhoto($event)" />
+          @if (photoPreview()) {
+            <div class="ktp-preview">
+              <button type="button" class="ktp-image-button" aria-label="Ganti foto KTP" [disabled]="uploading() || saving()" (click)="photoInput.click()">
+                <img [src]="photoPreview()" alt="Preview foto KTP" (error)="photoError.set('Gambar tidak dapat ditampilkan. Pilih file gambar lain.')" />
+              </button>
+              <button type="button" class="ktp-remove" aria-label="Hapus foto KTP" [disabled]="uploading() || saving()" (click)="removePhoto(); photoInput.value = ''"><svg lucideX [size]="14"></svg></button>
+            </div>
+            @if (!uploading() && !photoError()) { <p class="ktp-ready" role="status">✓ Foto KTP siap</p> }
+          } @else {
+            <button type="button" class="ktp-picker" [disabled]="uploading() || saving() || photoLoading()" (click)="photoInput.click()">
+              <svg lucideCamera [size]="19"></svg>
+              <span class="font-semibold">Ambil Foto KTP / Pilih Gambar</span>
+              <span>Kamera HP atau upload dari galeri</span>
+            </button>
+          }
+          @if (uploading() || photoLoading()) { <p class="ktp-hint" role="status">{{ uploading() ? 'Mengunggah foto KTP...' : 'Memuat foto KTP...' }}</p> }
+          @if (photoError()) { <p class="ktp-hint text-red-600" role="alert">{{ photoError() }}</p> }
+          @if (!photoPreview()) { <p class="ktp-hint">JPG, PNG, atau WebP · Maksimal 5 MB</p> }
         </div>
         <div class="grid gap-4 sm:grid-cols-2">
           <div>

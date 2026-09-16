@@ -32,6 +32,10 @@ describe('KTP upload', () => {
     expect(response.body.path).toMatch(/^id-cards\/[a-f0-9-]+\.png$/);
     await expect(validateIdCardPhoto(response.body.path)).resolves.toBeUndefined();
     expect(await readFile(join(directory, 'storage', response.body.path))).toEqual(png);
+    const preview = await request(app.getHttpServer()).get(`/pppoe/id-card-photo/${response.body.path.slice(9)}`).expect(200);
+    expect(preview.headers['content-type']).toContain('image/png');
+    expect(preview.headers['cache-control']).toBe('private, no-store');
+    expect(preview.body).toEqual(png);
   });
   it('rejects non-images even when named .jpg', async () => {
     await request(app.getHttpServer()).post('/pppoe/id-card-photo').attach('file', Buffer.from('<script>alert(1)</script>'), 'ktp.jpg').expect(400);
@@ -42,10 +46,15 @@ describe('KTP upload', () => {
   });
   it('requires authentication', async () => {
     allowed = false;
-    try { await request(app.getHttpServer()).post('/pppoe/id-card-photo').attach('file', png, 'ktp.png').expect(403); }
+    try {
+      await request(app.getHttpServer()).post('/pppoe/id-card-photo').attach('file', png, 'ktp.png').expect(403);
+      await request(app.getHttpServer()).get('/pppoe/id-card-photo/00000000-0000-0000-0000-000000000000.png').expect(403);
+    }
     finally { allowed = true; }
   });
   it('rejects arbitrary paths and missing references', async () => {
+    await request(app.getHttpServer()).get('/pppoe/id-card-photo/not-an-image').expect(404);
+    await request(app.getHttpServer()).get('/pppoe/id-card-photo/00000000-0000-0000-0000-000000000000.png').expect(404);
     await expect(validateIdCardPhoto('../../.env')).rejects.toThrow('Unggah foto KTP');
     await expect(validateIdCardPhoto('id-cards/00000000-0000-0000-0000-000000000000.png')).rejects.toThrow('tidak ditemukan');
   });
