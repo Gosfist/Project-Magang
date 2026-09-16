@@ -1,9 +1,17 @@
 <div class="space-y-4">
-  <p class="text-sm text-slate-600">IP Pool dibaca dan disimpan langsung di MikroTik yang dipilih. Tidak perlu membuat pool manual melalui Winbox.</p>
   <div class="card flex gap-3 p-4">
     <div class="relative flex-1">
-      <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
-      <input class="input pl-10" placeholder="Cari IP pool..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
+      <svg
+        lucideSearch
+        [size]="18"
+        class="absolute left-3 top-3 text-slate-400"
+      ></svg>
+      <input
+        class="input pl-10"
+        placeholder="Cari IP pool..."
+        [(ngModel)]="search"
+        (ngModelChange)="page.set(1); load()"
+      />
     </div>
     <button class="btn-secondary" (click)="load()">Refresh</button>
     <button class="btn-primary" (click)="show()">
@@ -15,21 +23,44 @@
     <table>
       <thead>
         <tr>
-          <th>Router/NAS</th><th>Nama Pool</th><th>Rentang IP</th><th>Total IP</th><th>IP Terpakai</th><th>IP Tersedia</th><th class="text-right">Aksi</th>
+          <th>Router/NAS</th>
+          <th>Nama Pool</th>
+          <th>Rentang IP</th>
+          <th>Total IP</th>
+          <th>IP Terpakai</th>
+          <th>IP Tersedia</th>
+          <th class="text-right">Aksi</th>
         </tr>
       </thead>
       <tbody>
         @for (item of items(); track item.id) {
           <tr>
             <td>{{ item.routerName }}</td>
-            <td><p class="font-semibold text-slate-900">{{ item.name }}</p></td>
+            <td>
+              <p class="font-semibold text-slate-900">{{ item.name }}</p>
+            </td>
             <td>{{ item.ranges }}</td>
-            <td>{{ item.totalIps ?? '?' }}</td>
-            <td class="font-semibold text-amber-600">{{ item.usedIps ?? '?' }}</td>
-            <td class="font-semibold" [class.text-emerald-600]="item.freeIps !== null && item.freeIps > 0" [class.text-red-600]="item.freeIps === 0">{{ item.freeIps ?? '?' }}</td>
+            <td>{{ item.totalIps ?? "?" }}</td>
+            <td class="font-semibold text-amber-600">
+              {{ item.usedIps ?? "?" }}
+            </td>
+            <td
+              class="font-semibold"
+              [class.text-emerald-600]="
+                item.freeIps !== null && item.freeIps > 0
+              "
+              [class.text-red-600]="item.freeIps === 0"
+            >
+              {{ item.freeIps ?? "?" }}
+            </td>
             <td>
               <div class="flex justify-end gap-2">
-                <button class="btn-secondary px-3" [disabled]="!item.networkStart || !item.networkEnd" title="Edit tersedia untuk satu rentang IPv4" (click)="show(item)">
+                <button
+                  class="btn-secondary px-3"
+                  [disabled]="!item.networkStart || !item.networkEnd"
+                  title="Edit tersedia untuk satu rentang IPv4"
+                  (click)="show(item)"
+                >
                   <svg lucidePencil [size]="15"></svg>
                 </button>
                 <button class="btn-danger" (click)="remove(item)">
@@ -40,24 +71,41 @@
           </tr>
         }
         @if (items().length === 0) {
-          <tr><td colspan="7" class="py-8 text-center text-slate-400">IP Pool belum tersedia.</td></tr>
+          <tr>
+            <td colspan="7" class="py-8 text-center text-slate-400">
+              IP Pool belum tersedia.
+            </td>
+          </tr>
         }
       </tbody>
     </table>
   </div>
 
-  <p class="text-xs text-slate-500">Terpakai berdasarkan alokasi pool di MikroTik, termasuk layanan lain jika pool dipakai bersama. Tersedia = total rentang pool ini dikurangi IP terpakai. Tanda ? berarti data belum tersedia. Klik Refresh untuk memperbarui.</p>
+  <app-pagination
+    [meta]="meta()"
+    (pageChange)="page.set($event); load()"
+  ></app-pagination>
 
-  <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
-
-  <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' IP Pool'" (closeModal)="open.set(false)">
+  <app-modal
+    [open]="open()"
+    [title]="(editing() ? 'Edit' : 'Tambah') + ' IP Pool'"
+    (closeModal)="open.set(false)"
+  >
     <form (ngSubmit)="save()" class="space-y-4">
       <div>
         <label class="label">Router/NAS *</label>
-        <select class="input" required [(ngModel)]="form.routerNasId" name="routerNasId" [disabled]="editing() !== null">
+        <select
+          class="input"
+          required
+          [(ngModel)]="form.routerNasId"
+          name="routerNasId"
+          [disabled]="editing() !== null"
+        >
           <option [ngValue]="0" disabled>Pilih Router/NAS</option>
           @for (router of routers(); track router.id) {
-            <option [ngValue]="router.id">{{ router.shortname || router.nasname }}</option>
+            <option [ngValue]="router.id">
+              {{ router.shortname || router.nasname }}
+            </option>
           }
         </select>
       </div>
@@ -68,21 +116,41 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="label">Network Start *</label>
-          <input class="input" required [(ngModel)]="form.networkStart" name="networkStart" placeholder="192.168.1.1" />
+          <input
+            class="input"
+            required
+            [(ngModel)]="form.networkStart"
+            name="networkStart"
+            placeholder="192.168.1.1"
+          />
         </div>
         <div>
           <label class="label">Network End *</label>
-          <input class="input" required [(ngModel)]="form.networkEnd" name="networkEnd" placeholder="192.168.1.254" />
+          <input
+            class="input"
+            required
+            [(ngModel)]="form.networkEnd"
+            name="networkEnd"
+            placeholder="192.168.1.254"
+          />
         </div>
       </div>
       <div class="flex justify-end gap-3">
-        <button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button>
-        <button class="btn-primary" [disabled]="saving() || !form.routerNasId">{{ saving() ? 'Menyimpan...' : 'Simpan ke MikroTik' }}</button>
+        <button type="button" class="btn-secondary" (click)="open.set(false)">
+          Batal
+        </button>
+        <button class="btn-primary" [disabled]="saving() || !form.routerNasId">
+          {{ saving() ? "Menyimpan..." : "Simpan ke MikroTik" }}
+        </button>
       </div>
     </form>
   </app-modal>
 
   @if (toast()) {
-    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
+    <app-toast
+      [message]="toast()!.message"
+      [type]="toast()!.type"
+      (close)="toast.set(null)"
+    ></app-toast>
   }
 </div>
