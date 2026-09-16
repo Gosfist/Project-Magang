@@ -1,5 +1,13 @@
 # Router dan PPPoE
 
+## Form pelanggan dan foto KTP
+
+Tambah akun tetap memakai tiga tahap. Seluruh data pelanggan (nama, telepon, nomor/foto KTP, koordinat, alamat) wajib terisi sebelum lanjut. Foto diunggah melalui `POST /api/pppoe/id-card-photo` menggunakan multipart field `file`; hanya JPG, PNG, atau WebP maksimal 5 MB. Endpoint membutuhkan login. File disimpan di `backend/storage/id-cards`, di luar folder statis publik, dan referensinya disimpan pada `idCardPhoto`. Folder storage harus dapat ditulis oleh user service backend dan ikut backup; tidak ada migrasi database baru.
+
+Jika memakai Nginx, atur `client_max_body_size 6m;` di blok server atau location `/api/` agar upload 5 MB beserta multipart envelope bisa diterima. Jalankan `sudo nginx -t` sebelum reload Nginx.
+
+Edit akun memakai satu form Data Pelanggan dan Akun PPPoE tanpa tahap pembayaran. Nilai pembayaran serta catatan lama tetap dikirim dari data akun; edit tidak membuat invoice baru. ODP wajib dipilih dan harus merujuk titik bertipe `odp` yang masih tersedia. Catatan tidak ditampilkan pada form tambah/edit.
+
 ## Tes Router
 
 `POST /api/router/nas/:id/test` melakukan login API menggunakan kredensial NAS yang tersimpan, lalu membaca `/system/identity/print`. Port terbuka dengan password salah menghasilkan `success: false`. Koneksi memiliki batas waktu 15 detik dan socket selalu ditutup. RouterOS 6.43+ didukung; respons kosong RouterOS 7.18 (`!empty`) ditangani.
