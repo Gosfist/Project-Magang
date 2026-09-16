@@ -7,6 +7,12 @@ button, a, input, select, textarea { transition: all .15s ease; }
 button { cursor: pointer; }
 .card { @apply rounded-xl border border-slate-200 bg-white shadow-sm; }
 .input { @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-slate-800 focus:ring-2 focus:ring-slate-200; }
+/* Keep browser-autofilled modal fields consistent with empty fields. */
+app-modal .input:is(:autofill, :-webkit-autofill) {
+  -webkit-text-fill-color: #0f172a;
+  caret-color: #0f172a;
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), inset 0 0 0 1000px #fff !important;
+}
 .input-with-icon,
 .input.pl-10 { padding-left: 2.5rem; }
 .label { @apply mb-1 block text-sm font-medium text-slate-700; }

@@ -36,6 +36,29 @@ export class AccountsComponent implements OnInit, OnDestroy {
   odpOptions = signal<OdpOption[]>([]);
   odpOpen = signal(false);
   odpSearch = '';
+  nasOpen = signal(false);
+
+  selectedNasName(): string {
+    const item = this.nasOptions().find(option => String(option.id) === String(this.form.routerNasId));
+    return item ? item.shortname || item.nasname : this.form.routerNasId ? 'Pilihan tidak tersedia' : 'Pilih NAS';
+  }
+
+  toggleNas(): void {
+    this.odpOpen.set(false);
+    this.nasOpen.update(value => !value);
+    this.changeDetector.detectChanges();
+    if (this.nasOpen()) document.querySelector<HTMLButtonElement>('#nas-options button')?.focus();
+  }
+
+  selectNas(id: string): void {
+    this.form.routerNasId = String(id);
+    this.nasOpen.set(false);
+    document.getElementById('nas-picker')?.focus();
+  }
+
+  closeNasOnBlur(event: FocusEvent): void {
+    if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) this.nasOpen.set(false);
+  }
 
   filteredOdpOptions(): OdpOption[] {
     const search = this.odpSearch.trim().toLocaleLowerCase();
@@ -48,6 +71,7 @@ export class AccountsComponent implements OnInit, OnDestroy {
   }
 
   toggleOdp(): void {
+    this.nasOpen.set(false);
     this.odpSearch = '';
     this.odpOpen.update(value => !value);
     this.changeDetector.detectChanges();
@@ -149,6 +173,7 @@ export class AccountsComponent implements OnInit, OnDestroy {
 
   show(item?: PppoeAccount): void {
     if (this.uploading() || this.saving()) return;
+    this.nasOpen.set(false);
     this.odpOpen.set(false);
     this.odpSearch = '';
     this.clearPreview();
