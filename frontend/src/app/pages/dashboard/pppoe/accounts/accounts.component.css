@@ -1,0 +1,29 @@
+.account-form {
+  --form-gap: clamp(6px, 1.25dvh, 12px);
+}
+.account-form.space-y-4 > :not(:last-child),
+.account-form .space-y-4 > :not(:last-child) {
+  margin-block-end: var(--form-gap);
+}
+.account-form .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--form-gap); }
+.account-form .grid > div { min-width: 0; }
+.account-form .label { font-size: 12px; margin-bottom: 3px; }
+.account-form .input {
+  min-width: 0;
+  height: clamp(32px, 5dvh, 40px);
+  padding: 5px 9px;
+  font-size: 13px;
+}
+.account-form input[type=file] { font-size: 11px; overflow: hidden; }
+.account-form textarea.input { height: clamp(40px, 7dvh, 56px); min-height: 40px; resize: none; }
+.account-form .btn-primary, .account-form .btn-secondary { padding: 7px 12px; font-size: 12px; }
+.account-form .pt-4 { padding-top: var(--form-gap); }
+.account-form .pb-3 { padding-bottom: var(--form-gap); }
+.account-form p.text-xs { font-size: 10px; line-height: 1.35; }
+.account-form p[role=status] { font-size: 11px; line-height: 1.35; }
+.account-form [role=alert] { padding: 6px 8px; font-size: 12px; }
+.account-steps { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 4px; padding: 2px 0 6px; }
+.account-step { display: flex; align-items: center; gap: clamp(3px, 1vw, 8px); min-width: 0; }
+.step-number { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: clamp(18px, 5vw, 28px); height: clamp(18px, 5vw, 28px); font-size: clamp(10px, 2.5vw, 13px); }
+.step-label { white-space: nowrap; font-size: clamp(8px, 2.2vw, 12px); }
+.step-line { height: 1px; width: clamp(5px, 2vw, 26px); flex-shrink: 0; }

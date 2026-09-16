@@ -21,6 +21,7 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
     ToastComponent,
   ],
   templateUrl: './accounts.component.html',
+  styleUrl: './accounts.component.css',
 })
 export class AccountsComponent implements OnInit {
   private api = inject(ApiService);

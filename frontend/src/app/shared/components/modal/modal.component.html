@@ -2,15 +2,16 @@
   <div class="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4"
        (mousedown)="closeModal.emit()">
     <div [class]="'max-h-[92vh] w-full overflow-y-auto rounded-xl bg-white shadow-2xl ' + (wide ? 'max-w-6xl' : 'max-w-2xl')"
+         [class.compact-modal]="compact"
          [style.max-width]="maxWidth"
          (mousedown)="$event.stopPropagation()">
-      <div class="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4">
+      <div class="modal-header sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4">
         <h2 class="font-semibold">{{ title }}</h2>
         <button class="rounded-lg p-1.5 hover:bg-slate-100" (click)="closeModal.emit()">
           <svg lucideX [size]="20"></svg>
         </button>
       </div>
-      <div class="p-5">
+      <div class="modal-body p-5">
         <ng-content></ng-content>
       </div>
     </div>

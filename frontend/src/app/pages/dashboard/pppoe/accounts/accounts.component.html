@@ -54,8 +54,8 @@
 
   <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
 
-  <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Akun PPPoE'" (closeModal)="close()">
-    <form #accountForm (ngSubmit)="submit(accountForm)" class="space-y-4">
+  <app-modal [open]="open()" [compact]="true" [title]="(editing() ? 'Edit' : 'Tambah') + ' Akun PPPoE'" (closeModal)="close()">
+    <form #accountForm (ngSubmit)="submit(accountForm)" class="account-form space-y-4">
       @if (editing()) {
         <div class="grid grid-cols-2 gap-2 border-b border-slate-200 pb-3" role="tablist" aria-label="Edit akun PPPoE">
           <button #customerTab id="edit-customer-tab" type="button" role="tab" aria-controls="edit-customer-panel" [attr.aria-selected]="editTab() === 'customer'" [attr.tabindex]="editTab() === 'customer' ? 0 : -1"
@@ -67,12 +67,12 @@
         </div>
       }
       @if (!editing()) {
-      <div class="mb-6 flex flex-wrap items-center justify-center gap-2">
+      <div class="account-steps">
         @for (s of [1,2,3]; track s) {
-          <div class="flex items-center gap-2">
-            <div [class]="'flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ' + (step() >= s ? 'bg-slate-950 text-white' : 'bg-slate-200 text-slate-500')">{{ s }}</div>
-            <span [class]="'text-sm font-medium ' + (step() >= s ? 'text-slate-900' : 'text-slate-400')">{{ s === 1 ? 'Data Pelanggan' : s === 2 ? 'Pembayaran' : 'Secret & Jaringan' }}</span>
-            @if (s < 3) { <div class="mx-2 h-px w-8 bg-slate-300"></div> }
+          <div class="account-step">
+            <div [class]="'step-number rounded-full font-bold ' + (step() >= s ? 'bg-slate-950 text-white' : 'bg-slate-200 text-slate-500')">{{ s }}</div>
+            <span [class]="'step-label font-medium ' + (step() >= s ? 'text-slate-900' : 'text-slate-400')">{{ s === 1 ? 'Data Pelanggan' : s === 2 ? 'Pembayaran' : 'Secret & Jaringan' }}</span>
+            @if (s < 3) { <div class="step-line bg-slate-300"></div> }
           </div>
         }
       </div>
