@@ -109,12 +109,11 @@
             <button type="button" class="ktp-picker" [disabled]="uploading() || saving() || photoLoading()" (click)="photoInput.click()">
               <svg lucideCamera [size]="19"></svg>
               <span class="font-semibold">Ambil Foto KTP / Pilih Gambar</span>
-              <span>Kamera HP atau upload dari galeri</span>
+              <span>JPG, PNG, atau WebP · Maksimal 5 MB</span>
             </button>
           }
           @if (uploading() || photoLoading()) { <p class="ktp-hint" role="status">{{ uploading() ? 'Mengunggah foto KTP...' : 'Memuat foto KTP...' }}</p> }
           @if (photoError()) { <p class="ktp-hint text-red-600" role="alert">{{ photoError() }}</p> }
-          @if (!photoPreview()) { <p class="ktp-hint">JPG, PNG, atau WebP · Maksimal 5 MB</p> }
         </div>
         <div class="grid gap-4 sm:grid-cols-2">
           <div>
