@@ -10,6 +10,25 @@ export interface NetworkResult { warnings: string[]; completed: number }
 export class PppoeNetworkService {
   constructor(private readonly prisma: PrismaService, private readonly mikrotik: MikrotikService) {}
 
+  async accountPresence(accounts: { username: string; routerNasId: number | null }[]) {
+    const states = new Map<string, boolean | null>();
+    if (!accounts.length) return { states, warnings: [] as string[] };
+    const routers = await this.prisma.nas.findMany({ where: accounts.some(account => account.routerNasId === null)
+      ? { isActive: true } : { id: { in: [...new Set(accounts.map(account => account.routerNasId!))] }, isActive: true } });
+    const sessions = new Map<number, Set<string>>();
+    const result = await this.onRouters(routers, router => this.mikrotik.withRouter(router, async write => {
+      const rows = await write('/ppp/active/print', ['=.proplist=name,service']);
+      sessions.set(router.id, new Set(rows.filter(row => row.service === 'pppoe').map(row => row.name)));
+    }));
+    for (const account of accounts) {
+      const targets = account.routerNasId === null ? routers : routers.filter(router => router.id === account.routerNasId);
+      const online = targets.some(router => sessions.get(router.id)?.has(account.username));
+      const known = targets.length > 0 && targets.every(router => sessions.has(router.id));
+      states.set(account.username, online ? true : known ? false : null);
+    }
+    return { states, warnings: result.warnings };
+  }
+
   async listPools() {
     const routers = await this.prisma.nas.findMany({ where: { isActive: true } });
     const data: { id: string; routerNasId: number; routerName: string; name: string; ranges: string; networkStart: string; networkEnd: string; totalIps: number | null; usedIps: number | null; freeIps: number | null }[] = [];

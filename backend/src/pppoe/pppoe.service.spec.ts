@@ -4,6 +4,7 @@ import type { SecretService } from './secret.service.js';
 import type { PppoeNetworkService } from './pppoe-network.service.js';
 import { PppoeService } from './pppoe.service.js';
 import type { SaveAccountDto } from './pppoe.dto.js';
+import { Prisma } from '@prisma/client';
 vi.mock('./id-card-photo.js', () => ({ validateIdCardPhoto: vi.fn().mockResolvedValue(undefined) }));
 
 describe('PPPoE billing and account deactivation', () => {
@@ -14,6 +15,7 @@ describe('PPPoE billing and account deactivation', () => {
     const tx = {
       invoice,
       pppoeAccount: {
+        aggregate: vi.fn().mockResolvedValue({ _max: { customerNumber: null } }),
         create: vi.fn().mockImplementation(({ data }) => Promise.resolve({ ...data, id: 2n, package: pkg })),
         update: vi.fn().mockImplementation(({ data }) => Promise.resolve({ ...current, ...data, package: pkg })),
       },
@@ -43,6 +45,25 @@ describe('PPPoE billing and account deactivation', () => {
     const { service, dto, invoice } = setup();
     await service.createAccount(dto);
     expect(invoice.create).toHaveBeenCalledWith({ data: expect.objectContaining({ amount: 290000n, invoiceType: 'MONTHLY' }) });
+  });
+  it('uses the greatest remaining customer number plus one, including after deletion', async () => {
+    const { service, dto, tx } = setup();
+    // Empty -> 1; [1] -> 2; deleting 1 leaves [2] -> 3;
+    // deleting the greatest from [1,2] leaves [1] -> 2; deleting all -> 1.
+    for (const [maximum, expected] of [[null, 1n], [1n, 2n], [2n, 3n], [1n, 2n], [null, 1n]] as const) {
+      tx.pppoeAccount.aggregate.mockResolvedValue({ _max: { customerNumber: maximum } } as never);
+      await service.createAccount(dto);
+      expect(tx.pppoeAccount.create).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ customerNumber: expected }) }));
+    }
+  });
+  it('retries a concurrent transaction conflict and recomputes the customer number', async () => {
+    const { service, dto, tx, prisma } = setup();
+    prisma.$transaction.mockRejectedValueOnce(new Prisma.PrismaClientKnownRequestError('deadlock', { code: 'P2034', clientVersion: '6.12.0' }));
+    tx.pppoeAccount.aggregate.mockResolvedValue({ _max: { customerNumber: 2n } } as never);
+    await service.createAccount(dto);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    expect(prisma.$transaction).toHaveBeenLastCalledWith(expect.any(Function), { isolationLevel: 'Serializable' });
+    expect(tx.pppoeAccount.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ customerNumber: 3n }) }));
   });
   it('prorates postpaid only', async () => {
     const { service, dto, invoice } = setup();

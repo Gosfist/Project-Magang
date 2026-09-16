@@ -167,12 +167,15 @@ export class PppoeService {
   }
 
   async accounts(search = '', page = 1) {
-    const where: Prisma.PppoeAccountWhereInput = search ? { OR: [{ customerName: { contains: search } }, { username: { contains: search } }] } : {};
+    const where: Prisma.PppoeAccountWhereInput = search ? { OR: [{ customerName: { contains: search } }, { username: { contains: search } }, { phone: { contains: search } }, ...(search.startsWith('62') ? [{ phone: { contains: `0${search.slice(2)}` } }] : []), ...(/^\d{1,18}$/.test(search) ? [{ customerNumber: BigInt(search) }] : [])] } : {};
     const [items, total] = await this.prisma.$transaction([
-      this.prisma.pppoeAccount.findMany({ where, include: { package: { include: { ipPool: true } }, routerNas: true }, omit: { password: true }, orderBy: { customerName: 'asc' }, skip: (page - 1) * 5, take: 5 }),
+      this.prisma.pppoeAccount.findMany({ where, include: { package: { include: { ipPool: true } }, routerNas: { select: { id: true, nasname: true, shortname: true, description: true } } }, omit: { password: true }, orderBy: { customerNumber: 'asc' }, skip: (page - 1) * 5, take: 5 }),
       this.prisma.pppoeAccount.count({ where }),
     ]);
-    return serialize({ data: items.map((item) => ({ ...item, discount: Number(item.discount), package: { ...item.package, price: Number(item.package.price), costPrice: Number(item.package.costPrice) } })), meta: pageMeta(page, 5, total) });
+    const presence = await this.network.accountPresence(items);
+    return serialize({ data: items.map((item) => ({ ...item, customerId: item.customerNumber.toString().padStart(6, '0'), online: presence.states.get(item.username) ?? null,
+      serviceStatus: item.isActive && item.package.isActive && (!item.expiresAt || item.expiresAt.getTime() + 86400000 > Date.now()) ? 'Aktif' : 'Isolir',
+      discount: Number(item.discount), package: { ...item.package, price: Number(item.package.price), costPrice: Number(item.package.costPrice) } })), meta: pageMeta(page, 5, total), warnings: presence.warnings });
   }
 
   async createAccount(dto: SaveAccountDto) {
@@ -180,8 +183,10 @@ export class PppoeService {
     await this.validateAccountForm(dto, true);
     const pkg = await this.findPackage(dto.pppoePackageId);
     try {
-      const account = await this.prisma.$transaction(async (tx) => {
-        const item = await tx.pppoeAccount.create({ data: this.accountData(dto, this.secrets.encrypt(dto.password!), true), include: { package: { include: { ipPool: true } } } });
+      const account = await this.createAccountTransaction(async (tx) => {
+        const maximum = await tx.pppoeAccount.aggregate({ _max: { customerNumber: true } });
+        const customerNumber = (maximum._max.customerNumber ?? 0n) + 1n;
+        const item = await tx.pppoeAccount.create({ data: { ...this.accountData(dto, this.secrets.encrypt(dto.password!), true), customerNumber }, include: { package: { include: { ipPool: true } } } });
         if (dto.firstInvoice && dto.firstInvoice !== 'none') {
           await this.createFirstInvoice(tx, item, pkg, dto.discount || 0, dto.firstInvoice);
         }
@@ -216,6 +221,19 @@ export class PppoeService {
       const message = 'Akun PPPoE berhasil diperbarui dan disinkronkan ke RADIUS.';
       return serialize({ message: warnings.length ? `${message} Perhatian: ${warnings.join(' ')}` : message, warnings, account: { ...safe, discount: Number(safe.discount) } });
     } catch (error) { this.unique(error, 'Username PPPoE sudah digunakan.'); }
+  }
+
+  private async createAccountTransaction<T>(action: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try { return await this.prisma.$transaction(action, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }); }
+      catch (error) {
+        const retry = error instanceof Prisma.PrismaClientKnownRequestError && (error.code === 'P2034'
+          || (error.code === 'P2002' && /customer_number|customerNumber/.test(String(error.meta?.target))));
+        if (!retry) throw error;
+        if (attempt === 4) throw new ConflictException('Nomor pelanggan sedang digunakan proses lain. Coba simpan kembali.');
+      }
+    }
+    throw new ConflictException('Nomor pelanggan belum dapat dibuat.');
   }
 
   async removeAccount(id: string) {

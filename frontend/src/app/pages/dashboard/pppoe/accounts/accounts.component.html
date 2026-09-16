@@ -1,9 +1,10 @@
 <div class="space-y-4">
-  <div class="card flex gap-3 p-4">
-    <div class="relative flex-1">
+  <div class="card flex flex-wrap gap-3 p-4">
+    <div class="relative min-w-0 flex-1 basis-full sm:basis-0">
       <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
-      <input class="input pl-10" placeholder="Cari pelanggan atau username..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
+      <input class="input pl-10" placeholder="Cari ID, nama pelanggan, atau nomor HP..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
     </div>
+    <button class="btn-secondary" [disabled]="refreshing()" (click)="load()">{{ refreshing() ? 'Memuat...' : 'Refresh' }}</button>
     <button class="btn-primary" (click)="show()">
       <svg lucidePlus [size]="18"></svg> Tambah Akun
     </button>
@@ -13,24 +14,27 @@
     <table>
       <thead>
         <tr>
-          <th>Pelanggan</th><th>Username</th><th>Paket</th><th>Tipe</th><th>Nomor Telepon</th><th>Status</th><th class="text-right">Aksi</th>
+          <th>ID Pelanggan</th><th>Nama Pelanggan</th><th>Paket</th><th>Tipe</th><th>Tanggal Daftar</th><th>Online</th><th>Status</th><th class="text-right">Aksi</th>
         </tr>
       </thead>
       <tbody>
         @for (item of items(); track item.id) {
           <tr>
+            <td class="font-mono">{{ item.customerId }}</td>
             <td>
               <p class="font-medium text-slate-900">{{ item.customerName }}</p>
-              <p class="text-xs text-slate-500">{{ item.address ?? '—' }}</p>
+              <p class="text-xs text-slate-500">{{ phoneDisplay(item.phone) }}</p>
             </td>
-            <td class="font-mono">{{ item.username }}</td>
             <td>{{ item.package.name }}</td>
             <td>
               <span [class]="'rounded-full px-2 py-0.5 text-xs font-semibold ' + (item.subscriptionType === 'POSTPAID' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700')">{{ item.subscriptionType }}</span>
             </td>
-            <td>{{ item.phone ?? '—' }}</td>
+            <td class="whitespace-nowrap">{{ registrationDate(item.createdAt) }}</td>
             <td>
-              <span [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')">{{ item.isActive ? 'Active' : 'Inactive' }}</span>
+              <span [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (item.online === true ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600')" [title]="item.online == null ? 'Sesi belum dapat diperiksa. Pastikan Router NAS aktif dan API terhubung.' : 'Status sesi PPPoE dari MikroTik saat daftar dimuat'">{{ item.online === true ? 'Online' : item.online === false ? 'Offline' : 'Belum diketahui' }}</span>
+            </td>
+            <td>
+              <span [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (item.serviceStatus === 'Aktif' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')">{{ item.serviceStatus }}</span>
             </td>
             <td>
               <div class="flex justify-end gap-2">
@@ -46,7 +50,7 @@
           </tr>
         }
         @if (items().length === 0) {
-          <tr><td colspan="7" class="py-8 text-center text-slate-400">Akun PPPoE belum tersedia.</td></tr>
+          <tr><td colspan="8" class="py-8 text-center text-slate-400">{{ refreshing() ? 'Memuat data pelanggan...' : 'Akun PPPoE belum tersedia.' }}</td></tr>
         }
       </tbody>
     </table>

@@ -6,6 +6,9 @@ import { PppoeAccount, PppoePackage, PageMeta, NasOption, OdpOption } from '../.
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
+import type { Subscription } from 'rxjs';
+
+type AccountListItem = PppoeAccount & { customerId: string; createdAt: string | null; online: boolean | null; serviceStatus: 'Aktif' | 'Isolir' };
 
 @Component({
   selector: 'app-pppoe-accounts',
@@ -30,7 +33,20 @@ export class AccountsComponent implements OnInit, OnDestroy {
   private changeDetector = inject(ChangeDetectorRef);
   editTab = signal<'customer' | 'account'>('customer');
 
-  items = signal<PppoeAccount[]>([]);
+  items = signal<AccountListItem[]>([]);
+  refreshing = signal(false);
+  private listRequest?: Subscription;
+
+  phoneDisplay(phone: string | null): string {
+    if (!phone) return '—';
+    const digits = phone.replace(/\D/g, '');
+    return digits.startsWith('0') ? `62${digits.slice(1)}` : digits.startsWith('8') ? `62${digits}` : digits || '—';
+  }
+
+  registrationDate(value: string | null): string {
+    if (!value || Number.isNaN(Date.parse(value))) return '—';
+    return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }).format(new Date(value));
+  }
   packages = signal<PppoePackage[]>([]);
   nasOptions = signal<NasOption[]>([]);
   odpOptions = signal<OdpOption[]>([]);
@@ -109,7 +125,7 @@ export class AccountsComponent implements OnInit, OnDestroy {
     this.photoRequest++;
   }
 
-  ngOnDestroy(): void { this.clearPreview(); }
+  ngOnDestroy(): void { this.clearPreview(); this.listRequest?.unsubscribe(); }
 
   removePhoto(): void {
     if (this.uploading() || this.saving()) return;
@@ -158,16 +174,19 @@ export class AccountsComponent implements OnInit, OnDestroy {
   }
 
   load(): void {
-    this.api
-      .get<{ data: PppoeAccount[]; meta: PageMeta }>(
+    this.listRequest?.unsubscribe();
+    this.refreshing.set(true);
+    this.listRequest = this.api
+      .get<{ data: AccountListItem[]; meta: PageMeta }>(
         `/pppoe/accounts?search=${encodeURIComponent(this.search)}&page=${this.page()}`
       )
       .subscribe({
         next: (r) => {
+          this.refreshing.set(false);
           this.items.set(r.data);
           this.meta.set(r.meta);
         },
-        error: (e) => this.toast.set({ message: e.message, type: 'error' }),
+        error: (e) => { this.refreshing.set(false); this.toast.set({ message: e.message, type: 'error' }); },
       });
   }
 
@@ -360,6 +379,7 @@ export class AccountsComponent implements OnInit, OnDestroy {
       next: (r) => {
         this.disconnecting.set(null);
         this.toast.set({ message: r.message, type: r.warnings?.length ? 'error' : 'success' });
+        this.load();
       },
       error: (e) => { this.disconnecting.set(null); this.toast.set({ message: e.message, type: 'error' }); },
     });

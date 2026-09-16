@@ -10,6 +10,33 @@ describe('PPPoE network operations', () => {
     const mikrotik = { withRouter: vi.fn().mockImplementation((_, action) => action(write)), errorMessage: () => 'API gagal' };
     return { service: new PppoeNetworkService(prisma as unknown as PrismaService, mikrotik as unknown as MikrotikService), prisma, mikrotik, write };
   }
+  it('reports exact PPPoE session names and separates offline from failed checks', async () => {
+    const { service, mikrotik } = setup([{ name: 'andi', service: 'pppoe' }, { name: 'vpn', service: 'l2tp' }]);
+    const accounts = [{ username: 'andi', routerNasId: 3 }, { username: 'and', routerNasId: 3 }, { username: 'vpn', routerNasId: 3 }];
+    const result = await service.accountPresence(accounts);
+    expect(result.states.get('andi')).toBe(true);
+    expect(result.states.get('and')).toBe(false);
+    expect(result.states.get('vpn')).toBe(false);
+    mikrotik.withRouter.mockRejectedValue(new Error('unreachable'));
+    const failed = await service.accountPresence(accounts);
+    expect(failed.states.get('andi')).toBeNull();
+    expect(failed.warnings).toHaveLength(1);
+  });
+  it('does not use sessions from another NAS and handles missing NAS', async () => {
+    const { service } = setup([{ name: 'andi', service: 'pppoe' }]);
+    const result = await service.accountPresence([{ username: 'andi', routerNasId: 4 }]);
+    expect(result.states.get('andi')).toBeNull();
+  });
+  it('requires all routers to be checked before marking an unassigned customer offline', async () => {
+    const { service, prisma, mikrotik } = setup();
+    prisma.nas.findMany.mockResolvedValue([{ ...router }, { ...router, id: 4 }]);
+    mikrotik.withRouter.mockImplementation(async (nas, action) => {
+      if (nas.id === 4) throw new Error('unreachable');
+      return action(async () => []);
+    });
+    const result = await service.accountPresence([{ username: 'andi', routerNasId: null }]);
+    expect(result.states.get('andi')).toBeNull();
+  });
   it('reads pools from routers with device-specific IDs and preserves complex ranges', async () => {
     const { service, write } = setup([{ '.id': '*5', name: 'pool-10', ranges: '10.0.0.2-10.0.0.254' },
       { '.id': '*6', name: 'complex', ranges: '10.1.0.0/24,10.2.0.2' }]);
