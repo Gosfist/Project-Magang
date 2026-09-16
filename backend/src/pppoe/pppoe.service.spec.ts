@@ -91,9 +91,15 @@ describe('PPPoE billing and account deactivation', () => {
   });
   it('requires a real ODP on create and edit', async () => {
     const { service, dto, prisma, tx } = setup();
-    await expect(service.createAccount({ ...dto, odp: '' })).rejects.toThrow('ODP wajib');
+    await expect(service.createAccount({ ...dto, odp: '' })).rejects.toThrow('ODC / ODP wajib');
     prisma.mainCore.findFirst.mockResolvedValue(null as never);
-    await expect(service.updateAccount('2', dto)).rejects.toThrow('ODP tidak ditemukan');
+    await expect(service.updateAccount('2', dto)).rejects.toThrow('ODC / ODP tidak ditemukan');
     expect(tx.pppoeAccount.update).not.toHaveBeenCalled();
+  });
+  it('accepts ODC or ODP sources and includes the customer name in the success message', async () => {
+    const { service, dto, prisma } = setup();
+    const result = await service.createAccount({ ...dto, customerName: 'Wisnu Suro Pamungkas' });
+    expect(result?.message).toBe('Akun PPPoE pelanggan Wisnu Suro Pamungkas berhasil ditambahkan.');
+    expect(prisma.mainCore.findFirst).toHaveBeenCalledWith({ where: { id: 4n, tipeTitik: { in: ['odc', 'odp'] } }, select: { id: true } });
   });
 });

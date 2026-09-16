@@ -9,7 +9,7 @@ export type MainCoreNode = {
 };
 export type IpPool = { totalIps: number | null; usedIps: number | null; freeIps: number | null; routerNasId: number; routerName: string; ranges: string; id: string; name: string; networkStart: string; networkEnd: string };
 export type NasOption = { id: string; nasname: string; shortname: string | null; description: string };
-export type OdpOption = { id: string; namaTitik: string; alamat: string | null };
+export type OdpOption = { id: string; namaTitik: string; alamat: string | null; tipeTitik: 'odc' | 'odp' };
 export type Invoice = { id: string; pppoeAccountId: string; invoiceNumber: string; amount: number; baseAmount: number; discount: number; invoiceType: 'PRORATE' | 'MONTHLY'; status: 'PENDING' | 'PAID' | 'CANCELLED'; dueDate: string; paidAt: string | null; notes: string | null };
 
 export type PppoePackage = { id: string; name: string; downloadMbps: number; uploadMbps: number; price: number; costPrice: number; addressPool: string | null; ipPool: IpPool | null; validityDays: number; isActive: boolean; accountsCount?: number; rateLimit?: string };

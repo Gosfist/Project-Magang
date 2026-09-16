@@ -34,6 +34,35 @@ export class AccountsComponent implements OnInit, OnDestroy {
   packages = signal<PppoePackage[]>([]);
   nasOptions = signal<NasOption[]>([]);
   odpOptions = signal<OdpOption[]>([]);
+  odpOpen = signal(false);
+  odpSearch = '';
+
+  filteredOdpOptions(): OdpOption[] {
+    const search = this.odpSearch.trim().toLocaleLowerCase();
+    return this.odpOptions().filter(item => `${item.namaTitik} ${item.tipeTitik ?? ''} ${item.alamat ?? ''}`.toLocaleLowerCase().includes(search));
+  }
+
+  selectedOdpName(): string {
+    const item = this.odpOptions().find(option => String(option.id) === String(this.form.odp));
+    return item ? `${item.namaTitik} (${(item.tipeTitik || 'odp').toUpperCase()})` : this.form.odp ? 'Pilihan tidak tersedia' : 'Pilih ODC / ODP';
+  }
+
+  toggleOdp(): void {
+    this.odpSearch = '';
+    this.odpOpen.update(value => !value);
+    this.changeDetector.detectChanges();
+    if (this.odpOpen()) document.getElementById('odp-search')?.focus();
+  }
+
+  selectOdp(item: OdpOption): void {
+    this.form.odp = String(item.id);
+    this.odpOpen.set(false);
+    document.getElementById('odp-picker')?.focus();
+  }
+
+  closeOdpOnBlur(event: FocusEvent): void {
+    if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) this.odpOpen.set(false);
+  }
   meta = signal<PageMeta>({ currentPage: 1, lastPage: 1, perPage: 5, total: 0 });
   search = '';
   page = signal(1);
@@ -120,6 +149,8 @@ export class AccountsComponent implements OnInit, OnDestroy {
 
   show(item?: PppoeAccount): void {
     if (this.uploading() || this.saving()) return;
+    this.odpOpen.set(false);
+    this.odpSearch = '';
     this.clearPreview();
     this.formError.set('');
     this.editing.set(item ?? null);
@@ -263,7 +294,8 @@ export class AccountsComponent implements OnInit, OnDestroy {
     }
     if (!String(this.form.customerName).trim() || !String(this.form.username).trim() || !this.form.odp
       || (!this.editing() && !this.form.password) || (this.form.password && this.form.password.length < 6)) {
-      this.formError.set('Lengkapi nama pelanggan, username, password minimal 6 karakter, dan pilih ODP.');
+      if (!this.form.odp && this.editing()) this.editTab.set('account');
+      this.formError.set('Lengkapi nama pelanggan, username, password minimal 6 karakter, dan pilih ODC / ODP.');
       return;
     }
     this.formError.set('');

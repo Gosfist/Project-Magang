@@ -26,7 +26,7 @@ export class SaveAccountDto {
   @IsOptional() @IsIn(['PREPAID', 'POSTPAID']) subscriptionType?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(31) billingDay?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) discount?: number;
-  @IsString() @Matches(/^[1-9]\d*$/, { message: 'ODP wajib dipilih.' }) @MaxLength(100) odp: string;
+  @IsString() @Matches(/^[1-9]\d*$/, { message: 'ODC / ODP wajib dipilih.' }) @MaxLength(100) odp: string;
   @IsOptional() @IsString() routerNasId?: string;
   @IsOptional() @IsIn(['none', 'prorate', 'full']) firstInvoice?: string;
   @IsOptional() @IsDateString() expiresAt?: string;

@@ -78,7 +78,7 @@ export class PppoeService {
   }
 
   async odpOptions() {
-    const data = await this.prisma.mainCore.findMany({ where: { tipeTitik: 'odp' }, select: { id: true, namaTitik: true, alamat: true }, orderBy: { namaTitik: 'asc' } });
+    const data = await this.prisma.mainCore.findMany({ where: { tipeTitik: { in: ['odc', 'odp'] } }, select: { id: true, namaTitik: true, alamat: true, tipeTitik: true }, orderBy: { namaTitik: 'asc' } });
     return serialize({ data });
   }
 
@@ -189,7 +189,7 @@ export class PppoeService {
         return item;
       });
       const { password: _password, ...safe } = account;
-      return serialize({ message: 'Akun PPPoE berhasil ditambahkan dan disinkronkan ke RADIUS.', account: { ...safe, discount: Number(safe.discount) } });
+      return serialize({ message: `Akun PPPoE pelanggan ${account.customerName} berhasil ditambahkan.`, account: { ...safe, discount: Number(safe.discount) } });
     } catch (error) { this.unique(error, 'Username PPPoE sudah digunakan.'); }
   }
 
@@ -244,9 +244,9 @@ export class PppoeService {
       }
       await validateIdCardPhoto(dto.idCardPhoto!);
     }
-    if (!dto.odp || !/^[1-9]\d*$/.test(dto.odp)) throw new BadRequestException('ODP wajib dipilih.');
-    const odp = await this.prisma.mainCore.findFirst({ where: { id: BigInt(dto.odp), tipeTitik: 'odp' }, select: { id: true } });
-    if (!odp) throw new BadRequestException('ODP tidak ditemukan. Pilih ODP yang tersedia.');
+    if (!dto.odp || !/^[1-9]\d*$/.test(dto.odp)) throw new BadRequestException('ODC / ODP wajib dipilih.');
+    const odp = await this.prisma.mainCore.findFirst({ where: { id: BigInt(dto.odp), tipeTitik: { in: ['odc', 'odp'] } }, select: { id: true } });
+    if (!odp) throw new BadRequestException('ODC / ODP tidak ditemukan. Pilih yang tersedia.');
   }
 
   private accountData(dto: SaveAccountDto, password: string, creating: boolean) {

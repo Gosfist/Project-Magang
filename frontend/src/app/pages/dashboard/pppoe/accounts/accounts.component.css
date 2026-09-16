@@ -36,8 +36,7 @@
 .ktp-image-button { display: block; width: min(100%, 240px); border: 1px solid #10b981; border-radius: 8px; overflow: hidden; cursor: pointer; }
 .ktp-image-button img { display: block; width: 100%; height: clamp(60px, 11dvh, 100px); object-fit: contain; background: #e2e8f0; }
 .ktp-remove { position: absolute; right: 0; top: 2px; display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #f43f5e; color: white; cursor: pointer; }
-.ktp-hint, .ktp-ready { margin-top: 3px; font-size: 10px; line-height: 1.3; }
-.ktp-ready { color: #059669; }
+.ktp-hint { margin-top: 3px; font-size: 10px; line-height: 1.3; }
 @media (max-height: 700px) {
   .account-form { --form-gap: 6px; }
   .account-form .input { height: 32px; }
