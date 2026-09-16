@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
@@ -24,6 +24,8 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
 })
 export class AccountsComponent implements OnInit {
   private api = inject(ApiService);
+  private changeDetector = inject(ChangeDetectorRef);
+  editTab = signal<'customer' | 'account'>('customer');
 
   items = signal<PppoeAccount[]>([]);
   packages = signal<PppoePackage[]>([]);
@@ -76,6 +78,7 @@ export class AccountsComponent implements OnInit {
     this.formError.set('');
     this.editing.set(item ?? null);
     this.step.set(1);
+    this.editTab.set('customer');
     this.form = item
       ? {
           customerName: item.customerName,
@@ -155,6 +158,14 @@ export class AccountsComponent implements OnInit {
 
   submit(element: HTMLFormElement): void {
     if (!this.editing() && this.step() < 3) { this.nextStep(element); return; }
+    if (this.editing()) {
+      const invalid = element.querySelector<HTMLElement>('input:invalid, select:invalid, textarea:invalid');
+      const panel = invalid?.closest<HTMLElement>('[data-edit-tab]');
+      if (panel) {
+        this.editTab.set(panel.dataset['editTab'] as 'customer' | 'account');
+        this.changeDetector.detectChanges();
+      }
+    }
     if (element.reportValidity()) this.save();
   }
 

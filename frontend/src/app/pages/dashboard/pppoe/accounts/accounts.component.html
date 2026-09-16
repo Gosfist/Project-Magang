@@ -56,6 +56,16 @@
 
   <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Akun PPPoE'" (closeModal)="close()">
     <form #accountForm (ngSubmit)="submit(accountForm)" class="space-y-4">
+      @if (editing()) {
+        <div class="grid grid-cols-2 gap-2 border-b border-slate-200 pb-3" role="tablist" aria-label="Edit akun PPPoE">
+          <button #customerTab id="edit-customer-tab" type="button" role="tab" aria-controls="edit-customer-panel" [attr.aria-selected]="editTab() === 'customer'" [attr.tabindex]="editTab() === 'customer' ? 0 : -1"
+            [class]="editTab() === 'customer' ? 'btn-primary justify-center' : 'btn-secondary justify-center'"
+            (click)="editTab.set('customer')" (keydown.arrowright)="editTab.set('account'); accountTab.focus(); $event.preventDefault()" (keydown.arrowleft)="editTab.set('account'); accountTab.focus(); $event.preventDefault()">Data Pelanggan</button>
+          <button #accountTab id="edit-account-tab" type="button" role="tab" aria-controls="edit-account-panel" [attr.aria-selected]="editTab() === 'account'" [attr.tabindex]="editTab() === 'account' ? 0 : -1"
+            [class]="editTab() === 'account' ? 'btn-primary justify-center' : 'btn-secondary justify-center'"
+            (click)="editTab.set('account')" (keydown.arrowright)="editTab.set('customer'); customerTab.focus(); $event.preventDefault()" (keydown.arrowleft)="editTab.set('customer'); customerTab.focus(); $event.preventDefault()">Akun PPPoE</button>
+        </div>
+      }
       @if (!editing()) {
       <div class="mb-6 flex flex-wrap items-center justify-center gap-2">
         @for (s of [1,2,3]; track s) {
@@ -69,7 +79,7 @@
       }
 
       @if (editing() || step() === 1) {
-        @if (editing()) { <h3 class="font-semibold">Data Pelanggan</h3> }
+        <div id="edit-customer-panel" data-edit-tab="customer" [attr.role]="editing() ? 'tabpanel' : null" [attr.aria-labelledby]="editing() ? 'edit-customer-tab' : null" [class]="editing() && editTab() !== 'customer' ? 'hidden' : 'space-y-4'">
         <div>
           <label class="label">Nama Pelanggan *</label>
           <input class="input" required maxlength="150" [(ngModel)]="form.customerName" name="customerName" />
@@ -104,6 +114,7 @@
         <div>
           <label class="label">Alamat @if (!editing()) { * }</label>
           <textarea class="input" rows="2" maxlength="500" [required]="!editing()" [(ngModel)]="form.address" name="address"></textarea>
+        </div>
         </div>
       }
 
@@ -155,8 +166,8 @@
       }
 
       @if (editing() || step() === 3) {
+        <div id="edit-account-panel" data-edit-tab="account" [attr.role]="editing() ? 'tabpanel' : null" [attr.aria-labelledby]="editing() ? 'edit-account-tab' : null" [class]="editing() && editTab() !== 'account' ? 'hidden' : 'space-y-4'">
         @if (editing()) {
-          <h3 class="border-t pt-4 font-semibold">Akun PPPoE</h3>
           <div>
             <label class="label">Paket Internet *</label>
             <select class="input" required [(ngModel)]="form.pppoePackageId" name="pppoePackageId">
@@ -204,6 +215,7 @@
             </span>
           </label>
         }
+        </div>
       }
 
       @if (formError()) { <p class="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{{ formError() }}</p> }
