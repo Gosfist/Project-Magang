@@ -5,6 +5,7 @@
       <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
       <input class="input pl-10" placeholder="Cari IP pool..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
     </div>
+    <button class="btn-secondary" (click)="load()">Refresh</button>
     <button class="btn-primary" (click)="show()">
       <svg lucidePlus [size]="18"></svg> Tambah IP Pool
     </button>
@@ -14,7 +15,7 @@
     <table>
       <thead>
         <tr>
-          <th>Router/NAS</th><th>Nama Pool</th><th>Rentang IP</th><th class="text-right">Aksi</th>
+          <th>Router/NAS</th><th>Nama Pool</th><th>Rentang IP</th><th>Total IP</th><th>IP Terpakai</th><th>IP Tersedia</th><th class="text-right">Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -23,6 +24,9 @@
             <td>{{ item.routerName }}</td>
             <td><p class="font-semibold text-slate-900">{{ item.name }}</p></td>
             <td>{{ item.ranges }}</td>
+            <td>{{ item.totalIps ?? '?' }}</td>
+            <td class="font-semibold text-amber-600">{{ item.usedIps ?? '?' }}</td>
+            <td class="font-semibold" [class.text-emerald-600]="item.freeIps !== null && item.freeIps > 0" [class.text-red-600]="item.freeIps === 0">{{ item.freeIps ?? '?' }}</td>
             <td>
               <div class="flex justify-end gap-2">
                 <button class="btn-secondary px-3" [disabled]="!item.networkStart || !item.networkEnd" title="Edit tersedia untuk satu rentang IPv4" (click)="show(item)">
@@ -36,11 +40,13 @@
           </tr>
         }
         @if (items().length === 0) {
-          <tr><td colspan="4" class="py-8 text-center text-slate-400">IP Pool belum tersedia.</td></tr>
+          <tr><td colspan="7" class="py-8 text-center text-slate-400">IP Pool belum tersedia.</td></tr>
         }
       </tbody>
     </table>
   </div>
+
+  <p class="text-xs text-slate-500">Terpakai berdasarkan alokasi pool di MikroTik, termasuk layanan lain jika pool dipakai bersama. Tersedia = total rentang pool ini dikurangi IP terpakai. Tanda ? berarti data belum tersedia. Klik Refresh untuk memperbarui.</p>
 
   <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
 

@@ -28,3 +28,9 @@ Kegagalan perangkat tidak membatalkan status nonaktif yang sudah disimpan. UI me
 - Frontend mengirim `full` untuk pelanggan PREPAID baru. Edit pelanggan tidak membuat invoice baru.
 
 Ini mengikuti perlakuan PREPAID pada `backend/src/server/services/pppoe.service.ts` dalam referensi. Pengujian mencakup server TCP lokal yang meniru protokol RouterOS dan mock database; perangkat MikroTik dan FreeRADIUS langsung belum diuji.
+
+### Penggunaan IP Pool
+
+Halaman IP Pool menampilkan Total IP, IP Terpakai, dan IP Tersedia dengan tombol Refresh. Penggunaan dibaca dari `/ip/pool/used/print` per router, dicocokkan dengan nama atau ID pool, dan dihitung sebagai alamat unik dalam rentang pool. Total mencakup kedua ujung rentang, mendukung beberapa rentang dan alamat tunggal tanpa menghitung ganda rentang tumpang tindih. Alokasi layanan lain pada pool yang sama ikut dihitung. Kapasitas next-pool tidak digabungkan. IP statis di luar mekanisme alokasi pool tidak dilacak oleh tabel ini.
+
+Kegagalan membaca penggunaan menghasilkan peringatan dan nilai null (ditampilkan sebagai tanda ?), bukan nol. Format rentang yang tidak didukung juga ditampilkan sebagai ?. Tidak ada perubahan database. Acuan: https://help.mikrotik.com/docs/spaces/ROS/pages/129531938/IP+Pools

@@ -20,6 +20,27 @@ describe('PPPoE network operations', () => {
     ]));
     expect(write).toHaveBeenCalledWith('/ip/pool/print', ['=.proplist=.id,name,ranges']);
   });
+  it('matches allocations by pool name or ID and keeps usage scoped to each router', async () => {
+    const { service, prisma, mikrotik } = setup();
+    prisma.nas.findMany.mockResolvedValue([router, { ...router, id: 4 }]);
+    mikrotik.withRouter.mockImplementation((nas, action) => action(async (command: string) => {
+      if (command === '/ip/pool/print') return [{ '.id': '*5', name: 'pool', ranges: '10.0.0.1-10.0.0.3' }];
+      return nas.id === 3 ? [{ pool: 'pool', address: '10.0.0.1' }, { pool: '*5', address: '10.0.0.2' },
+        { pool: 'unrelated', address: '10.0.0.3' }] : [];
+    }));
+    const result = await service.listPools();
+    expect(result.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ routerNasId: 3, totalIps: 3, usedIps: 2, freeIps: 1 }),
+      expect.objectContaining({ routerNasId: 4, totalIps: 3, usedIps: 0, freeIps: 3 }),
+    ]));
+  });
+  it('keeps pool definitions visible when reading usage fails', async () => {
+    const { service, write } = setup();
+    write.mockResolvedValueOnce([{ '.id': '*5', name: 'pool', ranges: '10.0.0.1-10.0.0.3' }]).mockRejectedValueOnce(new Error('denied'));
+    const result = await service.listPools();
+    expect(result.data[0]).toMatchObject({ totalIps: 3, usedIps: null, freeIps: null });
+    expect(result.warnings).toHaveLength(1);
+  });
   it('reports inaccessible routers when reading pools', async () => {
     const { service, mikrotik } = setup();
     mikrotik.withRouter.mockRejectedValue(new Error('connection refused'));
