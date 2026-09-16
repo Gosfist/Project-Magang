@@ -1,4 +1,5 @@
 import { BadRequestException, BadGatewayException, NotFoundException, Injectable } from '@nestjs/common';
+import { poolUsage } from './pool-usage.js';
 import type { Nas } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { MikrotikService } from '../router/mikrotik.service.js';
@@ -11,16 +12,21 @@ export class PppoeNetworkService {
 
   async listPools() {
     const routers = await this.prisma.nas.findMany({ where: { isActive: true } });
-    const data: { id: string; routerNasId: number; routerName: string; name: string; ranges: string; networkStart: string; networkEnd: string }[] = [];
+    const data: { id: string; routerNasId: number; routerName: string; name: string; ranges: string; networkStart: string; networkEnd: string; totalIps: number | null; usedIps: number | null; freeIps: number | null }[] = [];
+    const usageWarnings: string[] = [];
     const result = await this.onRouters(routers, (router) => this.mikrotik.withRouter(router, async (write) => {
       const rows = await write('/ip/pool/print', ['=.proplist=.id,name,ranges']);
+      let used: Record<string, string>[] | null = null;
+      try { used = await write('/ip/pool/used/print', ['=.proplist=pool,address']); }
+      catch (error) { usageWarnings.push(`${router.name || router.nasname}: Penggunaan IP belum dapat dibaca. ${this.mikrotik.errorMessage(error)}`); }
       for (const row of rows) {
         const simple = /^(\d+\.\d+\.\d+\.\d+)-(\d+\.\d+\.\d+\.\d+)$/.exec(row.ranges);
         data.push({ id: `${router.id}:${row['.id']}`, routerNasId: router.id, routerName: router.name || router.nasname,
+          ...poolUsage(row.ranges, used === null ? null : used.filter((entry) => entry.pool === row.name || entry.pool === row['.id']).map((entry) => entry.address)),
           name: row.name, ranges: row.ranges, networkStart: simple?.[1] || '', networkEnd: simple?.[2] || '' });
       }
     }));
-    return { data: data.sort((a, b) => a.name.localeCompare(b.name) || a.routerNasId - b.routerNasId), warnings: result.warnings };
+    return { data: data.sort((a, b) => a.name.localeCompare(b.name) || a.routerNasId - b.routerNasId), warnings: [...result.warnings, ...usageWarnings] };
   }
 
   async poolRouter<T>(routerNasId: number, action: Parameters<MikrotikService['withRouter']>[1]): Promise<T> {
