@@ -7,6 +7,7 @@ import { SaveIpPoolDto } from './ip-pool.dto.js';
 import { RadiusService } from './radius.service.js';
 import { SecretService } from './secret.service.js';
 import { PppoeNetworkService } from './pppoe-network.service.js';
+import { validateIdCardPhoto } from './id-card-photo.js';
 
 @Injectable()
 export class PppoeService {
@@ -176,6 +177,7 @@ export class PppoeService {
 
   async createAccount(dto: SaveAccountDto) {
     if (!dto.password) throw new BadRequestException('Password PPPoE wajib diisi.');
+    await this.validateAccountForm(dto, true);
     const pkg = await this.findPackage(dto.pppoePackageId);
     try {
       const account = await this.prisma.$transaction(async (tx) => {
@@ -193,6 +195,8 @@ export class PppoeService {
 
   async updateAccount(id: string, dto: SaveAccountDto) {
     const current = await this.findAccount(id);
+    await this.validateAccountForm(dto, false);
+    if (dto.idCardPhoto && dto.idCardPhoto !== current.idCardPhoto) await validateIdCardPhoto(dto.idCardPhoto);
     await this.findPackage(dto.pppoePackageId);
     try {
       const account = await this.prisma.$transaction(async (tx) => {
@@ -229,6 +233,20 @@ export class PppoeService {
     const account = await this.findAccount(id);
     const result = await this.network.disconnect(account.username, account.routerNasId);
     return { ...result, message: this.networkMessage('Pemeriksaan dan pemutusan sesi selesai.', result.warnings) };
+  }
+
+  private async validateAccountForm(dto: SaveAccountDto, creating: boolean) {
+    if (creating) {
+      const fields = [dto.customerName, dto.phone, dto.idCardNumber, dto.idCardPhoto, dto.address];
+      if (fields.some(value => !value?.trim()) || dto.latitude == null || dto.longitude == null
+        || !Number.isFinite(dto.latitude) || !Number.isFinite(dto.longitude)) {
+        throw new BadRequestException('Seluruh data pelanggan, termasuk foto KTP dan koordinat, wajib diisi.');
+      }
+      await validateIdCardPhoto(dto.idCardPhoto!);
+    }
+    if (!dto.odp || !/^[1-9]\d*$/.test(dto.odp)) throw new BadRequestException('ODP wajib dipilih.');
+    const odp = await this.prisma.mainCore.findFirst({ where: { id: BigInt(dto.odp), tipeTitik: 'odp' }, select: { id: true } });
+    if (!odp) throw new BadRequestException('ODP tidak ditemukan. Pilih ODP yang tersedia.');
   }
 
   private accountData(dto: SaveAccountDto, password: string, creating: boolean) {

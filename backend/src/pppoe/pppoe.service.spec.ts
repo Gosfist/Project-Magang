@@ -4,6 +4,7 @@ import type { SecretService } from './secret.service.js';
 import type { PppoeNetworkService } from './pppoe-network.service.js';
 import { PppoeService } from './pppoe.service.js';
 import type { SaveAccountDto } from './pppoe.dto.js';
+vi.mock('./id-card-photo.js', () => ({ validateIdCardPhoto: vi.fn().mockResolvedValue(undefined) }));
 
 describe('PPPoE billing and account deactivation', () => {
   function setup() {
@@ -19,6 +20,7 @@ describe('PPPoE billing and account deactivation', () => {
     };
     let committed = false;
     const prisma = {
+      mainCore: { findFirst: vi.fn().mockResolvedValue({ id: 4n }) },
       pppoePackage: { findUnique: vi.fn().mockResolvedValue(pkg) },
       pppoeAccount: { findUnique: vi.fn().mockResolvedValue(current) },
       $transaction: vi.fn().mockImplementation(async (action) => { const result = await action(tx); committed = true; return result; }),
@@ -31,7 +33,8 @@ describe('PPPoE billing and account deactivation', () => {
     }) };
     const service = new PppoeService(prisma as unknown as PrismaService, radius as unknown as RadiusService, secrets as unknown as SecretService, network as unknown as PppoeNetworkService);
     const dto = { pppoePackageId: '1', customerName: 'Andi', username: 'andi', password: 'password', subscriptionType: 'PREPAID', billingDay: 1, discount: 10000, routerNasId: '3', firstInvoice: 'prorate', isActive: true } as SaveAccountDto;
-    return { service, dto, invoice, network, radius, tx };
+    Object.assign(dto, { phone: '08123456789', idCardNumber: '1234567890123456', idCardPhoto: 'id-cards/test.png', latitude: 0, longitude: 0, address: 'Alamat pelanggan', odp: '4' });
+    return { service, dto, invoice, network, radius, tx, prisma };
   }
   beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 8, 16, 0, 0, 0)); });
   afterEach(() => vi.useRealTimers());
@@ -74,5 +77,23 @@ describe('PPPoE billing and account deactivation', () => {
     await service.updateAccount('2', dto);
     expect(invoice.create).not.toHaveBeenCalled();
     expect(network.disconnect).not.toHaveBeenCalled();
+  });
+  it.each(['phone', 'idCardNumber', 'idCardPhoto', 'address'] as const)('rejects creating a customer with blank %s', async field => {
+    const { service, dto, tx } = setup();
+    await expect(service.createAccount({ ...dto, [field]: '  ' })).rejects.toThrow('Seluruh data pelanggan');
+    expect(tx.pppoeAccount.create).not.toHaveBeenCalled();
+  });
+  it('rejects absent coordinates but accepts zero coordinates', async () => {
+    const { service, dto, tx } = setup();
+    await expect(service.createAccount({ ...dto, latitude: undefined })).rejects.toThrow('Seluruh data pelanggan');
+    await service.createAccount(dto);
+    expect(tx.pppoeAccount.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ latitude: 0, longitude: 0 }) }));
+  });
+  it('requires a real ODP on create and edit', async () => {
+    const { service, dto, prisma, tx } = setup();
+    await expect(service.createAccount({ ...dto, odp: '' })).rejects.toThrow('ODP wajib');
+    prisma.mainCore.findFirst.mockResolvedValue(null as never);
+    await expect(service.updateAccount('2', dto)).rejects.toThrow('ODP tidak ditemukan');
+    expect(tx.pppoeAccount.update).not.toHaveBeenCalled();
   });
 });

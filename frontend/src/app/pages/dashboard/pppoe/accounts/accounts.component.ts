@@ -35,6 +35,9 @@ export class AccountsComponent implements OnInit {
   open = signal(false);
   editing = signal<PppoeAccount | null>(null);
   step = signal(1);
+  uploading = signal(false);
+  saving = signal(false);
+  formError = signal('');
   prorateEstimate = signal<{amount: number, daysActive: number, daysInMonth: number, nextBilling: Date} | null>(null);
 
   form: any = {
@@ -69,6 +72,8 @@ export class AccountsComponent implements OnInit {
   }
 
   show(item?: PppoeAccount): void {
+    if (this.uploading() || this.saving()) return;
+    this.formError.set('');
     this.editing.set(item ?? null);
     this.step.set(1);
     this.form = item
@@ -103,11 +108,58 @@ export class AccountsComponent implements OnInit {
     this.open.set(true);
   }
 
-  nextStep(): void {
+  customerValid(): boolean {
+    return ['customerName', 'phone', 'idCardNumber', 'idCardPhoto', 'address'].every(key => String(this.form[key] ?? '').trim())
+      && this.form.latitude !== '' && this.form.latitude != null && Number.isFinite(Number(this.form.latitude))
+      && this.form.longitude !== '' && this.form.longitude != null && Number.isFinite(Number(this.form.longitude));
+  }
+
+  paymentValid(): boolean {
+    return !!this.form.pppoePackageId && this.form.billingDay !== '' && Number(this.form.billingDay) >= 1
+      && Number(this.form.billingDay) <= 28 && this.form.discount !== '' && Number(this.form.discount) >= 0;
+  }
+
+  nextStep(element: HTMLFormElement): void {
+    if (this.uploading() || !element.reportValidity()) return;
+    if (this.step() === 1 && !this.customerValid()) {
+      this.formError.set('Lengkapi seluruh data pelanggan dan unggah foto KTP sebelum melanjutkan.');
+      return;
+    }
+    if (this.step() === 2 && !this.paymentValid()) return;
+    this.formError.set('');
     if (this.step() < 3) this.step.set(this.step() + 1);
   }
 
+  uploadPhoto(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.formError.set('');
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      this.formError.set('Foto KTP harus JPG, PNG, atau WebP, maksimal 5 MB.');
+      input.value = '';
+      return;
+    }
+    const body = new FormData();
+    body.append('file', file);
+    this.uploading.set(true);
+    this.api.post<{ path: string }>('/pppoe/id-card-photo', body).subscribe({
+      next: result => { this.form.idCardPhoto = result.path; this.uploading.set(false); },
+      error: error => { this.formError.set(error.message); this.uploading.set(false); input.value = ''; },
+    });
+  }
+
+  close(): void {
+    if (!this.uploading() && !this.saving()) this.open.set(false);
+  }
+
+  submit(element: HTMLFormElement): void {
+    if (!this.editing() && this.step() < 3) { this.nextStep(element); return; }
+    if (element.reportValidity()) this.save();
+  }
+
   prevStep(): void {
+    this.formError.set('');
     if (this.step() > 1) this.step.set(this.step() - 1);
   }
 
@@ -132,13 +184,31 @@ export class AccountsComponent implements OnInit {
   }
 
   save(): void {
+    if (this.uploading() || this.saving()) return;
+    if (!this.editing() && !this.customerValid()) {
+      this.step.set(1);
+      this.formError.set('Lengkapi seluruh data pelanggan dan unggah foto KTP.');
+      return;
+    }
+    if (!this.form.pppoePackageId || (!this.editing() && !this.paymentValid())) {
+      if (!this.editing()) this.step.set(2);
+      this.formError.set('Pilih paket dan lengkapi data pembayaran.');
+      return;
+    }
+    if (!String(this.form.customerName).trim() || !String(this.form.username).trim() || !this.form.odp
+      || (!this.editing() && !this.form.password) || (this.form.password && this.form.password.length < 6)) {
+      this.formError.set('Lengkapi nama pelanggan, username, password minimal 6 karakter, dan pilih ODP.');
+      return;
+    }
+    this.formError.set('');
+    this.saving.set(true);
     const body = {
       ...this.form,
       firstInvoice: this.editing() ? 'none' : this.form.subscriptionType === 'PREPAID' ? 'full' : this.form.firstInvoice,
       password: this.form.password || undefined,
       expiresAt: this.form.expiresAt || undefined,
-      latitude: this.form.latitude ? Number(this.form.latitude) : undefined,
-      longitude: this.form.longitude ? Number(this.form.longitude) : undefined,
+      latitude: this.form.latitude !== '' && this.form.latitude != null ? Number(this.form.latitude) : undefined,
+      longitude: this.form.longitude !== '' && this.form.longitude != null ? Number(this.form.longitude) : undefined,
       billingDay: Number(this.form.billingDay),
       discount: Number(this.form.discount),
       routerNasId: this.form.routerNasId ? String(this.form.routerNasId) : undefined,
@@ -148,11 +218,12 @@ export class AccountsComponent implements OnInit {
       : this.api.post<{ message: string; warnings?: string[] }>('/pppoe/accounts', body);
     req.subscribe({
       next: (r) => {
+        this.saving.set(false);
         this.open.set(false);
         this.toast.set({ message: r.message, type: r.warnings?.length ? 'error' : 'success' });
         this.load();
       },
-      error: (e) => this.toast.set({ message: e.message, type: 'error' }),
+      error: (e) => { this.saving.set(false); this.formError.set(e.message); },
     });
   }
 

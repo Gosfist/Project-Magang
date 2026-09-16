@@ -16,3 +16,4 @@ Thumbs.db
 .codex/
 .cursor/
 .phpunit.result.cache
+backend/storage/

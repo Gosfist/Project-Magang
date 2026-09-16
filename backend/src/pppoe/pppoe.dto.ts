@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
 
 export class SavePackageDto {
   @IsString() @MaxLength(100) name: string;
@@ -14,19 +14,19 @@ export class SavePackageDto {
 
 export class SaveAccountDto {
   @IsString() pppoePackageId: string;
-  @IsString() @MaxLength(150) customerName: string;
+  @IsString() @Matches(/\S/, { message: 'Nama pelanggan wajib diisi.' }) @MaxLength(150) customerName: string;
   @IsOptional() @IsString() @MaxLength(50) idCardNumber?: string;
   @IsOptional() @IsString() @MaxLength(500) idCardPhoto?: string;
   @IsString() @MaxLength(64) @Matches(/^[A-Za-z0-9._@-]+$/, { message: 'Username hanya boleh berisi huruf, angka, titik, garis bawah, @, dan tanda hubung.' }) username: string;
   @IsOptional() @IsString() @MinLength(6, { message: 'Password PPPoE minimal 6 karakter.' }) @MaxLength(64) password?: string;
   @IsOptional() @IsString() @MaxLength(30) phone?: string;
   @IsOptional() @IsString() @MaxLength(500) address?: string;
-  @IsOptional() @Type(() => Number) latitude?: number;
-  @IsOptional() @Type(() => Number) longitude?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() latitude?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() longitude?: number;
   @IsOptional() @IsIn(['PREPAID', 'POSTPAID']) subscriptionType?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(31) billingDay?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) discount?: number;
-  @IsOptional() @IsString() @MaxLength(100) odp?: string;
+  @IsString() @Matches(/^[1-9]\d*$/, { message: 'ODP wajib dipilih.' }) @MaxLength(100) odp: string;
   @IsOptional() @IsString() routerNasId?: string;
   @IsOptional() @IsIn(['none', 'prorate', 'full']) firstInvoice?: string;
   @IsOptional() @IsDateString() expiresAt?: string;
