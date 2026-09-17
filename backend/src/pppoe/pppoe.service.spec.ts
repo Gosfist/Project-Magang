@@ -13,6 +13,7 @@ describe('PPPoE billing and account deactivation', () => {
     const current = { id: 2n, username: 'andi', password: 'encrypted', routerNasId: 3, isActive: true };
     const invoice = { create: vi.fn().mockResolvedValue({}) };
     const tx = {
+      paymentPromise: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
       invoice,
       pppoeAccount: {
         aggregate: vi.fn().mockResolvedValue({ _max: { customerNumber: null } }),

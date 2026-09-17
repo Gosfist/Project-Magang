@@ -7,6 +7,7 @@ import request from 'supertest';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PppoeController } from './pppoe.controller.js';
 import { PppoeService } from './pppoe.service.js';
+import { CustomerServicesService } from './customer-services.service.js';
 import { ID_CARD_MAX_BYTES, validateIdCardPhoto } from './id-card-photo.js';
 
 describe('KTP upload', () => {
@@ -16,7 +17,7 @@ describe('KTP upload', () => {
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1sAAAAASUVORK5CYII=', 'base64');
   beforeAll(async () => {
     directory = await mkdtemp(join(tmpdir(), 'unzanet-upload-test-'));
-    const module = await Test.createTestingModule({ controllers: [PppoeController], providers: [{ provide: PppoeService, useValue: {} }] })
+    const module = await Test.createTestingModule({ controllers: [PppoeController], providers: [{ provide: PppoeService, useValue: {} }, { provide: CustomerServicesService, useValue: {} }] })
       .overrideGuard(JwtAuthGuard).useValue({ canActivate: () => allowed }).compile();
     app = module.createNestApplication();
     await app.init();

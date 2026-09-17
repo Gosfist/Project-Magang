@@ -87,7 +87,9 @@ model PppoeAccount {
   updatedAt      DateTime?    @map("updated_at")
   package        PppoePackage @relation(fields: [pppoePackageId], references: [id], onDelete: Restrict)
   routerNas        Nas?       @relation(fields: [routerNasId], references: [id], onDelete: SetNull)
-  invoices         Invoice[]
+    invoices         Invoice[]
+    addons           CustomerAddon[]
+    paymentPromises  PaymentPromise[]
 
   @@index([pppoePackageId])
   @@index([routerNasId])
@@ -126,6 +128,37 @@ model Invoice {
   @@index([status])
   @@index([dueDate])
   @@map("invoices")
+}
+
+model CustomerAddon {
+  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  pppoeAccountId BigInt @map("pppoe_account_id") @db.UnsignedBigInt
+  name String @db.VarChar(150)
+  amount BigInt @db.UnsignedBigInt
+  notes String? @db.Text
+  invoiceNumber String @map("invoice_number") @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+  account PppoeAccount @relation(fields: [pppoeAccountId], references: [id], onDelete: Cascade)
+  @@index([pppoeAccountId])
+  @@map("customer_addons")
+}
+
+model PaymentPromise {
+  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  pppoeAccountId BigInt @map("pppoe_account_id") @db.UnsignedBigInt
+  promisedDate DateTime @map("promised_date") @db.Date
+  deadline DateTime
+  notes String? @db.Text
+  status String @default("ACTIVE") @db.VarChar(15)
+  invoiceIds Json @map("invoice_ids")
+  originalExpiresAt DateTime? @map("original_expires_at") @db.Date
+  disconnectPending Boolean @default(false) @map("disconnect_pending")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  account PppoeAccount @relation(fields: [pppoeAccountId], references: [id], onDelete: Cascade)
+  @@index([pppoeAccountId, status])
+  @@index([status, deadline])
+  @@map("payment_promises")
 }
 
 model Radcheck {

@@ -5,11 +5,13 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { SaveAccountDto, SavePackageDto } from './pppoe.dto.js';
 import { SaveIpPoolDto } from './ip-pool.dto.js';
 import { PppoeService } from './pppoe.service.js';
+import { CustomerServicesService } from './customer-services.service.js';
+import { CreateAddonDto, CreatePromiseDto } from './customer-services.dto.js';
 
 @Controller('pppoe')
 @UseGuards(JwtAuthGuard)
 export class PppoeController {
-  constructor(private readonly pppoe: PppoeService) { }
+  constructor(private readonly pppoe: PppoeService, private readonly customers: CustomerServicesService) { }
 
   @Post('id-card-photo')
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: ID_CARD_MAX_BYTES, files: 1 } }))
@@ -36,7 +38,14 @@ export class PppoeController {
   @Patch('packages/:id/status') togglePackage(@Param('id') id: string) { return this.pppoe.togglePackage(id); }
   @Delete('packages/:id') removePackage(@Param('id') id: string) { return this.pppoe.removePackage(id); }
 
-  @Get('accounts') accounts(@Query('search') search = '', @Query('page', new ParseIntPipe({ optional: true })) page = 1) { return this.pppoe.accounts(search.trim(), Math.max(1, page)); }
+  @Get('accounts') accounts(@Query('search') search = '', @Query('page', new ParseIntPipe({ optional: true })) page = 1, @Query('status') status = '', @Query('session') session = '') { return this.pppoe.accounts(search.trim(), Math.max(1, page), status, session); }
+  @Get('accounts/:id/auth-logs') authLogs(@Param('id') id: string) { return this.customers.authLogs(id); }
+  @Get('accounts/:id/invoices') invoices(@Param('id') id: string) { return this.customers.invoices(id); }
+  @Post('accounts/:id/invoices/:invoiceId/pay') payInvoice(@Param('id') id: string, @Param('invoiceId') invoiceId: string) { return this.customers.payInvoice(id, invoiceId); }
+  @Get('accounts/:id/addons') addons(@Param('id') id: string) { return this.customers.addons(id); }
+  @Post('accounts/:id/addons') createAddon(@Param('id') id: string, @Body() dto: CreateAddonDto) { return this.customers.createAddon(id, dto); }
+  @Get('accounts/:id/promises') promises(@Param('id') id: string) { return this.customers.promises(id); }
+  @Post('accounts/:id/promises') createPromise(@Param('id') id: string, @Body() dto: CreatePromiseDto) { return this.customers.createPromise(id, dto); }
   @Post('accounts') createAccount(@Body() dto: SaveAccountDto) { return this.pppoe.createAccount(dto); }
   @Post('accounts/:id/disconnect') disconnectAccount(@Param('id') id: string) { return this.pppoe.disconnectAccount(id); }
   @Patch('accounts/:id') updateAccount(@Param('id') id: string, @Body() dto: SaveAccountDto) { return this.pppoe.updateAccount(id, dto); }

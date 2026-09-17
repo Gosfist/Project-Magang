@@ -29,7 +29,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard/mainCore/odc': 'ODC',
     '/dashboard/mainCore/odp': 'ODP',
     '/dashboard/pppoe/packages': 'Daftar Paket PPPoE',
-    '/dashboard/pppoe/accounts': 'Akun PPPoE',
+    '/dashboard/pppoe/accounts': 'Data Pelanggan',
     '/dashboard/pppoe/ip-pools': 'IP Pool',
     '/dashboard/tools/attenuation-calculator': 'Kalkulator Redaman',
   };

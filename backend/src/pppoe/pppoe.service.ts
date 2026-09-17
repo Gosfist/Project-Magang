@@ -166,15 +166,24 @@ export class PppoeService {
     return { message: 'Paket PPPoE berhasil dihapus.' };
   }
 
-  async accounts(search = '', page = 1) {
+  async accounts(search = '', page = 1, status = '', session = '') {
+    if (!['', 'active', 'isolated'].includes(status) || !['', 'online', 'offline'].includes(session)) throw new BadRequestException('Filter status atau sesi tidak valid.');
     const where: Prisma.PppoeAccountWhereInput = search ? { OR: [{ customerName: { contains: search } }, { username: { contains: search } }, { phone: { contains: search } }, ...(search.startsWith('62') ? [{ phone: { contains: `0${search.slice(2)}` } }] : []), ...(/^\d{1,18}$/.test(search) ? [{ customerNumber: BigInt(search) }] : [])] } : {};
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.pppoeAccount.findMany({ where, include: { package: { include: { ipPool: true } }, routerNas: { select: { id: true, nasname: true, shortname: true, description: true } } }, omit: { password: true }, orderBy: { customerNumber: 'asc' }, skip: (page - 1) * 5, take: 5 }),
+    const active: Prisma.PppoeAccountWhereInput = { isActive: true, package: { isActive: true }, OR: [
+      { paymentPromises: { some: { status: 'ACTIVE', deadline: { gt: new Date() } } } },
+      { paymentPromises: { none: { status: 'ACTIVE' } }, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date(Date.now() - 86400000) } }] },
+    ] };
+    if (status) where.AND = [status === 'active' ? active : { NOT: active }];
+    const [items, count] = await this.prisma.$transaction([
+      this.prisma.pppoeAccount.findMany({ where, include: { paymentPromises: { where: { status: 'ACTIVE' }, select: { deadline: true }, take: 1 }, package: { include: { ipPool: true } }, routerNas: { select: { id: true, nasname: true, shortname: true, description: true } } }, omit: { password: true }, orderBy: { customerNumber: 'asc' }, ...(session ? {} : { skip: (page - 1) * 5, take: 5 }) }),
       this.prisma.pppoeAccount.count({ where }),
     ]);
     const presence = await this.network.accountPresence(items);
-    return serialize({ data: items.map((item) => ({ ...item, customerId: item.customerNumber.toString().padStart(6, '0'), online: presence.states.get(item.username) ?? null,
-      serviceStatus: item.isActive && item.package.isActive && (!item.expiresAt || item.expiresAt.getTime() + 86400000 > Date.now()) ? 'Aktif' : 'Isolir',
+    const filtered = session ? items.filter(item => presence.states.get(item.username) === (session === 'online')) : items;
+    const total = session ? filtered.length : count;
+    const visible = session ? filtered.slice((page - 1) * 5, page * 5) : filtered;
+    return serialize({ data: visible.map((item) => ({ ...item, customerId: item.customerNumber.toString().padStart(6, '0'), online: presence.states.get(item.username) ?? null,
+      serviceStatus: item.isActive && item.package.isActive && (item.paymentPromises.length ? item.paymentPromises[0].deadline.getTime() > Date.now() : !item.expiresAt || item.expiresAt.getTime() + 86400000 > Date.now()) ? 'Aktif' : 'Isolir',
       discount: Number(item.discount), package: { ...item.package, price: Number(item.package.price), costPrice: Number(item.package.costPrice) } })), meta: pageMeta(page, 5, total), warnings: presence.warnings });
   }
 
@@ -205,6 +214,7 @@ export class PppoeService {
     await this.findPackage(dto.pppoePackageId);
     try {
       const account = await this.prisma.$transaction(async (tx) => {
+        if (dto.isActive === false) await tx.paymentPromise.updateMany({ where: { pppoeAccountId: current.id, status: { in: ['ACTIVE', 'EXPIRED'] } }, data: { status: 'CANCELLED', disconnectPending: false } });
         const item = await tx.pppoeAccount.update({
           where: { id: current.id },
           data: this.accountData(dto, dto.password ? this.secrets.encrypt(dto.password) : current.password, false),

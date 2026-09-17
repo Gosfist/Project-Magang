@@ -7,6 +7,7 @@ import { ModalComponent } from '../../../../shared/components/modal/modal.compon
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
 import type { Subscription } from 'rxjs';
+import { CustomerServicesComponent } from './customer-services.component';
 
 type AccountListItem = PppoeAccount & { customerId?: string; customerNumber?: string; createdAt: string | null; online: boolean | null; serviceStatus?: 'Aktif' | 'Isolir' };
 
@@ -15,6 +16,7 @@ type AccountListItem = PppoeAccount & { customerId?: string; customerNumber?: st
   standalone: true,
   imports: [
     FormsModule,
+    CustomerServicesComponent,
     LucideCamera,
     LucideEye,
     LucideEyeOff,
@@ -34,7 +36,26 @@ type AccountListItem = PppoeAccount & { customerId?: string; customerNumber?: st
 export class AccountsComponent implements OnInit, OnDestroy {
   private api = inject(ApiService);
   private changeDetector = inject(ChangeDetectorRef);
-  editTab = signal<'customer' | 'account'>('customer');
+  editTab = signal<string>('customer');
+  readonly editTabs = [
+    { id: 'customer', label: 'Data Pelanggan' }, { id: 'account', label: 'Akun PPPoE' },
+    { id: 'auth-logs', label: 'Log Autentikasi' }, { id: 'invoices', label: 'Invoice' },
+    { id: 'addons', label: 'Add-ons' }, { id: 'promises', label: 'Janji Bayar' },
+  ];
+  filterOpen = signal(false);
+  statusFilter = '';
+  sessionFilter = '';
+  applyFilters() { this.page.set(1); this.load(); }
+  customerServiceChanged(result: { isActive?: boolean }) {
+    if (result.isActive !== undefined) this.form.isActive = result.isActive;
+    this.load();
+  }
+  moveTab(event: Event, index: number, direction: number) {
+    event.preventDefault();
+    const next = this.editTabs[(index + direction + this.editTabs.length) % this.editTabs.length];
+    this.editTab.set(next.id);
+    document.getElementById(`edit-${next.id}-tab`)?.focus();
+  }
 
   items = signal<AccountListItem[]>([]);
   refreshing = signal(false);
@@ -182,7 +203,7 @@ export class AccountsComponent implements OnInit, OnDestroy {
     this.refreshing.set(true);
     this.listRequest = this.api
       .get<{ data: AccountListItem[]; meta: PageMeta }>(
-        `/pppoe/accounts?search=${encodeURIComponent(this.search)}&page=${this.page()}`
+        `/pppoe/accounts?search=${encodeURIComponent(this.search)}&page=${this.page()}&status=${this.statusFilter}&session=${this.sessionFilter}`
       )
       .subscribe({
         next: (r) => {
@@ -196,6 +217,10 @@ export class AccountsComponent implements OnInit, OnDestroy {
               && (!item.expiresAt || Date.parse(item.expiresAt) + 86400000 > Date.now()) ? 'Aktif' : 'Isolir'),
           })));
           this.meta.set(r.meta);
+          if (this.editing() && !['customer', 'account'].includes(this.editTab())) {
+            const current = r.data.find(item => item.id === this.editing()?.id);
+            if (current) this.form.isActive = current.isActive;
+          }
         },
         error: (e) => { this.refreshing.set(false); this.toast.set({ message: e.message, type: 'error' }); },
       });

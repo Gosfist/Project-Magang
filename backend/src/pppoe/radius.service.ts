@@ -15,7 +15,11 @@ export class RadiusService {
       { username: account.username, attribute: 'Cleartext-Password', op: ':=', value: this.secrets.decrypt(account.password) },
       { username: account.username, attribute: 'Simultaneous-Use', op: ':=', value: '1' },
     ];
-    if (account.expiresAt) {
+    const promise = await tx.paymentPromise.findFirst({ where: { pppoeAccountId: account.id, status: 'ACTIVE' }, orderBy: { id: 'desc' } });
+    if (promise) {
+      // FreeRADIUS date attributes accept Unix seconds, avoiding server timezone ambiguity.
+      checks.push({ username: account.username, attribute: 'Expiration', op: ':=', value: String(Math.floor(promise.deadline.getTime() / 1000)) });
+    } else if (account.expiresAt) {
       checks.push({ username: account.username, attribute: 'Expiration', op: ':=', value: this.expiration(account.expiresAt) });
     }
     await tx.radcheck.createMany({ data: checks });
