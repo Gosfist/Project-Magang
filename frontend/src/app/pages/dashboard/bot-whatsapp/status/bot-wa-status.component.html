@@ -1,17 +1,31 @@
 <div class="mx-auto max-w-3xl space-y-5">
-  <div class="card p-5 sm:p-6">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h2 class="text-lg font-semibold">Login Bot Wa</h2>
-        <p class="mt-1 text-sm text-slate-500">Kelola koneksi WhatsApp untuk notifikasi pelanggan.</p>
+  <!-- Disconnected State -->
+  @if (waStatus().status === 'disconnected') {
+    <div class="card flex flex-col sm:flex-row items-center justify-between gap-4 p-5 sm:p-6">
+      <div class="flex items-center gap-3">
+        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 4.243a9 9 0 01-12.728 0m0 0l2.829-2.829m-2.829 2.829L3 21m2.828-15.536a9 9 0 0112.728 0" />
+          </svg>
+        </div>
+        <div>
+          <p class="font-semibold text-red-700">WhatsApp Terputus</p>
+          <p class="text-sm text-slate-500">Bot WhatsApp belum terhubung ke sistem.</p>
+        </div>
       </div>
-      @if (waStatus().status === 'disconnected') {
-        <button class="btn-primary" (click)="connect()" [disabled]="actionLoading()">
-          {{ actionLoading() ? 'Menghubungkan...' : 'Hubungkan WhatsApp' }}
-        </button>
-      }
+      <button class="btn-primary whitespace-nowrap" (click)="connect()" [disabled]="actionLoading()">
+        {{ actionLoading() ? 'Menghubungkan...' : 'Hubungkan WhatsApp' }}
+      </button>
     </div>
-  </div>
+  }
+
+  <!-- Connecting State -->
+  @if (waStatus().status === 'connecting') {
+    <div class="card flex items-center justify-center gap-3 p-8">
+      <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></span>
+      <span class="text-sm font-medium text-slate-600">Menghubungkan ke WhatsApp...</span>
+    </div>
+  }
 
   <!-- QR Code Section -->
   @if (waStatus().status === 'qr_ready' && qrImage()) {
