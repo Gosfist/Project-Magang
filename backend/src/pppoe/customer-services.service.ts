@@ -14,7 +14,7 @@ export function calendarDate(value: string): Date {
   return date;
 }
 export function promiseDeadline(value: string): Date {
-  return new Date(calendarDate(value).getTime() + 17 * 3600000); // midnight following day, Asia/Jakarta
+  return new Date(calendarDate(value).getTime() + 17 * 3600000); // Pukul 00.00 hari berikutnya di Asia/Jakarta.
 }
 export function jakartaToday(): string { return new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10); }
 
@@ -69,7 +69,7 @@ export class CustomerServicesService implements OnModuleInit, OnModuleDestroy {
         baseAmount: BigInt(dto.amount), dueDate, notes: `${dto.name.trim()}${dto.notes ? `: ${dto.notes}` : ''}`, createdAt: new Date(), updatedAt: new Date() } });
       await tx.customerAddon.create({ data: { pppoeAccountId: account.id, name: dto.name.trim(), amount: BigInt(dto.amount), notes: dto.notes, invoiceNumber } });
     });
-    return { message: 'Add-on dan invoice berhasil dibuat.' };
+    return { message: 'Biaya tambahan dan tagihan berhasil dibuat.' };
   }
   async promises(id: string) {
     await this.account(id);
@@ -86,7 +86,7 @@ export class CustomerServicesService implements OnModuleInit, OnModuleDestroy {
       if (await tx.paymentPromise.findFirst({ where: { pppoeAccountId: account.id, status: 'ACTIVE' } }))
         throw new BadRequestException('Masih ada janji bayar aktif.');
       const invoices = await tx.invoice.findMany({ where: { pppoeAccountId: account.id, status: { in: ['PENDING', 'OVERDUE'] } }, select: { id: true } });
-      if (!invoices.length) throw new BadRequestException('Tidak ada invoice yang belum dibayar.');
+      if (!invoices.length) throw new BadRequestException('Tidak ada tagihan yang belum dibayar.');
       await tx.paymentPromise.create({ data: { pppoeAccountId: account.id, promisedDate, deadline, notes: dto.notes, invoiceIds: invoices.map(i => String(i.id)), originalExpiresAt: account.expiresAt } });
       const active = await tx.pppoeAccount.update({ where: { id: account.id }, data: { isActive: true, updatedAt: new Date() }, include: { package: { include: { ipPool: true } } } });
       await this.radius.sync(tx, active);
@@ -97,9 +97,9 @@ export class CustomerServicesService implements OnModuleInit, OnModuleDestroy {
     await this.transaction(async tx => {
       await this.account(id, tx);
       const invoice = await tx.invoice.findFirst({ where: { id: this.id(invoiceId), pppoeAccountId: this.id(id) } });
-      if (!invoice) throw new NotFoundException('Invoice tidak ditemukan.');
+      if (!invoice) throw new NotFoundException('Tagihan tidak ditemukan.');
       if (invoice.status === 'PAID') return;
-      if (!['PENDING', 'OVERDUE'].includes(invoice.status)) throw new BadRequestException('Invoice tidak dapat dilunasi.');
+      if (!['PENDING', 'OVERDUE'].includes(invoice.status)) throw new BadRequestException('Tagihan tidak dapat dilunasi.');
       await tx.invoice.update({ where: { id: invoice.id }, data: { status: 'PAID', paidAt: new Date(), updatedAt: new Date() } });
     });
     try { await this.reconcileAccount(this.id(id)); }
@@ -107,7 +107,7 @@ export class CustomerServicesService implements OnModuleInit, OnModuleDestroy {
       this.logger.error(error);
       return { message: 'Pembayaran dicatat. Pembaruan akses janji bayar tertunda dan akan dicoba ulang otomatis.' };
     }
-    return { message: 'Pembayaran invoice dicatat.', isActive: (await this.account(id)).isActive };
+    return { message: 'Pembayaran tagihan dicatat.', isActive: (await this.account(id)).isActive };
   }
   async reconcileAccount(accountId: bigint) {
     await this.transaction(async tx => {
@@ -119,7 +119,7 @@ export class CustomerServicesService implements OnModuleInit, OnModuleDestroy {
       const paid = invoices.length === ids.length && invoices.every(i => i.status === 'PAID');
       if (paid) {
         await tx.paymentPromise.update({ where: { id: promise.id }, data: { status: 'FULFILLED', disconnectPending: false } });
-        // A manually disabled account is not reactivated; an expired promise can be restored after payment.
+        // Akun yang dinonaktifkan manual tetap nonaktif; akses dari janji bayar kedaluwarsa dapat dipulihkan setelah pembayaran.
         const expiresAt = account.expiresAt && account.expiresAt.getTime() + 86400000 <= Date.now()
           ? new Date(Date.now() + account.package.validityDays * 86400000) : account.expiresAt;
         const active = await tx.pppoeAccount.update({ where: { id: account.id }, data: { isActive: account.isActive || promise.status === 'EXPIRED', expiresAt }, include: { package: { include: { ipPool: true } } } });

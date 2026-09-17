@@ -8,7 +8,7 @@ export type RouterCommand = (command: string, words?: string[]) => Promise<Recor
 export class MikrotikService {
   async withRouter<T>(router: Nas, action: (write: RouterCommand) => Promise<T>, timeoutMs = 15000): Promise<T> {
     if (!router.username || router.password === null) {
-      throw new Error('Username dan password API MikroTik belum dikonfigurasi.');
+      throw new Error('Nama pengguna dan kata sandi API MikroTik belum dikonfigurasi.');
     }
     const api = new RouterOsClient();
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -19,9 +19,9 @@ export class MikrotikService {
           await api.connect(router.ipAddress || router.nasname, router.port || 8728);
           try {
             const reply = await api.write('/login', [`=name=${router.username}`, `=password=${router.password}`]);
-            if (reply.some((row) => row.ret)) throw new Error('Login API lama tidak didukung.');
+            if (reply.some((row) => row.ret)) throw new Error('Metode masuk API lama tidak didukung.');
           }
-          catch { throw new Error('Login API MikroTik gagal.'); }
+          catch { throw new Error('Gagal masuk ke API MikroTik.'); }
           if (expired) throw new Error('Koneksi MikroTik melewati batas waktu.');
           return action(async (command, words = []) => {
             if (expired) throw new Error('Koneksi MikroTik melewati batas waktu.');
@@ -31,7 +31,7 @@ export class MikrotikService {
         new Promise<never>((_, reject) => {
           timer = setTimeout(() => {
             expired = true;
-            reject(new Error('Operasi API MikroTik timeout.'));
+            reject(new Error('Operasi API MikroTik melewati batas waktu.'));
           }, timeoutMs);
         }),
       ]);
@@ -43,10 +43,10 @@ export class MikrotikService {
   }
 
   errorMessage(error: unknown): string {
-    // Do not reflect RouterOS responses containing credentials into the UI.
+    // Jangan tampilkan balasan RouterOS yang mungkin berisi kredensial ke antarmuka pengguna.
     const message = error instanceof Error ? error.message : String(error);
-    if (/password|login|auth|invalid user/i.test(message)) return 'Login API MikroTik gagal. Periksa username/password dan hak akses API.';
-    if (/timeout|timed out/i.test(message)) return 'API MikroTik timeout. Periksa koneksi dan firewall.';
+    if (/password|login|auth|invalid user|gagal masuk|kata sandi/i.test(message)) return 'Gagal masuk ke API MikroTik. Periksa nama pengguna, kata sandi, dan hak akses API.';
+    if (/timeout|timed out|batas waktu/i.test(message)) return 'API MikroTik melewati batas waktu. Periksa koneksi dan firewall.';
     if (/ECONNREFUSED/i.test(message)) return 'Port API MikroTik menolak koneksi.';
     if (/belum dikonfigurasi/i.test(message)) return 'Kredensial API MikroTik belum dikonfigurasi.';
     return 'Operasi API MikroTik gagal. Periksa koneksi, sertifikat, hak akses, dan konfigurasi router.';

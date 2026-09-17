@@ -35,14 +35,14 @@ export class HomeComponent implements OnInit {
   private buildCards(): void {
     const s = this.stats();
     const result: StatCard[] = [
-      { label: 'Server Core', value: s['totalServerCores'], type: 'server' },
+      { label: 'Server Inti', value: s['totalServerCores'], type: 'server' },
       { label: 'Total ODC', value: s['totalOdcs'], type: 'odc' },
       { label: 'Total ODP', value: s['totalOdps'], type: 'odp' },
       { label: 'Data Redaman', value: s['totalWithRedaman'], type: 'redaman' },
     ];
     if (this.auth.isAdmin()) {
       result.push({ label: 'Total Petugas', value: s['totalPetugas'], type: 'users' });
-      result.push({ label: 'Total User', value: s['totalUsers'], type: 'users' });
+      result.push({ label: 'Total Pengguna', value: s['totalUsers'], type: 'users' });
     }
     this.cards.set(result);
   }

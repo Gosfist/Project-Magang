@@ -2,7 +2,9 @@
   "name": "project-magang-deploy",
   "private": true,
   "scripts": {
-    "update": "bash scripts/server-update.sh",
+    "update": "bash scripts/server-update.sh all",
+    "updatebe": "bash scripts/server-update.sh be",
+    "updatefe": "bash scripts/server-update.sh fe",
     "migrate:updates": "node scripts/run-sql-updates.mjs"
   }
 }

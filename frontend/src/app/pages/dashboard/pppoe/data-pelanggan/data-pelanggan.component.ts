@@ -39,8 +39,9 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   editTab = signal<string>('customer');
   readonly editTabs = [
     { id: 'customer', label: 'Data Pelanggan' }, { id: 'account', label: 'Akun PPPoE' },
-    { id: 'auth-logs', label: 'Log Autentikasi' }, { id: 'invoices', label: 'Invoice' },
-    { id: 'addons', label: 'Add-ons' }, { id: 'promises', label: 'Janji Bayar' },
+    // ID tab mengikuti rute API; label ditampilkan dalam bahasa Indonesia.
+    { id: 'auth-logs', label: 'Log Autentikasi' }, { id: 'invoices', label: 'Tagihan' },
+    { id: 'addons', label: 'Biaya Tambahan' }, { id: 'promises', label: 'Janji Bayar' },
   ];
   filterOpen = signal(false);
   statusFilter = '';
@@ -210,8 +211,8 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
           this.refreshing.set(false);
           this.items.set(r.data.map(item => ({
             ...item,
-            // Older API responses expose only the database ID; the migration
-            // preserves that same number for existing customers.
+            // Respons API lama hanya memiliki ID basis data; migrasi mempertahankan
+            // nomor tersebut untuk pelanggan yang sudah terdaftar.
             customerId: String(item.customerNumber ?? (item.customerId || item.id)).padStart(6, '0'),
             serviceStatus: item.serviceStatus || (item.isActive && item.package.isActive !== false
               && (!item.expiresAt || Date.parse(item.expiresAt) + 86400000 > Date.now()) ? 'Aktif' : 'Isolir'),
@@ -376,7 +377,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     if (!String(this.form.customerName).trim() || !String(this.form.username).trim() || !this.form.odp
       || (!this.editing() && !this.form.password) || (this.form.password && this.form.password.length < 6)) {
       if (!this.form.odp && this.editing()) this.editTab.set('account');
-      this.formError.set('Lengkapi nama pelanggan, username, password minimal 6 karakter, dan pilih ODC / ODP.');
+      this.formError.set('Lengkapi nama pelanggan, nama pengguna, kata sandi minimal 6 karakter, dan pilih ODC / ODP.');
       return;
     }
     this.formError.set('');

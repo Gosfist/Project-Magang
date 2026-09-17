@@ -39,7 +39,7 @@ export class AuthService {
   }
 
   async logout(): Promise<void> {
-    try { await firstValueFrom(this.api.post('/auth/logout', {})); } catch { /* Local logout remains available when offline. */ }
+    try { await firstValueFrom(this.api.post('/auth/logout', {})); } catch { /* Pengguna tetap dapat keluar secara lokal saat koneksi terputus. */ }
     localStorage.removeItem('unzanet_token');
     this.user.set(null);
     this.router.navigate(['/login']);

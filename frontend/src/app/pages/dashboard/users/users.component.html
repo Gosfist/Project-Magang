@@ -6,14 +6,14 @@
         <input class="input pl-10" placeholder="Cari nama atau email..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
       </div>
       <select class="input" [(ngModel)]="role" (ngModelChange)="load()">
-        <option value="">Semua role</option>
+        <option value="">Semua peran</option>
         <option value="admin">Admin</option>
         <option value="petugas">Petugas</option>
       </select>
       <select class="input" [(ngModel)]="status" (ngModelChange)="load()">
         <option value="">Semua status</option>
-        <option value="active">Active</option>
-        <option value="inactive">Inactive</option>
+        <option value="active">Aktif</option>
+        <option value="inactive">Tidak aktif</option>
       </select>
       <button class="btn-primary" (click)="show()">
         <svg lucidePlus [size]="18"></svg> Tambah
@@ -25,7 +25,7 @@
     <table>
       <thead>
         <tr>
-          <th>Nama</th><th>Email</th><th>Nomor HP</th><th>Role</th><th>Status</th><th class="text-right">Aksi</th>
+          <th>Nama</th><th>Email</th><th>Nomor HP</th><th>Peran</th><th>Status</th><th class="text-right">Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -36,7 +36,7 @@
             <td>{{ user.phone || '-' }}</td>
             <td class="capitalize">{{ user.role }}</td>
             <td>
-              <span [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (user.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')">{{ user.status }}</span>
+              <span [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (user.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')">{{ user.status === 'active' ? 'Aktif' : 'Tidak aktif' }}</span>
             </td>
             <td>
               <div class="flex justify-end gap-2">
@@ -74,12 +74,12 @@
         <input class="input" type="tel" autocomplete="tel" maxlength="30" placeholder="08xxxxxxxxxx" [(ngModel)]="form.phone" name="phone" />
       </div>
       <div>
-        <label class="label">Password @if (editing()) { <small class="text-slate-400">(kosongkan jika tidak diubah)</small> }</label>
+        <label class="label">Kata Sandi @if (editing()) { <small class="text-slate-400">(kosongkan jika tidak diubah)</small> }</label>
         <input class="input" type="password" [required]="!editing()" minlength="6" [(ngModel)]="form.password" name="password" />
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="label">Role</label>
+          <label class="label">Peran</label>
           <select class="input" [(ngModel)]="form.role" name="role">
             <option value="admin">Admin</option>
             <option value="petugas">Petugas</option>
@@ -88,8 +88,8 @@
         <div>
           <label class="label">Status</label>
           <select class="input" [(ngModel)]="form.status" name="status">
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value="active">Aktif</option>
+            <option value="inactive">Tidak aktif</option>
           </select>
         </div>
       </div>

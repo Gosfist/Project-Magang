@@ -16,7 +16,7 @@ export class AuthController {
 
   @Post('logout')
   @UseGuards(JwtAuthGuard)
-  logout() { return { message: 'Logout berhasil.' }; }
+  logout() { return { message: 'Berhasil keluar.' }; }
 
   @Get('me')
   @UseGuards(JwtAuthGuard)

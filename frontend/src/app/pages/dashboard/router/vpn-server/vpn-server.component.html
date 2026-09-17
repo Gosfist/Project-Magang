@@ -19,11 +19,11 @@
       <thead>
         <tr>
           <th>Nama Server</th>
-          <th>Host Endpoint & Port</th>
+          <th>Alamat Server dan Port</th>
           <th>Subnet WireGuard</th>
-          <th>Pool IP Client</th>
-          <th>Public Key</th>
-          <th>Client Terhubung</th>
+          <th>Kumpulan IP Klien</th>
+          <th>Kunci Publik</th>
+          <th>Klien Terhubung</th>
           <th>Status</th>
           <th class="text-right">Aksi</th>
         </tr>
@@ -60,7 +60,7 @@
               <span
                 [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')"
               >
-                {{ item.isActive ? 'Active' : 'Inactive' }}
+                {{ item.isActive ? 'Aktif' : 'Tidak aktif' }}
               </span>
             </td>
             <td>
@@ -86,7 +86,7 @@
 
   <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
 
-  <!-- Modal Tambah / Edit Server WireGuard -->
+  <!-- Modal untuk menambah atau mengubah server WireGuard. -->
   <app-modal
     [open]="open()"
     [title]="(editing() ? 'Edit' : 'Tambah') + ' Server WireGuard'"
@@ -94,7 +94,7 @@
   >
     <form (ngSubmit)="save()" class="space-y-4">
       <div class="rounded-lg border border-sky-200 bg-sky-50/70 p-3 text-xs text-sky-800">
-        <b>Protokol WireGuard Only:</b> Server tunnel ini dikonfigurasi khusus untuk protokol WireGuard native dengan performa tinggi dan enkripsi modern.
+        <b>Hanya Protokol WireGuard:</b> Server terowongan ini dikonfigurasi khusus untuk protokol WireGuard asli dengan performa tinggi dan enkripsi modern.
       </div>
 
       <div class="grid gap-4 sm:grid-cols-2">
@@ -114,23 +114,23 @@
           <input class="input font-mono" required [(ngModel)]="form.subnet" name="subnet" placeholder="10.200.0.0/24" />
         </div>
         <div>
-          <label class="label">Listen Port WireGuard *</label>
+          <label class="label">Port WireGuard yang Didengarkan *</label>
           <input type="number" class="input font-mono" required [(ngModel)]="form.wgPort" name="wgPort" placeholder="51820" />
         </div>
       </div>
 
       <div>
         <div class="flex items-center justify-between mb-1">
-          <label class="label mb-0">WireGuard Public Key *</label>
+          <label class="label mb-0">Kunci Publik WireGuard *</label>
           <button type="button" class="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium" (click)="generateKeypair()">
-            <svg lucideRefreshCw [size]="13"></svg> Generate Keypair Baru
+            <svg lucideRefreshCw [size]="13"></svg> Buat Pasangan Kunci Baru
           </button>
         </div>
         <input class="input font-mono text-xs" required [(ngModel)]="form.wgPublicKey" name="wgPublicKey" />
       </div>
 
       <div>
-        <label class="label">WireGuard Private Key</label>
+        <label class="label">Kunci Privat WireGuard</label>
         <input type="password" class="input font-mono text-xs" [(ngModel)]="form.wgPrivateKey" name="wgPrivateKey" placeholder="Disimpan aman di server" />
       </div>
 

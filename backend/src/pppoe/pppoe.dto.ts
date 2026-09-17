@@ -17,8 +17,8 @@ export class SaveAccountDto {
   @IsString() @Matches(/\S/, { message: 'Nama pelanggan wajib diisi.' }) @MaxLength(150) customerName: string;
   @IsOptional() @IsString() @MaxLength(50) idCardNumber?: string;
   @IsOptional() @IsString() @MaxLength(500) idCardPhoto?: string;
-  @IsString() @MaxLength(64) @Matches(/^[A-Za-z0-9._@-]+$/, { message: 'Username hanya boleh berisi huruf, angka, titik, garis bawah, @, dan tanda hubung.' }) username: string;
-  @IsOptional() @IsString() @MinLength(6, { message: 'Password PPPoE minimal 6 karakter.' }) @MaxLength(64) password?: string;
+  @IsString() @MaxLength(64) @Matches(/^[A-Za-z0-9._@-]+$/, { message: 'Nama pengguna hanya boleh berisi huruf, angka, titik, garis bawah, @, dan tanda hubung.' }) username: string;
+  @IsOptional() @IsString() @MinLength(6, { message: 'Kata sandi PPPoE minimal 6 karakter.' }) @MaxLength(64) password?: string;
   @IsOptional() @IsString() @MaxLength(30) phone?: string;
   @IsOptional() @IsString() @MaxLength(500) address?: string;
   @IsOptional() @Type(() => Number) @IsNumber() latitude?: number;

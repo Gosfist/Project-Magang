@@ -50,7 +50,7 @@ describe('Customer invoices and promises', () => {
   });
   it('rejects a promise without an unpaid invoice or with a past date', async () => {
     const { service, tx } = setup(); tx.invoice.findMany.mockResolvedValue([]);
-    await expect(service.createPromise('1', { promisedDate: '2026-09-18' })).rejects.toThrow('Tidak ada invoice');
+    await expect(service.createPromise('1', { promisedDate: '2026-09-18' })).rejects.toThrow('Tidak ada tagihan');
     await expect(service.createPromise('1', { promisedDate: '2026-09-16' })).rejects.toThrow('minimal hari ini');
   });
   it('isolates at the exact deadline, syncs RADIUS, then disconnects; retries failed NAS', async () => {
@@ -74,7 +74,7 @@ describe('Customer invoices and promises', () => {
   });
   it('does not mark another customer invoice paid', async () => {
     const { service, tx } = setup();
-    await expect(service.payInvoice('1', '90')).rejects.toThrow('Invoice tidak ditemukan');
+    await expect(service.payInvoice('1', '90')).rejects.toThrow('Tagihan tidak ditemukan');
     expect(tx.invoice.findFirst).toHaveBeenCalledWith({ where: { id: 90n, pppoeAccountId: 1n } }); expect(tx.invoice.update).not.toHaveBeenCalled();
   });
 });

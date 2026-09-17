@@ -37,7 +37,7 @@ describe('Direct MikroTik pool management', () => {
     const { service, write, dto } = setup();
     write.mockResolvedValue([{ '.id': '*A', name: dto.name }]);
     await expect(service.createIpPool(dto)).rejects.toThrow('Nama pool sudah digunakan');
-    await expect(service.createIpPool({ ...dto, networkStart: '10.0.1.1' })).rejects.toThrow('Network Start');
+    await expect(service.createIpPool({ ...dto, networkStart: '10.0.1.1' })).rejects.toThrow('Awal rentang IP');
     expect(write).not.toHaveBeenCalledWith('/ip/pool/add', expect.anything());
   });
   it('updates and removes only the pool ID on its router', async () => {

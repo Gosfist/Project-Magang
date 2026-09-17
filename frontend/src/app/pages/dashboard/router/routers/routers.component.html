@@ -19,10 +19,10 @@
       <thead>
         <tr>
           <th>Router</th>
-          <th>IP Address</th>
-          <th>Auth Mode</th>
+          <th>Alamat IP</th>
+          <th>Mode Autentikasi</th>
           <th>Port API / RADIUS</th>
-          <th>RADIUS Secret</th>
+          <th>Kunci Rahasia RADIUS</th>
           <th>Status</th>
           <th class="text-right">Aksi</th>
         </tr>
@@ -55,7 +55,7 @@
             </td>
             <td>
               <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">
-                RADIUS Only
+                Hanya RADIUS
               </span>
             </td>
             <td>
@@ -70,7 +70,7 @@
               <span
                 [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')"
               >
-                {{ item.isActive ? 'Active' : 'Inactive' }}
+                {{ item.isActive ? 'Aktif' : 'Tidak aktif' }}
               </span>
             </td>
             <td>
@@ -89,7 +89,7 @@
                 <button
                   class="btn-secondary px-2.5 py-1.5 text-xs text-indigo-700"
                   (click)="openScript(item)"
-                  title="Setup Script MikroTik"
+                  title="Skrip Pengaturan MikroTik"
                 >
                   <svg lucideTerminal [size]="14"></svg>
                 </button>
@@ -114,7 +114,7 @@
 
   <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
 
-  <!-- Modal Tambah / Edit Router -->
+  <!-- Modal untuk menambah atau mengubah router. -->
   <app-modal
     [open]="open()"
     [title]="(editing() ? 'Edit' : 'Tambah') + ' Router NAS'"
@@ -136,12 +136,12 @@
         </div>
       </div>
 
-      <!-- Authentication Mode (RADIUS Only - Hardcoded) -->
+      <!-- Mode autentikasi tetap menggunakan RADIUS sesuai konfigurasi router. -->
       <div class="rounded-xl border border-indigo-200 bg-indigo-50/70 p-3.5">
         <div class="flex items-center justify-between">
           <label class="text-sm font-semibold text-indigo-950">Authentication Mode *</label>
           <span class="rounded-full bg-indigo-600 px-2.5 py-0.5 text-xs font-bold text-white tracking-wide">
-            RADIUS ONLY
+            HANYA RADIUS
           </span>
         </div>
         <p class="mt-1 text-xs text-indigo-800 leading-relaxed">
@@ -151,7 +151,7 @@
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
-          <label class="label">IP Address (Koneksi API) *</label>
+          <label class="label">Alamat IP (Koneksi API) *</label>
           <input
             class="input"
             required
@@ -162,7 +162,7 @@
           />
         </div>
         <div>
-          <label class="label">NAS IP (FreeRADIUS Client IP) *</label>
+          <label class="label">IP NAS (Alamat Klien FreeRADIUS) *</label>
           <input
             class="input"
             required
@@ -175,7 +175,7 @@
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
-          <label class="label">API Username</label>
+          <label class="label">Nama Pengguna API</label>
           <input class="input" [(ngModel)]="form.username" name="username" placeholder="admin" />
         </div>
         <div>
@@ -198,7 +198,7 @@
       </div>
 
       <div>
-        <label class="label">RADIUS Secret *</label>
+        <label class="label">Kunci Rahasia RADIUS *</label>
         <div class="flex gap-2">
           <input class="input font-mono" required [(ngModel)]="form.secret" name="secret" />
           <button type="button" class="btn-secondary whitespace-nowrap" (click)="randomizeSecret()">
@@ -209,7 +209,7 @@
 
       @if (vpnClients().length > 0) {
         <div>
-          <label class="label">Hubungkan ke WireGuard VPN Client (Opsional)</label>
+          <label class="label">Hubungkan ke Klien VPN WireGuard (Opsional)</label>
           <select class="input" [(ngModel)]="form.vpnClientId" name="vpnClientId">
             <option value="">-- Tanpa Tunnel WireGuard (Koneksi Langsung/Publik) --</option>
             @for (vc of vpnClients(); track vc.id) {
@@ -252,15 +252,15 @@
     </form>
   </app-modal>
 
-  <!-- Modal Script Setup MikroTik -->
+  <!-- Modal berisi skrip pengaturan MikroTik. -->
   <app-modal
     [open]="scriptModalOpen()"
-    [title]="'Setup Script MikroTik — ' + (scriptData()?.routerName || '')"
+    [title]="'Skrip Pengaturan MikroTik — ' + (scriptData()?.routerName || '')"
     (closeModal)="scriptModalOpen.set(false)"
   >
     @if (scriptData()) {
       <div class="space-y-4">
-        <!-- Tab Switcher -->
+        <!-- Pilihan versi skrip RouterOS. -->
         <div class="flex rounded-lg border border-slate-200 bg-slate-100 p-1">
           <button
             type="button"
@@ -290,7 +290,7 @@
               <span>Tersalin!</span>
             } @else {
               <svg lucideCopy [size]="14"></svg>
-              <span>Salin Script</span>
+              <span>Salin Skrip</span>
             }
           </button>
         </div>

@@ -1,5 +1,5 @@
 <div class="monitoring-page flex flex-col gap-6">
-  <!-- Top Control Bar -->
+  <!-- Pilihan router dan tombol pemuatan ulang. -->
   <div class="card flex flex-wrap items-center justify-between gap-4 p-4">
     <div class="flex items-center gap-3">
       <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
@@ -30,22 +30,22 @@
         (click)="loadRealtime()"
       >
         <svg lucideRefreshCw [size]="16" [class.animate-spin]="realtimeLoading()"></svg>
-        <span>Refresh</span>
+        <span>Muat Ulang</span>
       </button>
     </div>
   </div>
 
-  <!-- Error Notification -->
+  <!-- Pemberitahuan kesalahan koneksi router. -->
   @if (realtimeError()) {
     <div role="alert" class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
       <span class="font-semibold">Peringatan:</span> {{ realtimeError() }}
     </div>
   }
 
-  <!-- Realtime Cards (5 Cards) -->
+  <!-- Lima kartu ringkasan kondisi router saat ini. -->
   @if (realtime(); as r) {
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-      <!-- Uptime -->
+      <!-- Waktu aktif router. -->
       <section class="card space-y-2 p-4">
         <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500">Uptime</h3>
         <p class="text-base font-bold text-blue-600 sm:text-lg">
@@ -78,23 +78,23 @@
         </p>
       </section>
 
-      <!-- Network -->
+      <!-- Ringkasan lalu lintas jaringan router. -->
       <section class="card space-y-2 p-4">
-        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500">Traffic Interface</h3>
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500">Lalu Lintas Antarmuka</h3>
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <p class="text-[11px] text-slate-500">Download</p>
+            <p class="text-[11px] text-slate-500">Unduh</p>
             <p class="font-bold text-slate-900">{{ r.network.download | number: '1.2-2' }} <span class="text-xs font-normal text-slate-500">M</span></p>
           </div>
           <div>
-            <p class="text-[11px] text-slate-500">Upload</p>
+            <p class="text-[11px] text-slate-500">Unggah</p>
             <p class="font-bold text-rose-600">{{ r.network.upload | number: '1.2-2' }} <span class="text-xs font-normal text-slate-500">M</span></p>
           </div>
         </div>
         <p class="text-[10px] text-slate-400">Total agregat interface utama</p>
       </section>
 
-      <!-- Board / Version -->
+      <!-- Papan perangkat dan versi RouterOS. -->
       <section class="card space-y-1.5 p-4">
         <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500">Info Perangkat</h3>
         <p class="font-bold text-slate-800">{{ r.board.name }}</p>
@@ -104,7 +104,7 @@
     </div>
   }
 
-  <!-- Tab Buttons -->
+  <!-- Tombol untuk memilih rincian pemantauan. -->
   <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
     <button
       type="button"
@@ -132,11 +132,11 @@
       [class]="activeTab() === 'network' ? 'btn-primary text-xs px-4 py-2' : 'btn-secondary text-xs px-4 py-2'"
       (click)="activeTab.set('network')"
     >
-      Grafik Network
+      Grafik Jaringan
     </button>
   </div>
 
-  <!-- Tab 1: Log MikroTik (Default) -->
+  <!-- Tab 1 menampilkan log MikroTik sebagai tampilan awal. -->
   @if (activeTab() === 'log') {
     <section class="card flex flex-col overflow-hidden">
       <div class="flex items-center justify-between border-b border-slate-200 p-4">
@@ -196,10 +196,10 @@
     <app-stats-chart
       title="Grafik Beban CPU Router (%)"
       type="cpu"
-      [period]="cpuPeriod"
+      [periode]="cpuPeriode"
       [items]="cpuItems()"
       [loading]="cpuLoading()"
-      (periodChange)="onCpuPeriodChange($event)"
+      (periodeChange)="onCpuPeriodeChange($event)"
     ></app-stats-chart>
   }
 
@@ -208,22 +208,22 @@
     <app-stats-chart
       title="Grafik Penggunaan RAM Router (%)"
       type="ram"
-      [period]="ramPeriod"
+      [periode]="ramPeriode"
       [items]="ramItems()"
       [loading]="ramLoading()"
-      (periodChange)="onRamPeriodChange($event)"
+      (periodeChange)="onRamPeriodeChange($event)"
     ></app-stats-chart>
   }
 
-  <!-- Tab 4: Grafik Network -->
+  <!-- Tab 4 menampilkan grafik lalu lintas jaringan. -->
   @if (activeTab() === 'network') {
     <app-stats-chart
-      title="Grafik Traffic Jaringan Router (Mbps)"
+      title="Grafik Lalu Lintas Jaringan Router (Mbps)"
       type="network"
-      [period]="netPeriod"
+      [periode]="netPeriode"
       [items]="netItems()"
       [loading]="netLoading()"
-      (periodChange)="onNetPeriodChange($event)"
+      (periodeChange)="onNetPeriodeChange($event)"
     ></app-stats-chart>
   }
 </div>

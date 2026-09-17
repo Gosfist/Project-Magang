@@ -26,19 +26,19 @@ export class SecretService {
 
   private decryptLaravel(value: string) {
     const appKey = this.config.get<string>('LARAVEL_APP_KEY');
-    if (!appKey) throw new InternalServerErrorException('LARAVEL_APP_KEY wajib diisi untuk membaca password PPPoE lama.');
+    if (!appKey) throw new InternalServerErrorException('LARAVEL_APP_KEY wajib diisi untuk membaca kata sandi PPPoE lama.');
     try {
       const key = Buffer.from(appKey.replace(/^base64:/, ''), 'base64');
       const payload = JSON.parse(Buffer.from(value, 'base64').toString('utf8')) as { iv: string; value: string; mac: string };
       const expected = createHmac('sha256', key).update(payload.iv + payload.value).digest();
       const actual = Buffer.from(payload.mac, 'hex');
-      if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) throw new Error('MAC invalid');
+      if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) throw new Error('MAC tidak valid');
       const decipher = createDecipheriv('aes-256-cbc', key, Buffer.from(payload.iv, 'base64'));
       const plain = Buffer.concat([decipher.update(Buffer.from(payload.value, 'base64')), decipher.final()]).toString('utf8');
       const serialized = plain.match(/^s:\d+:"([\s\S]*)";$/);
       return serialized?.[1] ?? plain;
     } catch {
-      throw new InternalServerErrorException('Password PPPoE lama gagal didekripsi. Periksa LARAVEL_APP_KEY.');
+      throw new InternalServerErrorException('Kata sandi PPPoE lama gagal didekripsi. Periksa LARAVEL_APP_KEY.');
     }
   }
 

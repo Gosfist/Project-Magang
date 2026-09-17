@@ -53,7 +53,7 @@ export class PppoeService {
 
   private validatePoolRange(dto: SaveIpPoolDto) {
     const numeric = (ip: string) => ip.split('.').reduce((value, octet) => value * 256 + Number(octet), 0);
-    if (numeric(dto.networkStart) > numeric(dto.networkEnd)) throw new BadRequestException('Network Start harus lebih kecil atau sama dengan Network End.');
+    if (numeric(dto.networkStart) > numeric(dto.networkEnd)) throw new BadRequestException('Awal rentang IP harus lebih kecil atau sama dengan akhir rentang IP.');
   }
 
   private networkMessage(message: string, warnings: string[]) {
@@ -188,7 +188,7 @@ export class PppoeService {
   }
 
   async createAccount(dto: SaveAccountDto) {
-    if (!dto.password) throw new BadRequestException('Password PPPoE wajib diisi.');
+    if (!dto.password) throw new BadRequestException('Kata sandi PPPoE wajib diisi.');
     await this.validateAccountForm(dto, true);
     const pkg = await this.findPackage(dto.pppoePackageId);
     try {
@@ -204,7 +204,7 @@ export class PppoeService {
       });
       const { password: _password, ...safe } = account;
       return serialize({ message: `Akun PPPoE pelanggan ${account.customerName} berhasil ditambahkan.`, account: { ...safe, discount: Number(safe.discount) } });
-    } catch (error) { this.unique(error, 'Username PPPoE sudah digunakan.'); }
+    } catch (error) { this.unique(error, 'Nama pengguna PPPoE sudah digunakan.'); }
   }
 
   async updateAccount(id: string, dto: SaveAccountDto) {
@@ -230,7 +230,7 @@ export class PppoeService {
       }
       const message = 'Akun PPPoE berhasil diperbarui dan disinkronkan ke RADIUS.';
       return serialize({ message: warnings.length ? `${message} Perhatian: ${warnings.join(' ')}` : message, warnings, account: { ...safe, discount: Number(safe.discount) } });
-    } catch (error) { this.unique(error, 'Username PPPoE sudah digunakan.'); }
+    } catch (error) { this.unique(error, 'Nama pengguna PPPoE sudah digunakan.'); }
   }
 
   private async createAccountTransaction<T>(action: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {

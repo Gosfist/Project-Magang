@@ -17,7 +17,7 @@ export class LandingComponent {
     ['Kontak', 'kontak'],
   ];
   readonly benefits = [
-    ['Cepat', 'Bandwidth stabil untuk bekerja, belajar, streaming, dan bermain game.'],
+    ['Cepat', 'Lebar pita stabil untuk bekerja, belajar, menonton video, dan bermain gim.'],
     ['Aman', 'Jaringan terkelola dengan pemantauan dan perawatan rutin.'],
     ['Responsif', 'Tim teknis siap membantu saat Anda membutuhkan dukungan.'],
   ];
@@ -25,7 +25,7 @@ export class LandingComponent {
     {
       name: 'Fiber Pemula',
       price: '50.000',
-      desc: 'Untuk browsing, belajar, dan penggunaan harian.',
+      desc: 'Untuk menjelajah internet, belajar, dan penggunaan harian.',
       popular: false,
       details: [
         ['Kecepatan', '10 Mbps'],
@@ -36,7 +36,7 @@ export class LandingComponent {
     {
       name: 'Fiber Keluarga',
       price: '100.000',
-      desc: 'Nyaman untuk streaming, bekerja, dan banyak perangkat.',
+      desc: 'Nyaman untuk menonton video, bekerja, dan banyak perangkat.',
       popular: true,
       details: [
         ['Kecepatan', '20 Mbps'],

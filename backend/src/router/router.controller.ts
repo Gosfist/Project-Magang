@@ -51,7 +51,7 @@ export class RouterController {
   }
 
   // ==========================================
-  // 2. VPN SERVER (WIREGUARD)
+  // 2. Server VPN WireGuard.
   // ==========================================
 
   @Get('vpn-server/options')
@@ -88,7 +88,7 @@ export class RouterController {
   }
 
   // ==========================================
-  // 3. VPN CLIENT (WIREGUARD)
+  // 3. Klien VPN WireGuard.
   // ==========================================
 
   @Get('vpn-client/options')

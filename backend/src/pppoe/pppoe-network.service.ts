@@ -79,7 +79,7 @@ export class PppoeNetworkService {
       for (const session of active) {
         if (session.name === username && session['.id']) await write('/ppp/active/remove', [`=.id=${session['.id']}`]);
       }
-      // Do not fabricate Accounting-Stop: FreeRADIUS records the router's real reply.
+      // Jangan membuat Accounting-Stop palsu; FreeRADIUS mencatat balasan asli dari router.
     }));
     if (!routers.length) result.warnings.push('Sesi belum dapat diverifikasi: Router/NAS pelanggan tidak ditemukan.');
     if (unknown.length) result.warnings.push('Ada sesi RADIUS pada NAS yang belum terdaftar; pemutusan sesi tersebut belum terverifikasi.');
@@ -88,7 +88,7 @@ export class PppoeNetworkService {
 
   private async onRouters(routers: Nas[], action: (router: Nas) => Promise<unknown>): Promise<NetworkResult> {
     const result: NetworkResult = { warnings: [], completed: 0 };
-    // Keep concurrency bounded so a large NAS list cannot exhaust sockets.
+    // Batasi jumlah permintaan bersamaan agar daftar NAS yang besar tidak menghabiskan soket.
     for (let offset = 0; offset < routers.length; offset += 4) {
       const batch = routers.slice(offset, offset + 4);
       const outcomes = await Promise.allSettled(batch.map(action));

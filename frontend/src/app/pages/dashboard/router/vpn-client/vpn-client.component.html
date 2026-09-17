@@ -4,13 +4,13 @@
       <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
       <input
         class="input pl-10"
-        placeholder="Cari client WireGuard, IP, atau server..."
+        placeholder="Cari klien WireGuard, IP, atau server..."
         [(ngModel)]="search"
         (ngModelChange)="page.set(1); load()"
       />
     </div>
     <button class="btn-primary" (click)="show()">
-      <svg lucidePlus [size]="18"></svg> Tambah Client WireGuard
+      <svg lucidePlus [size]="18"></svg> Tambah Klien WireGuard
     </button>
   </div>
 
@@ -18,10 +18,10 @@
     <table>
       <thead>
         <tr>
-          <th>Nama Client</th>
+          <th>Nama Klien</th>
           <th>Server WireGuard</th>
           <th>IP WireGuard Tunnel</th>
-          <th>Public Key</th>
+          <th>Kunci Publik</th>
           <th>Allowed IPs</th>
           <th>RADIUS Gateway</th>
           <th>Status</th>
@@ -65,7 +65,7 @@
               <span
                 [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')"
               >
-                {{ item.isActive ? 'Active' : 'Inactive' }}
+                {{ item.isActive ? 'Aktif' : 'Tidak aktif' }}
               </span>
             </td>
             <td>
@@ -73,7 +73,7 @@
                 <button
                   class="btn-secondary px-2.5 py-1.5 text-xs text-indigo-700"
                   (click)="openScript(item)"
-                  title="Script MikroTik ROS 7"
+                  title="Skrip MikroTik ROS 7"
                 >
                   <svg lucideTerminal [size]="14"></svg>
                 </button>
@@ -89,7 +89,7 @@
         }
         @if (items().length === 0) {
           <tr>
-            <td colspan="8" class="py-8 text-center text-slate-400">Client WireGuard belum tersedia.</td>
+            <td colspan="8" class="py-8 text-center text-slate-400">Klien WireGuard belum tersedia.</td>
           </tr>
         }
       </tbody>
@@ -98,16 +98,16 @@
 
   <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
 
-  <!-- Modal Tambah / Edit Client WireGuard -->
+  <!-- Modal untuk menambah atau mengubah klien WireGuard. -->
   <app-modal
     [open]="open()"
-    [title]="(editing() ? 'Edit' : 'Tambah') + ' Client WireGuard'"
+    [title]="(editing() ? 'Ubah' : 'Tambah') + ' Klien WireGuard'"
     (closeModal)="open.set(false)"
   >
     <form (ngSubmit)="save()" class="space-y-4">
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
-          <label class="label">Nama Client / Router *</label>
+          <label class="label">Nama Klien / Router *</label>
           <input class="input" required [(ngModel)]="form.name" name="name" placeholder="Contoh: MikroTik ODP 1" />
         </div>
         <div>
@@ -123,7 +123,7 @@
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
-          <label class="label">IP WireGuard Client *</label>
+          <label class="label">IP Klien WireGuard *</label>
           <input class="input font-mono" required [(ngModel)]="form.vpnIp" name="vpnIp" placeholder="10.200.0.2" />
         </div>
         <div>
@@ -134,17 +134,17 @@
 
       <div>
         <div class="flex items-center justify-between mb-1">
-          <label class="label mb-0">Client Public Key *</label>
+          <label class="label mb-0">Kunci Publik Klien *</label>
           <button type="button" class="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium" (click)="generateKeypair()">
-            <svg lucideRefreshCw [size]="13"></svg> Generate Keypair Baru
+            <svg lucideRefreshCw [size]="13"></svg> Buat Pasangan Kunci Baru
           </button>
         </div>
         <input class="input font-mono text-xs" required [(ngModel)]="form.clientPublicKey" name="clientPublicKey" />
       </div>
 
       <div>
-        <label class="label">Client Private Key</label>
-        <input type="password" class="input font-mono text-xs" [(ngModel)]="form.clientPrivateKey" name="clientPrivateKey" placeholder="Digunakan untuk script MikroTik" />
+        <label class="label">Kunci Privat Klien</label>
+        <input type="password" class="input font-mono text-xs" [(ngModel)]="form.clientPrivateKey" name="clientPrivateKey" placeholder="Digunakan untuk skrip MikroTik" />
       </div>
 
       <label class="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50/50 p-3 cursor-pointer">
@@ -164,7 +164,7 @@
         <label class="flex items-center gap-3 rounded-lg border p-3">
           <input type="checkbox" [(ngModel)]="form.isActive" name="isActive" />
           <span>
-            <b class="block text-sm">Client Aktif</b>
+            <b class="block text-sm">Klien Aktif</b>
             <small class="text-slate-500">Nonaktifkan jika client ditangguhkan.</small>
           </span>
         </label>
@@ -172,15 +172,15 @@
 
       <div class="flex justify-end gap-3 pt-2">
         <button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button>
-        <button class="btn-primary">Simpan Client</button>
+        <button class="btn-primary">Simpan Klien</button>
       </div>
     </form>
   </app-modal>
 
-  <!-- Modal Script Koneksi WireGuard MikroTik -->
+  <!-- Modal berisi skrip koneksi WireGuard untuk MikroTik. -->
   <app-modal
     [open]="scriptModalOpen()"
-    [title]="'Script WireGuard MikroTik ROS 7 — ' + (scriptData()?.clientName || '')"
+    [title]="'Skrip WireGuard MikroTik ROS 7 — ' + (scriptData()?.clientName || '')"
     (closeModal)="scriptModalOpen.set(false)"
   >
     @if (scriptData()) {
@@ -197,7 +197,7 @@
               <span>Tersalin!</span>
             } @else {
               <svg lucideCopy [size]="14"></svg>
-              <span>Salin Script</span>
+              <span>Salin Skrip</span>
             }
           </button>
         </div>

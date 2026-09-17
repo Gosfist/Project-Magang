@@ -60,7 +60,7 @@
               class="btn-secondary"
               (click)="statusFilter = ''; sessionFilter = ''; applyFilters()"
             >
-              Reset</button
+              Atur Ulang</button
             ><button
               type="button"
               class="btn-primary"
@@ -73,7 +73,7 @@
       }
     </div>
     <button class="btn-secondary" [disabled]="refreshing()" (click)="load()">
-      {{ refreshing() ? "Memuat..." : "Refresh" }}
+      {{ refreshing() ? "Memuat..." : "Muat Ulang" }}
     </button>
     <button class="btn-primary" (click)="show()">
       <svg lucidePlus [size]="18"></svg> Tambah Pelanggan
@@ -257,7 +257,7 @@
                     ? "Data Pelanggan"
                     : s === 2
                       ? "Data Pembayaran"
-                      : "Data Secret"
+                      : "Data Akun PPPoE"
                 }}</span
               >
             </div>
@@ -534,7 +534,7 @@
         </div>
         @if (form.subscriptionType === "PREPAID" && !editing()) {
           <p class="text-sm text-slate-600">
-            Tagihan pertama prepaid menggunakan harga penuh paket setelah
+            Tagihan pertama prabayar menggunakan harga penuh paket setelah
             diskon.
           </p>
         }
@@ -589,7 +589,7 @@
           }
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
-              <label class="label">Username PPPoE *</label>
+              <label class="label">Nama Pengguna PPPoE *</label>
               <input
                 class="input"
                 required
@@ -601,7 +601,7 @@
             </div>
             <div>
               <label class="label"
-                >Password PPPoE
+                >Kata Sandi PPPoE
                 @if (editing()) {
                   <small class="text-slate-400">(kosongkan jika tetap)</small>
                 }
@@ -624,8 +624,8 @@
                   aria-controls="pppoe-password"
                   [attr.aria-label]="
                     passwordVisible()
-                      ? 'Sembunyikan password PPPoE'
-                      : 'Tampilkan password PPPoE'
+                      ? 'Sembunyikan kata sandi PPPoE'
+                      : 'Tampilkan kata sandi PPPoE'
                   "
                   [attr.aria-pressed]="passwordVisible()"
                   (click)="passwordVisible.set(!passwordVisible())"

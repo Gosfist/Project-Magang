@@ -47,7 +47,7 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
         createdAt: { lt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
       } });
     } catch {
-      console.error('Expired monitoring errors could not be deleted.');
+      console.error('Log kesalahan monitoring yang kedaluwarsa gagal dihapus.');
     } finally { this.cleanupPending = false; }
   }
 
@@ -71,7 +71,7 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
         description: (module === 'MAIN CORE' ? `${status < 400 ? 'Berhasil' : 'Gagal'} : ${target}` : `${action} ${request.params?.type ?? module} ${status < 400 ? 'berhasil' : 'gagal'}${target ? ': ' + String(target) : ''}`).slice(0, 500),
         status: status < 400 ? 'SUCCESS' : 'FAILED',
       } });
-    } catch { console.error('Activity log could not be saved.'); }
+    } catch { console.error('Log aktivitas gagal disimpan.'); }
   }
 
   async activities(search = '', module = '', page = 1) {
@@ -162,7 +162,7 @@ export class MonitoringInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
-    // Keep route templates only; do not store query strings, bodies or credentials.
+    // Simpan pola rute saja agar kueri, isi permintaan, dan kredensial tidak masuk log.
     const route = request.route?.path ?? '(unknown)';
     return next.handle().pipe(tap({
       next: (result) => { void this.monitoring.activity(request, response.statusCode, result); },

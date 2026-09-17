@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKEND_DIR="$ROOT_DIR/backend"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 SERVICE_NAME="${SERVICE_NAME:-unzanet-backend}"
+MODE="${1:-all}"
 
 log() {
   printf '\n[%s] %s\n' "$(date '+%H:%M:%S')" "$1"
@@ -28,34 +29,42 @@ cd "$ROOT_DIR"
 log "Ambil update terbaru dari Git"
 git pull --ff-only
 
-log "Install dependency backend"
-install_node_modules "$BACKEND_DIR" "Backend"
+if [[ "$MODE" != "all" && "$MODE" != "be" && "$MODE" != "fe" ]]; then
+  printf 'Mode tidak dikenal: %s\nGunakan: npm run update, npm run updatebe, atau npm run updatefe\n' "$MODE"
+  exit 1
+fi
 
-log "Generate Prisma Client"
-cd "$BACKEND_DIR"
-npm run prisma:generate
+if [[ "$MODE" == "all" || "$MODE" == "be" ]]; then
+  log "Install dependency backend"
+  install_node_modules "$BACKEND_DIR" "Backend"
 
-log "Stop backend sementara"
-sudo systemctl stop "$SERVICE_NAME" || true
+  log "Generate Prisma Client"
+  cd "$BACKEND_DIR"
+  npm run prisma:generate
+
+  log "Stop backend sementara"
+  sudo systemctl stop "$SERVICE_NAME" || true
+
+  log "Build backend"
+  npm run build
+
+  log "Reload dan start backend"
+  sudo systemctl daemon-reload
+  sudo systemctl start "$SERVICE_NAME"
+fi
+
+if [[ "$MODE" == "all" || "$MODE" == "fe" ]]; then
+  log "Install dependency frontend"
+  install_node_modules "$FRONTEND_DIR" "Frontend"
+
+  log "Build frontend"
+  cd "$FRONTEND_DIR"
+  npm run build
+fi
 
 log "Cek dan jalankan migrasi SQL yang belum pernah dijalankan"
 cd "$ROOT_DIR"
 npm run migrate:updates
-
-log "Build backend"
-cd "$BACKEND_DIR"
-npm run build
-
-log "Reload dan start backend"
-sudo systemctl daemon-reload
-sudo systemctl start "$SERVICE_NAME"
-
-log "Install dependency frontend"
-install_node_modules "$FRONTEND_DIR" "Frontend"
-
-log "Build frontend"
-cd "$FRONTEND_DIR"
-npm run build
 
 log "Status backend"
 sudo systemctl status "$SERVICE_NAME" --no-pager

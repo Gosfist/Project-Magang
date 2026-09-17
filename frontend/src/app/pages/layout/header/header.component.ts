@@ -20,11 +20,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
   time = signal('');
 
   private readonly titles: Record<string, string> = {
-    '/dashboard': 'Dashboard',
+    '/dashboard': 'Dasbor',
     '/dashboard/monitoring/server': 'Monitoring Server',
     '/dashboard/monitoring/router': 'Monitoring NAS / Router',
     '/dashboard/users': 'Data Petugas',
-    '/dashboard/mainCore/traceJalur': 'Trace Jalur',
+    '/dashboard/mainCore/traceJalur': 'Telusuri Jalur',
     '/dashboard/mainCore/server': 'Server',
     '/dashboard/mainCore/rasio': 'Rasio',
     '/dashboard/mainCore/odc': 'ODC',
@@ -35,7 +35,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard/tools/kalkulator-redaman': 'Kalkulator Redaman',
   };
 
-  title = signal('Dashboard');
+  title = signal('Dasbor');
 
   ngOnInit(): void {
     const url = this.router.url;
@@ -54,7 +54,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   private updateTitle(url: string): void {
-    this.title.set(this.titles[url] ?? url.split('/').pop()?.toUpperCase() ?? 'Dashboard');
+    this.title.set(this.titles[url] ?? url.split('/').pop()?.toUpperCase() ?? 'Dasbor');
   }
 
   private updateDateTime(): void {

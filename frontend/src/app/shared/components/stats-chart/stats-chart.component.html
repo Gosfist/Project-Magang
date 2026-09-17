@@ -8,23 +8,23 @@
       </p>
     </div>
 
-    <!-- Periode Selector -->
+    <!-- Pemilih periode grafik -->
     <div class="flex items-center gap-2">
       <label class="text-xs font-semibold text-slate-500">Periode:</label>
       <select
         class="input text-xs py-1.5 px-3 min-w-[170px]"
-        [ngModel]="period"
-        (ngModelChange)="onSelectPeriod($event)"
+        [ngModel]="periode"
+        (ngModelChange)="onPilihPeriode($event)"
       >
-        <option value="today">Hari Ini (24 Jam Terakhir)</option>
-        <option value="daily">Harian (Tanggal Bulan Ini)</option>
-        <option value="monthly">Bulanan (Bulan Tahun Ini)</option>
-        <option value="yearly">Tahun</option>
+        <option value="hari_ini">Hari Ini</option>
+        <option value="harian">Harian</option>
+        <option value="bulanan">Bulanan</option>
+        <option value="tahunan">Tahunan</option>
       </select>
     </div>
   </div>
 
-  <!-- Chart Area -->
+  <!-- Area grafik -->
   <div class="relative h-64 w-full sm:h-72">
     @if (loading) {
       <div class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 backdrop-blur-xs">
@@ -40,11 +40,11 @@
     <canvas #chartCanvas></canvas>
   </div>
 
-  <!-- Data Table (Di bawah grafik) -->
+  <!-- Tabel data di bawah grafik -->
   <div class="mt-6 border-t border-slate-200 pt-4">
     <div class="mb-3 flex items-center justify-between">
       <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600">
-        Tabel Rincian Data ({{ period === 'today' ? 'Per Jam' : period === 'daily' ? 'Per Tanggal' : period === 'monthly' ? 'Per Bulan' : 'Per Tahun' }})
+        Tabel Rincian Data {{ periode === 'hari_ini' ? 'Per Jam' : periode === 'harian' ? 'Per Tanggal' : periode === 'bulanan' ? 'Per Bulan' : 'Per Tahun' }}
       </h4>
       <span class="text-xs font-medium text-slate-500">{{ items.length }} titik data</span>
     </div>
@@ -61,8 +61,8 @@
               <th class="px-4 py-2.5 text-right">Penggunaan RAM</th>
             }
             @if (type === 'network') {
-              <th class="px-4 py-2.5 text-right">Download (Mbps)</th>
-              <th class="px-4 py-2.5 text-right">Upload (Mbps)</th>
+              <th class="px-4 py-2.5 text-right">Unduh (Mbps)</th>
+              <th class="px-4 py-2.5 text-right">Unggah (Mbps)</th>
             }
           </tr>
         </thead>

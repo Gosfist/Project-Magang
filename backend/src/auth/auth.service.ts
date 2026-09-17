@@ -12,7 +12,7 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (!user || !(await compare(dto.password, user.password))) {
-      throw new UnauthorizedException('Email atau password salah.');
+      throw new UnauthorizedException('Email atau kata sandi salah.');
     }
     if (user.status !== 'active') {
       throw new UnauthorizedException('Akun Anda tidak aktif. Hubungi administrator.');
@@ -20,7 +20,7 @@ export class AuthService {
 
     const accessToken = await this.jwt.signAsync({ sub: user.id.toString(), role: user.role });
     const { password: _password, ...safeUser } = user;
-    return serialize({ message: 'Login berhasil.', user: safeUser, accessToken, tokenType: 'Bearer' });
+    return serialize({ message: 'Berhasil masuk.', user: safeUser, accessToken, tokenType: 'Bearer' });
   }
 
   async me(id: string) {

@@ -25,7 +25,6 @@ export function parseMikrotikUptime(str: string): number {
   }
   return totalSeconds;
 }
-
 @Injectable()
 export class StatsCollectorService implements OnModuleInit, OnModuleDestroy {
   private timer: ReturnType<typeof setInterval> | null = null;
@@ -58,7 +57,7 @@ export class StatsCollectorService implements OnModuleInit, OnModuleDestroy {
       await this.collectRouterStats();
       await this.reconcileMonthlyAndYearly();
     } catch (err) {
-      console.error('[StatsCollector] Error during stats collection:', err);
+      console.error('[StatsCollector] Gagal menjalankan pengumpulan statistik:', err);
     } finally {
       this.isCollecting = false;
     }
@@ -81,7 +80,7 @@ export class StatsCollectorService implements OnModuleInit, OnModuleDestroy {
         },
       });
     } catch (err) {
-      console.error('[StatsCollector] Failed to collect server stats:', err);
+      console.error('[StatsCollector] Gagal mengambil statistik server:', err);
     }
   }
 
@@ -112,7 +111,7 @@ export class StatsCollectorService implements OnModuleInit, OnModuleDestroy {
             let netUp = 0;
 
             try {
-              // Coba baca traffic interface yang aktif/running
+              // Coba baca lalu lintas antarmuka yang aktif.
               const interfaces = await write('/interface/print', [
                 '?running=true',
                 '=.proplist=name,type',
@@ -139,7 +138,7 @@ export class StatsCollectorService implements OnModuleInit, OnModuleDestroy {
                 }
               }
             } catch {
-              // Jika monitor-traffic gagal/ditolak, abaikan traffic
+              // Abaikan lalu lintas jika perintah pemantauan gagal atau ditolak.
             }
 
             await this.prisma.routerStat.create({
@@ -160,13 +159,13 @@ export class StatsCollectorService implements OnModuleInit, OnModuleDestroy {
         );
       } catch (err) {
         // Router offline atau tidak bisa dihubungi
-        console.warn(`[StatsCollector] NAS ${router.id} (${router.name || router.nasname}) skipped:`, (err as Error).message);
+        console.warn(`[StatsCollector] NAS ${router.id} (${router.name || router.nasname}) dilewati:`, (err as Error).message);
       }
     }
   }
 
   /**
-   * Reconcile Monthly & Yearly:
+   * Rekap bulanan dan tahunan:
    * 1. Data harian disimpan selama bulan berjalan.
    * 2. Begitu masuk bulan baru, seluruh data bulan sebelumnya di-rekap rata-ratanya ke tabel _monthly,
    *    lalu data harian bulan kemarin dihapus dari tabel harian.
@@ -240,7 +239,7 @@ export class StatsCollectorService implements OnModuleInit, OnModuleDestroy {
         }
       }
     } catch (err) {
-      console.error('[StatsCollector] Error reconciling server monthly stats:', err);
+      console.error('[StatsCollector] Gagal merekap statistik bulanan server:', err);
     }
 
     // 2. REKAP BULANAN ROUTER: Cek apakah ada data router_stats sebelum awal bulan ini
@@ -305,10 +304,10 @@ export class StatsCollectorService implements OnModuleInit, OnModuleDestroy {
         }
       }
     } catch (err) {
-      console.error('[StatsCollector] Error reconciling router monthly stats:', err);
+      console.error('[StatsCollector] Gagal merekap statistik bulanan router:', err);
     }
 
-    // 3. REKAP TAHUNAN (Server & Router): Untuk tahun-tahun sebelum currentYear
+    // 3. REKAP TAHUNAN (Server & Router): Untuk tahun-tahun sebelum tahun berjalan
     try {
       const oldServerMonths = await this.prisma.serverStatMonthly.findMany({
         where: { year: { lt: currentYear } },
@@ -396,7 +395,7 @@ export class StatsCollectorService implements OnModuleInit, OnModuleDestroy {
         }
       }
     } catch (err) {
-      console.error('[StatsCollector] Error reconciling yearly stats:', err);
+      console.error('[StatsCollector] Gagal merekap statistik tahunan:', err);
     }
   }
 }

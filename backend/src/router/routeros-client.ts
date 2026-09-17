@@ -1,7 +1,7 @@
 import net from 'node:net';
 import tls from 'node:tls';
 
-// RouterOS 6.43+ sentence protocol, including !empty replies introduced in 7.18.
+// Protokol kalimat RouterOS 6.43+, termasuk balasan !empty yang tersedia sejak versi 7.18.
 // https://help.mikrotik.com/docs/spaces/ROS/pages/47579160/API
 export function encodeSentence(words: string[]): Buffer {
   const parts: Buffer[] = [];
@@ -121,7 +121,7 @@ export class RouterOsClient {
         break;
       case '!empty': break;
       case '!trap': pending.error = new Error(row.message || 'Perintah API ditolak.'); break;
-      case '!fatal': this.fail(new Error(row.message || 'Login API gagal.')); this.close(); break;
+      case '!fatal': this.fail(new Error(row.message || 'Gagal masuk ke API.')); this.close(); break;
       case '!done':
         this.pending = undefined;
         if (pending.error) pending.reject(pending.error);

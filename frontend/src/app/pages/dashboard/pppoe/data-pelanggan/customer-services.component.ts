@@ -51,6 +51,9 @@ export class CustomerServicesComponent implements OnChanges, OnDestroy {
     return new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric', ...(time ? { hour: '2-digit', minute: '2-digit', second: '2-digit' } as const : {}) }).format(new Date(value));
   }
   statusLabel(status?: string) { return ({ ACTIVE: 'Aktif', EXPIRED: 'Lewat janji', FULFILLED: 'Terpenuhi', CANCELLED: 'Dibatalkan' } as Record<string, string>)[status ?? ''] ?? status; }
+  // Kode balasan RADIUS dan status tagihan tetap dipakai untuk logika; hanya tampilannya yang diterjemahkan.
+  authLabel(reply?: string) { return ({ 'Access-Accept': 'Akses diterima', 'Access-Reject': 'Akses ditolak', 'Access-Challenge': 'Verifikasi lanjutan' } as Record<string, string>)[reply ?? ''] ?? reply ?? 'Tidak diketahui'; }
+  invoiceLabel(status?: string) { return ({ PAID: 'Lunas', PENDING: 'Menunggu pembayaran', OVERDUE: 'Lewat jatuh tempo', CANCELLED: 'Dibatalkan' } as Record<string, string>)[status ?? ''] ?? status ?? 'Tidak diketahui'; }
   badge(status?: string) {
     return 'badge ' + (['PAID', 'FULFILLED', 'ACTIVE'].includes(status ?? '') ? 'bg-green-100 text-green-700' : ['OVERDUE', 'EXPIRED', 'CANCELLED'].includes(status ?? '') ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700');
   }

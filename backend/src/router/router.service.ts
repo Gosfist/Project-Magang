@@ -12,7 +12,7 @@ export class RouterService {
   constructor(private readonly prisma: PrismaService, private readonly mikrotik: MikrotikService) { }
 
   // ==========================================
-  // 1. ROUTER / NAS MANAGEMENT
+  // 1. Pengelolaan Router / NAS.
   // ==========================================
 
   async routers(search = '', page = 1) {
@@ -89,7 +89,7 @@ export class RouterService {
           nasname: dto.nasname.trim(),
           shortname,
           type: dto.type?.trim() || 'mikrotik',
-          authMode: 'radius', // Hardcoded RADIUS Only
+          authMode: 'radius', // Router ini hanya memakai autentikasi RADIUS.
           ipAddress: dto.ipAddress?.trim() || dto.nasname.trim(),
           username: dto.username?.trim() || null,
           password: dto.password || null,
@@ -129,7 +129,7 @@ export class RouterService {
           nasname: dto.nasname.trim(),
           shortname,
           type: dto.type?.trim() || current.type,
-          authMode: 'radius', // Always RADIUS Only
+          authMode: 'radius', // Router ini selalu memakai autentikasi RADIUS.
           ipAddress: dto.ipAddress?.trim() || dto.nasname.trim(),
           username: dto.username?.trim() || null,
           password: dto.password !== undefined ? dto.password : current.password,
@@ -175,7 +175,7 @@ export class RouterService {
         const rows = await write('/system/identity/print');
         return rows[0]?.name || router.name || host;
       });
-      return { success: true, message: `Login API MikroTik berhasil. Router: ${identity}.`, identity, latencyMs: Date.now() - started, host, port };
+      return { success: true, message: `Berhasil masuk ke API MikroTik. Router: ${identity}.`, identity, latencyMs: Date.now() - started, host, port };
     } catch (error) {
       return { success: false, message: this.mikrotik.errorMessage(error), host, port };
     }
@@ -202,11 +202,11 @@ export class RouterService {
 
     const scriptRos7 = `
 # ============================================
-# UNZANET RADIUS Setup Script (RouterOS 7.x)
+# Skrip Pengaturan RADIUS UNZANET (RouterOS 7.x)
 # Router: ${router.name || router.nasname}
-# NAS IP (Source): ${nasSrcAddress}
-# RADIUS Server: ${radiusServerIp}
-# Auth Mode: RADIUS ONLY
+# IP NAS (Sumber): ${nasSrcAddress}
+# Server RADIUS: ${radiusServerIp}
+# Mode Autentikasi: HANYA RADIUS
 # ============================================
 
 # 1. Hapus konfigurasi RADIUS lama (jika ada)
@@ -215,27 +215,27 @@ export class RouterService {
 # 2. Tambahkan Server RADIUS (Autentikasi & Akuntansi)
 /radius add address=${radiusServerIp} secret="${secret}"${srcParam} service=ppp,hotspot,login authentication-port=${authPort} accounting-port=1813 timeout=3s require-message-auth=no comment="${comment}"
 
-# 3. Aktifkan RADIUS untuk PPP & Interim Update 5 menit
+# 3. Aktifkan RADIUS untuk PPP dan pembaruan sementara setiap 5 menit
 /ppp aaa set use-radius=yes accounting=yes interim-update=5m
 
-# 4. Aktifkan RADIUS Incoming (CoA / Disconnect port 3799)
+# 4. Aktifkan RADIUS masuk (CoA / pemutusan sesi pada port 3799)
 /radius incoming set accept=yes port=3799
 
-# 5. Aktifkan RADIUS untuk Hotspot Server Profile (opsional jika ada hotspot)
+# 5. Aktifkan RADIUS untuk profil server Hotspot (opsional jika ada Hotspot)
 /ip hotspot profile set [find] use-radius=yes
 
-# 6. Izinkan trafik RADIUS & CoA pada Firewall
+# 6. Izinkan lalu lintas RADIUS dan CoA pada firewall
 /ip firewall filter add chain=input protocol=udp src-address=${radiusServerIp} dst-port=3799 action=accept comment="UNZANET-RADIUS CoA Disconnect"
 /ip firewall filter add chain=input protocol=udp src-address=${radiusServerIp} dst-port=${authPort},1813 action=accept comment="UNZANET-RADIUS Auth Acct"
 `.trim();
 
     const scriptRos6 = `
 # ============================================
-# UNZANET RADIUS Setup Script (RouterOS 6.x)
+# Skrip Pengaturan RADIUS UNZANET (RouterOS 6.x)
 # Router: ${router.name || router.nasname}
-# NAS IP (Source): ${nasSrcAddress}
-# RADIUS Server: ${radiusServerIp}
-# Auth Mode: RADIUS ONLY
+# IP NAS (Sumber): ${nasSrcAddress}
+# Server RADIUS: ${radiusServerIp}
+# Mode Autentikasi: HANYA RADIUS
 # ============================================
 
 # 1. Hapus konfigurasi RADIUS lama (jika ada)
@@ -244,16 +244,16 @@ export class RouterService {
 # 2. Tambahkan Server RADIUS (Autentikasi & Akuntansi)
 /radius add address=${radiusServerIp} secret="${secret}"${srcParam} service=ppp,hotspot,login authentication-port=${authPort} accounting-port=1813 timeout=3s comment="${comment}"
 
-# 3. Aktifkan RADIUS untuk PPP & Interim Update 5 menit
+# 3. Aktifkan RADIUS untuk PPP dan pembaruan sementara setiap 5 menit
 /ppp aaa set use-radius=yes accounting=yes interim-update=5m
 
-# 4. Aktifkan RADIUS Incoming (CoA / Disconnect port 3799)
+# 4. Aktifkan RADIUS masuk (CoA / pemutusan sesi pada port 3799)
 /radius incoming set accept=yes port=3799
 
-# 5. Aktifkan RADIUS untuk Hotspot Server Profile
+# 5. Aktifkan RADIUS untuk profil server Hotspot
 /ip hotspot profile set [find] use-radius=yes
 
-# 6. Izinkan trafik RADIUS & CoA pada Firewall
+# 6. Izinkan lalu lintas RADIUS dan CoA pada firewall
 /ip firewall filter add chain=input protocol=udp src-address=${radiusServerIp} dst-port=3799 action=accept comment="UNZANET-RADIUS CoA Disconnect"
 /ip firewall filter add chain=input protocol=udp src-address=${radiusServerIp} dst-port=${authPort},1813 action=accept comment="UNZANET-RADIUS Auth Acct"
 `.trim();
@@ -270,7 +270,7 @@ export class RouterService {
   }
 
   // ==========================================
-  // 2. VPN SERVER MANAGEMENT (WIREGUARD ONLY)
+  // 2. Pengelolaan server VPN WireGuard.
   // ==========================================
 
   async vpnServers(search = '', page = 1) {
@@ -383,7 +383,7 @@ export class RouterService {
   }
 
   // ==========================================
-  // 3. VPN CLIENT MANAGEMENT (WIREGUARD ONLY)
+  // 3. Pengelolaan klien VPN WireGuard.
   // ==========================================
 
   async vpnClients(search = '', page = 1) {
@@ -457,9 +457,9 @@ export class RouterService {
         },
         include: { vpnServer: true },
       });
-      return serialize({ message: 'Client WireGuard berhasil ditambahkan.', client: item });
+      return serialize({ message: 'Klien WireGuard berhasil ditambahkan.', client: item });
     } catch (error) {
-      this.unique(error, 'IP Client WireGuard sudah digunakan.');
+      this.unique(error, 'IP klien WireGuard sudah digunakan.');
     }
   }
 
@@ -484,16 +484,16 @@ export class RouterService {
         },
         include: { vpnServer: true },
       });
-      return serialize({ message: 'Client WireGuard berhasil diperbarui.', client: item });
+      return serialize({ message: 'Klien WireGuard berhasil diperbarui.', client: item });
     } catch (error) {
-      this.unique(error, 'IP Client WireGuard sudah digunakan.');
+      this.unique(error, 'IP klien WireGuard sudah digunakan.');
     }
   }
 
   async removeVpnClient(id: string) {
     const current = await this.findVpnClient(id);
     await this.prisma.vpnClient.delete({ where: { id: current.id } });
-    return { message: 'Client WireGuard berhasil dihapus.' };
+    return { message: 'Klien WireGuard berhasil dihapus.' };
   }
 
   async getVpnClientScript(id: string) {
@@ -501,29 +501,29 @@ export class RouterService {
       where: { id: BigInt(id) },
       include: { vpnServer: true },
     });
-    if (!client) throw new NotFoundException('Client WireGuard tidak ditemukan.');
+    if (!client) throw new NotFoundException('Klien WireGuard tidak ditemukan.');
 
     const server = client.vpnServer;
     const ifaceName = 'wg-unzanet';
     const clientPrivKeyParam = client.clientPrivateKey
       ? ` private-key="${client.clientPrivateKey}"`
-      : ' # (Masukkan private key client jika tidak otomatis)';
+      : ' # (Masukkan kunci privat klien jika tidak otomatis)';
 
     const script = `
 # ============================================================
-# UNZANET WireGuard Client Setup (RouterOS v7+)
-# Client: ${client.name}
+# Pengaturan Klien WireGuard UNZANET (RouterOS v7+)
+# Klien: ${client.name}
 # VPN IP: ${client.vpnIp}
-# Server Endpoint: ${server.host}:${server.wgPort}
+# Alamat Server: ${server.host}:${server.wgPort}
 # ============================================================
 
-# 1. Buat Interface WireGuard
-/interface wireguard add name=${ifaceName} listen-port=51820${clientPrivKeyParam} comment="UNZANET WireGuard Tunnel"
+# 1. Buat antarmuka WireGuard
+/interface wireguard add name=${ifaceName} listen-port=51820${clientPrivKeyParam} comment="Terowongan WireGuard UNZANET"
 
-# 2. Pasang IP Address pada Interface WireGuard
-/ip address add address=${client.vpnIp}/24 interface=${ifaceName} comment="IP WireGuard Client"
+# 2. Pasang alamat IP pada antarmuka WireGuard
+/ip address add address=${client.vpnIp}/24 interface=${ifaceName} comment="IP Klien WireGuard"
 
-# 3. Daftarkan Server sebagai Peer
+# 3. Daftarkan server sebagai rekan WireGuard
 /interface wireguard peers add interface=${ifaceName} public-key="${server.wgPublicKey}" endpoint-address="${server.host}" endpoint-port=${server.wgPort} allowed-address="${client.allowedIps || '10.200.0.0/24'}" persistent-keepalive=25s comment="Server WireGuard UNZANET"
 `.trim();
 
@@ -539,7 +539,7 @@ export class RouterService {
   }
 
   // ==========================================
-  // HELPERS
+  // Fungsi pendukung.
   // ==========================================
 
   generateWireguardKeyPair() {
@@ -582,7 +582,7 @@ export class RouterService {
 
   private async findVpnClient(id: string) {
     const item = await this.prisma.vpnClient.findUnique({ where: { id: BigInt(id) } });
-    if (!item) throw new NotFoundException('Client WireGuard tidak ditemukan.');
+    if (!item) throw new NotFoundException('Klien WireGuard tidak ditemukan.');
     return item;
   }
 

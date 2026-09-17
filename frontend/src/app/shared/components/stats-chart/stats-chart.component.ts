@@ -26,7 +26,8 @@ export interface ChartStatItem {
   netUp: number;
 }
 
-export type ChartPeriod = 'today' | 'daily' | 'monthly' | 'yearly';
+// Nilai periode grafik dikirim ke API monitoring untuk menentukan jenis rekap data.
+export type PeriodeGrafik = 'hari_ini' | 'harian' | 'bulanan' | 'tahunan';
 
 @Component({
   selector: 'app-stats-chart',
@@ -39,11 +40,11 @@ export type ChartPeriod = 'today' | 'daily' | 'monthly' | 'yearly';
 export class StatsChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() title = 'Grafik';
   @Input() type: 'cpu' | 'ram' | 'network' = 'cpu';
-  @Input() period: ChartPeriod = 'today';
+  @Input() periode: PeriodeGrafik = 'hari_ini';
   @Input() items: ChartStatItem[] = [];
   @Input() loading = false;
 
-  @Output() periodChange = new EventEmitter<ChartPeriod>();
+  @Output() periodeChange = new EventEmitter<PeriodeGrafik>();
 
   @ViewChild('chartCanvas') chartCanvas?: ElementRef<HTMLCanvasElement>;
 
@@ -66,9 +67,9 @@ export class StatsChartComponent implements AfterViewInit, OnChanges, OnDestroy 
     }
   }
 
-  onSelectPeriod(val: ChartPeriod) {
-    this.period = val;
-    this.periodChange.emit(val);
+  onPilihPeriode(val: PeriodeGrafik) {
+    this.periode = val;
+    this.periodeChange.emit(val);
   }
 
   get averageValue(): string {

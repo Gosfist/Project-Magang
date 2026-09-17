@@ -31,7 +31,7 @@ describe('PPPoE billing and account deactivation', () => {
     const radius = { sync: vi.fn().mockResolvedValue(undefined) };
     const secrets = { encrypt: () => 'encrypted' };
     const network = { disconnect: vi.fn().mockImplementation(async () => {
-      expect(committed).toBe(true); // Router action must follow RADIUS commit.
+      expect(committed).toBe(true); // Aksi router dijalankan setelah perubahan RADIUS tersimpan.
       return { completed: 1, warnings: [] };
     }) };
     const service = new PppoeService(prisma as unknown as PrismaService, radius as unknown as RadiusService, secrets as unknown as SecretService, network as unknown as PppoeNetworkService);

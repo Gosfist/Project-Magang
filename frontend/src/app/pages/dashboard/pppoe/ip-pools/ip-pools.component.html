@@ -13,7 +13,7 @@
         (ngModelChange)="page.set(1); load()"
       />
     </div>
-    <button class="btn-secondary" (click)="load()">Refresh</button>
+    <button class="btn-secondary" (click)="load()">Muat Ulang</button>
     <button class="btn-primary" (click)="show()">
       <svg lucidePlus [size]="18"></svg> Tambah IP Pool
     </button>
@@ -115,7 +115,7 @@
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="label">Network Start *</label>
+          <label class="label">Awal Rentang IP *</label>
           <input
             class="input"
             required
@@ -125,7 +125,7 @@
           />
         </div>
         <div>
-          <label class="label">Network End *</label>
+          <label class="label">Akhir Rentang IP *</label>
           <input
             class="input"
             required

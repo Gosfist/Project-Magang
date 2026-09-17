@@ -46,7 +46,7 @@ export class SidebarComponent implements OnInit {
 
   // Navigation links
   readonly coreLinks = [
-    ['Trace Jalur', '/dashboard/mainCore/traceJalur'],
+    ['Telusuri Jalur', '/dashboard/mainCore/traceJalur'],
     ['Server', '/dashboard/mainCore/server'],
     ['Rasio', '/dashboard/mainCore/rasio'],
     ['ODC', '/dashboard/mainCore/odc'],
@@ -54,8 +54,8 @@ export class SidebarComponent implements OnInit {
   ];
   readonly routerLinks = [
     ['Router / NAS', '/dashboard/router/routers'],
-    ['VPN Server', '/dashboard/router/vpn-server'],
-    ['VPN Client', '/dashboard/router/vpn-client'],
+    ['Server VPN', '/dashboard/router/vpn-server'],
+    ['Klien VPN', '/dashboard/router/vpn-client'],
   ];
   readonly pppoeLinks = [
     ['Data Pelanggan', '/dashboard/pppoe/data-pelanggan'],

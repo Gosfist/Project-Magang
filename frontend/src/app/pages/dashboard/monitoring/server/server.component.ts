@@ -1,7 +1,7 @@
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { environment } from '../../../../environments/environment';
-import { StatsChartComponent, ChartPeriod, ChartStatItem } from '../../../../shared/components/stats-chart/stats-chart.component';
+import { StatsChartComponent, PeriodeGrafik, ChartStatItem } from '../../../../shared/components/stats-chart/stats-chart.component';
 
 type ServerSnapshot = {
   checkedAt: string;
@@ -41,21 +41,26 @@ export class ServerMonitoringComponent implements OnInit {
   private activityController: AbortController | null = null;
   private lastActivityFetch = 0;
 
-  // Tabs: default 'log'
+  // Tab log aktivitas ditampilkan pertama kali; nilai tab dipakai oleh templat.
   activeTab = signal<'log' | 'cpu' | 'ram' | 'network'>('log');
 
-  // Charts
-  cpuPeriod: ChartPeriod = 'today';
+  // Setiap grafik menyimpan periode dan datanya secara terpisah.
+  cpuPeriode: PeriodeGrafik = 'hari_ini';
   cpuItems = signal<ChartStatItem[]>([]);
   cpuLoading = signal(false);
 
-  ramPeriod: ChartPeriod = 'today';
+  ramPeriode: PeriodeGrafik = 'hari_ini';
   ramItems = signal<ChartStatItem[]>([]);
   ramLoading = signal(false);
 
-  netPeriod: ChartPeriod = 'today';
+  netPeriode: PeriodeGrafik = 'hari_ini';
   netItems = signal<ChartStatItem[]>([]);
   netLoading = signal(false);
+
+  // Kode aksi dari API tetap dikenali, sementara label aktivitas ditampilkan dalam bahasa Indonesia.
+  activityAction(action: string): string {
+    return ({ LOGIN: 'MASUK', LOGOUT: 'KELUAR', TAMBAH: 'TAMBAH', HAPUS: 'HAPUS', UBAH: 'UBAH' } as Record<string, string>)[action] ?? action;
+  }
 
   constructor() {
     inject(DestroyRef).onDestroy(() => {
@@ -76,7 +81,7 @@ export class ServerMonitoringComponent implements OnInit {
   async loadCpuStats() {
     this.cpuLoading.set(true);
     try {
-      const res = await fetch(`${environment.apiUrl}/monitoring/server/stats?period=${this.cpuPeriod}`, {
+      const res = await fetch(`${environment.apiUrl}/monitoring/server/stats?periode=${this.cpuPeriode}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('unzanet_token') ?? ''}` },
       });
       if (res.ok) {
@@ -84,21 +89,21 @@ export class ServerMonitoringComponent implements OnInit {
         this.cpuItems.set(json.data || []);
       }
     } catch {
-      // Ignore
+      // Grafik lain tetap ditampilkan saat permintaan statistik CPU gagal.
     } finally {
       this.cpuLoading.set(false);
     }
   }
 
-  onCpuPeriodChange(period: ChartPeriod) {
-    this.cpuPeriod = period;
+  onCpuPeriodeChange(periode: PeriodeGrafik) {
+    this.cpuPeriode = periode;
     void this.loadCpuStats();
   }
 
   async loadRamStats() {
     this.ramLoading.set(true);
     try {
-      const res = await fetch(`${environment.apiUrl}/monitoring/server/stats?period=${this.ramPeriod}`, {
+      const res = await fetch(`${environment.apiUrl}/monitoring/server/stats?periode=${this.ramPeriode}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('unzanet_token') ?? ''}` },
       });
       if (res.ok) {
@@ -106,21 +111,21 @@ export class ServerMonitoringComponent implements OnInit {
         this.ramItems.set(json.data || []);
       }
     } catch {
-      // Ignore
+      // Grafik lain tetap ditampilkan saat permintaan statistik RAM gagal.
     } finally {
       this.ramLoading.set(false);
     }
   }
 
-  onRamPeriodChange(period: ChartPeriod) {
-    this.ramPeriod = period;
+  onRamPeriodeChange(periode: PeriodeGrafik) {
+    this.ramPeriode = periode;
     void this.loadRamStats();
   }
 
   async loadNetStats() {
     this.netLoading.set(true);
     try {
-      const res = await fetch(`${environment.apiUrl}/monitoring/server/stats?period=${this.netPeriod}`, {
+      const res = await fetch(`${environment.apiUrl}/monitoring/server/stats?periode=${this.netPeriode}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('unzanet_token') ?? ''}` },
       });
       if (res.ok) {
@@ -128,14 +133,14 @@ export class ServerMonitoringComponent implements OnInit {
         this.netItems.set(json.data || []);
       }
     } catch {
-      // Ignore
+      // Grafik lain tetap ditampilkan saat permintaan statistik jaringan gagal.
     } finally {
       this.netLoading.set(false);
     }
   }
 
-  onNetPeriodChange(period: ChartPeriod) {
-    this.netPeriod = period;
+  onNetPeriodeChange(periode: PeriodeGrafik) {
+    this.netPeriode = periode;
     void this.loadNetStats();
   }
 
@@ -179,7 +184,7 @@ export class ServerMonitoringComponent implements OnInit {
         signal: controller.signal,
       });
       if (response.status === 401) {
-        this.error.set('Sesi berakhir. Silakan login kembali.');
+        this.error.set('Sesi berakhir. Silakan masuk kembali.');
         this.loading.set(false);
         return;
       }

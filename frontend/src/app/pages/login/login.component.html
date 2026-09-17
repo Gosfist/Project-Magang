@@ -3,7 +3,7 @@
     <a routerLink="/" class="mb-7 flex justify-center">
       <img src="logo.png" alt="PT UNZANET" width="130" height="64" />
     </a>
-    <h1 class="text-center text-2xl font-bold">Masuk Dashboard</h1>
+    <h1 class="text-center text-2xl font-bold">Masuk Dasbor</h1>
     <p class="mt-2 text-center text-sm text-slate-500">Gunakan akun admin atau petugas Anda.</p>
     @if (error) {
       <p class="mt-5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ error }}</p>
@@ -14,11 +14,11 @@
         <input class="input" type="email" [(ngModel)]="email" name="email" required autofocus />
       </div>
       <div>
-        <label class="label">Password</label>
+        <label class="label">Kata Sandi</label>
         <input class="input" type="password" [(ngModel)]="password" name="password" required />
       </div>
       <button class="btn-primary w-full" [disabled]="busy">{{ busy ? 'Memproses...' : 'Masuk' }}</button>
     </form>
-    <a routerLink="/" class="mt-5 block text-center text-sm text-slate-500 hover:text-blue-700">← Kembali ke web profile</a>
+    <a routerLink="/" class="mt-5 block text-center text-sm text-slate-500 hover:text-blue-700">← Kembali ke profil perusahaan</a>
   </div>
 </main>

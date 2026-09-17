@@ -30,7 +30,7 @@ export class LoginComponent implements OnInit {
     try {
       await this.auth.login(this.email, this.password);
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'Login gagal.';
+      this.error = e instanceof Error ? e.message : 'Gagal masuk.';
     } finally {
       this.busy = false;
     }

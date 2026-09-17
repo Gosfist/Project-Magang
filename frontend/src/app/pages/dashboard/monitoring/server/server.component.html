@@ -29,7 +29,7 @@
           ></div>
         </div>
         <p class="text-xs text-slate-500">
-          {{ server.cpu.cores }} logical core
+          {{ server.cpu.cores }} inti logis
         </p>
       </section>
       <section class="card min-w-0 space-y-3 p-4">
@@ -49,9 +49,9 @@
         </p>
       </section>
       <section class="card min-w-0 space-y-3 p-4">
-        <h3 class="font-semibold">Network</h3>
+        <h3 class="font-semibold">Jaringan</h3>
         <div>
-          <p class="text-xs text-slate-500">Download</p>
+          <p class="text-xs text-slate-500">Unduh</p>
           <p class="font-bold text-blue-600">
             {{
               server.traffic.download === null
@@ -62,7 +62,7 @@
           </p>
         </div>
         <div>
-          <p class="text-xs text-slate-500">Upload</p>
+          <p class="text-xs text-slate-500">Unggah</p>
           <p class="font-bold text-blue-600">
             {{
               server.traffic.upload === null
@@ -115,11 +115,11 @@
       [class]="activeTab() === 'network' ? 'btn-primary text-xs px-4 py-2' : 'btn-secondary text-xs px-4 py-2'"
       (click)="activeTab.set('network')"
     >
-      Grafik Network
+      Grafik Jaringan
     </button>
   </div>
 
-  <!-- Tab 1: Log Aktivitas (Default) -->
+  <!-- Tab 1 menampilkan log aktivitas sebagai tampilan awal. -->
   @if (activeTab() === 'log') {
     <section class="logs-card card flex min-h-0 flex-1 flex-col overflow-hidden">
       <div class="shrink-0 space-y-3 p-4">
@@ -155,7 +155,7 @@
                   <p class="text-xs capitalize text-slate-500">{{ log.role }}</p>
                 </td>
                 <td>{{ log.module }}</td>
-                <td>{{ log.action }}</td>
+                <td>{{ activityAction(log.action) }}</td>
                 <td>{{ log.description }}</td>
                 <td>
                   <span
@@ -164,7 +164,7 @@
                         ? 'rounded bg-green-100 px-2 py-1 text-xs text-green-700'
                         : 'rounded bg-red-100 px-2 py-1 text-xs text-red-700'
                     "
-                    >{{ log.status }}</span
+                    >{{ log.status === 'SUCCESS' ? 'Berhasil' : 'Gagal' }}</span
                   >
                 </td>
               </tr>
@@ -237,10 +237,10 @@
     <app-stats-chart
       title="Grafik Beban CPU Server (%)"
       type="cpu"
-      [period]="cpuPeriod"
+      [periode]="cpuPeriode"
       [items]="cpuItems()"
       [loading]="cpuLoading()"
-      (periodChange)="onCpuPeriodChange($event)"
+      (periodeChange)="onCpuPeriodeChange($event)"
     ></app-stats-chart>
   }
 
@@ -249,22 +249,22 @@
     <app-stats-chart
       title="Grafik Penggunaan RAM Server (%)"
       type="ram"
-      [period]="ramPeriod"
+      [periode]="ramPeriode"
       [items]="ramItems()"
       [loading]="ramLoading()"
-      (periodChange)="onRamPeriodChange($event)"
+      (periodeChange)="onRamPeriodeChange($event)"
     ></app-stats-chart>
   }
 
-  <!-- Tab 4: Grafik Network -->
+  <!-- Tab 4 menampilkan grafik lalu lintas jaringan. -->
   @if (activeTab() === 'network') {
     <app-stats-chart
-      title="Grafik Traffic Jaringan Server (Mbps)"
+      title="Grafik Lalu Lintas Jaringan Server (Mbps)"
       type="network"
-      [period]="netPeriod"
+      [periode]="netPeriode"
       [items]="netItems()"
       [loading]="netLoading()"
-      (periodChange)="onNetPeriodChange($event)"
+      (periodeChange)="onNetPeriodeChange($event)"
     ></app-stats-chart>
   }
 </div>

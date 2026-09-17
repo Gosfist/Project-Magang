@@ -2,7 +2,7 @@ import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../core/services/api.service';
-import { StatsChartComponent, ChartPeriod, ChartStatItem } from '../../../../shared/components/stats-chart/stats-chart.component';
+import { StatsChartComponent, PeriodeGrafik, ChartStatItem } from '../../../../shared/components/stats-chart/stats-chart.component';
 import { LucideRefreshCw, LucideRouter } from '@lucide/angular';
 
 interface RouterOption {
@@ -50,27 +50,27 @@ export class RouterMonitoringComponent implements OnInit {
   routerOptions = signal<RouterOption[]>([]);
   selectedRouterId = signal<number | null>(null);
 
-  // Tab: default 'log'
+  // Log MikroTik menjadi tab yang tampil pertama kali.
   activeTab = signal<'log' | 'cpu' | 'ram' | 'network'>('log');
 
   realtime = signal<RouterRealtimeData | null>(null);
   realtimeLoading = signal(false);
   realtimeError = signal('');
 
-  // Charts
-  cpuPeriod: ChartPeriod = 'today';
+  // Setiap grafik menyimpan periode dan datanya secara terpisah.
+  cpuPeriode: PeriodeGrafik = 'hari_ini';
   cpuItems = signal<ChartStatItem[]>([]);
   cpuLoading = signal(false);
 
-  ramPeriod: ChartPeriod = 'today';
+  ramPeriode: PeriodeGrafik = 'hari_ini';
   ramItems = signal<ChartStatItem[]>([]);
   ramLoading = signal(false);
 
-  netPeriod: ChartPeriod = 'today';
+  netPeriode: PeriodeGrafik = 'hari_ini';
   netItems = signal<ChartStatItem[]>([]);
   netLoading = signal(false);
 
-  // Logs
+  // Data log MikroTik yang ditampilkan di tab pertama.
   logs = signal<MikrotikLogItem[]>([]);
   logsLoading = signal(false);
   logsError = signal('');
@@ -119,7 +119,7 @@ export class RouterMonitoringComponent implements OnInit {
     if (this.pollTimeout) clearTimeout(this.pollTimeout);
     if (this.tickerInterval) clearInterval(this.tickerInterval);
 
-    // Ticker lokal 1 detik agar detik uptime berjalan realtime setiap detik
+    // Hitung waktu aktif lokal setiap detik agar angkanya terus diperbarui.
     this.tickerInterval = setInterval(() => {
       const current = this.realtime();
       if (current) {
@@ -127,7 +127,7 @@ export class RouterMonitoringComponent implements OnInit {
       }
     }, 1000);
 
-    // Poller per 1 detik mengambil data router dari backend
+    // Ambil data router dari backend setiap detik.
     const poll = () => {
       if (this.destroyed || !this.selectedRouterId()) return;
       if (!this.isPolling) {
@@ -178,7 +178,7 @@ export class RouterMonitoringComponent implements OnInit {
     if (!id) return;
     this.cpuLoading.set(true);
 
-    this.api.get<{ period: string; data: ChartStatItem[] }>(`/monitoring/router/${id}/stats?period=${this.cpuPeriod}`).subscribe({
+    this.api.get<{ periode: string; data: ChartStatItem[] }>(`/monitoring/router/${id}/stats?periode=${this.cpuPeriode}`).subscribe({
       next: (res) => {
         this.cpuItems.set(res.data);
         this.cpuLoading.set(false);
@@ -187,8 +187,8 @@ export class RouterMonitoringComponent implements OnInit {
     });
   }
 
-  onCpuPeriodChange(period: ChartPeriod): void {
-    this.cpuPeriod = period;
+  onCpuPeriodeChange(periode: PeriodeGrafik): void {
+    this.cpuPeriode = periode;
     this.loadCpuStats();
   }
 
@@ -197,7 +197,7 @@ export class RouterMonitoringComponent implements OnInit {
     if (!id) return;
     this.ramLoading.set(true);
 
-    this.api.get<{ period: string; data: ChartStatItem[] }>(`/monitoring/router/${id}/stats?period=${this.ramPeriod}`).subscribe({
+    this.api.get<{ periode: string; data: ChartStatItem[] }>(`/monitoring/router/${id}/stats?periode=${this.ramPeriode}`).subscribe({
       next: (res) => {
         this.ramItems.set(res.data);
         this.ramLoading.set(false);
@@ -206,8 +206,8 @@ export class RouterMonitoringComponent implements OnInit {
     });
   }
 
-  onRamPeriodChange(period: ChartPeriod): void {
-    this.ramPeriod = period;
+  onRamPeriodeChange(periode: PeriodeGrafik): void {
+    this.ramPeriode = periode;
     this.loadRamStats();
   }
 
@@ -216,7 +216,7 @@ export class RouterMonitoringComponent implements OnInit {
     if (!id) return;
     this.netLoading.set(true);
 
-    this.api.get<{ period: string; data: ChartStatItem[] }>(`/monitoring/router/${id}/stats?period=${this.netPeriod}`).subscribe({
+    this.api.get<{ periode: string; data: ChartStatItem[] }>(`/monitoring/router/${id}/stats?periode=${this.netPeriode}`).subscribe({
       next: (res) => {
         this.netItems.set(res.data);
         this.netLoading.set(false);
@@ -225,8 +225,8 @@ export class RouterMonitoringComponent implements OnInit {
     });
   }
 
-  onNetPeriodChange(period: ChartPeriod): void {
-    this.netPeriod = period;
+  onNetPeriodeChange(periode: PeriodeGrafik): void {
+    this.netPeriode = periode;
     this.loadNetStats();
   }
 

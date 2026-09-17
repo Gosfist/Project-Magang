@@ -48,7 +48,7 @@ describe('RouterOS API integration with a local protocol server', () => {
     handle = (_, socket) => socket.write(Buffer.concat([
       encodeSentence(['!trap', '=message=invalid user name or password']), encodeSentence(['!done']),
     ]));
-    await expect(new MikrotikService().withRouter(router(), (write) => write('/system/identity/print'))).rejects.toThrow('Login API MikroTik gagal');
+    await expect(new MikrotikService().withRouter(router(), (write) => write('/system/identity/print'))).rejects.toThrow('Gagal masuk ke API MikroTik');
     expect(commands).toHaveLength(1);
   });
 
@@ -71,7 +71,7 @@ describe('RouterOS API integration with a local protocol server', () => {
 
   it('closes a TCP connection that never answers login within the deadline', async () => {
     handle = () => {};
-    await expect(new MikrotikService().withRouter(router(), (write) => write('/system/identity/print'), 50)).rejects.toThrow('timeout');
+    await expect(new MikrotikService().withRouter(router(), (write) => write('/system/identity/print'), 50)).rejects.toThrow('batas waktu');
     expect(commands).toHaveLength(1);
   });
 
