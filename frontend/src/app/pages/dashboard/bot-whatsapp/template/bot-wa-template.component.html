@@ -1,65 +1,98 @@
-<div class="mx-auto max-w-5xl space-y-5">
-  <div class="card p-5 sm:p-6">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h2 class="text-lg font-semibold">Template Pesan WhatsApp</h2>
-        <p class="mt-1 text-sm text-slate-500">Atur template pesan notifikasi yang dikirim ke pelanggan.</p>
-      </div>
-      <span [class]="'rounded-full px-3 py-1 text-xs font-semibold ' + (form.enabled ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600')">
-        {{ form.enabled ? 'Bot Aktif' : 'Bot Nonaktif' }}
-      </span>
-    </div>
+<div class="mx-auto max-w-5xl space-y-4">
+  <!-- Template Selector Tabs -->
+  <div class="flex flex-wrap items-center gap-2">
+    @for (tpl of templateList; track tpl.id) {
+      <button
+        type="button"
+        (click)="selectTemplate(tpl.id)"
+        class="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all border shadow-xs"
+        [class.bg-slate-900]="activeId() === tpl.id"
+        [class.text-white]="activeId() === tpl.id"
+        [class.border-slate-900]="activeId() === tpl.id"
+        [class.bg-white]="activeId() !== tpl.id"
+        [class.text-slate-700]="activeId() !== tpl.id"
+        [class.border-slate-200]="activeId() !== tpl.id"
+        [class.hover:bg-slate-50]="activeId() !== tpl.id"
+      >
+        @if (tpl.id === 'registration') {
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+          </svg>
+        } @else if (tpl.id === 'isolation') {
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        } @else {
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        }
+        <span>{{ tpl.name }}</span>
+      </button>
+    }
   </div>
 
   <form class="card space-y-5 p-5 sm:p-6" (ngSubmit)="save()">
-    <!-- Toggle Bot -->
-    <label class="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-slate-200 p-4">
-      <span>
-        <b class="block text-sm text-slate-900">Aktifkan Bot WhatsApp</b>
-        <small class="text-slate-500">Jika aktif, notifikasi akan dikirim otomatis ke pelanggan saat ada event tertentu.</small>
-      </span>
-      <input type="checkbox" class="h-5 w-5" [(ngModel)]="form.enabled" name="enabled" />
-    </label>
+    @for (tpl of templateList; track tpl.id) {
+      @if (activeId() === tpl.id) {
+        <!-- Template Info & Header -->
+        <div class="border-b border-slate-100 pb-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-semibold text-slate-900">{{ tpl.title }}</h3>
+            <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+              Template {{ tpl.name }}
+            </span>
+          </div>
+          <p class="mt-1 text-sm text-slate-500">{{ tpl.description }}</p>
+        </div>
 
-    <!-- Template Registration -->
-    <div>
-      <label class="label">Template Registrasi Pelanggan Baru</label>
-      <textarea
-        class="input min-h-[200px] font-mono text-sm"
-        [(ngModel)]="form.registration"
-        name="registration"
-        rows="10"
-        placeholder="Tulis template pesan..."
-      ></textarea>
-      <p class="mt-1 text-xs text-slate-500">Pesan yang dikirim saat pelanggan baru berhasil didaftarkan.</p>
-    </div>
+        <!-- Textarea -->
+        <div>
+          <label class="label">{{ tpl.label }}</label>
+          <textarea
+            class="input min-h-[220px] font-mono text-sm leading-relaxed"
+            [(ngModel)]="templatesData[tpl.id]"
+            [name]="'tpl_' + tpl.id"
+            rows="10"
+            placeholder="Tulis template pesan..."
+          ></textarea>
+        </div>
 
-    <!-- Placeholder Info -->
-    <div class="rounded-lg border border-blue-200 bg-blue-50 p-4">
-      <p class="mb-2 text-sm font-semibold text-blue-800">Variabel yang Tersedia:</p>
-      <div class="grid gap-1 text-sm text-blue-700 sm:grid-cols-2">
-        @for (p of placeholders; track p.key) {
+        <!-- Placeholder Info -->
+        <div class="rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <p class="mb-2 text-sm font-semibold text-blue-800">Variabel yang Tersedia:</p>
+          <div class="grid gap-2 text-sm text-blue-700 sm:grid-cols-2">
+            @for (p of tpl.placeholders; track p.key) {
+              <div class="flex items-center gap-1.5">
+                <code class="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-bold font-mono text-blue-900">{{ p.key }}</code>
+                <span class="text-xs sm:text-sm text-blue-800">— {{ p.desc }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Preview -->
+        @if (templatesData[tpl.id]) {
           <div>
-            <code class="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-bold">{{ p.key }}</code>
-            <span class="ml-1">— {{ p.desc }}</span>
+            <div class="mb-1.5 flex items-center justify-between">
+              <p class="label mb-0">Preview Pesan</p>
+              <span class="text-xs text-slate-400">Contoh format yang akan diterima pelanggan</span>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div class="max-w-md rounded-lg border border-slate-200 bg-white p-4 text-sm whitespace-pre-wrap text-slate-800 shadow-xs">
+                {{ preview }}
+              </div>
+            </div>
           </div>
         }
-      </div>
-    </div>
-
-    <!-- Preview -->
-    @if (form.registration) {
-      <div>
-        <p class="label">Preview Pesan</p>
-        <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm whitespace-pre-wrap text-slate-700">
-          {{ preview }}
-        </div>
-      </div>
+      }
     }
 
-    <div class="flex justify-end gap-3">
+    <div class="flex justify-end gap-3 pt-2">
       <button type="button" class="btn-secondary" (click)="load()" [disabled]="loading() || saving()">Muat Ulang</button>
-      <button class="btn-primary" [disabled]="loading() || saving()">{{ saving() ? 'Menyimpan...' : 'Simpan Template' }}</button>
+      <button class="btn-primary" [disabled]="loading() || saving()">
+        {{ saving() ? 'Menyimpan...' : 'Simpan Template' }}
+      </button>
     </div>
   </form>
 
