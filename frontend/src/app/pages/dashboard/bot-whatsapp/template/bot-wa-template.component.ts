@@ -1,4 +1,5 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
@@ -62,7 +63,7 @@ export const TEMPLATE_LIST: TemplateConfig[] = [
 @Component({
   selector: 'app-bot-wa-template',
   standalone: true,
-  imports: [FormsModule, ToastComponent],
+  imports: [CommonModule, FormsModule, ToastComponent],
   templateUrl: './bot-wa-template.component.html',
 })
 export class BotWaTemplateComponent implements OnInit {
@@ -93,6 +94,42 @@ export class BotWaTemplateComponent implements OnInit {
       text = text.replaceAll(key, val);
     }
     return text;
+  }
+
+  get formattedPreview(): string {
+    let text = this.preview;
+    // Escape HTML
+    text = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    // WhatsApp Markdown Bold: *text*
+    text = text.replace(/\*([^*\n]+)\*/g, '<strong class="font-bold text-white">$1</strong>');
+    // WhatsApp Markdown Italic: _text_
+    text = text.replace(/_([^_\\n]+)_/g, '<em class="italic text-emerald-100">$1</em>');
+    // WhatsApp Markdown Strike: ~text~
+    text = text.replace(/~([^~\\n]+)~/g, '<del class="line-through opacity-75">$1</del>');
+    return text;
+  }
+
+  insertVariable(key: string): void {
+    const activeId = this.activeId();
+    const textarea = document.querySelector<HTMLTextAreaElement>(`textarea[name="tpl_${activeId}"]`);
+    if (!textarea) {
+      this.templatesData[activeId] = (this.templatesData[activeId] || '') + key;
+      return;
+    }
+
+    const start = textarea.selectionStart ?? textarea.value.length;
+    const end = textarea.selectionEnd ?? textarea.value.length;
+    const currentVal = this.templatesData[activeId] || '';
+    const newVal = currentVal.substring(0, start) + key + currentVal.substring(end);
+    this.templatesData[activeId] = newVal;
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + key.length, start + key.length);
+    }, 0);
   }
 
   ngOnInit(): void {
