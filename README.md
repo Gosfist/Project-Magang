@@ -9,7 +9,7 @@ Fitur yang dipertahankan: web profile, login JWT, dashboard, role admin/petugas,
 
 ## Menjalankan lokal
 
-Gunakan dua terminal.
+Gunakan tiga terminal.
 
 ```powershell
 cd frontend
@@ -25,7 +25,16 @@ npm run prisma:generate
 npm run start:dev
 ```
 
-Frontend tersedia di `http://localhost:3000`, sedangkan REST API di `http://localhost:3001/api`.
+```powershell
+cd bot_whatsapp
+Copy-Item .env.example .env
+npm install
+npm start
+```
+
+Frontend tersedia di `http://localhost:3000`, REST API di `http://localhost:3001/api`, dan Bot WhatsApp di `http://localhost:3002/api/wa`.
+
+`BOT_API_KEY` pada `backend/.env` dan `bot_whatsapp/.env` harus sama persis. Jika berbeda, backend akan mendapat respons `401 API key tidak valid` saat mengirim notifikasi WhatsApp.
 
 ## Database
 
