@@ -8,10 +8,11 @@ import { RadiusService } from './radius.service.js';
 import { SecretService } from './secret.service.js';
 import { PppoeNetworkService } from './pppoe-network.service.js';
 import { validateIdCardPhoto } from './id-card-photo.js';
+import { WhatsappNotifyService } from './whatsapp-notify.service.js';
 
 @Injectable()
 export class PppoeService {
-  constructor(private readonly prisma: PrismaService, private readonly radius: RadiusService, private readonly secrets: SecretService, private readonly network: PppoeNetworkService) { }
+  constructor(private readonly prisma: PrismaService, private readonly radius: RadiusService, private readonly secrets: SecretService, private readonly network: PppoeNetworkService, private readonly waNotify: WhatsappNotifyService) { }
 
   async ipPools(search = '', page = 1) {
     const result = await this.network.listPools();
@@ -183,6 +184,7 @@ export class PppoeService {
     const total = session ? filtered.length : count;
     const visible = session ? filtered.slice((page - 1) * 5, page * 5) : filtered;
     return serialize({ data: visible.map((item) => ({ ...item, customerId: item.customerNumber.toString().padStart(6, '0'), online: presence.states.get(item.username) ?? null,
+      uptime: presence.uptimes?.get(item.username) ?? null,
       serviceStatus: item.isActive && item.package.isActive && (item.paymentPromises.length ? item.paymentPromises[0].deadline.getTime() > Date.now() : !item.expiresAt || item.expiresAt.getTime() + 86400000 > Date.now()) ? 'Aktif' : 'Isolir',
       discount: Number(item.discount), package: { ...item.package, price: Number(item.package.price), costPrice: Number(item.package.costPrice) } })), meta: pageMeta(page, 5, total), warnings: presence.warnings });
   }
@@ -202,6 +204,17 @@ export class PppoeService {
         await this.radius.sync(tx, item);
         return item;
       });
+
+      // Fire-and-forget WA notification
+      this.waNotify.notifyRegistration({
+        customerName: account.customerName,
+        customerNumber: account.customerNumber,
+        phone: account.phone,
+        username: account.username,
+        password: dto.password!,
+        package: { name: account.package.name },
+      }).catch(() => {});
+
       const { password: _password, ...safe } = account;
       return serialize({ message: `Akun PPPoE pelanggan ${account.customerName} berhasil ditambahkan.`, account: { ...safe, discount: Number(safe.discount) } });
     } catch (error) { this.unique(error, 'Nama pengguna PPPoE sudah digunakan.'); }

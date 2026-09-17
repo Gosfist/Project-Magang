@@ -5,6 +5,7 @@
     "update": "bash scripts/server-update.sh all",
     "updatebe": "bash scripts/server-update.sh be",
     "updatefe": "bash scripts/server-update.sh fe",
-    "migrate:updates": "node scripts/run-sql-updates.mjs"
+    "migrate:updates": "node scripts/run-sql-updates.mjs",
+    "updatebot": "bash scripts/server-update.sh bot"
   }
 }

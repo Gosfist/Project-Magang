@@ -10,6 +10,7 @@ import {
   LucideRouter,
   LucideUsers,
   LucideX,
+  LucideMessageCircle,
 } from '@lucide/angular';
 import { AuthService } from '../../../core/services/auth.service';
 
@@ -28,6 +29,7 @@ import { AuthService } from '../../../core/services/auth.service';
     LucideRouter,
     LucideUsers,
     LucideX,
+    LucideMessageCircle,
   ],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css',
@@ -43,6 +45,7 @@ export class SidebarComponent implements OnInit {
   pppoeOpen = signal(false);
   toolOpen = signal(false);
   monitoringOpen = signal(false);
+  botWaOpen = signal(false);
 
   // Navigation links
   readonly coreLinks = [
@@ -62,6 +65,10 @@ export class SidebarComponent implements OnInit {
     ['Paket Layanan', '/dashboard/pppoe/paket-layanan'],
     ['IP Pool', '/dashboard/pppoe/ip-pools'],
   ];
+  readonly botWaLinks = [
+    ['Status & QR', '/dashboard/bot-whatsapp/status'],
+    ['Template Pesan', '/dashboard/bot-whatsapp/template']
+  ];
 
   ngOnInit(): void {
     const url = this.router.url;
@@ -70,5 +77,6 @@ export class SidebarComponent implements OnInit {
     if (url.includes('/pppoe')) this.pppoeOpen.set(true);
     if (url.includes('/monitoring')) this.monitoringOpen.set(true);
     if (url.includes('/tools')) this.toolOpen.set(true);
+    if (url.includes('/bot-whatsapp')) this.botWaOpen.set(true);
   }
 }

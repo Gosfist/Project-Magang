@@ -80,6 +80,18 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     if (!value || Number.isNaN(Date.parse(value))) return '—';
     return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }).format(new Date(value));
   }
+
+  uptimeDisplay(value?: string | null): string {
+    return value?.trim() || '—';
+  }
+
+  filterStatusLabel(): string {
+    return this.statusFilter === 'active' ? 'Aktif' : this.statusFilter === 'isolated' ? 'Isolir' : 'Semua';
+  }
+
+  filterSessionLabel(): string {
+    return this.sessionFilter === 'online' ? 'Online' : this.sessionFilter === 'offline' ? 'Offline' : 'Semua';
+  }
   packages = signal<PppoePackage[]>([]);
   nasOptions = signal<NasOption[]>([]);
   odpOptions = signal<OdpOption[]>([]);

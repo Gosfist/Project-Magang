@@ -158,6 +158,33 @@
       </div>
     }
 
+    <!-- Bot WhatsApp -->
+    <button
+      class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
+      (click)="botWaOpen.set(!botWaOpen())"
+    >
+      <svg lucideMessageCircle [size]="20"></svg>
+      <span class="flex-1 text-left">Bot WhatsApp</span>
+      <svg
+        lucideChevronDown
+        [size]="16"
+        [class]="!botWaOpen() ? '-rotate-90' : ''"
+      ></svg>
+    </button>
+    @if (botWaOpen()) {
+      <div class="mt-1 space-y-1 pl-11 pr-2">
+        @for (link of botWaLinks; track link[1]) {
+          <a
+            [routerLink]="link[1]"
+            routerLinkActive="bg-white/15 text-white"
+            class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+            (click)="mobile.set(false)"
+            >{{ link[0] }}</a
+          >
+        }
+      </div>
+    }
+
     <!-- Tool -->
     <button
       class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
@@ -179,6 +206,13 @@
           class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
           (click)="mobile.set(false)"
           >Kalkulator Redaman</a
+        >
+        <a
+          routerLink="/dashboard/tools/pengaturan"
+          routerLinkActive="bg-white/15 text-white"
+          class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+          (click)="mobile.set(false)"
+          >Pengaturan</a
         >
       </div>
     }

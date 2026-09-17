@@ -24,6 +24,7 @@ const features = new Map([
   ['20260917_customer_number.sql', 'ID pelanggan 6 digit'],
   ['20260917_customer_services.sql', 'Invoice, add-ons, janji bayar, dan log autentikasi'],
   ['20260917_customer_services_fee_type.sql', 'Tipe biaya add-ons pelanggan'],
+  ['20260917_app_settings.sql', 'Pengaturan penagihan dan auto isolir'],
   ['20260917_monitoring_stats.sql', 'Grafik monitoring server dan router'],
 ]);
 
@@ -85,6 +86,8 @@ async function looksAlreadyApplied(filename) {
       return (await tableExists('customer_addons')) && (await tableExists('payment_promises'));
     case '20260917_customer_services_fee_type.sql':
       return columnExists('customer_addons', 'fee_type');
+    case '20260917_app_settings.sql':
+      return tableExists('app_settings');
     case '20260917_monitoring_stats.sql':
       return (await tableExists('server_stats')) && (await tableExists('router_stats')) && (await tableExists('server_stats_monthly'));
     default:

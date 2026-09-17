@@ -33,6 +33,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard/pppoe/data-pelanggan': 'Data Pelanggan',
     '/dashboard/pppoe/ip-pools': 'IP Pool',
     '/dashboard/tools/kalkulator-redaman': 'Kalkulator Redaman',
+    '/dashboard/tools/pengaturan': 'Pengaturan',
   };
 
   title = signal('Dasbor');

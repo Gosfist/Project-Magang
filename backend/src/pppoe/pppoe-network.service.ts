@@ -12,21 +12,24 @@ export class PppoeNetworkService {
 
   async accountPresence(accounts: { username: string; routerNasId: number | null }[]) {
     const states = new Map<string, boolean | null>();
-    if (!accounts.length) return { states, warnings: [] as string[] };
+    const uptimes = new Map<string, string | null>();
+    if (!accounts.length) return { states, uptimes, warnings: [] as string[] };
     const routers = await this.prisma.nas.findMany({ where: accounts.some(account => account.routerNasId === null)
       ? { isActive: true } : { id: { in: [...new Set(accounts.map(account => account.routerNasId!))] }, isActive: true } });
-    const sessions = new Map<number, Set<string>>();
+    const sessions = new Map<number, Map<string, string | null>>();
     const result = await this.onRouters(routers, router => this.mikrotik.withRouter(router, async write => {
-      const rows = await write('/ppp/active/print', ['=.proplist=name,service']);
-      sessions.set(router.id, new Set(rows.filter(row => row.service === 'pppoe').map(row => row.name)));
+      const rows = await write('/ppp/active/print', ['=.proplist=name,service,uptime']);
+      sessions.set(router.id, new Map(rows.filter(row => row.service === 'pppoe').map(row => [row.name, row.uptime ?? null])));
     }));
     for (const account of accounts) {
       const targets = account.routerNasId === null ? routers : routers.filter(router => router.id === account.routerNasId);
       const online = targets.some(router => sessions.get(router.id)?.has(account.username));
       const known = targets.length > 0 && targets.every(router => sessions.has(router.id));
+      const uptime = targets.map(router => sessions.get(router.id)?.get(account.username)).find(value => value !== undefined) ?? null;
       states.set(account.username, online ? true : known ? false : null);
+      uptimes.set(account.username, uptime);
     }
-    return { states, warnings: result.warnings };
+    return { states, uptimes, warnings: result.warnings };
   }
 
   async listPools() {

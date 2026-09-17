@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module.js';
 import { MainCoreModule } from './main-core/main-core.module.js';
 import { PppoeModule } from './pppoe/pppoe.module.js';
 import { RouterModule } from './router/router.module.js';
+import { SettingsModule } from './settings/settings.module.js';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { RouterModule } from './router/router.module.js';
     PppoeModule,
     MonitoringModule,
     RouterModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}

@@ -1,0 +1,74 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../prisma/prisma.service.js';
+
+@Injectable()
+export class WhatsappNotifyService {
+  private readonly logger = new Logger(WhatsappNotifyService.name);
+  private readonly botUrl: string;
+  private readonly apiKey: string;
+
+  constructor(private readonly prisma: PrismaService, private readonly config: ConfigService) {
+    this.botUrl = this.config.get<string>('BOT_WHATSAPP_URL', 'http://localhost:3002');
+    this.apiKey = this.config.get<string>('BOT_API_KEY', '');
+  }
+
+  async notifyRegistration(account: {
+    customerName: string;
+    customerNumber: bigint;
+    phone?: string | null;
+    username: string;
+    password: string;
+    package: { name: string };
+  }): Promise<void> {
+    if (!account.phone) {
+      this.logger.debug('Notifikasi WA dilewati: nomor telepon pelanggan kosong.');
+      return;
+    }
+    try {
+      // Check if bot is enabled
+      const enabled = await this.prisma.appSetting.findUnique({ where: { key: 'wa_bot_enabled' } });
+      if (enabled?.value !== 'true') {
+        this.logger.debug('Notifikasi WA dilewati: bot WA nonaktif.');
+        return;
+      }
+
+      // Get template
+      const templateRow = await this.prisma.appSetting.findUnique({ where: { key: 'wa_template_registration' } });
+      const template = templateRow?.value || this.defaultTemplate();
+
+      // Replace placeholders
+      const customerId = account.customerNumber.toString().padStart(6, '0');
+      const message = template
+        .replace(/\{nama\}/g, account.customerName)
+        .replace(/\{nomor_pelanggan\}/g, customerId)
+        .replace(/\{paket\}/g, account.package.name)
+        .replace(/\{username\}/g, account.username)
+        .replace(/\{password\}/g, account.password);
+
+      // Send to bot
+      const response = await fetch(`${this.botUrl}/api/wa/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': this.apiKey,
+        },
+        body: JSON.stringify({ phone: account.phone, message }),
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        this.logger.warn(`Notifikasi WA gagal: ${response.status} - ${body.message || 'Unknown'}`);
+      } else {
+        this.logger.log(`Notifikasi WA registrasi terkirim ke ${account.phone}`);
+      }
+    } catch (err) {
+      this.logger.warn(`Notifikasi WA error: ${err.message}`);
+    }
+  }
+
+  private defaultTemplate(): string {
+    return `Halo {nama}! 👋\n\nSelamat, akun internet Anda telah berhasil didaftarkan di PT Unzanet.\n\n📋 *Detail Akun:*\n• Nomor Pelanggan: {nomor_pelanggan}\n• Paket: {paket}\n• Username PPPoE: {username}\n• Password PPPoE: {password}\n\nTerima kasih telah memilih layanan kami!\n\n— PT Unzanet`;
+  }
+}

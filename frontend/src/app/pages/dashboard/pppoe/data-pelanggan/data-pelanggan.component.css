@@ -55,4 +55,6 @@
 .filter-option { display: block; width: 100%; border-radius: 8px; padding: 8px 10px; text-align: left; font-size: 13px; font-weight: 600; color: #334155; }
 .filter-option:hover, .filter-option:focus-visible { background: #f1f5f9; outline: none; }
 .filter-option.active { background: #eef2ff; color: #4338ca; }
+.filter-button { width: 114px; flex-direction: column; align-items: center; justify-content: center; gap: 0; line-height: 1.15; }
+.filter-button small { margin-top: 2px; font-size: 11px; font-weight: 700; color: #64748b; }
 @media (min-width: 640px) { .edit-tabs { grid-template-columns: repeat(6, minmax(0, 1fr)); } }

@@ -1,0 +1,62 @@
+<div class="mx-auto max-w-5xl space-y-5">
+  <div class="card p-5 sm:p-6">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h2 class="text-lg font-semibold">Pengaturan Penagihan</h2>
+        <p class="mt-1 text-sm text-slate-500">Atur batas pembayaran dan auto isolir pelanggan PPPoE.</p>
+      </div>
+      <span [class]="'rounded-full px-3 py-1 text-xs font-semibold ' + (form.autoIsolationEnabled ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600')">
+        {{ form.autoIsolationEnabled ? 'Auto isolir aktif' : 'Auto isolir nonaktif' }}
+      </span>
+    </div>
+  </div>
+
+  <form class="card space-y-5 p-5 sm:p-6" (ngSubmit)="save()">
+    <div class="grid gap-4 md:grid-cols-2">
+      <div>
+        <label class="label">Tanggal Mulai Pembayaran</label>
+        <input class="input" type="number" min="1" max="28" required [(ngModel)]="form.billingStartDay" name="billingStartDay" />
+        <p class="mt-1 text-xs text-slate-500">Awal rentang pembayaran bulanan.</p>
+      </div>
+      <div>
+        <label class="label">Tanggal Akhir Pembayaran</label>
+        <input class="input" type="number" min="1" max="31" required [(ngModel)]="form.billingEndDay" name="billingEndDay" />
+        <p class="mt-1 text-xs text-slate-500">Jika lewat tanggal ini dan tagihan belum lunas, akun bisa diisolir.</p>
+      </div>
+      <div>
+        <label class="label">Zona Waktu</label>
+        <select class="input" required [(ngModel)]="form.billingTimezone" name="billingTimezone">
+          <option value="WIB">WIB</option>
+          <option value="WITA">WITA</option>
+          <option value="WIT">WIT</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Jam Cek Auto Isolir</label>
+        <input class="input" type="number" min="0" max="23" required [(ngModel)]="form.isolationCheckHour" name="isolationCheckHour" />
+        <p class="mt-1 text-xs text-slate-500">Contoh: 0 berarti boleh jalan mulai jam 00.00 sesuai zona waktu.</p>
+      </div>
+    </div>
+
+    <label class="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-slate-200 p-4">
+      <span>
+        <b class="block text-sm text-slate-900">Auto Isolir PPPoE</b>
+        <small class="text-slate-500">Akun aktif dengan tagihan belum lunas akan dinonaktifkan setelah melewati tanggal akhir pembayaran.</small>
+      </span>
+      <input type="checkbox" class="h-5 w-5" [(ngModel)]="form.autoIsolationEnabled" name="autoIsolationEnabled" />
+    </label>
+
+    <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+      Aturan ini membaca tagihan berstatus menunggu pembayaran. Setelah auto isolir berjalan, RADIUS disinkronkan dan sesi PPPoE pelanggan diputus.
+    </div>
+
+    <div class="flex justify-end gap-3">
+      <button type="button" class="btn-secondary" (click)="load()" [disabled]="loading() || saving()">Muat Ulang</button>
+      <button class="btn-primary" [disabled]="loading() || saving()">{{ saving() ? 'Menyimpan...' : 'Simpan Pengaturan' }}</button>
+    </div>
+  </form>
+
+  @if (toast()) {
+    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
+  }
+</div>
