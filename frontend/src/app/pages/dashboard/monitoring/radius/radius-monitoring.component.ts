@@ -1,7 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { LucideRefreshCw, LucideSearch } from '@lucide/angular';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { ApiService } from '../../../../core/services/api.service';
 
 interface RadiusLogItem {
@@ -22,7 +20,7 @@ interface RadiusLogResponse {
 @Component({
   selector: 'app-radius-monitoring',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideRefreshCw, LucideSearch],
+  imports: [CommonModule],
   templateUrl: './radius-monitoring.component.html',
 })
 export class RadiusMonitoringComponent implements OnInit {
@@ -33,14 +31,7 @@ export class RadiusMonitoringComponent implements OnInit {
   meta = signal({ currentPage: 1, lastPage: 1, perPage: 25, total: 0 });
   loading = signal(false);
   error = signal('');
-  search = '';
-  reply = '';
   page = 1;
-
-  successRate = computed(() => {
-    const data = this.summary();
-    return data.total ? Math.round((data.success / data.total) * 100) : 0;
-  });
 
   ngOnInit(): void {
     this.load();
@@ -51,8 +42,8 @@ export class RadiusMonitoringComponent implements OnInit {
     this.loading.set(true);
     this.error.set('');
     const params = new URLSearchParams({
-      search: this.search.trim(),
-      reply: this.reply,
+      search: '',
+      reply: '',
       page: String(this.page),
     });
     this.api.get<RadiusLogResponse>(`/monitoring/radius/logs?${params.toString()}`).subscribe({
@@ -67,16 +58,6 @@ export class RadiusMonitoringComponent implements OnInit {
         this.loading.set(false);
       },
     });
-  }
-
-  applyFilters(): void {
-    this.load(1);
-  }
-
-  resetFilters(): void {
-    this.search = '';
-    this.reply = '';
-    this.load(1);
   }
 
   pageTo(direction: -1 | 1): void {

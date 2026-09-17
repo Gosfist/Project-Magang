@@ -1,48 +1,4 @@
 <div class="flex flex-col gap-5">
-  <section class="grid gap-4 md:grid-cols-4">
-    <div class="card p-5">
-      <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Auth</p>
-      <p class="mt-2 text-3xl font-bold text-slate-950">{{ summary().total }}</p>
-    </div>
-    <div class="card p-5">
-      <p class="text-xs font-semibold uppercase tracking-wider text-emerald-600">Access-Accept</p>
-      <p class="mt-2 text-3xl font-bold text-emerald-600">{{ summary().success }}</p>
-    </div>
-    <div class="card p-5">
-      <p class="text-xs font-semibold uppercase tracking-wider text-red-600">Access-Reject</p>
-      <p class="mt-2 text-3xl font-bold text-red-600">{{ summary().failed }}</p>
-    </div>
-    <div class="card p-5">
-      <p class="text-xs font-semibold uppercase tracking-wider text-blue-600">Rasio Berhasil</p>
-      <p class="mt-2 text-3xl font-bold text-blue-600">{{ successRate() }}%</p>
-    </div>
-  </section>
-
-  <section class="card p-4">
-    <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
-      <div class="relative flex-1">
-        <svg lucideSearch [size]="18" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></svg>
-        <input
-          class="input w-full pl-10"
-          name="radiusSearch"
-          [(ngModel)]="search"
-          (keyup.enter)="applyFilters()"
-          placeholder="Cari username, password yang dicoba, atau balasan RADIUS..."
-        />
-      </div>
-      <select class="input lg:w-48" name="radiusReply" [(ngModel)]="reply" (ngModelChange)="applyFilters()">
-        <option value="">Semua status</option>
-        <option value="accept">Berhasil</option>
-        <option value="reject">Gagal</option>
-      </select>
-      <button type="button" class="btn-secondary flex items-center justify-center gap-2" [disabled]="loading()" (click)="load()">
-        <svg lucideRefreshCw [size]="16" [class.animate-spin]="loading()"></svg>
-        <span>Segarkan</span>
-      </button>
-      <button type="button" class="btn-secondary" [disabled]="loading()" (click)="resetFilters()">Reset</button>
-    </div>
-  </section>
-
   @if (error()) {
     <p role="alert" class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{{ error() }}</p>
   }
@@ -61,7 +17,6 @@
             <th class="px-4 py-3">Username</th>
             <th class="px-4 py-3">Password Dicoba</th>
             <th class="px-4 py-3">Status</th>
-            <th class="px-4 py-3">Class</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
@@ -83,11 +38,10 @@
                   {{ statusLabel(log.reply) }}
                 </span>
               </td>
-              <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ log.class || '-' }}</td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="px-4 py-10 text-center text-sm text-slate-500">
+              <td colspan="4" class="px-4 py-10 text-center text-sm text-slate-500">
                 {{ loading() ? 'Memuat log FreeRADIUS...' : 'Belum ada log autentikasi.' }}
               </td>
             </tr>
