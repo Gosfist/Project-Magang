@@ -15,13 +15,10 @@
   @if (waStatus().status === 'qr_ready' && qrImage()) {
     <div class="card flex flex-col items-center gap-4 p-5 sm:p-6">
       <h3 class="text-base font-semibold">Scan QR Code</h3>
-      <p class="text-center text-sm text-slate-500">
-        Buka WhatsApp di HP Anda → Menu → Perangkat Tertaut → Tautkan Perangkat → Scan QR di bawah ini.
-      </p>
       <div class="rounded-xl border-2 border-slate-200 bg-white p-4">
         <img [src]="qrImage()" alt="QR Code WhatsApp" class="h-64 w-64" />
       </div>
-      <p class="text-xs text-slate-400">QR code diperbarui otomatis setiap 3 detik.</p>
+      <p class="text-xs text-slate-400">QR code diperbarui otomatis dalam {{ countdown() }} detik.</p>
     </div>
   }
 
@@ -41,31 +38,33 @@
   }
 
   <!-- Status Message -->
-  @if (waStatus().message) {
+  @if (waStatus().message && waStatus().status !== 'qr_ready' && waStatus().message !== 'Scan QR code dari WhatsApp di HP Anda.') {
     <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
       {{ waStatus().message }}
     </div>
   }
 
   <!-- Actions -->
-  <div class="card p-5 sm:p-6">
-    <h3 class="mb-4 text-base font-semibold">Aksi</h3>
-    <div class="flex flex-wrap gap-3">
-      @if (waStatus().status === 'disconnected') {
-        <button class="btn-primary" (click)="connect()" [disabled]="actionLoading()">
-          {{ actionLoading() ? 'Menghubungkan...' : 'Hubungkan WhatsApp' }}
-        </button>
-      }
-      @if (waStatus().status === 'connected' || waStatus().status === 'qr_ready') {
-        <button class="btn-secondary" (click)="restart()" [disabled]="actionLoading()">
-          {{ actionLoading() ? 'Memproses...' : 'Hubungkan Ulang' }}
-        </button>
-        <button class="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50" (click)="disconnect()" [disabled]="actionLoading()">
-          {{ actionLoading() ? 'Memproses...' : 'Putuskan Koneksi' }}
-        </button>
-      }
+  @if (waStatus().status === 'connected' || waStatus().status === 'disconnected') {
+    <div class="card p-5 sm:p-6">
+      <h3 class="mb-4 text-base font-semibold">Aksi</h3>
+      <div class="flex flex-wrap gap-3">
+        @if (waStatus().status === 'disconnected') {
+          <button class="btn-primary" (click)="connect()" [disabled]="actionLoading()">
+            {{ actionLoading() ? 'Menghubungkan...' : 'Hubungkan WhatsApp' }}
+          </button>
+        }
+        @if (waStatus().status === 'connected') {
+          <button class="btn-secondary" (click)="restart()" [disabled]="actionLoading()">
+            {{ actionLoading() ? 'Memproses...' : 'Hubungkan Ulang' }}
+          </button>
+          <button class="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50" (click)="disconnect()" [disabled]="actionLoading()">
+            {{ actionLoading() ? 'Memproses...' : 'Putuskan Koneksi' }}
+          </button>
+        }
+      </div>
     </div>
-  </div>
+  }
 
   @if (toast()) {
     <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>

@@ -22,17 +22,38 @@ export class BotWaStatusComponent implements OnInit, OnDestroy {
 
   waStatus = signal<WaStatus>({ status: 'disconnected', qrAvailable: false, message: '' });
   qrImage = signal<string | null>(null);
+  countdown = signal(3);
   loading = signal(false);
   actionLoading = signal(false);
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
   ngOnInit(): void {
     this.fetchStatus();
-    this.pollTimer = setInterval(() => this.fetchStatus(), 3000);
+    this.startCountdown();
   }
 
   ngOnDestroy(): void {
-    if (this.pollTimer) clearInterval(this.pollTimer);
+    this.stopCountdown();
+  }
+
+  private startCountdown(): void {
+    this.stopCountdown();
+    this.pollTimer = setInterval(() => {
+      const current = this.countdown();
+      if (current <= 1) {
+        this.countdown.set(3);
+        this.fetchStatus();
+      } else {
+        this.countdown.set(current - 1);
+      }
+    }, 1000);
+  }
+
+  private stopCountdown(): void {
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
   }
 
   fetchStatus(): void {
@@ -65,6 +86,7 @@ export class BotWaStatusComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.actionLoading.set(false);
         this.toast.set({ message: res.message, type: 'success' });
+        this.countdown.set(3);
         this.fetchStatus();
       },
       error: () => {
@@ -80,6 +102,7 @@ export class BotWaStatusComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.actionLoading.set(false);
         this.toast.set({ message: res.message, type: 'success' });
+        this.countdown.set(3);
         this.fetchStatus();
       },
       error: () => {
@@ -95,6 +118,7 @@ export class BotWaStatusComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.actionLoading.set(false);
         this.toast.set({ message: res.message, type: 'success' });
+        this.countdown.set(3);
         this.fetchStatus();
       },
       error: () => {

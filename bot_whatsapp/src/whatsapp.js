@@ -45,7 +45,7 @@ export async function startConnection() {
       if (qr) {
         qrCode = qr;
         status = 'qr_ready';
-        statusMessage = 'Scan QR code dari WhatsApp di HP Anda.';
+        statusMessage = '';
       }
       if (connection === 'close') {
         qrCode = null;

@@ -68,19 +68,26 @@ if [[ "$MODE" == "all" || "$MODE" == "bot" ]]; then
   log "Install dependency bot WhatsApp"
   install_node_modules "$BOTWA_DIR" "Bot WhatsApp"
 
-  log "Restart bot WhatsApp"
+  log "Setup dan restart bot WhatsApp"
+  if [[ -f "$BOTWA_DIR/unzanet-botwa.service" ]]; then
+    sudo cp "$BOTWA_DIR/unzanet-botwa.service" /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable "$BOTWA_SERVICE" || true
+  fi
   sudo systemctl daemon-reload
-  sudo systemctl restart "$BOTWA_SERVICE"
+  sudo systemctl restart "$BOTWA_SERVICE" || true
 fi
 
 log "Cek dan jalankan migrasi SQL yang belum pernah dijalankan"
 cd "$ROOT_DIR"
 npm run migrate:updates
 
-log "Status backend"
-sudo systemctl status "$SERVICE_NAME" --no-pager || true
+if [[ "$MODE" == "all" || "$MODE" == "be" ]]; then
+  log "Status backend"
+  sudo systemctl status "$SERVICE_NAME" --no-pager || true
+fi
 
-if systemctl is-enabled "$BOTWA_SERVICE" &>/dev/null; then
+if [[ "$MODE" == "all" || "$MODE" == "bot" ]]; then
   log "Status bot WhatsApp"
   sudo systemctl status "$BOTWA_SERVICE" --no-pager || true
 fi
