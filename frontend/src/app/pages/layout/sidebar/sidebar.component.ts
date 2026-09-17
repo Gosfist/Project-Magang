@@ -66,7 +66,7 @@ export class SidebarComponent implements OnInit {
     ['IP Pool', '/dashboard/pppoe/ip-pools'],
   ];
   readonly botWaLinks = [
-    ['Status & QR', '/dashboard/bot-whatsapp/status'],
+    ['Login Bot Wa', '/dashboard/bot-whatsapp/status'],
     ['Template Pesan', '/dashboard/bot-whatsapp/template']
   ];
 

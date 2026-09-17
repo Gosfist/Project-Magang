@@ -32,6 +32,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard/pppoe/paket-layanan': 'Daftar Paket PPPoE',
     '/dashboard/pppoe/data-pelanggan': 'Data Pelanggan',
     '/dashboard/pppoe/ip-pools': 'IP Pool',
+    '/dashboard/bot-whatsapp/status': 'Login Bot Wa',
+    '/dashboard/bot-whatsapp/template': 'Template Pesan WhatsApp',
     '/dashboard/tools/kalkulator-redaman': 'Kalkulator Redaman',
     '/dashboard/tools/pengaturan': 'Pengaturan',
   };

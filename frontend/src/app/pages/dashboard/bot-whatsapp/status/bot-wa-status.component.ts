@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
@@ -7,12 +8,15 @@ type WaStatus = {
   status: 'disconnected' | 'connecting' | 'qr_ready' | 'connected';
   qrAvailable: boolean;
   message: string;
+  botNumber?: string | null;
+  connectedAt?: number | null;
+  uptime?: number;
 };
 
 @Component({
   selector: 'app-bot-wa-status',
   standalone: true,
-  imports: [ToastComponent],
+  imports: [FormsModule, ToastComponent],
   templateUrl: './bot-wa-status.component.html',
 })
 export class BotWaStatusComponent implements OnInit, OnDestroy {
@@ -23,8 +27,11 @@ export class BotWaStatusComponent implements OnInit, OnDestroy {
   waStatus = signal<WaStatus>({ status: 'disconnected', qrAvailable: false, message: '' });
   qrImage = signal<string | null>(null);
   countdown = signal(3);
+  uptime = signal<number>(0);
   loading = signal(false);
   actionLoading = signal(false);
+  pingLoading = signal(false);
+  targetPhone = signal('');
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
   ngOnInit(): void {
@@ -39,6 +46,10 @@ export class BotWaStatusComponent implements OnInit, OnDestroy {
   private startCountdown(): void {
     this.stopCountdown();
     this.pollTimer = setInterval(() => {
+      if (this.waStatus().status === 'connected') {
+        this.uptime.update((u) => u + 1);
+      }
+
       const current = this.countdown();
       if (current <= 1) {
         this.countdown.set(3);
@@ -60,6 +71,9 @@ export class BotWaStatusComponent implements OnInit, OnDestroy {
     this.http.get<WaStatus>(`${this.baseUrl}/status`).subscribe({
       next: (data) => {
         this.waStatus.set(data);
+        if (typeof data.uptime === 'number') {
+          this.uptime.set(data.uptime);
+        }
         if (data.qrAvailable) {
           this.fetchQR();
         } else {
@@ -69,6 +83,7 @@ export class BotWaStatusComponent implements OnInit, OnDestroy {
       error: () => {
         this.waStatus.set({ status: 'disconnected', qrAvailable: false, message: 'Bot WhatsApp tidak dapat dihubungi.' });
         this.qrImage.set(null);
+        this.uptime.set(0);
       },
     });
   }
@@ -126,6 +141,50 @@ export class BotWaStatusComponent implements OnInit, OnDestroy {
         this.toast.set({ message: 'Gagal memutuskan koneksi.', type: 'error' });
       },
     });
+  }
+
+  sendPing(): void {
+    const phone = this.targetPhone().trim();
+    if (!phone) {
+      this.toast.set({ message: 'Nomor target harus diisi.', type: 'error' });
+      return;
+    }
+
+    this.pingLoading.set(true);
+    this.http.post<{ message: string }>(`${this.baseUrl}/ping`, { phone }).subscribe({
+      next: (res) => {
+        this.pingLoading.set(false);
+        this.toast.set({ message: res.message || 'Pesan Ping berhasil dikirim!', type: 'success' });
+      },
+      error: (err) => {
+        this.pingLoading.set(false);
+        const errMsg = err?.error?.message || 'Gagal mengirim pesan Ping.';
+        this.toast.set({ message: errMsg, type: 'error' });
+      },
+    });
+  }
+
+  get formattedBotNumber(): string {
+    const num = this.waStatus().botNumber;
+    if (!num) return '-';
+    return num.startsWith('62') ? `+${num}` : num;
+  }
+
+  get formattedUptime(): string {
+    const totalSeconds = this.uptime();
+    if (!totalSeconds || totalSeconds <= 0) return '0 detik';
+
+    const d = Math.floor(totalSeconds / 86400);
+    const h = Math.floor((totalSeconds % 86400) / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+
+    const parts: string[] = [];
+    if (d > 0) parts.push(`${d} hari`);
+    if (h > 0) parts.push(`${h} jam`);
+    if (m > 0) parts.push(`${m} menit`);
+    parts.push(`${s} detik`);
+    return parts.join(' ');
   }
 
   get statusLabel(): string {

@@ -13,9 +13,22 @@ let sock = null;
 let qrCode = null;
 let status = 'disconnected'; // disconnected | connecting | qr_ready | connected
 let statusMessage = '';
+let connectedAt = null;
+let botNumber = null;
 
 export function getStatus() {
-  return { status, qrAvailable: !!qrCode, message: statusMessage };
+  const uptimeSeconds = (status === 'connected' && connectedAt)
+    ? Math.max(0, Math.floor((Date.now() - connectedAt) / 1000))
+    : 0;
+
+  return {
+    status,
+    qrAvailable: !!qrCode,
+    message: statusMessage,
+    botNumber,
+    connectedAt,
+    uptime: uptimeSeconds,
+  };
 }
 
 export function getQR() {
@@ -30,6 +43,9 @@ export async function startConnection() {
 
   try {
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
+    if (state?.creds?.me?.id) {
+      botNumber = state.creds.me.id.split(':')[0].split('@')[0];
+    }
     sock = makeWASocket({
       auth: {
         creds: state.creds,
@@ -49,10 +65,12 @@ export async function startConnection() {
       }
       if (connection === 'close') {
         qrCode = null;
+        connectedAt = null;
         const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
         if (reason === DisconnectReason.loggedOut) {
           status = 'disconnected';
           statusMessage = 'Sesi WhatsApp telah keluar. Silakan hubungkan ulang.';
+          botNumber = null;
           clearAuth();
         } else {
           status = 'disconnected';
@@ -62,8 +80,15 @@ export async function startConnection() {
       } else if (connection === 'open') {
         qrCode = null;
         status = 'connected';
-        statusMessage = 'WhatsApp terhubung.';
-        console.log('[WA] Connected successfully');
+        statusMessage = '';
+        if (!connectedAt) {
+          connectedAt = Date.now();
+        }
+        const rawId = sock?.user?.id || state?.creds?.me?.id || '';
+        if (rawId) {
+          botNumber = rawId.split(':')[0].split('@')[0];
+        }
+        console.log('[WA] Connected successfully as', botNumber);
       }
     });
 
@@ -96,6 +121,8 @@ export async function logout() {
     sock = null;
   }
   qrCode = null;
+  connectedAt = null;
+  botNumber = null;
   status = 'disconnected';
   statusMessage = 'WhatsApp telah diputuskan.';
   clearAuth();
@@ -107,6 +134,8 @@ export async function restart() {
     sock = null;
   }
   qrCode = null;
+  connectedAt = null;
+  botNumber = null;
   status = 'disconnected';
   statusMessage = '';
   await startConnection();
