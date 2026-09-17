@@ -53,6 +53,18 @@ export class RouterMonitoringService {
           const freeMem = Number(res['free-memory'] || 0);
           const usedMem = Math.max(0, totalMem - freeMem);
           const memPercent = totalMem > 0 ? Math.round((usedMem / totalMem) * 1000) / 10 : 0;
+          // RouterOS mengirim kapasitas penyimpanan dalam byte melalui /system/resource/print.
+          const totalDisk = Number(res['total-hdd-space']);
+          const freeDisk = Number(res['free-hdd-space']);
+          const availableDisk = Math.min(totalDisk, Math.max(0, freeDisk));
+          const disk = Number.isFinite(totalDisk) && totalDisk > 0 && Number.isFinite(freeDisk)
+            ? {
+                total: totalDisk,
+                free: availableDisk,
+                used: totalDisk - availableDisk,
+                percent: Math.round(((totalDisk - availableDisk) / totalDisk) * 1000) / 10,
+              }
+            : null;
           const uptimeSec = parseMikrotikUptime(res['uptime'] || '');
 
           let netDown = 0;
@@ -104,6 +116,7 @@ export class RouterMonitoringService {
               used: usedMem,
               percent: memPercent,
             },
+            disk,
             network: {
               download: Math.round(netDown * 100) / 100,
               upload: Math.round(netUp * 100) / 100,

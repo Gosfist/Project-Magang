@@ -135,6 +135,7 @@ model CustomerAddon {
   pppoeAccountId BigInt @map("pppoe_account_id") @db.UnsignedBigInt
   name String @db.VarChar(150)
   amount BigInt @db.UnsignedBigInt
+  feeType String @default("ONCE") @map("fee_type") @db.VarChar(15)
   notes String? @db.Text
   invoiceNumber String @map("invoice_number") @db.VarChar(50)
   createdAt DateTime @default(now()) @map("created_at")

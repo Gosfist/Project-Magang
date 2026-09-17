@@ -43,10 +43,18 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     { id: 'auth-logs', label: 'Log Autentikasi' }, { id: 'invoices', label: 'Tagihan' },
     { id: 'addons', label: 'Biaya Tambahan' }, { id: 'promises', label: 'Janji Bayar' },
   ];
-  filterOpen = signal(false);
+  statusFilterOpen = signal(false);
+  sessionFilterOpen = signal(false);
   statusFilter = '';
   sessionFilter = '';
   applyFilters() { this.page.set(1); this.load(); }
+  resetFilters() {
+    this.statusFilter = '';
+    this.sessionFilter = '';
+    this.statusFilterOpen.set(false);
+    this.sessionFilterOpen.set(false);
+    this.applyFilters();
+  }
   customerServiceChanged(result: { isActive?: boolean }) {
     if (result.isActive !== undefined) this.form.isActive = result.isActive;
     this.load();

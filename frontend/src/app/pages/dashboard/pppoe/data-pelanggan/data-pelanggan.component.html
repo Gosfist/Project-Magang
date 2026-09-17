@@ -13,67 +13,50 @@
         (ngModelChange)="page.set(1); load()"
       />
     </div>
-    <div class="relative" (keydown.escape)="filterOpen.set(false)">
+    <div class="relative" (keydown.escape)="statusFilterOpen.set(false)">
       <button
         type="button"
         class="btn-secondary"
-        (click)="filterOpen.set(!filterOpen())"
-        [attr.aria-expanded]="filterOpen()"
-        aria-controls="customer-filters"
+        (click)="statusFilterOpen.set(!statusFilterOpen()); sessionFilterOpen.set(false)"
+        [attr.aria-expanded]="statusFilterOpen()"
+        aria-controls="customer-status-filter"
       >
-        Filter{{ statusFilter || sessionFilter ? " (aktif)" : "" }}
+        Status{{ statusFilter ? " (" + (statusFilter === "active" ? "Aktif" : "Isolir") + ")" : "" }}
       </button>
-      @if (filterOpen()) {
+      @if (statusFilterOpen()) {
         <div
-          id="customer-filters"
-          class="absolute left-0 top-full z-30 mt-2 w-56 space-y-3 rounded-xl border border-slate-200 bg-white p-3 shadow-lg"
+          id="customer-status-filter"
+          class="absolute left-0 top-full z-30 mt-2 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
         >
-          <div>
-            <label class="label" for="status-filter">Status</label
-            ><select
-              id="status-filter"
-              class="input"
-              [(ngModel)]="statusFilter"
-              (ngModelChange)="applyFilters()"
-            >
-              <option value="">Semua status</option>
-              <option value="active">Aktif</option>
-              <option value="isolated">Isolir</option>
-            </select>
-          </div>
-          <div>
-            <label class="label" for="session-filter">Sesi</label
-            ><select
-              id="session-filter"
-              class="input"
-              [(ngModel)]="sessionFilter"
-              (ngModelChange)="applyFilters()"
-            >
-              <option value="">Semua sesi</option>
-              <option value="online">Online</option>
-              <option value="offline">Offline</option>
-            </select>
-          </div>
-          <div class="flex justify-between gap-2">
-            <button
-              type="button"
-              class="btn-secondary"
-              (click)="statusFilter = ''; sessionFilter = ''; applyFilters()"
-            >
-              Atur Ulang</button
-            ><button
-              type="button"
-              class="btn-primary"
-              (click)="filterOpen.set(false)"
-            >
-              Tutup
-            </button>
-          </div>
+          <button type="button" class="filter-option" [class.active]="statusFilter === ''" (click)="statusFilter = ''; statusFilterOpen.set(false); applyFilters()">Semua status</button>
+          <button type="button" class="filter-option" [class.active]="statusFilter === 'active'" (click)="statusFilter = 'active'; statusFilterOpen.set(false); applyFilters()">Aktif</button>
+          <button type="button" class="filter-option" [class.active]="statusFilter === 'isolated'" (click)="statusFilter = 'isolated'; statusFilterOpen.set(false); applyFilters()">Isolir</button>
         </div>
       }
     </div>
-    <button class="btn-secondary" [disabled]="refreshing()" (click)="load()">
-      {{ refreshing() ? "Memuat..." : "Muat Ulang" }}
+    <div class="relative" (keydown.escape)="sessionFilterOpen.set(false)">
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="sessionFilterOpen.set(!sessionFilterOpen()); statusFilterOpen.set(false)"
+        [attr.aria-expanded]="sessionFilterOpen()"
+        aria-controls="customer-session-filter"
+      >
+        Sesi{{ sessionFilter ? " (" + (sessionFilter === "online" ? "Online" : "Offline") + ")" : "" }}
+      </button>
+      @if (sessionFilterOpen()) {
+        <div
+          id="customer-session-filter"
+          class="absolute left-0 top-full z-30 mt-2 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
+        >
+          <button type="button" class="filter-option" [class.active]="sessionFilter === ''" (click)="sessionFilter = ''; sessionFilterOpen.set(false); applyFilters()">Semua sesi</button>
+          <button type="button" class="filter-option" [class.active]="sessionFilter === 'online'" (click)="sessionFilter = 'online'; sessionFilterOpen.set(false); applyFilters()">Online</button>
+          <button type="button" class="filter-option" [class.active]="sessionFilter === 'offline'" (click)="sessionFilter = 'offline'; sessionFilterOpen.set(false); applyFilters()">Offline</button>
+        </div>
+      }
+    </div>
+    <button class="btn-secondary" [disabled]="refreshing() || (!statusFilter && !sessionFilter)" (click)="resetFilters()">
+      Riset Filter
     </button>
     <button class="btn-primary" (click)="show()">
       <svg lucidePlus [size]="18"></svg> Tambah Pelanggan

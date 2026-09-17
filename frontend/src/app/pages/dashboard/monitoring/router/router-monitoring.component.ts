@@ -17,6 +17,7 @@ interface RouterRealtimeData {
   uptime: number;
   cpu: { percent: number; cores: number; model: string };
   memory: { total: number; free: number; used: number; percent: number };
+  disk: { total: number; free: number; used: number; percent: number } | null;
   network: { download: number; upload: number };
   board: { name: string; version: string; architecture: string };
   checkedAt: string;

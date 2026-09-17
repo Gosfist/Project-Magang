@@ -94,12 +94,19 @@
         <p class="text-[10px] text-slate-400">Total agregat interface utama</p>
       </section>
 
-      <!-- Papan perangkat dan versi RouterOS. -->
-      <section class="card space-y-1.5 p-4">
-        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500">Info Perangkat</h3>
-        <p class="font-bold text-slate-800">{{ r.board.name }}</p>
-        <p class="text-xs text-slate-600">ROS {{ r.board.version }}</p>
-        <p class="text-[11px] text-slate-400">Arch: {{ r.board.architecture }}</p>
+      <!-- Kapasitas penyimpanan yang dilaporkan langsung oleh RouterOS. -->
+      <section class="card space-y-2 p-4">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500">Disk</h3>
+        @if (r.disk; as disk) {
+          <p class="text-2xl font-bold text-blue-600">{{ disk.percent }}%</p>
+          <div class="h-2 overflow-hidden rounded bg-slate-100">
+            <div class="h-full bg-blue-500 transition-all duration-300" [style.width.%]="disk.percent"></div>
+          </div>
+          <p class="text-xs text-slate-500">Terpakai {{ formatBytes(disk.used) }} / {{ formatBytes(disk.total) }}</p>
+          <p class="text-[11px] text-slate-400">Tersedia {{ formatBytes(disk.free) }}</p>
+        } @else {
+          <p class="text-sm text-slate-500">Data disk tidak tersedia.</p>
+        }
       </section>
     </div>
   }

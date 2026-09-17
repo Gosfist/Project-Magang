@@ -37,10 +37,10 @@ describe('Customer invoices and promises', () => {
   });
   it('creates an add-on and its invoice in one transaction', async () => {
     const { service, tx } = setup();
-    await service.createAddon('1', { name: 'Sewa router', amount: 25000, dueDate: '2026-09-20' });
+    await service.createAddon('1', { name: 'Sewa router', amount: 25000, feeType: 'MONTHLY', dueDate: '2026-09-20' });
     const invoice = tx.invoice.create.mock.calls[0][0].data;
     expect(invoice).toMatchObject({ amount: 25000n, pppoeAccountId: 1n, invoiceType: 'ADDON' });
-    expect(tx.customerAddon.create.mock.calls[0][0].data.invoiceNumber).toBe(invoice.invoiceNumber);
+    expect(tx.customerAddon.create.mock.calls[0][0].data).toMatchObject({ invoiceNumber: invoice.invoiceNumber, feeType: 'MONTHLY' });
   });
   it('opens access, captures unpaid invoice IDs and rejects duplicate promises', async () => {
     const { service, account, promise, radius } = setup(); account.isActive = false;

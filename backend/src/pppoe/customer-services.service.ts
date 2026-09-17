@@ -67,7 +67,7 @@ export class CustomerServicesService implements OnModuleInit, OnModuleDestroy {
       const invoiceNumber = `ADD-${randomUUID()}`;
       await tx.invoice.create({ data: { pppoeAccountId: account.id, invoiceNumber, invoiceType: 'ADDON', amount: BigInt(dto.amount),
         baseAmount: BigInt(dto.amount), dueDate, notes: `${dto.name.trim()}${dto.notes ? `: ${dto.notes}` : ''}`, createdAt: new Date(), updatedAt: new Date() } });
-      await tx.customerAddon.create({ data: { pppoeAccountId: account.id, name: dto.name.trim(), amount: BigInt(dto.amount), notes: dto.notes, invoiceNumber } });
+      await tx.customerAddon.create({ data: { pppoeAccountId: account.id, name: dto.name.trim(), amount: BigInt(dto.amount), feeType: dto.feeType ?? 'ONCE', notes: dto.notes, invoiceNumber } });
     });
     return { message: 'Biaya tambahan dan tagihan berhasil dibuat.' };
   }
