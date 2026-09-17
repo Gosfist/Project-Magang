@@ -8,12 +8,12 @@ const ratios: Record<string, number[]> = {
 };
 
 @Component({
-  selector: 'app-attenuation-calculator',
+  selector: 'app-kalkulator-redaman',
   standalone: true,
   imports: [FormsModule],
-  templateUrl: './attenuation-calculator.component.html',
+  templateUrl: './kalkulator-redaman.component.html',
 })
-export class AttenuationCalculatorComponent {
+export class KalkulatorRedamanComponent {
   source = '';
   distance = '';
   splitter = '1:2';

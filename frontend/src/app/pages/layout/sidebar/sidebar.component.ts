@@ -58,8 +58,8 @@ export class SidebarComponent implements OnInit {
     ['VPN Client', '/dashboard/router/vpn-client'],
   ];
   readonly pppoeLinks = [
-    ['Data Pelanggan', '/dashboard/pppoe/accounts'],
-    ['Paket Layanan', '/dashboard/pppoe/packages'],
+    ['Data Pelanggan', '/dashboard/pppoe/data-pelanggan'],
+    ['Paket Layanan', '/dashboard/pppoe/paket-layanan'],
     ['IP Pool', '/dashboard/pppoe/ip-pools'],
   ];
 

@@ -8,7 +8,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
 
 @Component({
-  selector: 'app-pppoe-packages',
+  selector: 'app-pppoe-paket-layanan',
   standalone: true,
   imports: [
     FormsModule,
@@ -20,9 +20,9 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
     PaginationComponent,
     ToastComponent,
   ],
-  templateUrl: './packages.component.html',
+  templateUrl: './paket-layanan.component.html',
 })
-export class PackagesComponent implements OnInit {
+export class PaketLayananComponent implements OnInit {
   private api = inject(ApiService);
 
   items = signal<PppoePackage[]>([]);

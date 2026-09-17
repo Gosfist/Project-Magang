@@ -12,7 +12,7 @@ import { CustomerServicesComponent } from './customer-services.component';
 type AccountListItem = PppoeAccount & { customerId?: string; customerNumber?: string; createdAt: string | null; online: boolean | null; serviceStatus?: 'Aktif' | 'Isolir' };
 
 @Component({
-  selector: 'app-pppoe-accounts',
+  selector: 'app-pppoe-data-pelanggan',
   standalone: true,
   imports: [
     FormsModule,
@@ -30,10 +30,10 @@ type AccountListItem = PppoeAccount & { customerId?: string; customerNumber?: st
     PaginationComponent,
     ToastComponent,
   ],
-  templateUrl: './accounts.component.html',
-  styleUrl: './accounts.component.css',
+  templateUrl: './data-pelanggan.component.html',
+  styleUrl: './data-pelanggan.component.css',
 })
-export class AccountsComponent implements OnInit, OnDestroy {
+export class DataPelangganComponent implements OnInit, OnDestroy {
   private api = inject(ApiService);
   private changeDetector = inject(ChangeDetectorRef);
   editTab = signal<string>('customer');

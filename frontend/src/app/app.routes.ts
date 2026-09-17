@@ -6,9 +6,9 @@ import { LoginComponent } from './pages/login/login.component';
 import { LayoutComponent } from './pages/layout/layout.component';
 import { HomeComponent } from './pages/dashboard/home/home.component';
 import { UsersComponent } from './pages/dashboard/users/users.component';
-import { PackagesComponent } from './pages/dashboard/pppoe/packages/packages.component';
-import { AccountsComponent } from './pages/dashboard/pppoe/accounts/accounts.component';
-import { AttenuationCalculatorComponent } from './pages/dashboard/tools/attenuation-calculator/attenuation-calculator.component';
+import { PaketLayananComponent } from './pages/dashboard/pppoe/paket-layanan/paket-layanan.component';
+import { DataPelangganComponent } from './pages/dashboard/pppoe/data-pelanggan/data-pelanggan.component';
+import { KalkulatorRedamanComponent } from './pages/dashboard/tools/kalkulator-redaman/kalkulator-redaman.component';
 
 export const routes: Routes = [
   { path: '', component: LandingComponent },
@@ -62,13 +62,13 @@ export const routes: Routes = [
           },
         ],
       },
-      { path: 'pppoe/packages', component: PackagesComponent },
-      { path: 'pppoe/accounts', component: AccountsComponent },
+      { path: 'pppoe/paket-layanan', component: PaketLayananComponent },
+      { path: 'pppoe/data-pelanggan', component: DataPelangganComponent },
       { path: 'pppoe/ip-pools', loadComponent: () => import('./pages/dashboard/pppoe/ip-pools/ip-pools.component').then(m => m.IpPoolsComponent) },
       { path: 'router/routers', loadComponent: () => import('./pages/dashboard/router/routers/routers.component').then(m => m.RoutersComponent) },
       { path: 'router/vpn-server', loadComponent: () => import('./pages/dashboard/router/vpn-server/vpn-server.component').then(m => m.VpnServerComponent) },
       { path: 'router/vpn-client', loadComponent: () => import('./pages/dashboard/router/vpn-client/vpn-client.component').then(m => m.VpnClientComponent) },
-      { path: 'tools/attenuation-calculator', component: AttenuationCalculatorComponent },
+      { path: 'tools/kalkulator-redaman', component: KalkulatorRedamanComponent },
     ],
   },
   { path: '**', redirectTo: '' },

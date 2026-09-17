@@ -28,10 +28,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard/mainCore/rasio': 'Rasio',
     '/dashboard/mainCore/odc': 'ODC',
     '/dashboard/mainCore/odp': 'ODP',
-    '/dashboard/pppoe/packages': 'Daftar Paket PPPoE',
-    '/dashboard/pppoe/accounts': 'Data Pelanggan',
+    '/dashboard/pppoe/paket-layanan': 'Daftar Paket PPPoE',
+    '/dashboard/pppoe/data-pelanggan': 'Data Pelanggan',
     '/dashboard/pppoe/ip-pools': 'IP Pool',
-    '/dashboard/tools/attenuation-calculator': 'Kalkulator Redaman',
+    '/dashboard/tools/kalkulator-redaman': 'Kalkulator Redaman',
   };
 
   title = signal('Dashboard');
