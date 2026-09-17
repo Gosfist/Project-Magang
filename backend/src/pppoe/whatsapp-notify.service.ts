@@ -64,7 +64,8 @@ export class WhatsappNotifyService {
         this.logger.log(`Notifikasi WA registrasi terkirim ke ${account.phone}`);
       }
     } catch (err) {
-      this.logger.warn(`Notifikasi WA error: ${err.message}`);
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Notifikasi WA error: ${message}`);
     }
   }
 
