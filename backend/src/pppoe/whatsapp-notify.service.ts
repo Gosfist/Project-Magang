@@ -85,7 +85,7 @@ export class WhatsappNotifyService {
     }
     try {
       const enabled = await this.prisma.appSetting.findUnique({ where: { key: 'wa_bot_enabled' } });
-      if (enabled?.value !== 'true') {
+      if (enabled?.value === 'false') {
         this.logger.debug('Notifikasi WA isolir dilewati: bot WA nonaktif.');
         return;
       }

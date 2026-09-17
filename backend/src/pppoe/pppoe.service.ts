@@ -247,6 +247,21 @@ export class PppoeService {
       if (!account.isActive || !account.package.isActive || current.username !== account.username) {
         warnings.push(...(await this.network.disconnect(current.username, current.routerNasId)).warnings);
       }
+      if (current.isActive && !account.isActive && this.waNotify) {
+        const pendingInvoices = await this.prisma.invoice.findMany({
+          where: { pppoeAccountId: account.id, status: { in: ['PENDING', 'OVERDUE'] } },
+          select: { amount: true, dueDate: true },
+          orderBy: { dueDate: 'asc' },
+        });
+        await this.waNotify.notifyIsolation({
+          customerName: account.customerName,
+          customerNumber: account.customerNumber,
+          phone: account.phone,
+          packageName: account.package.name,
+          totalAmount: pendingInvoices.reduce((total, invoice) => total + Number(invoice.amount), 0),
+          dueDate: this.formatDate(pendingInvoices[0]?.dueDate),
+        });
+      }
       const message = 'Akun PPPoE berhasil diperbarui dan disinkronkan ke RADIUS.';
       return serialize({ message: warnings.length ? `${message} Perhatian: ${warnings.join(' ')}` : message, warnings, account: { ...safe, discount: Number(safe.discount) } });
     } catch (error) { this.unique(error, 'Nama pengguna PPPoE sudah digunakan.'); }
@@ -361,6 +376,11 @@ export class PppoeService {
   private generateInvoiceNumber(): string {
     const now = new Date();
     return `INV-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${Date.now().toString(36).toUpperCase()}`;
+  }
+
+  private formatDate(date?: Date) {
+    if (!date) return undefined;
+    return new Intl.DateTimeFormat('id-ID', { dateStyle: 'long', timeZone: 'Asia/Jakarta' }).format(date);
   }
 
   private async findPackage(id: string) {

@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { SettingsService, BillingSettings } from '../settings/settings.service.js';
 import { RadiusService } from './radius.service.js';
 import { PppoeNetworkService } from './pppoe-network.service.js';
+import { WhatsappNotifyService } from './whatsapp-notify.service.js';
 
 const timezoneOffset: Record<BillingSettings['billingTimezone'], number> = { WIB: 7, WITA: 8, WIT: 9 };
 
@@ -18,6 +19,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
     private readonly settings: SettingsService,
     private readonly radius: RadiusService,
     private readonly network: PppoeNetworkService,
+    private readonly waNotify: WhatsappNotifyService,
   ) {}
 
   onModuleInit() {
@@ -53,7 +55,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
         package: { isActive: true },
         invoices: { some: { status: 'PENDING', dueDate: { lte: cutoffDate } } },
       },
-      include: { package: { include: { ipPool: true } }, invoices: { where: { status: 'PENDING', dueDate: { lte: cutoffDate } }, select: { id: true }, take: 1 } },
+      include: { package: { include: { ipPool: true } }, invoices: { where: { status: 'PENDING', dueDate: { lte: cutoffDate } }, select: { id: true, amount: true, dueDate: true }, take: 10 } },
       take: 100,
     });
     if (!accounts.length) return;
@@ -72,6 +74,14 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
         const result = await this.network.disconnect(account.username, account.routerNasId);
         if (result.warnings.length) this.logger.warn(`Auto isolir ${account.username}: ${result.warnings.join(' ')}`);
         else this.logger.log(`Auto isolir ${account.username} karena tagihan melewati tanggal ${settings.billingEndDay} ${settings.billingTimezone}.`);
+        await this.waNotify.notifyIsolation({
+          customerName: account.customerName,
+          customerNumber: account.customerNumber,
+          phone: account.phone,
+          packageName: account.package.name,
+          totalAmount: account.invoices.reduce((total, invoice) => total + Number(invoice.amount), 0),
+          dueDate: this.formatDate(account.invoices[0]?.dueDate),
+        });
       } catch (error) {
         this.logger.error(`Auto isolir ${account.username} gagal. ${error instanceof Error ? error.message : error}`);
       }
@@ -90,5 +100,10 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
 
   private utcDate(year: number, month: number, day: number) {
     return new Date(Date.UTC(year, month - 1, day));
+  }
+
+  private formatDate(date?: Date) {
+    if (!date) return undefined;
+    return new Intl.DateTimeFormat('id-ID', { dateStyle: 'long', timeZone: 'Asia/Jakarta' }).format(date);
   }
 }
