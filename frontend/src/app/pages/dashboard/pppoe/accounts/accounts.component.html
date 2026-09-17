@@ -1,22 +1,82 @@
 <div class="space-y-4">
   <div class="card flex flex-wrap gap-3 p-4">
     <div class="relative min-w-0 flex-1 basis-full sm:basis-0">
-      <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
-      <input class="input pl-10" placeholder="Cari ID, nama pelanggan, atau nomor HP..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
+      <svg
+        lucideSearch
+        [size]="18"
+        class="absolute left-3 top-3 text-slate-400"
+      ></svg>
+      <input
+        class="input pl-10"
+        placeholder="Cari ID, nama pelanggan, atau nomor HP..."
+        [(ngModel)]="search"
+        (ngModelChange)="page.set(1); load()"
+      />
     </div>
     <div class="relative" (keydown.escape)="filterOpen.set(false)">
-      <button type="button" class="btn-secondary" (click)="filterOpen.set(!filterOpen())" [attr.aria-expanded]="filterOpen()" aria-controls="customer-filters">Filter{{ statusFilter || sessionFilter ? ' (aktif)' : '' }}</button>
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="filterOpen.set(!filterOpen())"
+        [attr.aria-expanded]="filterOpen()"
+        aria-controls="customer-filters"
+      >
+        Filter{{ statusFilter || sessionFilter ? " (aktif)" : "" }}
+      </button>
       @if (filterOpen()) {
-        <div id="customer-filters" class="absolute left-0 top-full z-30 mt-2 w-56 space-y-3 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
-          <div><label class="label" for="status-filter">Status</label><select id="status-filter" class="input" [(ngModel)]="statusFilter" (ngModelChange)="applyFilters()"><option value="">Semua status</option><option value="active">Aktif</option><option value="isolated">Isolir</option></select></div>
-          <div><label class="label" for="session-filter">Sesi</label><select id="session-filter" class="input" [(ngModel)]="sessionFilter" (ngModelChange)="applyFilters()"><option value="">Semua sesi</option><option value="online">Online</option><option value="offline">Offline</option></select></div>
-          <div class="flex justify-between gap-2"><button type="button" class="btn-secondary" (click)="statusFilter = ''; sessionFilter = ''; applyFilters()">Reset</button><button type="button" class="btn-primary" (click)="filterOpen.set(false)">Tutup</button></div>
+        <div
+          id="customer-filters"
+          class="absolute left-0 top-full z-30 mt-2 w-56 space-y-3 rounded-xl border border-slate-200 bg-white p-3 shadow-lg"
+        >
+          <div>
+            <label class="label" for="status-filter">Status</label
+            ><select
+              id="status-filter"
+              class="input"
+              [(ngModel)]="statusFilter"
+              (ngModelChange)="applyFilters()"
+            >
+              <option value="">Semua status</option>
+              <option value="active">Aktif</option>
+              <option value="isolated">Isolir</option>
+            </select>
+          </div>
+          <div>
+            <label class="label" for="session-filter">Sesi</label
+            ><select
+              id="session-filter"
+              class="input"
+              [(ngModel)]="sessionFilter"
+              (ngModelChange)="applyFilters()"
+            >
+              <option value="">Semua sesi</option>
+              <option value="online">Online</option>
+              <option value="offline">Offline</option>
+            </select>
+          </div>
+          <div class="flex justify-between gap-2">
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="statusFilter = ''; sessionFilter = ''; applyFilters()"
+            >
+              Reset</button
+            ><button
+              type="button"
+              class="btn-primary"
+              (click)="filterOpen.set(false)"
+            >
+              Tutup
+            </button>
+          </div>
         </div>
       }
     </div>
-    <button class="btn-secondary" [disabled]="refreshing()" (click)="load()">{{ refreshing() ? 'Memuat...' : 'Refresh' }}</button>
+    <button class="btn-secondary" [disabled]="refreshing()" (click)="load()">
+      {{ refreshing() ? "Memuat..." : "Refresh" }}
+    </button>
     <button class="btn-primary" (click)="show()">
-      <svg lucidePlus [size]="18"></svg> Registrasi Pelanggan Baru
+      <svg lucidePlus [size]="18"></svg> Tambah Pelanggan
     </button>
   </div>
 
@@ -24,7 +84,13 @@
     <table>
       <thead>
         <tr>
-          <th>ID Pelanggan</th><th>Nama Pelanggan</th><th>Paket</th><th>Tanggal Daftar</th><th>Status</th><th>Sesi</th><th class="text-right">Aksi</th>
+          <th>ID Pelanggan</th>
+          <th>Nama Pelanggan</th>
+          <th>Paket</th>
+          <th>Tanggal Daftar</th>
+          <th>Status</th>
+          <th>Sesi</th>
+          <th class="text-right">Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -33,23 +99,74 @@
             <td class="font-mono">{{ item.customerId }}</td>
             <td>
               <p class="font-medium text-slate-900">{{ item.customerName }}</p>
-              <p class="text-xs text-slate-500">{{ phoneDisplay(item.phone) }}</p>
+              <p class="text-xs text-slate-500">
+                {{ phoneDisplay(item.phone) }}
+              </p>
             </td>
             <td>{{ item.package.name }}</td>
-            <td class="whitespace-nowrap">{{ registrationDate(item.createdAt) }}</td>
-            <td>
-              <span [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (item.serviceStatus === 'Aktif' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')">{{ item.serviceStatus }}</span>
+            <td class="whitespace-nowrap">
+              {{ registrationDate(item.createdAt) }}
             </td>
             <td>
-              <span [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (item.online === true ? 'bg-green-100 text-green-700' : item.online === false ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600')" [title]="item.online == null ? 'Sesi belum dapat diperiksa. Pastikan Router NAS aktif dan API terhubung.' : 'Status sesi PPPoE dari MikroTik saat daftar dimuat'">{{ item.online === true ? 'Online' : item.online === false ? 'Offline' : 'Belum diketahui' }}</span>
+              <span
+                [class]="
+                  'rounded-full px-2.5 py-1 text-xs font-semibold ' +
+                  (item.serviceStatus === 'Aktif'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-red-100 text-red-700')
+                "
+                >{{ item.serviceStatus }}</span
+              >
+            </td>
+            <td>
+              <span
+                [class]="
+                  'rounded-full px-2.5 py-1 text-xs font-semibold ' +
+                  (item.online === true
+                    ? 'bg-green-100 text-green-700'
+                    : item.online === false
+                      ? 'bg-red-100 text-red-700'
+                      : 'bg-slate-100 text-slate-600')
+                "
+                [title]="
+                  item.online == null
+                    ? 'Sesi belum dapat diperiksa. Pastikan Router NAS aktif dan API terhubung.'
+                    : 'Status sesi PPPoE dari MikroTik saat daftar dimuat'
+                "
+                >{{
+                  item.online === true
+                    ? "Online"
+                    : item.online === false
+                      ? "Offline"
+                      : "Belum diketahui"
+                }}</span
+              >
             </td>
             <td>
               <div class="flex justify-end gap-2">
-                <button class="btn-secondary" title="Putus Sesi" aria-label="Putus sesi pelanggan" [disabled]="disconnecting() !== null" (click)="disconnect(item)"><svg lucideUnplug [size]="14"></svg></button>
-                <button class="btn-secondary" title="Edit" aria-label="Edit pelanggan" (click)="show(item)">
+                <button
+                  class="btn-secondary"
+                  title="Putus Sesi"
+                  aria-label="Putus sesi pelanggan"
+                  [disabled]="disconnecting() !== null"
+                  (click)="disconnect(item)"
+                >
+                  <svg lucideUnplug [size]="14"></svg>
+                </button>
+                <button
+                  class="btn-secondary"
+                  title="Edit"
+                  aria-label="Edit pelanggan"
+                  (click)="show(item)"
+                >
                   <svg lucidePencil [size]="15"></svg>
                 </button>
-                <button class="btn-danger" title="Hapus" aria-label="Hapus pelanggan" (click)="remove(item)">
+                <button
+                  class="btn-danger"
+                  title="Hapus"
+                  aria-label="Hapus pelanggan"
+                  (click)="remove(item)"
+                >
                   <svg lucideTrash2 [size]="15"></svg>
                 </button>
               </div>
@@ -57,110 +174,331 @@
           </tr>
         }
         @if (items().length === 0) {
-          <tr><td colspan="7" class="py-8 text-center text-slate-400">{{ refreshing() ? 'Memuat data pelanggan...' : 'Data pelanggan belum tersedia.' }}</td></tr>
+          <tr>
+            <td colspan="7" class="py-8 text-center text-slate-400">
+              {{
+                refreshing()
+                  ? "Memuat data pelanggan..."
+                  : "Data pelanggan belum tersedia."
+              }}
+            </td>
+          </tr>
         }
       </tbody>
     </table>
   </div>
 
-  <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
+  <app-pagination
+    [meta]="meta()"
+    (pageChange)="page.set($event); load()"
+  ></app-pagination>
 
-  <app-modal [open]="open()" [compact]="true" [title]="editing() ? 'Edit Data Pelanggan' : 'Registrasi Pelanggan Baru'" (closeModal)="close()">
-    <form #accountForm (ngSubmit)="submit(accountForm)" class="account-form space-y-4">
+  <app-modal
+    [open]="open()"
+    [compact]="true"
+    [title]="editing() ? 'Edit Data Pelanggan' : 'Registrasi Pelanggan Baru'"
+    (closeModal)="close()"
+  >
+    <form
+      #accountForm
+      (ngSubmit)="submit(accountForm)"
+      class="account-form space-y-4"
+    >
       @if (editing()) {
         <div class="edit-tabs" role="tablist" aria-label="Edit data pelanggan">
           @for (tab of editTabs; track tab.id; let i = $index) {
-            <button [id]="'edit-' + tab.id + '-tab'" type="button" role="tab" [attr.aria-controls]="'edit-' + tab.id + '-panel'" [attr.aria-selected]="editTab() === tab.id" [attr.tabindex]="editTab() === tab.id ? 0 : -1"
-              [class]="editTab() === tab.id ? 'btn-primary justify-center' : 'btn-secondary justify-center'" [disabled]="saving()"
-              (click)="editTab.set(tab.id)" (keydown.arrowright)="moveTab($event, i, 1)" (keydown.arrowleft)="moveTab($event, i, -1)">{{ tab.label }}</button>
+            <button
+              [id]="'edit-' + tab.id + '-tab'"
+              type="button"
+              role="tab"
+              [attr.aria-controls]="'edit-' + tab.id + '-panel'"
+              [attr.aria-selected]="editTab() === tab.id"
+              [attr.tabindex]="editTab() === tab.id ? 0 : -1"
+              [class]="
+                editTab() === tab.id
+                  ? 'btn-primary justify-center'
+                  : 'btn-secondary justify-center'
+              "
+              [disabled]="saving()"
+              (click)="editTab.set(tab.id)"
+              (keydown.arrowright)="moveTab($event, i, 1)"
+              (keydown.arrowleft)="moveTab($event, i, -1)"
+            >
+              {{ tab.label }}
+            </button>
           }
         </div>
       }
       @if (!editing()) {
-      <div class="account-steps">
-        @for (s of [1,2,3]; track s) {
-          <div class="account-step" [attr.aria-current]="step() === s ? 'step' : null">
-            <div [class]="'step-number rounded-full font-bold ' + (step() >= s ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400')">{{ s }}</div>
-            <span [class]="'step-label font-medium ' + (step() >= s ? 'text-slate-900' : 'text-slate-400')">{{ s === 1 ? 'Data Pelanggan' : s === 2 ? 'Data Pembayaran' : 'Data Secret' }}</span>
-          </div>
-          @if (s < 3) { <div class="step-line bg-slate-300"></div> }
-        }
-      </div>
+        <div class="account-steps">
+          @for (s of [1, 2, 3]; track s) {
+            <div
+              class="account-step"
+              [attr.aria-current]="step() === s ? 'step' : null"
+            >
+              <div
+                [class]="
+                  'step-number rounded-full font-bold ' +
+                  (step() >= s
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-100 text-slate-400')
+                "
+              >
+                {{ s }}
+              </div>
+              <span
+                [class]="
+                  'step-label font-medium ' +
+                  (step() >= s ? 'text-slate-900' : 'text-slate-400')
+                "
+                >{{
+                  s === 1
+                    ? "Data Pelanggan"
+                    : s === 2
+                      ? "Data Pembayaran"
+                      : "Data Secret"
+                }}</span
+              >
+            </div>
+            @if (s < 3) {
+              <div class="step-line bg-slate-300"></div>
+            }
+          }
+        </div>
       }
 
       @if (editing() || step() === 1) {
-        <div id="edit-customer-panel" data-edit-tab="customer" [attr.role]="editing() ? 'tabpanel' : null" [attr.aria-labelledby]="editing() ? 'edit-customer-tab' : null" [class]="editing() && editTab() !== 'customer' ? 'hidden' : 'space-y-4'">
-        <div>
-          <label class="label">Nama Pelanggan *</label>
-          <input class="input" required maxlength="150" [(ngModel)]="form.customerName" name="customerName" />
-        </div>
-        <div class="grid gap-4 sm:grid-cols-2">
+        <div
+          id="edit-customer-panel"
+          data-edit-tab="customer"
+          [attr.role]="editing() ? 'tabpanel' : null"
+          [attr.aria-labelledby]="editing() ? 'edit-customer-tab' : null"
+          [class]="
+            editing() && editTab() !== 'customer' ? 'hidden' : 'space-y-4'
+          "
+        >
           <div>
-            <label class="label">Nomor Telepon @if (!editing()) { * }</label>
-            <input class="input" type="tel" maxlength="30" [required]="!editing()" [(ngModel)]="form.phone" name="phone" />
+            <label class="label">Nama Pelanggan *</label>
+            <input
+              class="input"
+              required
+              maxlength="150"
+              [(ngModel)]="form.customerName"
+              name="customerName"
+            />
           </div>
-          <div>
-            <label class="label">No KTP @if (!editing()) { * }</label>
-            <input class="input" maxlength="50" [required]="!editing()" [(ngModel)]="form.idCardNumber" name="idCardNumber" />
-          </div>
-        </div>
-        <div class="ktp-card">
-          <label class="label" for="idCardPhoto">Foto KTP @if (!editing()) { * }</label>
-          <input #photoInput id="idCardPhoto" class="hidden" type="file" accept="image/jpeg,image/png,image/webp" [disabled]="uploading() || saving()" (change)="uploadPhoto($event)" />
-          @if (photoPreview()) {
-            <div class="ktp-preview">
-              <button type="button" class="ktp-image-button" aria-label="Ganti foto KTP" [disabled]="uploading() || saving()" (click)="photoInput.click()">
-                <img [src]="photoPreview()" alt="Preview foto KTP" (error)="photoError.set('Gambar tidak dapat ditampilkan. Pilih file gambar lain.')" />
-              </button>
-              <button type="button" class="ktp-remove" aria-label="Hapus foto KTP" [disabled]="uploading() || saving()" (click)="removePhoto(); photoInput.value = ''"><svg lucideX [size]="14"></svg></button>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="label"
+                >Nomor Telepon
+                @if (!editing()) {
+                  *
+                }
+              </label>
+              <input
+                class="input"
+                type="tel"
+                maxlength="30"
+                [required]="!editing()"
+                [(ngModel)]="form.phone"
+                name="phone"
+              />
             </div>
-          } @else {
-            <button type="button" class="ktp-picker" [disabled]="uploading() || saving() || photoLoading()" (click)="photoInput.click()">
-              <svg lucideCamera [size]="19"></svg>
-              <span class="font-semibold">Ambil Foto KTP / Pilih Gambar</span>
-              <span>JPG, PNG, atau WebP · Maksimal 5 MB</span>
-            </button>
-          }
-          @if (uploading() || photoLoading()) { <p class="ktp-hint" role="status">{{ uploading() ? 'Mengunggah foto KTP...' : 'Memuat foto KTP...' }}</p> }
-          @if (photoError()) { <p class="ktp-hint text-red-600" role="alert">{{ photoError() }}</p> }
-        </div>
-        <div class="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label class="label">Latitude @if (!editing()) { * }</label>
-            <input class="input" type="number" step="any" [required]="!editing()" [(ngModel)]="form.latitude" name="latitude" />
+            <div>
+              <label class="label"
+                >No KTP
+                @if (!editing()) {
+                  *
+                }
+              </label>
+              <input
+                class="input"
+                maxlength="50"
+                [required]="!editing()"
+                [(ngModel)]="form.idCardNumber"
+                name="idCardNumber"
+              />
+            </div>
+          </div>
+          <div class="ktp-card">
+            <label class="label" for="idCardPhoto"
+              >Foto KTP
+              @if (!editing()) {
+                *
+              }
+            </label>
+            <input
+              #photoInput
+              id="idCardPhoto"
+              class="hidden"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              [disabled]="uploading() || saving()"
+              (change)="uploadPhoto($event)"
+            />
+            @if (photoPreview()) {
+              <div class="ktp-preview">
+                <button
+                  type="button"
+                  class="ktp-image-button"
+                  aria-label="Ganti foto KTP"
+                  [disabled]="uploading() || saving()"
+                  (click)="photoInput.click()"
+                >
+                  <img
+                    [src]="photoPreview()"
+                    alt="Preview foto KTP"
+                    (error)="
+                      photoError.set(
+                        'Gambar tidak dapat ditampilkan. Pilih file gambar lain.'
+                      )
+                    "
+                  />
+                </button>
+                <button
+                  type="button"
+                  class="ktp-remove"
+                  aria-label="Hapus foto KTP"
+                  [disabled]="uploading() || saving()"
+                  (click)="removePhoto(); photoInput.value = ''"
+                >
+                  <svg lucideX [size]="14"></svg>
+                </button>
+              </div>
+            } @else {
+              <button
+                type="button"
+                class="ktp-picker"
+                [disabled]="uploading() || saving() || photoLoading()"
+                (click)="photoInput.click()"
+              >
+                <svg lucideCamera [size]="19"></svg>
+                <span class="font-semibold">Ambil Foto KTP / Pilih Gambar</span>
+                <span>JPG, PNG, atau WebP · Maksimal 5 MB</span>
+              </button>
+            }
+            @if (uploading() || photoLoading()) {
+              <p class="ktp-hint" role="status">
+                {{
+                  uploading() ? "Mengunggah foto KTP..." : "Memuat foto KTP..."
+                }}
+              </p>
+            }
+            @if (photoError()) {
+              <p class="ktp-hint text-red-600" role="alert">
+                {{ photoError() }}
+              </p>
+            }
+          </div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="label"
+                >Latitude
+                @if (!editing()) {
+                  *
+                }
+              </label>
+              <input
+                class="input"
+                type="number"
+                step="any"
+                [required]="!editing()"
+                [(ngModel)]="form.latitude"
+                name="latitude"
+              />
+            </div>
+            <div>
+              <label class="label"
+                >Longitude
+                @if (!editing()) {
+                  *
+                }
+              </label>
+              <input
+                class="input"
+                type="number"
+                step="any"
+                [required]="!editing()"
+                [(ngModel)]="form.longitude"
+                name="longitude"
+              />
+            </div>
           </div>
           <div>
-            <label class="label">Longitude @if (!editing()) { * }</label>
-            <input class="input" type="number" step="any" [required]="!editing()" [(ngModel)]="form.longitude" name="longitude" />
+            <label class="label"
+              >Alamat
+              @if (!editing()) {
+                *
+              }
+            </label>
+            <textarea
+              class="input"
+              rows="2"
+              maxlength="500"
+              [required]="!editing()"
+              [(ngModel)]="form.address"
+              name="address"
+            ></textarea>
           </div>
-        </div>
-        <div>
-          <label class="label">Alamat @if (!editing()) { * }</label>
-          <textarea class="input" rows="2" maxlength="500" [required]="!editing()" [(ngModel)]="form.address" name="address"></textarea>
-        </div>
         </div>
       }
 
       @if (!editing() && step() === 2) {
         <div>
           <label class="label">Paket Internet *</label>
-          <select class="input" required [(ngModel)]="form.pppoePackageId" name="pppoePackageId" (ngModelChange)="calculateProrate()">
+          <select
+            class="input"
+            required
+            [(ngModel)]="form.pppoePackageId"
+            name="pppoePackageId"
+            (ngModelChange)="calculateProrate()"
+          >
             <option value="">Pilih paket</option>
             @for (p of packages(); track p.id) {
-              <option [value]="p.id">{{ p.name }} — {{ p.downloadMbps }}/{{ p.uploadMbps }} Mbps</option>
+              <option [value]="p.id">
+                {{ p.name }} — {{ p.downloadMbps }}/{{ p.uploadMbps }} Mbps
+              </option>
             }
           </select>
         </div>
         <div>
           <label class="label">Tipe Langganan *</label>
           <div class="grid grid-cols-2 gap-3">
-            <label [class]="'cursor-pointer rounded-lg border-2 p-3 text-center transition-all ' + (form.subscriptionType === 'POSTPAID' ? 'border-slate-950 bg-slate-50' : 'border-slate-200 hover:border-slate-400')">
-              <input type="radio" name="subscriptionType" value="POSTPAID" [(ngModel)]="form.subscriptionType" (ngModelChange)="calculateProrate()" class="sr-only" />
+            <label
+              [class]="
+                'cursor-pointer rounded-lg border-2 p-3 text-center transition-all ' +
+                (form.subscriptionType === 'POSTPAID'
+                  ? 'border-slate-950 bg-slate-50'
+                  : 'border-slate-200 hover:border-slate-400')
+              "
+            >
+              <input
+                type="radio"
+                name="subscriptionType"
+                value="POSTPAID"
+                [(ngModel)]="form.subscriptionType"
+                (ngModelChange)="calculateProrate()"
+                class="sr-only"
+              />
               <span class="text-sm font-semibold">Postpaid</span>
               <p class="mt-1 text-xs text-slate-500">Bayar setelah pemakaian</p>
             </label>
-            <label [class]="'cursor-pointer rounded-lg border-2 p-3 text-center transition-all ' + (form.subscriptionType === 'PREPAID' ? 'border-slate-950 bg-slate-50' : 'border-slate-200 hover:border-slate-400')">
-              <input type="radio" name="subscriptionType" value="PREPAID" [(ngModel)]="form.subscriptionType" (ngModelChange)="calculateProrate()" class="sr-only" />
+            <label
+              [class]="
+                'cursor-pointer rounded-lg border-2 p-3 text-center transition-all ' +
+                (form.subscriptionType === 'PREPAID'
+                  ? 'border-slate-950 bg-slate-50'
+                  : 'border-slate-200 hover:border-slate-400')
+              "
+            >
+              <input
+                type="radio"
+                name="subscriptionType"
+                value="PREPAID"
+                [(ngModel)]="form.subscriptionType"
+                (ngModelChange)="calculateProrate()"
+                class="sr-only"
+              />
               <span class="text-sm font-semibold">Prepaid</span>
               <p class="mt-1 text-xs text-slate-500">Bayar di muka</p>
             </label>
@@ -169,127 +507,336 @@
         <div class="grid gap-4 sm:grid-cols-2">
           <div>
             <label class="label">Tanggal Tagihan (1-28)</label>
-            <input class="input" type="number" required min="1" max="28" [(ngModel)]="form.billingDay" name="billingDay" (ngModelChange)="calculateProrate()" />
+            <input
+              class="input"
+              type="number"
+              required
+              min="1"
+              max="28"
+              [(ngModel)]="form.billingDay"
+              name="billingDay"
+              (ngModelChange)="calculateProrate()"
+            />
           </div>
           <div>
             <label class="label">Diskon (Rp)</label>
-            <input class="input" type="number" required min="0" [(ngModel)]="form.discount" name="discount" (ngModelChange)="calculateProrate()" />
+            <input
+              class="input"
+              type="number"
+              required
+              min="0"
+              [(ngModel)]="form.discount"
+              name="discount"
+              (ngModelChange)="calculateProrate()"
+            />
           </div>
         </div>
-        @if (form.subscriptionType === 'PREPAID' && !editing()) {
-          <p class="text-sm text-slate-600">Tagihan pertama prepaid menggunakan harga penuh paket setelah diskon.</p>
+        @if (form.subscriptionType === "PREPAID" && !editing()) {
+          <p class="text-sm text-slate-600">
+            Tagihan pertama prepaid menggunakan harga penuh paket setelah
+            diskon.
+          </p>
         }
-        @if (prorateEstimate() && form.subscriptionType === 'POSTPAID' && !editing()) {
+        @if (
+          prorateEstimate() &&
+          form.subscriptionType === "POSTPAID" &&
+          !editing()
+        ) {
           <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-            <p class="text-sm font-semibold text-emerald-800">Estimasi Tagihan Pertama (Prorate)</p>
-            <p class="mt-1 text-2xl font-bold text-emerald-700">Rp {{ prorateEstimate()!.amount.toLocaleString('id-ID') }}</p>
-            <p class="mt-1 text-xs text-emerald-600">{{ prorateEstimate()!.daysActive }} hari aktif dari {{ prorateEstimate()!.daysInMonth }} hari (s/d tanggal {{ prorateEstimate()!.nextBilling.getDate() }})</p>
+            <p class="text-sm font-semibold text-emerald-800">
+              Estimasi Tagihan Pertama (Prorate)
+            </p>
+            <p class="mt-1 text-2xl font-bold text-emerald-700">
+              Rp {{ prorateEstimate()!.amount.toLocaleString("id-ID") }}
+            </p>
+            <p class="mt-1 text-xs text-emerald-600">
+              {{ prorateEstimate()!.daysActive }} hari aktif dari
+              {{ prorateEstimate()!.daysInMonth }} hari (s/d tanggal
+              {{ prorateEstimate()!.nextBilling.getDate() }})
+            </p>
           </div>
         }
       }
 
       @if (editing() || step() === 3) {
-        <div id="edit-account-panel" data-edit-tab="account" [attr.role]="editing() ? 'tabpanel' : null" [attr.aria-labelledby]="editing() ? 'edit-account-tab' : null" [class]="editing() && editTab() !== 'account' ? 'hidden' : 'space-y-4'">
-        @if (editing()) {
-          <div>
-            <label class="label">Paket Internet *</label>
-            <select class="input" required [(ngModel)]="form.pppoePackageId" name="pppoePackageId">
-              <option value="">Pilih paket</option>
-              @for (p of packages(); track p.id) { <option [value]="p.id">{{ p.name }} — {{ p.downloadMbps }}/{{ p.uploadMbps }} Mbps</option> }
-            </select>
-          </div>
-        }
-        <div class="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label class="label">Username PPPoE *</label>
-            <input class="input" required maxlength="64" pattern="[A-Za-z0-9._@\-]+" [(ngModel)]="form.username" name="username" />
-          </div>
-          <div>
-            <label class="label">Password PPPoE @if (editing()) { <small class="text-slate-400">(kosongkan jika tetap)</small> }</label>
-            <div class="relative">
-              <input id="pppoe-password" [type]="passwordVisible() ? 'text' : 'password'" class="input" style="padding-right: 40px" minlength="6" maxlength="64" [required]="!editing()" [(ngModel)]="form.password" name="password" />
-              <button type="button" class="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-slate-500 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-indigo-600" aria-controls="pppoe-password" [attr.aria-label]="passwordVisible() ? 'Sembunyikan password PPPoE' : 'Tampilkan password PPPoE'" [attr.aria-pressed]="passwordVisible()" (click)="passwordVisible.set(!passwordVisible())">
-                @if (passwordVisible()) { <svg lucideEyeOff [size]="18"></svg> }
-                @else { <svg lucideEye [size]="18"></svg> }
-              </button>
+        <div
+          id="edit-account-panel"
+          data-edit-tab="account"
+          [attr.role]="editing() ? 'tabpanel' : null"
+          [attr.aria-labelledby]="editing() ? 'edit-account-tab' : null"
+          [class]="
+            editing() && editTab() !== 'account' ? 'hidden' : 'space-y-4'
+          "
+        >
+          @if (editing()) {
+            <div>
+              <label class="label">Paket Internet *</label>
+              <select
+                class="input"
+                required
+                [(ngModel)]="form.pppoePackageId"
+                name="pppoePackageId"
+              >
+                <option value="">Pilih paket</option>
+                @for (p of packages(); track p.id) {
+                  <option [value]="p.id">
+                    {{ p.name }} — {{ p.downloadMbps }}/{{ p.uploadMbps }} Mbps
+                  </option>
+                }
+              </select>
+            </div>
+          }
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="label">Username PPPoE *</label>
+              <input
+                class="input"
+                required
+                maxlength="64"
+                pattern="[A-Za-z0-9._@\-]+"
+                [(ngModel)]="form.username"
+                name="username"
+              />
+            </div>
+            <div>
+              <label class="label"
+                >Password PPPoE
+                @if (editing()) {
+                  <small class="text-slate-400">(kosongkan jika tetap)</small>
+                }
+              </label>
+              <div class="relative">
+                <input
+                  id="pppoe-password"
+                  [type]="passwordVisible() ? 'text' : 'password'"
+                  class="input"
+                  style="padding-right: 40px"
+                  minlength="6"
+                  maxlength="64"
+                  [required]="!editing()"
+                  [(ngModel)]="form.password"
+                  name="password"
+                />
+                <button
+                  type="button"
+                  class="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-slate-500 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-indigo-600"
+                  aria-controls="pppoe-password"
+                  [attr.aria-label]="
+                    passwordVisible()
+                      ? 'Sembunyikan password PPPoE'
+                      : 'Tampilkan password PPPoE'
+                  "
+                  [attr.aria-pressed]="passwordVisible()"
+                  (click)="passwordVisible.set(!passwordVisible())"
+                >
+                  @if (passwordVisible()) {
+                    <svg lucideEyeOff [size]="18"></svg>
+                  } @else {
+                    <svg lucideEye [size]="18"></svg>
+                  }
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="grid gap-4 sm:grid-cols-2">
-          <div class="relative" (focusout)="closeNasOnBlur($event)" (keydown.escape)="nasOpen.set(false); nasPicker.focus(); $event.stopPropagation()">
-            <label class="label" for="nas-picker">Router NAS</label>
-            <button #nasPicker id="nas-picker" type="button" class="input flex items-center justify-between gap-2 text-left" [attr.aria-expanded]="nasOpen()" aria-controls="nas-options" (click)="toggleNas()">
-              <span class="truncate">{{ selectedNasName() }}</span><span aria-hidden="true">⌄</span>
-            </button>
-            @if (nasOpen()) {
-              <div id="nas-options" class="relative z-20 mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
-                <div class="max-h-32 overflow-y-auto">
-                  <button type="button" class="block w-full rounded px-2 py-2 text-left text-xs text-slate-500 hover:bg-slate-100 focus:bg-slate-100" (click)="selectNas('')">Pilih NAS</button>
-                  @for (nas of nasOptions(); track nas.id) {
-                    <button type="button" class="block w-full rounded px-2 py-2 text-left text-xs hover:bg-slate-100 focus:bg-slate-100" [class.bg-indigo-50]="form.routerNasId?.toString() === nas.id.toString()" (click)="selectNas(nas.id)">{{ nas.shortname || nas.nasname }}</button>
-                  } @empty {
-                    <p class="px-2 py-3 text-xs text-slate-500">Router NAS tidak ditemukan.</p>
-                  }
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div
+              class="relative"
+              (focusout)="closeNasOnBlur($event)"
+              (keydown.escape)="
+                nasOpen.set(false); nasPicker.focus(); $event.stopPropagation()
+              "
+            >
+              <label class="label" for="nas-picker">Router NAS</label>
+              <button
+                #nasPicker
+                id="nas-picker"
+                type="button"
+                class="input flex items-center justify-between gap-2 text-left"
+                [attr.aria-expanded]="nasOpen()"
+                aria-controls="nas-options"
+                (click)="toggleNas()"
+              >
+                <span class="truncate">{{ selectedNasName() }}</span
+                ><span aria-hidden="true">⌄</span>
+              </button>
+              @if (nasOpen()) {
+                <div
+                  id="nas-options"
+                  class="relative z-20 mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 shadow-lg"
+                >
+                  <div class="max-h-32 overflow-y-auto">
+                    <button
+                      type="button"
+                      class="block w-full rounded px-2 py-2 text-left text-xs text-slate-500 hover:bg-slate-100 focus:bg-slate-100"
+                      (click)="selectNas('')"
+                    >
+                      Pilih NAS
+                    </button>
+                    @for (nas of nasOptions(); track nas.id) {
+                      <button
+                        type="button"
+                        class="block w-full rounded px-2 py-2 text-left text-xs hover:bg-slate-100 focus:bg-slate-100"
+                        [class.bg-indigo-50]="
+                          form.routerNasId?.toString() === nas.id.toString()
+                        "
+                        (click)="selectNas(nas.id)"
+                      >
+                        {{ nas.shortname || nas.nasname }}
+                      </button>
+                    } @empty {
+                      <p class="px-2 py-3 text-xs text-slate-500">
+                        Router NAS tidak ditemukan.
+                      </p>
+                    }
+                  </div>
                 </div>
-              </div>
-            }
-          </div>
-          <div class="relative" (focusout)="closeOdpOnBlur($event)" (keydown.escape)="odpOpen.set(false); odpPicker.focus(); $event.stopPropagation()">
-            <label class="label" for="odp-picker">ODC / ODP *</label>
-            <button #odpPicker id="odp-picker" type="button" class="input flex items-center justify-between gap-2 text-left" [attr.aria-expanded]="odpOpen()" aria-controls="odp-options" (click)="toggleOdp()">
-              <span class="truncate">{{ selectedOdpName() }}</span><span aria-hidden="true">⌄</span>
-            </button>
-            @if (odpOpen()) {
-              <div id="odp-options" class="relative z-20 mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
-                <input id="odp-search" class="input" aria-label="Cari ODC / ODP" placeholder="Cari ODC / ODP" [(ngModel)]="odpSearch" [ngModelOptions]="{standalone: true}" (keydown.enter)="$event.preventDefault()" />
-                <div class="mt-1 max-h-32 overflow-y-auto">
-                  @for (o of filteredOdpOptions(); track o.id) {
-                    <button type="button" class="block w-full rounded px-2 py-2 text-left text-xs hover:bg-slate-100 focus:bg-slate-100" [class.bg-indigo-50]="form.odp === o.id" (click)="selectOdp(o)">{{ o.namaTitik }} <span class="text-slate-500">({{ (o.tipeTitik || 'odp').toUpperCase() }})</span></button>
-                  } @empty {
-                    <p class="px-2 py-3 text-xs text-slate-500">ODC / ODP tidak ditemukan.</p>
-                  }
+              }
+            </div>
+            <div
+              class="relative"
+              (focusout)="closeOdpOnBlur($event)"
+              (keydown.escape)="
+                odpOpen.set(false); odpPicker.focus(); $event.stopPropagation()
+              "
+            >
+              <label class="label" for="odp-picker">ODC / ODP *</label>
+              <button
+                #odpPicker
+                id="odp-picker"
+                type="button"
+                class="input flex items-center justify-between gap-2 text-left"
+                [attr.aria-expanded]="odpOpen()"
+                aria-controls="odp-options"
+                (click)="toggleOdp()"
+              >
+                <span class="truncate">{{ selectedOdpName() }}</span
+                ><span aria-hidden="true">⌄</span>
+              </button>
+              @if (odpOpen()) {
+                <div
+                  id="odp-options"
+                  class="relative z-20 mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 shadow-lg"
+                >
+                  <input
+                    id="odp-search"
+                    class="input"
+                    aria-label="Cari ODC / ODP"
+                    placeholder="Cari ODC / ODP"
+                    [(ngModel)]="odpSearch"
+                    [ngModelOptions]="{ standalone: true }"
+                    (keydown.enter)="$event.preventDefault()"
+                  />
+                  <div class="mt-1 max-h-32 overflow-y-auto">
+                    @for (o of filteredOdpOptions(); track o.id) {
+                      <button
+                        type="button"
+                        class="block w-full rounded px-2 py-2 text-left text-xs hover:bg-slate-100 focus:bg-slate-100"
+                        [class.bg-indigo-50]="form.odp === o.id"
+                        (click)="selectOdp(o)"
+                      >
+                        {{ o.namaTitik }}
+                        <span class="text-slate-500"
+                          >({{ (o.tipeTitik || "odp").toUpperCase() }})</span
+                        >
+                      </button>
+                    } @empty {
+                      <p class="px-2 py-3 text-xs text-slate-500">
+                        ODC / ODP tidak ditemukan.
+                      </p>
+                    }
+                  </div>
                 </div>
-              </div>
-            }
+              }
+            </div>
           </div>
-        </div>
-        @if (editing()) {
-          <label class="flex items-center gap-3 rounded-lg border p-3">
-            <input type="checkbox" [(ngModel)]="form.isActive" name="isActive" />
-            <span>
-              <b class="block text-sm">Akun aktif</b>
-              <small class="text-slate-500">Akun aktif disinkronkan ke FreeRADIUS.</small>
-            </span>
-          </label>
-        }
+          @if (editing()) {
+            <label class="flex items-center gap-3 rounded-lg border p-3">
+              <input
+                type="checkbox"
+                [(ngModel)]="form.isActive"
+                name="isActive"
+              />
+              <span>
+                <b class="block text-sm">Akun aktif</b>
+                <small class="text-slate-500"
+                  >Akun aktif disinkronkan ke FreeRADIUS.</small
+                >
+              </span>
+            </label>
+          }
         </div>
       }
 
-      @if (formError()) { <p class="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{{ formError() }}</p> }
-      <div class="flex justify-between gap-3 pt-4" [class.hidden]="editing() && editTab() !== 'customer' && editTab() !== 'account'">
+      @if (formError()) {
+        <p class="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">
+          {{ formError() }}
+        </p>
+      }
+      <div
+        class="flex justify-between gap-3 pt-4"
+        [class.hidden]="
+          editing() && editTab() !== 'customer' && editTab() !== 'account'
+        "
+      >
         <div>
           @if (!editing() && step() > 1) {
-            <button type="button" class="btn-secondary" (click)="prevStep()">Sebelumnya</button>
+            <button type="button" class="btn-secondary" (click)="prevStep()">
+              Sebelumnya
+            </button>
           }
         </div>
         <div class="flex gap-3">
-          <button type="button" class="btn-secondary" [disabled]="uploading() || saving()" (click)="close()">Batal</button>
+          <button
+            type="button"
+            class="btn-secondary"
+            [disabled]="uploading() || saving()"
+            (click)="close()"
+          >
+            Batal
+          </button>
           @if (!editing() && step() < 3) {
-            <button type="button" class="btn-primary" [disabled]="uploading()" (click)="nextStep(accountForm)">Selanjutnya</button>
+            <button
+              type="button"
+              class="btn-primary"
+              [disabled]="uploading()"
+              (click)="nextStep(accountForm)"
+            >
+              Selanjutnya
+            </button>
           } @else {
-            <button type="submit" class="btn-primary" [disabled]="uploading() || saving()">{{ saving() ? 'Menyimpan...' : 'Simpan' }}</button>
+            <button
+              type="submit"
+              class="btn-primary"
+              [disabled]="uploading() || saving()"
+            >
+              {{ saving() ? "Menyimpan..." : "Simpan" }}
+            </button>
           }
         </div>
       </div>
     </form>
-    @if (editing() && editTab() !== 'customer' && editTab() !== 'account') {
-      <div [id]="'edit-' + editTab() + '-panel'" role="tabpanel" [attr.aria-labelledby]="'edit-' + editTab() + '-tab'" class="mt-3">
-        <app-customer-services [accountId]="editing()!.id" [tab]="editTab()" (changed)="customerServiceChanged($event)" (busyChanged)="saving.set($event)"></app-customer-services>
+    @if (editing() && editTab() !== "customer" && editTab() !== "account") {
+      <div
+        [id]="'edit-' + editTab() + '-panel'"
+        role="tabpanel"
+        [attr.aria-labelledby]="'edit-' + editTab() + '-tab'"
+        class="mt-3"
+      >
+        <app-customer-services
+          [accountId]="editing()!.id"
+          [tab]="editTab()"
+          (changed)="customerServiceChanged($event)"
+          (busyChanged)="saving.set($event)"
+        ></app-customer-services>
       </div>
     }
   </app-modal>
 
   @if (toast()) {
-    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
+    <app-toast
+      [message]="toast()!.message"
+      [type]="toast()!.type"
+      (close)="toast.set(null)"
+    ></app-toast>
   }
 </div>
