@@ -86,4 +86,92 @@ export async function getSettings(keys) {
   return new Map(rows.map((r) => [r.key, r.value]));
 }
 
-export default { getPool, getSetting, setSetting, getSettings };
+export async function ensureLogsTable() {
+  try {
+    const p = getPool();
+    await p.execute(`
+      CREATE TABLE IF NOT EXISTS \`bot_wa_logs\` (
+        \`id\` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        \`recipient\` VARCHAR(50) NOT NULL,
+        \`message\` TEXT NOT NULL,
+        \`status\` VARCHAR(20) NOT NULL DEFAULT 'success',
+        \`error_message\` TEXT NULL,
+        \`created_at\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX \`idx_bot_wa_logs_created_at\` (\`created_at\`),
+        INDEX \`idx_bot_wa_logs_recipient\` (\`recipient\`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+  } catch (err) {
+    console.warn('[DB] Could not ensure bot_wa_logs table:', err.message);
+  }
+}
+
+export async function insertWaLog({ recipient, message, status = 'success', errorMessage = null }) {
+  try {
+    await ensureLogsTable();
+    const p = getPool();
+    await p.execute(
+      'INSERT INTO `bot_wa_logs` (`recipient`, `message`, `status`, `error_message`, `created_at`) VALUES (?, ?, ?, ?, NOW())',
+      [recipient, message, status, errorMessage]
+    );
+  } catch (err) {
+    console.error('[DB] Failed to insert WA log:', err.message);
+  }
+}
+
+export async function getWaLogs({ limit = 100, search = '' } = {}) {
+  try {
+    await ensureLogsTable();
+    const p = getPool();
+    const safeLimit = Math.max(1, Math.min(500, parseInt(limit, 10) || 100));
+    let sql = 'SELECT `id`, `recipient`, `message`, `status`, `error_message`, `created_at` FROM `bot_wa_logs`';
+    const params = [];
+    if (search && search.trim()) {
+      sql += ' WHERE `recipient` LIKE ? OR `message` LIKE ?';
+      params.push(`%${search.trim()}%`, `%${search.trim()}%`);
+    }
+    sql += ` ORDER BY \`created_at\` DESC LIMIT ${safeLimit}`;
+
+    const [rows] = await p.execute(sql, params);
+    return rows;
+  } catch (err) {
+    console.error('[DB] Failed to get WA logs:', err.message);
+    return [];
+  }
+}
+
+export async function clearWaLogs() {
+  try {
+    await ensureLogsTable();
+    const p = getPool();
+    await p.execute('TRUNCATE TABLE `bot_wa_logs`');
+    return true;
+  } catch (err) {
+    console.error('[DB] Failed to clear WA logs:', err.message);
+    throw err;
+  }
+}
+
+export async function deleteWaLog(id) {
+  try {
+    await ensureLogsTable();
+    const p = getPool();
+    await p.execute('DELETE FROM `bot_wa_logs` WHERE `id` = ?', [id]);
+    return true;
+  } catch (err) {
+    console.error('[DB] Failed to delete WA log:', err.message);
+    throw err;
+  }
+}
+
+export default {
+  getPool,
+  getSetting,
+  setSetting,
+  getSettings,
+  ensureLogsTable,
+  insertWaLog,
+  getWaLogs,
+  clearWaLogs,
+  deleteWaLog,
+};

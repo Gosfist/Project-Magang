@@ -4,6 +4,8 @@ import cors from 'cors';
 import statusRoutes from './routes/status.js';
 import sendRoutes from './routes/send.js';
 import templateRoutes from './routes/template.js';
+import logsRoutes from './routes/logs.js';
+import { ensureLogsTable } from './db.js';
 import { startConnection } from './whatsapp.js';
 
 const app = express();
@@ -20,6 +22,7 @@ app.use(express.json());
 app.use('/api/wa', statusRoutes);
 app.use('/api/wa', sendRoutes);
 app.use('/api/wa', templateRoutes);
+app.use('/api/wa', logsRoutes);
 
 // Health check
 app.get('/api/wa/health', (req, res) => {
@@ -29,6 +32,9 @@ app.get('/api/wa/health', (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`[Bot WA] Server running on port ${PORT}`);
+  ensureLogsTable().catch((err) => {
+    console.warn('[Bot WA] Table init warning:', err.message);
+  });
   // Auto-connect if auth info exists
   startConnection().catch((err) => {
     console.error('[Bot WA] Auto-connect failed:', err.message);

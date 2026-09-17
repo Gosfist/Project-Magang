@@ -26,6 +26,7 @@ const features = new Map([
   ['20260917_customer_services_fee_type.sql', 'Tipe biaya add-ons pelanggan'],
   ['20260917_app_settings.sql', 'Pengaturan penagihan dan auto isolir'],
   ['20260917_monitoring_stats.sql', 'Grafik monitoring server dan router'],
+  ['20260917_bot_wa_logs.sql', 'Log notifikasi Bot WhatsApp'],
 ]);
 
 function checksum(content) {
@@ -90,6 +91,8 @@ async function looksAlreadyApplied(filename) {
       return tableExists('app_settings');
     case '20260917_monitoring_stats.sql':
       return (await tableExists('server_stats')) && (await tableExists('router_stats')) && (await tableExists('server_stats_monthly'));
+    case '20260917_bot_wa_logs.sql':
+      return tableExists('bot_wa_logs');
     default:
       return false;
   }

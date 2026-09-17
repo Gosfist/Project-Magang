@@ -73,6 +73,7 @@ export const routes: Routes = [
       { path: 'tools/pengaturan', loadComponent: () => import('./pages/dashboard/tools/pengaturan/pengaturan.component').then(m => m.PengaturanComponent) },
       { path: 'bot-whatsapp/status', loadComponent: () => import('./pages/dashboard/bot-whatsapp/status/bot-wa-status.component').then(m => m.BotWaStatusComponent) },
       { path: 'bot-whatsapp/template', loadComponent: () => import('./pages/dashboard/bot-whatsapp/template/bot-wa-template.component').then(m => m.BotWaTemplateComponent) },
+      { path: 'bot-whatsapp/logs', loadComponent: () => import('./pages/dashboard/bot-whatsapp/logs/bot-wa-logs.component').then(m => m.BotWaLogsComponent) },
     ],
   },
   { path: '**', redirectTo: '' },

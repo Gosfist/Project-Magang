@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { sendMessage, getStatus } from '../whatsapp.js';
 import { apiKeyAuth } from '../middleware/auth.js';
+import { insertWaLog } from '../db.js';
 
 const router = Router();
 
@@ -26,8 +27,10 @@ router.post('/ping', async (req, res) => {
 
   try {
     const result = await sendMessage(phone, testMessage);
+    await insertWaLog({ recipient: phone, message: testMessage, status: 'success' });
     res.json({ message: `Pesan Ping berhasil dikirim ke ${phone}.`, ...result });
   } catch (err) {
+    await insertWaLog({ recipient: phone, message: testMessage, status: 'failed', errorMessage: err.message });
     res.status(500).json({ message: err.message || 'Gagal mengirim pesan Ping.' });
   }
 });
@@ -40,8 +43,10 @@ router.post('/send', apiKeyAuth, async (req, res) => {
   }
   try {
     const result = await sendMessage(phone, message);
+    await insertWaLog({ recipient: phone, message, status: 'success' });
     res.json({ message: 'Pesan berhasil dikirim.', ...result });
   } catch (err) {
+    await insertWaLog({ recipient: phone, message, status: 'failed', errorMessage: err.message });
     res.status(500).json({ message: err.message || 'Gagal mengirim pesan.' });
   }
 });

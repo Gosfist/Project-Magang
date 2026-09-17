@@ -86,8 +86,18 @@
   <!-- Test Koneksi -->
   @if (waStatus().status === 'connected') {
     <div class="card p-5 sm:p-6">
-      <h3 class="text-base font-semibold">Test Koneksi</h3>
-      <p class="mt-1 text-sm text-slate-500">Kirim pesan uji coba untuk memastikan bot WhatsApp dapat mengirim pesan.</p>
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 class="text-base font-semibold">Test Koneksi</h3>
+          <p class="mt-1 text-sm text-slate-500">Kirim pesan uji coba untuk memastikan bot WhatsApp dapat mengirim pesan.</p>
+        </div>
+        <a routerLink="/dashboard/bot-whatsapp/logs" class="btn-secondary text-xs sm:text-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span>Lihat Log Notifikasi</span>
+        </a>
+      </div>
       <form class="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3" (ngSubmit)="sendPing()">
         <div class="relative flex-1">
           <input

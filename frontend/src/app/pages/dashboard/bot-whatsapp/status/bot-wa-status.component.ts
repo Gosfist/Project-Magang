@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { RouterLink } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
 
@@ -16,7 +17,7 @@ type WaStatus = {
 @Component({
   selector: 'app-bot-wa-status',
   standalone: true,
-  imports: [FormsModule, ToastComponent],
+  imports: [FormsModule, ToastComponent, RouterLink],
   templateUrl: './bot-wa-status.component.html',
 })
 export class BotWaStatusComponent implements OnInit, OnDestroy {

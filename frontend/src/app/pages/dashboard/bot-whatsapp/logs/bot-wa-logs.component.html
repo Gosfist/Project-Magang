@@ -1,0 +1,281 @@
+<div class="mx-auto max-w-6xl space-y-5">
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div class="card p-4 sm:p-5 flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-slate-500">Total Log Notifikasi</p>
+        <p class="mt-1 text-2xl font-bold text-slate-900">{{ totalCount() }}</p>
+      </div>
+      <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+      </div>
+    </div>
+
+    <div class="card p-4 sm:p-5 flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-emerald-600">Berhasil Dikirim</p>
+        <p class="mt-1 text-2xl font-bold text-emerald-700">{{ successCount() }}</p>
+      </div>
+      <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+    </div>
+
+    <div class="card p-4 sm:p-5 flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-red-600">Gagal Dikirim</p>
+        <p class="mt-1 text-2xl font-bold text-red-700">{{ failedCount() }}</p>
+      </div>
+      <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-100 text-red-700">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & Actions Bar -->
+  <div class="card p-4 sm:p-5">
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div class="relative flex-1">
+        <input
+          type="text"
+          class="input pl-10"
+          placeholder="Cari berdasarkan nomor target atau isi pesan..."
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+        />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="btn-secondary text-xs sm:text-sm px-3.5 py-2.5"
+          (click)="loadLogs()"
+          [disabled]="loading()"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" [class.animate-spin]="loading()" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>Segarkan</span>
+        </button>
+
+        @if (logs().length > 0) {
+          <button
+            type="button"
+            class="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs sm:text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50 inline-flex items-center gap-1.5"
+            (click)="clearLogs()"
+            [disabled]="clearing() || loading()"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <span>{{ clearing() ? 'Membersihkan...' : 'Hapus Semua' }}</span>
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Logs Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 170px;">Jam & Tanggal</th>
+          <th style="width: 170px;">Target</th>
+          <th style="width: 110px;">Status</th>
+          <th>Text Notifikasi</th>
+          <th class="text-right" style="width: 110px;">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading() && filteredLogs().length === 0) {
+          <tr>
+            <td colspan="5" class="p-8 text-center text-slate-500">
+              <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-transparent"></span>
+              <p class="mt-2 text-sm">Memuat riwayat log notifikasi...</p>
+            </td>
+          </tr>
+        } @else if (filteredLogs().length === 0) {
+          <tr>
+            <td colspan="5" class="p-8 text-center text-slate-500">
+              <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              <p class="mt-2 font-medium text-slate-700">Belum ada riwayat notifikasi</p>
+              <p class="text-xs text-slate-400">Pesan yang dikirim oleh Bot WhatsApp akan tercatat otomatis di sini.</p>
+            </td>
+          </tr>
+        } @else {
+          @for (item of filteredLogs(); track item.id) {
+            <tr class="hover:bg-slate-50 cursor-pointer transition-colors" (click)="openDetail(item)">
+              <!-- Jam & Tanggal -->
+              <td class="whitespace-nowrap">
+                <span class="font-semibold text-slate-900">{{ item.createdAt | date: 'HH:mm:ss' : '+0700' }}</span>
+                <span class="ml-1 text-xs text-slate-500 font-medium">WIB</span>
+                <p class="text-xs text-slate-500">{{ item.createdAt | date: 'dd MMM yyyy' : '+0700' }}</p>
+              </td>
+
+              <!-- Target -->
+              <td class="whitespace-nowrap">
+                <div class="flex items-center gap-1.5">
+                  <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2z"/>
+                    </svg>
+                  </span>
+                  <span class="font-mono text-xs font-semibold text-slate-800">{{ formatPhone(item.recipient) }}</span>
+                </div>
+              </td>
+
+              <!-- Status -->
+              <td>
+                <span
+                  [class]="
+                    item.status === 'success'
+                      ? 'inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200'
+                      : 'inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 border border-red-200'
+                  "
+                >
+                  <span class="h-1.5 w-1.5 rounded-full" [class.bg-emerald-500]="item.status === 'success'" [class.bg-red-500]="item.status !== 'success'"></span>
+                  {{ item.status === 'success' ? 'Berhasil' : 'Gagal' }}
+                </span>
+              </td>
+
+              <!-- Text Notifikasi -->
+              <td>
+                <p class="line-clamp-2 text-xs text-slate-700 font-sans max-w-md" [title]="item.message">
+                  {{ item.message }}
+                </p>
+                @if (item.errorMessage) {
+                  <p class="mt-0.5 text-[11px] text-red-600 truncate">
+                    Error: {{ item.errorMessage }}
+                  </p>
+                }
+              </td>
+
+              <!-- Aksi -->
+              <td class="text-right whitespace-nowrap">
+                <div class="flex items-center justify-end gap-1.5" (click)="$event.stopPropagation()">
+                  <button
+                    type="button"
+                    class="btn-secondary"
+                    (click)="openDetail(item)"
+                    title="Lihat Detail Pesan"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <span>Detail</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-danger"
+                    (click)="deleteSingleLog(item.id, $event)"
+                    title="Hapus Log"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Detail Modal -->
+  @if (selectedLog()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+      <div class="card w-full max-w-lg space-y-4 p-5 sm:p-6 shadow-xl animate-in fade-in zoom-in duration-150">
+        <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+          <div>
+            <h3 class="text-base font-semibold text-slate-900">Detail Log Notifikasi</h3>
+            <p class="text-xs text-slate-500">Rincian pesan WhatsApp yang dikirimkan bot</p>
+          </div>
+          <button
+            type="button"
+            class="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            (click)="closeDetail()"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div class="rounded-lg bg-slate-50 p-3 border border-slate-200">
+            <span class="text-slate-500">Waktu Pengiriman</span>
+            <p class="mt-1 font-semibold text-slate-800">
+              {{ selectedLog()!.createdAt | date: 'dd MMM yyyy, HH:mm:ss' : '+0700' }} WIB
+            </p>
+          </div>
+
+          <div class="rounded-lg bg-slate-50 p-3 border border-slate-200">
+            <span class="text-slate-500">Nomor Target</span>
+            <p class="mt-1 font-mono font-semibold text-slate-800">
+              {{ formatPhone(selectedLog()!.recipient) }}
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-500">Status Pengiriman:</span>
+          <span
+            [class]="
+              selectedLog()!.status === 'success'
+                ? 'inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200'
+                : 'inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 border border-red-200'
+            "
+          >
+            <span class="h-1.5 w-1.5 rounded-full" [class.bg-emerald-500]="selectedLog()!.status === 'success'" [class.bg-red-500]="selectedLog()!.status !== 'success'"></span>
+            {{ selectedLog()!.status === 'success' ? 'Berhasil Dikirim' : 'Gagal Dikirim' }}
+          </span>
+        </div>
+
+        @if (selectedLog()!.errorMessage) {
+          <div class="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+            <b>Pesan Kesalahan:</b> {{ selectedLog()!.errorMessage }}
+          </div>
+        }
+
+        <!-- Text Notifikasi Bubble -->
+        <div>
+          <label class="label text-xs">Isi Teks Notifikasi:</label>
+          <div class="rounded-xl border border-slate-200 bg-slate-100/70 p-3 sm:p-4">
+            <div class="rounded-lg border border-emerald-100 bg-white p-3.5 text-xs sm:text-sm whitespace-pre-wrap text-slate-800 font-sans shadow-xs leading-relaxed">
+              {{ selectedLog()!.message }}
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" class="btn-primary" (click)="closeDetail()">Tutup</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (toast()) {
+    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
+  }
+</div>

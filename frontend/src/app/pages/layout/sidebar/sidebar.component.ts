@@ -67,7 +67,8 @@ export class SidebarComponent implements OnInit {
   ];
   readonly botWaLinks = [
     ['Login Bot Wa', '/dashboard/bot-whatsapp/status'],
-    ['Template Pesan', '/dashboard/bot-whatsapp/template']
+    ['Template Pesan', '/dashboard/bot-whatsapp/template'],
+    ['Log Notifikasi', '/dashboard/bot-whatsapp/logs']
   ];
 
   ngOnInit(): void {

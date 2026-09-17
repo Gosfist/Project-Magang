@@ -10,7 +10,7 @@ export class WhatsappNotifyService {
 
   constructor(private readonly prisma: PrismaService, private readonly config: ConfigService) {
     this.botUrl = this.config.get<string>('BOT_WHATSAPP_URL', 'http://localhost:3002');
-    this.apiKey = this.config.get<string>('BOT_API_KEY', '');
+    this.apiKey = this.config.get<string>('BOT_API_KEY', 'bot-wa-secret-key-change-me') || 'bot-wa-secret-key-change-me';
   }
 
   async notifyRegistration(account: {
@@ -21,15 +21,15 @@ export class WhatsappNotifyService {
     password: string;
     package: { name: string };
   }): Promise<void> {
-    if (!account.phone) {
+    if (!account.phone || !account.phone.trim()) {
       this.logger.debug('Notifikasi WA dilewati: nomor telepon pelanggan kosong.');
       return;
     }
     try {
-      // Check if bot is enabled
+      // Check if bot is disabled explicitly
       const enabled = await this.prisma.appSetting.findUnique({ where: { key: 'wa_bot_enabled' } });
-      if (enabled?.value !== 'true') {
-        this.logger.debug('Notifikasi WA dilewati: bot WA nonaktif.');
+      if (enabled && enabled.value === 'false') {
+        this.logger.debug('Notifikasi WA dilewati: bot WA dinonaktifkan.');
         return;
       }
 
@@ -46,6 +46,8 @@ export class WhatsappNotifyService {
         .replace(/\{username\}/g, account.username)
         .replace(/\{password\}/g, account.password);
 
+      this.logger.log(`Mengirim notifikasi WA registrasi ke ${account.phone}...`);
+
       // Send to bot
       const response = await fetch(`${this.botUrl}/api/wa/send`, {
         method: 'POST',
@@ -59,13 +61,13 @@ export class WhatsappNotifyService {
 
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        this.logger.warn(`Notifikasi WA gagal: ${response.status} - ${body.message || 'Unknown'}`);
+        this.logger.warn(`Notifikasi WA registrasi gagal: HTTP ${response.status} - ${body.message || 'Unknown'}`);
       } else {
-        this.logger.log(`Notifikasi WA registrasi terkirim ke ${account.phone}`);
+        this.logger.log(`Notifikasi WA registrasi berhasil dikirim ke ${account.phone}`);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Notifikasi WA error: ${message}`);
+      this.logger.warn(`Notifikasi WA registrasi error: ${message}`);
     }
   }
 

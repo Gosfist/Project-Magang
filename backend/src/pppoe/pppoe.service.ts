@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { pageMeta, serialize } from '../common/serialize.js';
@@ -12,7 +12,9 @@ import { WhatsappNotifyService } from './whatsapp-notify.service.js';
 
 @Injectable()
 export class PppoeService {
-  constructor(private readonly prisma: PrismaService, private readonly radius: RadiusService, private readonly secrets: SecretService, private readonly network: PppoeNetworkService, private readonly waNotify: WhatsappNotifyService) { }
+  private readonly logger = new Logger(PppoeService.name);
+
+  constructor(private readonly prisma: PrismaService, private readonly radius: RadiusService, private readonly secrets: SecretService, private readonly network: PppoeNetworkService, private readonly waNotify?: WhatsappNotifyService) { }
 
   async ipPools(search = '', page = 1) {
     const result = await this.network.listPools();
@@ -206,14 +208,18 @@ export class PppoeService {
       });
 
       // Fire-and-forget WA notification
-      this.waNotify.notifyRegistration({
-        customerName: account.customerName,
-        customerNumber: account.customerNumber,
-        phone: account.phone,
-        username: account.username,
-        password: dto.password!,
-        package: { name: account.package.name },
-      }).catch(() => {});
+      if (this.waNotify) {
+        this.waNotify.notifyRegistration({
+          customerName: account.customerName,
+          customerNumber: account.customerNumber,
+          phone: account.phone,
+          username: account.username,
+          password: dto.password!,
+          package: { name: account.package.name },
+        }).catch((err) => {
+          this.logger.warn(`Notifikasi WA registrasi error: ${err?.message || err}`);
+        });
+      }
 
       const { password: _password, ...safe } = account;
       return serialize({ message: `Akun PPPoE pelanggan ${account.customerName} berhasil ditambahkan.`, account: { ...safe, discount: Number(safe.discount) } });
