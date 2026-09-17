@@ -26,6 +26,8 @@ export interface ChartStatItem {
   netUp: number;
 }
 
+export type ChartPeriod = 'today' | 'daily' | 'monthly' | 'yearly';
+
 @Component({
   selector: 'app-stats-chart',
   standalone: true,
@@ -37,11 +39,11 @@ export interface ChartStatItem {
 export class StatsChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() title = 'Grafik';
   @Input() type: 'cpu' | 'ram' | 'network' = 'cpu';
-  @Input() period: 'daily' | 'monthly' | 'yearly' = 'daily';
+  @Input() period: ChartPeriod = 'today';
   @Input() items: ChartStatItem[] = [];
   @Input() loading = false;
 
-  @Output() periodChange = new EventEmitter<'daily' | 'monthly' | 'yearly'>();
+  @Output() periodChange = new EventEmitter<ChartPeriod>();
 
   @ViewChild('chartCanvas') chartCanvas?: ElementRef<HTMLCanvasElement>;
 
@@ -64,7 +66,7 @@ export class StatsChartComponent implements AfterViewInit, OnChanges, OnDestroy 
     }
   }
 
-  onSelectPeriod(val: 'daily' | 'monthly' | 'yearly') {
+  onSelectPeriod(val: ChartPeriod) {
     this.period = val;
     this.periodChange.emit(val);
   }

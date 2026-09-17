@@ -16,9 +16,10 @@
         [ngModel]="period"
         (ngModelChange)="onSelectPeriod($event)"
       >
-        <option value="daily">Harian (24 Jam Terakhir)</option>
-        <option value="monthly">Bulanan (Hari per Hari)</option>
-        <option value="yearly">Tahunan (Per Bulan / Rekap)</option>
+        <option value="today">Hari Ini (24 Jam Terakhir)</option>
+        <option value="daily">Harian (Tanggal Bulan Ini)</option>
+        <option value="monthly">Bulanan (Bulan Tahun Ini)</option>
+        <option value="yearly">Tahun</option>
       </select>
     </div>
   </div>
@@ -43,7 +44,7 @@
   <div class="mt-6 border-t border-slate-200 pt-4">
     <div class="mb-3 flex items-center justify-between">
       <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600">
-        Tabel Rincian Data ({{ period === 'daily' ? 'Per Jam' : period === 'monthly' ? 'Per Hari' : 'Per Bulan' }})
+        Tabel Rincian Data ({{ period === 'today' ? 'Per Jam' : period === 'daily' ? 'Per Tanggal' : period === 'monthly' ? 'Per Bulan' : 'Per Tahun' }})
       </h4>
       <span class="text-xs font-medium text-slate-500">{{ items.length }} titik data</span>
     </div>

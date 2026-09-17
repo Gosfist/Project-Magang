@@ -2,7 +2,7 @@ import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../core/services/api.service';
-import { StatsChartComponent, ChartStatItem } from '../../../../shared/components/stats-chart/stats-chart.component';
+import { StatsChartComponent, ChartPeriod, ChartStatItem } from '../../../../shared/components/stats-chart/stats-chart.component';
 import { LucideRefreshCw, LucideRouter } from '@lucide/angular';
 
 interface RouterOption {
@@ -58,15 +58,15 @@ export class RouterMonitoringComponent implements OnInit {
   realtimeError = signal('');
 
   // Charts
-  cpuPeriod: 'daily' | 'monthly' | 'yearly' = 'daily';
+  cpuPeriod: ChartPeriod = 'today';
   cpuItems = signal<ChartStatItem[]>([]);
   cpuLoading = signal(false);
 
-  ramPeriod: 'daily' | 'monthly' | 'yearly' = 'daily';
+  ramPeriod: ChartPeriod = 'today';
   ramItems = signal<ChartStatItem[]>([]);
   ramLoading = signal(false);
 
-  netPeriod: 'daily' | 'monthly' | 'yearly' = 'daily';
+  netPeriod: ChartPeriod = 'today';
   netItems = signal<ChartStatItem[]>([]);
   netLoading = signal(false);
 
@@ -187,7 +187,7 @@ export class RouterMonitoringComponent implements OnInit {
     });
   }
 
-  onCpuPeriodChange(period: 'daily' | 'monthly' | 'yearly'): void {
+  onCpuPeriodChange(period: ChartPeriod): void {
     this.cpuPeriod = period;
     this.loadCpuStats();
   }
@@ -206,7 +206,7 @@ export class RouterMonitoringComponent implements OnInit {
     });
   }
 
-  onRamPeriodChange(period: 'daily' | 'monthly' | 'yearly'): void {
+  onRamPeriodChange(period: ChartPeriod): void {
     this.ramPeriod = period;
     this.loadRamStats();
   }
@@ -225,7 +225,7 @@ export class RouterMonitoringComponent implements OnInit {
     });
   }
 
-  onNetPeriodChange(period: 'daily' | 'monthly' | 'yearly'): void {
+  onNetPeriodChange(period: ChartPeriod): void {
     this.netPeriod = period;
     this.loadNetStats();
   }

@@ -1,7 +1,7 @@
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { environment } from '../../../../environments/environment';
-import { StatsChartComponent, ChartStatItem } from '../../../../shared/components/stats-chart/stats-chart.component';
+import { StatsChartComponent, ChartPeriod, ChartStatItem } from '../../../../shared/components/stats-chart/stats-chart.component';
 
 type ServerSnapshot = {
   checkedAt: string;
@@ -45,15 +45,15 @@ export class ServerMonitoringComponent implements OnInit {
   activeTab = signal<'log' | 'cpu' | 'ram' | 'network'>('log');
 
   // Charts
-  cpuPeriod: 'daily' | 'monthly' | 'yearly' = 'daily';
+  cpuPeriod: ChartPeriod = 'today';
   cpuItems = signal<ChartStatItem[]>([]);
   cpuLoading = signal(false);
 
-  ramPeriod: 'daily' | 'monthly' | 'yearly' = 'daily';
+  ramPeriod: ChartPeriod = 'today';
   ramItems = signal<ChartStatItem[]>([]);
   ramLoading = signal(false);
 
-  netPeriod: 'daily' | 'monthly' | 'yearly' = 'daily';
+  netPeriod: ChartPeriod = 'today';
   netItems = signal<ChartStatItem[]>([]);
   netLoading = signal(false);
 
@@ -90,7 +90,7 @@ export class ServerMonitoringComponent implements OnInit {
     }
   }
 
-  onCpuPeriodChange(period: 'daily' | 'monthly' | 'yearly') {
+  onCpuPeriodChange(period: ChartPeriod) {
     this.cpuPeriod = period;
     void this.loadCpuStats();
   }
@@ -112,7 +112,7 @@ export class ServerMonitoringComponent implements OnInit {
     }
   }
 
-  onRamPeriodChange(period: 'daily' | 'monthly' | 'yearly') {
+  onRamPeriodChange(period: ChartPeriod) {
     this.ramPeriod = period;
     void this.loadRamStats();
   }
@@ -134,7 +134,7 @@ export class ServerMonitoringComponent implements OnInit {
     }
   }
 
-  onNetPeriodChange(period: 'daily' | 'monthly' | 'yearly') {
+  onNetPeriodChange(period: ChartPeriod) {
     this.netPeriod = period;
     void this.loadNetStats();
   }

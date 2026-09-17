@@ -2,6 +2,7 @@ import { Controller, Get, Param, ParseIntPipe, Query, Sse, Header, UseGuards } f
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { MonitoringService } from './monitoring.service.js';
 import { ServerStatsService } from './server-stats.service.js';
+import type { MonitoringPeriod } from './server-stats.service.js';
 import { RouterMonitoringService } from './router-monitoring.service.js';
 
 @Controller('monitoring')
@@ -28,8 +29,8 @@ export class MonitoringController {
   }
 
   @Get('server/stats')
-  serverStatistics(@Query('period') period?: 'daily' | 'monthly' | 'yearly') {
-    return this.serverStats.getStats(period || 'daily');
+  serverStatistics(@Query('period') period?: MonitoringPeriod) {
+    return this.serverStats.getStats(period || 'today');
   }
 
   @Get('router/options')
@@ -45,9 +46,9 @@ export class MonitoringController {
   @Get('router/:nasId/stats')
   routerStatistics(
     @Param('nasId', ParseIntPipe) nasId: number,
-    @Query('period') period?: 'daily' | 'monthly' | 'yearly',
+    @Query('period') period?: MonitoringPeriod,
   ) {
-    return this.routerMonitoring.getStats(nasId, period || 'daily');
+    return this.routerMonitoring.getStats(nasId, period || 'today');
   }
 
   @Get('router/:nasId/logs')

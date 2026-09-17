@@ -1,0 +1,8 @@
+{
+  "name": "project-magang-deploy",
+  "private": true,
+  "scripts": {
+    "update": "bash scripts/server-update.sh",
+    "migrate:updates": "node scripts/run-sql-updates.mjs"
+  }
+}

@@ -10,11 +10,16 @@ export interface StatItem {
   netUp: number;
 }
 
+export type MonitoringPeriod = 'today' | 'daily' | 'monthly' | 'yearly';
+
 @Injectable()
 export class ServerStatsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getStats(period: 'daily' | 'monthly' | 'yearly' = 'daily') {
+  async getStats(period: MonitoringPeriod = 'today') {
+    if (period === 'today') {
+      return this.getToday();
+    }
     if (period === 'daily') {
       return this.getDaily();
     }
@@ -24,7 +29,7 @@ export class ServerStatsService {
     return this.getYearly();
   }
 
-  private async getDaily(): Promise<{ period: string; data: StatItem[] }> {
+  private async getToday(): Promise<{ period: string; data: StatItem[] }> {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const rows = await this.prisma.serverStat.findMany({
@@ -46,10 +51,10 @@ export class ServerStatsService {
       };
     });
 
-    return { period: 'daily', data };
+    return { period: 'today', data };
   }
 
-  private async getMonthly(): Promise<{ period: string; data: StatItem[] }> {
+  private async getDaily(): Promise<{ period: string; data: StatItem[] }> {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -85,25 +90,18 @@ export class ServerStatsService {
       };
     });
 
-    return { period: 'monthly', data };
+    return { period: 'daily', data };
   }
 
-  private async getYearly(): Promise<{ period: string; data: StatItem[] }> {
+  private async getMonthly(): Promise<{ period: string; data: StatItem[] }> {
     const now = new Date();
     const currentYear = now.getFullYear();
 
-    // 1. Ambil data tahun-tahun sebelumnya dari server_stats_yearly
-    const yearlyPast = await this.prisma.serverStatYearly.findMany({
-      orderBy: { year: 'asc' },
-    });
-
-    // 2. Ambil data bulan-bulan tahun berjalan dari server_stats_monthly
     const monthlyCurrentYear = await this.prisma.serverStatMonthly.findMany({
       where: { year: currentYear },
       orderBy: { month: 'asc' },
     });
 
-    // 3. Ambil data bulan berjalan langsung dari server_stats jika ada
     const currentMonthNum = now.getMonth() + 1;
     const startOfCurrentMonth = new Date(currentYear, now.getMonth(), 1);
     const currentMonthAgg: any[] = await this.prisma.$queryRaw`
@@ -118,22 +116,8 @@ export class ServerStatsService {
     `;
 
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-
     const data: StatItem[] = [];
 
-    // Tambah tahun-tahun lalu
-    for (const y of yearlyPast) {
-      data.push({
-        timestamp: `${y.year}`,
-        label: `Tahun ${y.year}`,
-        cpuPercent: y.cpuPercent,
-        memPercent: y.memPercent,
-        netDown: y.netDown,
-        netUp: y.netUp,
-      });
-    }
-
-    // Tambah bulan-bulan tahun berjalan yang sudah direkap
     for (const m of monthlyCurrentYear) {
       data.push({
         timestamp: `${m.year}-${String(m.month).padStart(2, '0')}`,
@@ -145,7 +129,6 @@ export class ServerStatsService {
       });
     }
 
-    // Tambah bulan berjalan saat ini jika belum ada di monthlyCurrentYear
     if (
       !monthlyCurrentYear.some((m) => m.month === currentMonthNum) &&
       currentMonthAgg[0] &&
@@ -158,6 +141,76 @@ export class ServerStatsService {
         memPercent: Math.round(Number(currentMonthAgg[0].avgMem) * 10) / 10,
         netDown: Math.round(Number(currentMonthAgg[0].avgDown) * 100) / 100,
         netUp: Math.round(Number(currentMonthAgg[0].avgUp) * 100) / 100,
+      });
+    }
+
+    return { period: 'monthly', data };
+  }
+
+  private async getYearly(): Promise<{ period: string; data: StatItem[] }> {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+
+    const yearlyPast = await this.prisma.serverStatYearly.findMany({
+      orderBy: { year: 'asc' },
+    });
+
+    const currentYearMonths = await this.prisma.serverStatMonthly.findMany({
+      where: { year: currentYear },
+      orderBy: { month: 'asc' },
+    });
+
+    const startOfCurrentYear = new Date(currentYear, 0, 1);
+    const currentYearRaw: any[] = await this.prisma.$queryRaw`
+      SELECT 
+        AVG(cpu_percent) as avgCpu,
+        AVG(mem_percent) as avgMem,
+        AVG(net_down) as avgDown,
+        AVG(net_up) as avgUp,
+        COUNT(*) as cnt
+      FROM server_stats
+      WHERE recorded_at >= ${startOfCurrentYear}
+    `;
+
+    const data: StatItem[] = yearlyPast.map((y) => ({
+      timestamp: `${y.year}`,
+      label: `${y.year}`,
+      cpuPercent: y.cpuPercent,
+      memPercent: y.memPercent,
+      netDown: y.netDown,
+      netUp: y.netUp,
+    }));
+
+    const weightedRows = [
+      ...currentYearMonths.map((m) => ({
+        cpu: m.cpuPercent,
+        mem: m.memPercent,
+        down: m.netDown,
+        up: m.netUp,
+        samples: m.samples || 1,
+      })),
+    ];
+
+    const current = currentYearRaw[0];
+    if (current && Number(current.cnt) > 0) {
+      weightedRows.push({
+        cpu: Number(current.avgCpu),
+        mem: Number(current.avgMem),
+        down: Number(current.avgDown),
+        up: Number(current.avgUp),
+        samples: Number(current.cnt),
+      });
+    }
+
+    const totalSamples = weightedRows.reduce((sum, item) => sum + item.samples, 0);
+    if (!yearlyPast.some((y) => y.year === currentYear) && totalSamples > 0) {
+      data.push({
+        timestamp: `${currentYear}`,
+        label: `${currentYear}`,
+        cpuPercent: Math.round((weightedRows.reduce((sum, item) => sum + item.cpu * item.samples, 0) / totalSamples) * 10) / 10,
+        memPercent: Math.round((weightedRows.reduce((sum, item) => sum + item.mem * item.samples, 0) / totalSamples) * 10) / 10,
+        netDown: Math.round((weightedRows.reduce((sum, item) => sum + item.down * item.samples, 0) / totalSamples) * 100) / 100,
+        netUp: Math.round((weightedRows.reduce((sum, item) => sum + item.up * item.samples, 0) / totalSamples) * 100) / 100,
       });
     }
 
