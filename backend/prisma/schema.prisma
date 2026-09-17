@@ -366,3 +366,89 @@ model ActivityLog {
   @@index([createdAt])
   @@map("activity_logs")
 }
+
+model ServerStat {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  recordedAt DateTime @map("recorded_at")
+  cpuPercent Float    @map("cpu_percent")
+  memPercent Float    @map("mem_percent")
+  memUsed    BigInt   @map("mem_used") @db.UnsignedBigInt
+  memTotal   BigInt   @map("mem_total") @db.UnsignedBigInt
+  netDown    Float    @map("net_down")
+  netUp      Float    @map("net_up")
+
+  @@index([recordedAt])
+  @@map("server_stats")
+}
+
+model RouterStat {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  nasId      Int      @map("nas_id") @db.UnsignedInt
+  recordedAt DateTime @map("recorded_at")
+  cpuPercent Float    @map("cpu_percent")
+  memPercent Float    @map("mem_percent")
+  memFree    BigInt   @map("mem_free") @db.UnsignedBigInt
+  memTotal   BigInt   @map("mem_total") @db.UnsignedBigInt
+  netDown    Float    @map("net_down")
+  netUp      Float    @map("net_up")
+  uptime     BigInt   @default(0) @db.UnsignedBigInt
+
+  @@index([nasId, recordedAt])
+  @@index([recordedAt])
+  @@map("router_stats")
+}
+
+model ServerStatMonthly {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  year       Int      @db.UnsignedSmallInt
+  month      Int      @db.UnsignedTinyInt
+  cpuPercent Float    @map("cpu_percent")
+  memPercent Float    @map("mem_percent")
+  netDown    Float    @map("net_down")
+  netUp      Float    @map("net_up")
+  samples    Int      @default(0) @db.UnsignedInt
+
+  @@unique([year, month])
+  @@map("server_stats_monthly")
+}
+
+model RouterStatMonthly {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  nasId      Int      @map("nas_id") @db.UnsignedInt
+  year       Int      @db.UnsignedSmallInt
+  month      Int      @db.UnsignedTinyInt
+  cpuPercent Float    @map("cpu_percent")
+  memPercent Float    @map("mem_percent")
+  netDown    Float    @map("net_down")
+  netUp      Float    @map("net_up")
+  samples    Int      @default(0) @db.UnsignedInt
+
+  @@unique([nasId, year, month])
+  @@map("router_stats_monthly")
+}
+
+model ServerStatYearly {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  year       Int      @unique @db.UnsignedSmallInt
+  cpuPercent Float    @map("cpu_percent")
+  memPercent Float    @map("mem_percent")
+  netDown    Float    @map("net_down")
+  netUp      Float    @map("net_up")
+  samples    Int      @default(0) @db.UnsignedInt
+
+  @@map("server_stats_yearly")
+}
+
+model RouterStatYearly {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  nasId      Int      @map("nas_id") @db.UnsignedInt
+  year       Int      @db.UnsignedSmallInt
+  cpuPercent Float    @map("cpu_percent")
+  memPercent Float    @map("mem_percent")
+  netDown    Float    @map("net_down")
+  netUp      Float    @map("net_up")
+  samples    Int      @default(0) @db.UnsignedInt
+
+  @@unique([nasId, year])
+  @@map("router_stats_yearly")
+}

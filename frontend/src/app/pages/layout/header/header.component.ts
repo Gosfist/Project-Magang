@@ -22,6 +22,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   private readonly titles: Record<string, string> = {
     '/dashboard': 'Dashboard',
     '/dashboard/monitoring/server': 'Monitoring Server',
+    '/dashboard/monitoring/router': 'Monitoring NAS / Router',
     '/dashboard/users': 'Data Petugas',
     '/dashboard/mainCore/traceJalur': 'Trace Jalur',
     '/dashboard/mainCore/server': 'Server',

@@ -86,6 +86,37 @@
       </section>
     </div>
   }
+
+  <!-- Grafik Historis Server (CPU, RAM, Network) -->
+  <div class="space-y-6">
+    <app-stats-chart
+      title="Grafik Beban CPU Server (%)"
+      type="cpu"
+      [period]="cpuPeriod"
+      [items]="cpuItems()"
+      [loading]="cpuLoading()"
+      (periodChange)="onCpuPeriodChange($event)"
+    ></app-stats-chart>
+
+    <app-stats-chart
+      title="Grafik Penggunaan RAM Server (%)"
+      type="ram"
+      [period]="ramPeriod"
+      [items]="ramItems()"
+      [loading]="ramLoading()"
+      (periodChange)="onRamPeriodChange($event)"
+    ></app-stats-chart>
+
+    <app-stats-chart
+      title="Grafik Traffic Jaringan Server (Mbps)"
+      type="network"
+      [period]="netPeriod"
+      [items]="netItems()"
+      [loading]="netLoading()"
+      (periodChange)="onNetPeriodChange($event)"
+    ></app-stats-chart>
+  </div>
+
   <section class="logs-card card flex min-h-0 flex-1 flex-col overflow-hidden">
     <div class="shrink-0 space-y-3 p-4">
       <h3 class="font-semibold">Log Aktivitas</h3>

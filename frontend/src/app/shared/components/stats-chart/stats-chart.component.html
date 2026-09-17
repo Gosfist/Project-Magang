@@ -1,0 +1,102 @@
+<div class="rounded-2xl border border-slate-800 bg-[#0b1329] p-5 text-slate-100 shadow-xl">
+  <!-- Header -->
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+    <div>
+      <h3 class="text-base font-semibold text-white sm:text-lg">{{ title }}</h3>
+      <p class="text-xs text-slate-400">
+        Rata-rata: <span class="font-bold text-sky-400">{{ averageValue }}</span>
+      </p>
+    </div>
+
+    <!-- Periode Selector -->
+    <div class="flex items-center gap-2">
+      <label class="text-xs font-medium text-slate-400">Periode:</label>
+      <select
+        class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-white shadow-inner transition hover:border-slate-600 focus:border-sky-500 focus:outline-none"
+        [ngModel]="period"
+        (ngModelChange)="onSelectPeriod($event)"
+      >
+        <option value="daily">Harian (24 Jam Terakhir)</option>
+        <option value="monthly">Bulanan (Hari per Hari)</option>
+        <option value="yearly">Tahunan (Per Bulan / Rekap)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Chart Area -->
+  <div class="relative h-64 w-full sm:h-72">
+    @if (loading) {
+      <div class="absolute inset-0 z-10 flex items-center justify-center bg-[#0b1329]/80 backdrop-blur-xs">
+        <span class="text-sm text-sky-400 animate-pulse">Memuat data grafik...</span>
+      </div>
+    }
+    @if (!loading && items.length === 0) {
+      <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
+        <p class="text-sm">Belum ada data historis yang tercatat untuk periode ini.</p>
+        <p class="text-xs text-slate-600 mt-1">Data dikumpulkan otomatis setiap 1 jam.</p>
+      </div>
+    }
+    <canvas #chartCanvas></canvas>
+  </div>
+
+  <!-- Data Table (Di bawah grafik) -->
+  <div class="mt-6 border-t border-slate-800/80 pt-4">
+    <div class="mb-2 flex items-center justify-between">
+      <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+        Tabel Rincian Data ({{ period === 'daily' ? 'Per Jam' : period === 'monthly' ? 'Per Hari' : 'Per Bulan' }})
+      </h4>
+      <span class="text-xs text-slate-500">{{ items.length }} titik data</span>
+    </div>
+
+    <div class="max-h-56 overflow-y-auto rounded-xl border border-slate-800 bg-slate-950/60 shadow-inner">
+      <table class="w-full text-left text-xs">
+        <thead class="sticky top-0 z-10 border-b border-slate-800 bg-[#0f172a] text-slate-400">
+          <tr>
+            <th class="px-4 py-2.5 font-medium">Waktu / Periode</th>
+            @if (type === 'cpu') {
+              <th class="px-4 py-2.5 font-medium text-right">Beban CPU</th>
+            }
+            @if (type === 'ram') {
+              <th class="px-4 py-2.5 font-medium text-right">Penggunaan RAM</th>
+            }
+            @if (type === 'network') {
+              <th class="px-4 py-2.5 font-medium text-right">Download (Mbps)</th>
+              <th class="px-4 py-2.5 font-medium text-right">Upload (Mbps)</th>
+            }
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/50 text-slate-300">
+          @for (item of items; track item.timestamp) {
+            <tr class="hover:bg-slate-900/50 transition-colors">
+              <td class="px-4 py-2 font-mono text-slate-200">{{ item.label }}</td>
+              @if (type === 'cpu') {
+                <td class="px-4 py-2 text-right font-semibold text-sky-400">
+                  {{ item.cpuPercent }}%
+                </td>
+              }
+              @if (type === 'ram') {
+                <td class="px-4 py-2 text-right font-semibold text-purple-400">
+                  {{ item.memPercent }}%
+                </td>
+              }
+              @if (type === 'network') {
+                <td class="px-4 py-2 text-right font-semibold text-sky-400">
+                  {{ item.netDown }}
+                </td>
+                <td class="px-4 py-2 text-right font-semibold text-rose-400">
+                  {{ item.netUp }}
+                </td>
+              }
+            </tr>
+          } @empty {
+            <tr>
+              <td [attr.colspan]="type === 'network' ? 3 : 2" class="px-4 py-6 text-center text-slate-500">
+                Tidak ada data pada tabel untuk periode ini.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

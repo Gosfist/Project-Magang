@@ -1,20 +1,30 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { environment } from '../../../../environments/environment';
+import { StatsChartComponent, ChartStatItem } from '../../../../shared/components/stats-chart/stats-chart.component';
 
 type ServerSnapshot = {
-  checkedAt: string; hostname: string; platform: string;
+  checkedAt: string;
+  hostname: string;
+  platform: string;
   cpu: { percent: number; cores: number; model: string };
   memory: { total: number; used: number; percent: number };
   disk: { total: number; used: number } | null;
   traffic: { interface: string | null; checkedAt: string | null; download: number | null; upload: number | null };
   network: { name: string; address: string }[];
-  hostUptime: number; appUptime: number;
+  hostUptime: number;
+  appUptime: number;
   logs: { time: string; method: string; route: string; status: number }[];
 };
 
-@Component({ selector: 'app-server-monitoring', standalone: true, imports: [DatePipe, DecimalPipe], templateUrl: './server.component.html', styleUrl: './server.component.css' })
-export class ServerMonitoringComponent {
+@Component({
+  selector: 'app-server-monitoring',
+  standalone: true,
+  imports: [CommonModule, DatePipe, DecimalPipe, StatsChartComponent],
+  templateUrl: './server.component.html',
+  styleUrl: './server.component.css',
+})
+export class ServerMonitoringComponent implements OnInit {
   readonly data = signal<ServerSnapshot | null>(null);
   readonly error = signal('');
   readonly loading = signal(true);
@@ -30,6 +40,101 @@ export class ServerMonitoringComponent {
   activityError = signal('');
   private activityController: AbortController | null = null;
   private lastActivityFetch = 0;
+
+  // Charts
+  cpuPeriod: 'daily' | 'monthly' | 'yearly' = 'daily';
+  cpuItems = signal<ChartStatItem[]>([]);
+  cpuLoading = signal(false);
+
+  ramPeriod: 'daily' | 'monthly' | 'yearly' = 'daily';
+  ramItems = signal<ChartStatItem[]>([]);
+  ramLoading = signal(false);
+
+  netPeriod: 'daily' | 'monthly' | 'yearly' = 'daily';
+  netItems = signal<ChartStatItem[]>([]);
+  netLoading = signal(false);
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      this.destroyed = true;
+      this.activityController?.abort();
+      this.controller?.abort();
+      if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    });
+  }
+
+  ngOnInit(): void {
+    void this.connect();
+    void this.loadCpuStats();
+    void this.loadRamStats();
+    void this.loadNetStats();
+  }
+
+  async loadCpuStats() {
+    this.cpuLoading.set(true);
+    try {
+      const res = await fetch(`${environment.apiUrl}/monitoring/server/stats?period=${this.cpuPeriod}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('unzanet_token') ?? ''}` },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        this.cpuItems.set(json.data || []);
+      }
+    } catch {
+      // Ignore
+    } finally {
+      this.cpuLoading.set(false);
+    }
+  }
+
+  onCpuPeriodChange(period: 'daily' | 'monthly' | 'yearly') {
+    this.cpuPeriod = period;
+    void this.loadCpuStats();
+  }
+
+  async loadRamStats() {
+    this.ramLoading.set(true);
+    try {
+      const res = await fetch(`${environment.apiUrl}/monitoring/server/stats?period=${this.ramPeriod}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('unzanet_token') ?? ''}` },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        this.ramItems.set(json.data || []);
+      }
+    } catch {
+      // Ignore
+    } finally {
+      this.ramLoading.set(false);
+    }
+  }
+
+  onRamPeriodChange(period: 'daily' | 'monthly' | 'yearly') {
+    this.ramPeriod = period;
+    void this.loadRamStats();
+  }
+
+  async loadNetStats() {
+    this.netLoading.set(true);
+    try {
+      const res = await fetch(`${environment.apiUrl}/monitoring/server/stats?period=${this.netPeriod}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('unzanet_token') ?? ''}` },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        this.netItems.set(json.data || []);
+      }
+    } catch {
+      // Ignore
+    } finally {
+      this.netLoading.set(false);
+    }
+  }
+
+  onNetPeriodChange(period: 'daily' | 'monthly' | 'yearly') {
+    this.netPeriod = period;
+    void this.loadNetStats();
+  }
 
   async loadActivities(reset = false) {
     if (reset) this.page = 1;
@@ -59,16 +164,6 @@ export class ServerMonitoringComponent {
     if (next === this.page) return;
     this.page = next;
     void this.loadActivities();
-  }
-
-  constructor() {
-    inject(DestroyRef).onDestroy(() => {
-      this.destroyed = true;
-      this.activityController?.abort();
-      this.controller?.abort();
-      if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-    });
-    void this.connect();
   }
 
   private async connect() {
@@ -118,6 +213,7 @@ export class ServerMonitoringComponent {
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     void this.connect();
   }
+
   gib(bytes: number) { return bytes / 1024 ** 3; }
   duration(seconds: number) {
     const minutes = Math.floor(seconds / 60);
