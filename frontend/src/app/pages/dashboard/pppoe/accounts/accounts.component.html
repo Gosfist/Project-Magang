@@ -14,7 +14,7 @@
     <table>
       <thead>
         <tr>
-          <th>ID Pelanggan</th><th>Nama Pelanggan</th><th>Paket</th><th>Tipe</th><th>Tanggal Daftar</th><th>Online</th><th>Status</th><th class="text-right">Aksi</th>
+          <th>ID Pelanggan</th><th>Nama Pelanggan</th><th>Paket</th><th>Tanggal Daftar</th><th>Status</th><th>Online</th><th class="text-right">Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -26,23 +26,20 @@
               <p class="text-xs text-slate-500">{{ phoneDisplay(item.phone) }}</p>
             </td>
             <td>{{ item.package.name }}</td>
-            <td>
-              <span [class]="'rounded-full px-2 py-0.5 text-xs font-semibold ' + (item.subscriptionType === 'POSTPAID' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700')">{{ item.subscriptionType }}</span>
-            </td>
             <td class="whitespace-nowrap">{{ registrationDate(item.createdAt) }}</td>
-            <td>
-              <span [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (item.online === true ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600')" [title]="item.online == null ? 'Sesi belum dapat diperiksa. Pastikan Router NAS aktif dan API terhubung.' : 'Status sesi PPPoE dari MikroTik saat daftar dimuat'">{{ item.online === true ? 'Online' : item.online === false ? 'Offline' : 'Belum diketahui' }}</span>
-            </td>
             <td>
               <span [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (item.serviceStatus === 'Aktif' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')">{{ item.serviceStatus }}</span>
             </td>
             <td>
+              <span [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (item.online === true ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600')" [title]="item.online == null ? 'Sesi belum dapat diperiksa. Pastikan Router NAS aktif dan API terhubung.' : 'Status sesi PPPoE dari MikroTik saat daftar dimuat'">{{ item.online === true ? 'Online' : item.online === false ? 'Offline' : 'Belum diketahui' }}</span>
+            </td>
+            <td>
               <div class="flex justify-end gap-2">
-                <button class="btn-secondary px-3" [disabled]="disconnecting() !== null" (click)="disconnect(item)">Putus Sesi</button>
-                <button class="btn-secondary px-3" (click)="show(item)">
+                <button class="btn-secondary" title="Putus Sesi" aria-label="Putus sesi pelanggan" [disabled]="disconnecting() !== null" (click)="disconnect(item)"><svg lucideUnplug [size]="14"></svg></button>
+                <button class="btn-secondary" title="Edit" aria-label="Edit pelanggan" (click)="show(item)">
                   <svg lucidePencil [size]="15"></svg>
                 </button>
-                <button class="btn-danger" (click)="remove(item)">
+                <button class="btn-danger" title="Hapus" aria-label="Hapus pelanggan" (click)="remove(item)">
                   <svg lucideTrash2 [size]="15"></svg>
                 </button>
               </div>
@@ -50,7 +47,7 @@
           </tr>
         }
         @if (items().length === 0) {
-          <tr><td colspan="8" class="py-8 text-center text-slate-400">{{ refreshing() ? 'Memuat data pelanggan...' : 'Akun PPPoE belum tersedia.' }}</td></tr>
+          <tr><td colspan="7" class="py-8 text-center text-slate-400">{{ refreshing() ? 'Memuat data pelanggan...' : 'Akun PPPoE belum tersedia.' }}</td></tr>
         }
       </tbody>
     </table>
@@ -200,7 +197,13 @@
           </div>
           <div>
             <label class="label">Password PPPoE @if (editing()) { <small class="text-slate-400">(kosongkan jika tetap)</small> }</label>
-            <input type="password" class="input" minlength="6" maxlength="64" [required]="!editing()" [(ngModel)]="form.password" name="password" />
+            <div class="relative">
+              <input id="pppoe-password" [type]="passwordVisible() ? 'text' : 'password'" class="input" style="padding-right: 40px" minlength="6" maxlength="64" [required]="!editing()" [(ngModel)]="form.password" name="password" />
+              <button type="button" class="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-slate-500 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-indigo-600" aria-controls="pppoe-password" [attr.aria-label]="passwordVisible() ? 'Sembunyikan password PPPoE' : 'Tampilkan password PPPoE'" [attr.aria-pressed]="passwordVisible()" (click)="passwordVisible.set(!passwordVisible())">
+                @if (passwordVisible()) { <svg lucideEyeOff [size]="18"></svg> }
+                @else { <svg lucideEye [size]="18"></svg> }
+              </button>
+            </div>
           </div>
         </div>
         <div class="grid gap-4 sm:grid-cols-2">

@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { LucideCamera, LucidePencil, LucidePlus, LucideSearch, LucideTrash2, LucideX } from '@lucide/angular';
+import { LucideCamera, LucideEye, LucideEyeOff, LucidePencil, LucidePlus, LucideSearch, LucideTrash2, LucideUnplug, LucideX } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
 import { PppoeAccount, PppoePackage, PageMeta, NasOption, OdpOption } from '../../../../shared/models/types';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
@@ -8,7 +8,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
 import type { Subscription } from 'rxjs';
 
-type AccountListItem = PppoeAccount & { customerId: string; createdAt: string | null; online: boolean | null; serviceStatus: 'Aktif' | 'Isolir' };
+type AccountListItem = PppoeAccount & { customerId?: string; customerNumber?: string; createdAt: string | null; online: boolean | null; serviceStatus?: 'Aktif' | 'Isolir' };
 
 @Component({
   selector: 'app-pppoe-accounts',
@@ -16,6 +16,9 @@ type AccountListItem = PppoeAccount & { customerId: string; createdAt: string | 
   imports: [
     FormsModule,
     LucideCamera,
+    LucideEye,
+    LucideEyeOff,
+    LucideUnplug,
     LucideX,
     LucidePencil,
     LucidePlus,
@@ -109,6 +112,7 @@ export class AccountsComponent implements OnInit, OnDestroy {
   open = signal(false);
   editing = signal<PppoeAccount | null>(null);
   step = signal(1);
+  passwordVisible = signal(false);
   uploading = signal(false);
   saving = signal(false);
   formError = signal('');
@@ -183,7 +187,14 @@ export class AccountsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (r) => {
           this.refreshing.set(false);
-          this.items.set(r.data);
+          this.items.set(r.data.map(item => ({
+            ...item,
+            // Older API responses expose only the database ID; the migration
+            // preserves that same number for existing customers.
+            customerId: String(item.customerNumber ?? (item.customerId || item.id)).padStart(6, '0'),
+            serviceStatus: item.serviceStatus || (item.isActive && item.package.isActive !== false
+              && (!item.expiresAt || Date.parse(item.expiresAt) + 86400000 > Date.now()) ? 'Aktif' : 'Isolir'),
+          })));
           this.meta.set(r.meta);
         },
         error: (e) => { this.refreshing.set(false); this.toast.set({ message: e.message, type: 'error' }); },
@@ -192,6 +203,7 @@ export class AccountsComponent implements OnInit, OnDestroy {
 
   show(item?: PppoeAccount): void {
     if (this.uploading() || this.saving()) return;
+    this.passwordVisible.set(false);
     this.nasOpen.set(false);
     this.odpOpen.set(false);
     this.odpSearch = '';
