@@ -7,6 +7,7 @@ import { MonitoringService, MonitoringInterceptor } from './monitoring.service.j
 import { ServerStatsService } from './server-stats.service.js';
 import { RouterMonitoringService } from './router-monitoring.service.js';
 import { StatsCollectorService } from './stats-collector.service.js';
+import { RadiusMonitoringService } from './radius-monitoring.service.js';
 
 @Module({
   imports: [AuthModule, RouterModule],
@@ -15,9 +16,10 @@ import { StatsCollectorService } from './stats-collector.service.js';
     MonitoringService,
     ServerStatsService,
     RouterMonitoringService,
+    RadiusMonitoringService,
     StatsCollectorService,
     { provide: APP_INTERCEPTOR, useClass: MonitoringInterceptor },
   ],
-  exports: [MonitoringService, ServerStatsService, RouterMonitoringService],
+  exports: [MonitoringService, ServerStatsService, RouterMonitoringService, RadiusMonitoringService],
 })
 export class MonitoringModule {}

@@ -22,6 +22,18 @@ describe('Customer session filters', () => {
 });
 
 describe('Promise RADIUS expiration', () => {
+  it('cleans stale rows for both the old and new username before re-creating RADIUS rows', async () => {
+    const tx = { radcheck: { deleteMany: vi.fn(), createMany: vi.fn() }, radreply: { deleteMany: vi.fn(), createMany: vi.fn() },
+      paymentPromise: { findFirst: vi.fn().mockResolvedValue(null) } };
+    const service = new RadiusService({ decrypt: () => 'private' } as any);
+    await service.sync(tx as any, { id: 1n, username: 'suro', password: 'encrypted', isActive: true, expiresAt: null, package: { isActive: true, uploadMbps: 5, downloadMbps: 10 } } as any, 'wisnu');
+    expect(tx.radcheck.deleteMany).toHaveBeenCalledWith({ where: { username: { in: ['wisnu', 'suro'] } } });
+    expect(tx.radreply.deleteMany).toHaveBeenCalledWith({ where: { username: { in: ['wisnu', 'suro'] } } });
+    expect(tx.radcheck.createMany).toHaveBeenCalledWith({ data: expect.arrayContaining([
+      { username: 'suro', attribute: 'Cleartext-Password', op: ':=', value: 'private' },
+    ]) });
+  });
+
   it('uses an absolute Unix expiration for WIB deadline while preserving single session policy', async () => {
     const tx = { radcheck: { deleteMany: vi.fn(), createMany: vi.fn() }, radreply: { deleteMany: vi.fn(), createMany: vi.fn() },
       paymentPromise: { findFirst: vi.fn().mockResolvedValue({ deadline: new Date('2026-09-18T17:00:00Z') }) } };

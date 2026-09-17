@@ -200,6 +200,7 @@ export class PppoeService {
         const maximum = await tx.pppoeAccount.aggregate({ _max: { customerNumber: true } });
         const customerNumber = (maximum._max.customerNumber ?? 0n) + 1n;
         const item = await tx.pppoeAccount.create({ data: { ...this.accountData(dto, this.secrets.encrypt(dto.password!), true), customerNumber }, include: { package: { include: { ipPool: true } } } });
+        await this.closeOpenAccounting(tx, item.username);
         if (dto.firstInvoice && dto.firstInvoice !== 'none') {
           await this.createFirstInvoice(tx, item, pkg, dto.discount || 0, dto.firstInvoice);
         }
@@ -228,6 +229,7 @@ export class PppoeService {
 
   async updateAccount(id: string, dto: SaveAccountDto) {
     const current = await this.findAccount(id);
+    const passwordChanged = dto.password ? dto.password !== this.secrets.decrypt(current.password) : false;
     await this.validateAccountForm(dto, false);
     if (dto.idCardPhoto && dto.idCardPhoto !== current.idCardPhoto) await validateIdCardPhoto(dto.idCardPhoto);
     await this.findPackage(dto.pppoePackageId);
@@ -239,12 +241,16 @@ export class PppoeService {
           data: this.accountData(dto, dto.password ? this.secrets.encrypt(dto.password) : current.password, false),
           include: { package: { include: { ipPool: true } } },
         });
+        if (current.username !== item.username || passwordChanged) {
+          await this.closeOpenAccounting(tx, current.username);
+          await this.closeOpenAccounting(tx, item.username);
+        }
         await this.radius.sync(tx, item, current.username);
         return item;
       });
       const { password: _password, ...safe } = account;
       const warnings: string[] = [];
-      if (!account.isActive || !account.package.isActive || current.username !== account.username) {
+      if (!account.isActive || !account.package.isActive || current.username !== account.username || passwordChanged) {
         warnings.push(...(await this.network.disconnect(current.username, current.routerNasId)).warnings);
       }
       if (current.isActive && !account.isActive && this.waNotify) {
@@ -285,6 +291,7 @@ export class PppoeService {
     await this.prisma.$transaction(async (tx) => {
       await tx.radcheck.deleteMany({ where: { username: current.username } });
       await tx.radreply.deleteMany({ where: { username: current.username } });
+      await this.closeOpenAccounting(tx, current.username);
       await tx.pppoeAccount.delete({ where: { id: current.id } });
     });
     const result = await this.network.disconnect(current.username, current.routerNasId);
@@ -376,6 +383,13 @@ export class PppoeService {
   private generateInvoiceNumber(): string {
     const now = new Date();
     return `INV-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${Date.now().toString(36).toUpperCase()}`;
+  }
+
+  private closeOpenAccounting(tx: Prisma.TransactionClient, username: string) {
+    return tx.radacct.updateMany({
+      where: { username, acctstoptime: null },
+      data: { acctstoptime: new Date(), acctterminatecause: 'Admin-Reset' },
+    });
   }
 
   private formatDate(date?: Date) {

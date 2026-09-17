@@ -21,6 +21,7 @@ export const routes: Routes = [
       { path: '', component: HomeComponent },
       { path: 'monitoring/server', loadComponent: () => import('./pages/dashboard/monitoring/server/server.component').then((m) => m.ServerMonitoringComponent) },
       { path: 'monitoring/router', loadComponent: () => import('./pages/dashboard/monitoring/router/router-monitoring.component').then((m) => m.RouterMonitoringComponent) },
+      { path: 'monitoring/radius', loadComponent: () => import('./pages/dashboard/monitoring/radius/radius-monitoring.component').then((m) => m.RadiusMonitoringComponent) },
       { path: 'users', component: UsersComponent, canActivate: [adminGuard] },
       {
         path: 'mainCore',

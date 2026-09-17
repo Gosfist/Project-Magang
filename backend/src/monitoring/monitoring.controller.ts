@@ -4,6 +4,7 @@ import { MonitoringService } from './monitoring.service.js';
 import { ServerStatsService } from './server-stats.service.js';
 import type { PeriodeMonitoring } from './server-stats.service.js';
 import { RouterMonitoringService } from './router-monitoring.service.js';
+import { RadiusMonitoringService } from './radius-monitoring.service.js';
 
 @Controller('monitoring')
 @UseGuards(JwtAuthGuard)
@@ -12,6 +13,7 @@ export class MonitoringController {
     private readonly monitoring: MonitoringService,
     private readonly serverStats: ServerStatsService,
     private readonly routerMonitoring: RouterMonitoringService,
+    private readonly radiusMonitoring: RadiusMonitoringService,
   ) {}
 
   @Sse('server/stream')
@@ -54,5 +56,10 @@ export class MonitoringController {
   @Get('router/:nasId/logs')
   routerLogs(@Param('nasId', ParseIntPipe) nasId: number) {
     return this.routerMonitoring.logs(nasId);
+  }
+
+  @Get('radius/logs')
+  radiusLogs(@Query('search') search = '', @Query('reply') reply = '', @Query('page') page = '1') {
+    return this.radiusMonitoring.logs(search, reply, Number(page));
   }
 }

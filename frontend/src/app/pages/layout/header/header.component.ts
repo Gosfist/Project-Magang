@@ -23,6 +23,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard': 'Dasbor',
     '/dashboard/monitoring/server': 'Monitoring Server',
     '/dashboard/monitoring/router': 'Monitoring NAS / Router',
+    '/dashboard/monitoring/radius': 'Monitoring FreeRADIUS',
     '/dashboard/users': 'Data Petugas',
     '/dashboard/mainCore/traceJalur': 'Telusuri Jalur',
     '/dashboard/mainCore/server': 'Server',

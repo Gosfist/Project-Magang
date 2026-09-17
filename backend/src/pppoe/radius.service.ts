@@ -7,8 +7,9 @@ export class RadiusService {
   constructor(private readonly secrets: SecretService) { }
 
   async sync(tx: Prisma.TransactionClient, account: PppoeAccount & { package: PppoePackage & { ipPool?: any } }, oldUsername = account.username) {
-    await tx.radcheck.deleteMany({ where: { username: oldUsername } });
-    await tx.radreply.deleteMany({ where: { username: oldUsername } });
+    const usernames = [...new Set([oldUsername, account.username].filter(Boolean))];
+    await tx.radcheck.deleteMany({ where: { username: { in: usernames } } });
+    await tx.radreply.deleteMany({ where: { username: { in: usernames } } });
     if (!account.isActive || !account.package.isActive) return;
 
     const checks = [

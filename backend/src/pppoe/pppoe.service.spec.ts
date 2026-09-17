@@ -14,6 +14,7 @@ describe('PPPoE billing and account deactivation', () => {
     const invoice = { create: vi.fn().mockResolvedValue({}) };
     const tx = {
       paymentPromise: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      radacct: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
       invoice,
       pppoeAccount: {
         aggregate: vi.fn().mockResolvedValue({ _max: { customerNumber: null } }),
@@ -29,7 +30,7 @@ describe('PPPoE billing and account deactivation', () => {
       $transaction: vi.fn().mockImplementation(async (action) => { const result = await action(tx); committed = true; return result; }),
     };
     const radius = { sync: vi.fn().mockResolvedValue(undefined) };
-    const secrets = { encrypt: () => 'encrypted' };
+    const secrets = { encrypt: () => 'encrypted', decrypt: () => 'password' };
     const network = { disconnect: vi.fn().mockImplementation(async () => {
       expect(committed).toBe(true); // Aksi router dijalankan setelah perubahan RADIUS tersimpan.
       return { completed: 1, warnings: [] };
