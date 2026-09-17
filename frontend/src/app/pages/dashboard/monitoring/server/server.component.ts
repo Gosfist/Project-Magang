@@ -41,6 +41,9 @@ export class ServerMonitoringComponent implements OnInit {
   private activityController: AbortController | null = null;
   private lastActivityFetch = 0;
 
+  // Tabs: default 'log'
+  activeTab = signal<'log' | 'cpu' | 'ram' | 'network'>('log');
+
   // Charts
   cpuPeriod: 'daily' | 'monthly' | 'yearly' = 'daily';
   cpuItems = signal<ChartStatItem[]>([]);

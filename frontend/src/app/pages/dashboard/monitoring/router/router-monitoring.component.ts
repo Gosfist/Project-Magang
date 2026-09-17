@@ -3,7 +3,7 @@ import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../core/services/api.service';
 import { StatsChartComponent, ChartStatItem } from '../../../../shared/components/stats-chart/stats-chart.component';
-import { LucideRefreshCw, LucideRouter, LucideServer } from '@lucide/angular';
+import { LucideRefreshCw, LucideRouter } from '@lucide/angular';
 
 interface RouterOption {
   id: number;
@@ -32,7 +32,14 @@ interface MikrotikLogItem {
 @Component({
   selector: 'app-router-monitoring',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe, StatsChartComponent, LucideRefreshCw, LucideRouter],
+  imports: [
+    CommonModule,
+    FormsModule,
+    DecimalPipe,
+    StatsChartComponent,
+    LucideRefreshCw,
+    LucideRouter,
+  ],
   templateUrl: './router-monitoring.component.html',
   styleUrl: './router-monitoring.component.css',
 })
@@ -42,6 +49,9 @@ export class RouterMonitoringComponent implements OnInit {
 
   routerOptions = signal<RouterOption[]>([]);
   selectedRouterId = signal<number | null>(null);
+
+  // Tab: default 'log'
+  activeTab = signal<'log' | 'cpu' | 'ram' | 'network'>('log');
 
   realtime = signal<RouterRealtimeData | null>(null);
   realtimeLoading = signal(false);
@@ -65,15 +75,18 @@ export class RouterMonitoringComponent implements OnInit {
   logsLoading = signal(false);
   logsError = signal('');
 
-  private pollInterval: any = null;
+  private pollTimeout: any = null;
+  private tickerInterval: any = null;
+  private destroyed = false;
+  private isPolling = false;
 
   ngOnInit(): void {
     this.loadRouterOptions();
 
     this.destroyRef.onDestroy(() => {
-      if (this.pollInterval) {
-        clearInterval(this.pollInterval);
-      }
+      this.destroyed = true;
+      if (this.pollTimeout) clearTimeout(this.pollTimeout);
+      if (this.tickerInterval) clearInterval(this.tickerInterval);
     });
   }
 
@@ -99,13 +112,46 @@ export class RouterMonitoringComponent implements OnInit {
     this.loadNetStats();
     this.loadLogs();
 
-    if (this.pollInterval) {
-      clearInterval(this.pollInterval);
-    }
-    // Refresh data realtime setiap 10 detik
-    this.pollInterval = setInterval(() => {
-      this.loadRealtime(true);
-    }, 10000);
+    this.startRealtimePolling();
+  }
+
+  private startRealtimePolling(): void {
+    if (this.pollTimeout) clearTimeout(this.pollTimeout);
+    if (this.tickerInterval) clearInterval(this.tickerInterval);
+
+    // Ticker lokal 1 detik agar detik uptime berjalan realtime setiap detik
+    this.tickerInterval = setInterval(() => {
+      const current = this.realtime();
+      if (current) {
+        this.realtime.update((c) => (c ? { ...c, uptime: c.uptime + 1 } : null));
+      }
+    }, 1000);
+
+    // Poller per 1 detik mengambil data router dari backend
+    const poll = () => {
+      if (this.destroyed || !this.selectedRouterId()) return;
+      if (!this.isPolling) {
+        this.isPolling = true;
+        const id = this.selectedRouterId()!;
+        this.api.get<RouterRealtimeData>(`/monitoring/router/${id}/realtime`).subscribe({
+          next: (data) => {
+            this.realtime.set(data);
+            this.isPolling = false;
+            if (!this.destroyed) {
+              this.pollTimeout = setTimeout(poll, 1000);
+            }
+          },
+          error: () => {
+            this.isPolling = false;
+            if (!this.destroyed) {
+              this.pollTimeout = setTimeout(poll, 2500);
+            }
+          },
+        });
+      }
+    };
+
+    this.pollTimeout = setTimeout(poll, 1000);
   }
 
   loadRealtime(silent = false): void {

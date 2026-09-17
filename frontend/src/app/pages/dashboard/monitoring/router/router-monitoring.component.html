@@ -2,7 +2,7 @@
   <!-- Top Control Bar -->
   <div class="card flex flex-wrap items-center justify-between gap-4 p-4">
     <div class="flex items-center gap-3">
-      <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+      <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
         <svg lucideRouter [size]="22"></svg>
       </div>
       <div>
@@ -59,7 +59,7 @@
         <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500">Beban CPU</h3>
         <p class="text-2xl font-bold text-blue-600">{{ r.cpu.percent }}%</p>
         <div class="h-2 overflow-hidden rounded bg-slate-100">
-          <div class="h-full bg-blue-500 transition-all duration-500" [style.width.%]="r.cpu.percent"></div>
+          <div class="h-full bg-blue-500 transition-all duration-300" [style.width.%]="r.cpu.percent"></div>
         </div>
         <p class="truncate text-xs text-slate-500" [title]="r.cpu.model">
           {{ r.cpu.cores }} core · {{ r.cpu.model }}
@@ -71,7 +71,7 @@
         <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500">RAM</h3>
         <p class="text-2xl font-bold text-blue-600">{{ r.memory.percent }}%</p>
         <div class="h-2 overflow-hidden rounded bg-slate-100">
-          <div class="h-full bg-blue-500 transition-all duration-500" [style.width.%]="r.memory.percent"></div>
+          <div class="h-full bg-blue-500 transition-all duration-300" [style.width.%]="r.memory.percent"></div>
         </div>
         <p class="text-xs text-slate-500">
           {{ formatBytes(r.memory.used) }} / {{ formatBytes(r.memory.total) }}
@@ -84,11 +84,11 @@
         <div class="grid grid-cols-2 gap-2">
           <div>
             <p class="text-[11px] text-slate-500">Download</p>
-            <p class="font-bold text-sky-600">{{ r.network.download | number: '1.2-2' }} <span class="text-xs font-normal">M</span></p>
+            <p class="font-bold text-slate-900">{{ r.network.download | number: '1.2-2' }} <span class="text-xs font-normal text-slate-500">M</span></p>
           </div>
           <div>
             <p class="text-[11px] text-slate-500">Upload</p>
-            <p class="font-bold text-rose-500">{{ r.network.upload | number: '1.2-2' }} <span class="text-xs font-normal">M</span></p>
+            <p class="font-bold text-rose-600">{{ r.network.upload | number: '1.2-2' }} <span class="text-xs font-normal text-slate-500">M</span></p>
           </div>
         </div>
         <p class="text-[10px] text-slate-400">Total agregat interface utama</p>
@@ -104,8 +104,95 @@
     </div>
   }
 
-  <!-- Section 1: Grafik Historis CPU -->
-  <div class="space-y-6">
+  <!-- Tab Buttons -->
+  <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+    <button
+      type="button"
+      [class]="activeTab() === 'log' ? 'btn-primary text-xs px-4 py-2' : 'btn-secondary text-xs px-4 py-2'"
+      (click)="activeTab.set('log')"
+    >
+      Log MikroTik
+    </button>
+    <button
+      type="button"
+      [class]="activeTab() === 'cpu' ? 'btn-primary text-xs px-4 py-2' : 'btn-secondary text-xs px-4 py-2'"
+      (click)="activeTab.set('cpu')"
+    >
+      Grafik CPU
+    </button>
+    <button
+      type="button"
+      [class]="activeTab() === 'ram' ? 'btn-primary text-xs px-4 py-2' : 'btn-secondary text-xs px-4 py-2'"
+      (click)="activeTab.set('ram')"
+    >
+      Grafik RAM
+    </button>
+    <button
+      type="button"
+      [class]="activeTab() === 'network' ? 'btn-primary text-xs px-4 py-2' : 'btn-secondary text-xs px-4 py-2'"
+      (click)="activeTab.set('network')"
+    >
+      Grafik Network
+    </button>
+  </div>
+
+  <!-- Tab 1: Log MikroTik (Default) -->
+  @if (activeTab() === 'log') {
+    <section class="card flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between border-b border-slate-200 p-4">
+        <div>
+          <h3 class="font-bold text-slate-900">Log MikroTik</h3>
+          <p class="text-xs text-slate-500">100 catatan log sistem terbaru dari perangkat</p>
+        </div>
+        <button
+          class="btn-secondary text-xs flex items-center gap-1.5 px-3 py-1.5"
+          [disabled]="logsLoading() || !selectedRouterId()"
+          (click)="loadLogs()"
+        >
+          <svg lucideRefreshCw [size]="14" [class.animate-spin]="logsLoading()"></svg>
+          <span>Muat Ulang Log</span>
+        </button>
+      </div>
+
+      @if (logsError()) {
+        <div class="p-4">
+          <p class="rounded-lg bg-red-50 p-3 text-xs text-red-600">{{ logsError() }}</p>
+        </div>
+      }
+
+      <div class="max-h-96 overflow-y-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 font-semibold text-slate-600">
+            <tr>
+              <th class="w-32 px-4 py-2.5">Waktu</th>
+              <th class="w-36 px-4 py-2.5">Topics</th>
+              <th class="px-4 py-2.5">Pesan</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-slate-700">
+            @for (log of logs(); track log.id) {
+              <tr class="hover:bg-slate-50/80">
+                <td class="whitespace-nowrap px-4 py-2 font-mono text-[11px] text-slate-500">{{ log.time }}</td>
+                <td class="px-4 py-2">
+                  <span class="rounded bg-slate-100 px-2 py-0.5 font-mono text-[10px] text-slate-600">{{ log.topics }}</span>
+                </td>
+                <td class="px-4 py-2 font-mono text-[11px] text-slate-900">{{ log.message }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3" class="px-4 py-8 text-center text-slate-400">
+                  {{ logsLoading() ? 'Sedang mengambil log dari router...' : 'Belum ada log tersedia.' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  <!-- Tab 2: Grafik CPU -->
+  @if (activeTab() === 'cpu') {
     <app-stats-chart
       title="Grafik Beban CPU Router (%)"
       type="cpu"
@@ -114,8 +201,10 @@
       [loading]="cpuLoading()"
       (periodChange)="onCpuPeriodChange($event)"
     ></app-stats-chart>
+  }
 
-    <!-- Section 2: Grafik Historis RAM -->
+  <!-- Tab 3: Grafik RAM -->
+  @if (activeTab() === 'ram') {
     <app-stats-chart
       title="Grafik Penggunaan RAM Router (%)"
       type="ram"
@@ -124,8 +213,10 @@
       [loading]="ramLoading()"
       (periodChange)="onRamPeriodChange($event)"
     ></app-stats-chart>
+  }
 
-    <!-- Section 3: Grafik Historis Network -->
+  <!-- Tab 4: Grafik Network -->
+  @if (activeTab() === 'network') {
     <app-stats-chart
       title="Grafik Traffic Jaringan Router (Mbps)"
       type="network"
@@ -134,58 +225,5 @@
       [loading]="netLoading()"
       (periodChange)="onNetPeriodChange($event)"
     ></app-stats-chart>
-  </div>
-
-  <!-- Section 4: Log MikroTik -->
-  <section class="card flex flex-col overflow-hidden">
-    <div class="flex items-center justify-between border-b border-slate-200 p-4">
-      <div>
-        <h3 class="font-bold text-slate-900">Log MikroTik</h3>
-        <p class="text-xs text-slate-500">100 catatan log sistem terbaru dari perangkat</p>
-      </div>
-      <button
-        class="btn-secondary text-xs flex items-center gap-1.5 px-3 py-1.5"
-        [disabled]="logsLoading() || !selectedRouterId()"
-        (click)="loadLogs()"
-      >
-        <svg lucideRefreshCw [size]="14" [class.animate-spin]="logsLoading()"></svg>
-        <span>Muat Ulang Log</span>
-      </button>
-    </div>
-
-    @if (logsError()) {
-      <div class="p-4">
-        <p class="rounded-lg bg-red-50 p-3 text-xs text-red-600">{{ logsError() }}</p>
-      </div>
-    }
-
-    <div class="max-h-96 overflow-y-auto">
-      <table class="w-full text-left text-xs">
-        <thead class="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 font-semibold text-slate-600">
-          <tr>
-            <th class="w-32 px-4 py-2.5">Waktu</th>
-            <th class="w-36 px-4 py-2.5">Topics</th>
-            <th class="px-4 py-2.5">Pesan</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100 text-slate-700">
-          @for (log of logs(); track log.id) {
-            <tr class="hover:bg-slate-50/80">
-              <td class="whitespace-nowrap px-4 py-2 font-mono text-[11px] text-slate-500">{{ log.time }}</td>
-              <td class="px-4 py-2">
-                <span class="rounded bg-slate-100 px-2 py-0.5 font-mono text-[10px] text-slate-600">{{ log.topics }}</span>
-              </td>
-              <td class="px-4 py-2 font-mono text-[11px] text-slate-900">{{ log.message }}</td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="3" class="px-4 py-8 text-center text-slate-400">
-                {{ logsLoading() ? 'Sedang mengambil log dari router...' : 'Belum ada log tersedia.' }}
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  </section>
+  }
 </div>

@@ -100,18 +100,18 @@ export class StatsChartComponent implements AfterViewInit, OnChanges, OnDestroy 
 
     if (this.type === 'cpu') {
       const gradient = ctx.createLinearGradient(0, 0, 0, 240);
-      gradient.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
-      gradient.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+      gradient.addColorStop(0, 'rgba(15, 23, 42, 0.12)');
+      gradient.addColorStop(1, 'rgba(15, 23, 42, 0.0)');
 
       datasets = [
         {
           label: 'CPU (%)',
           data: this.items.map((i) => i.cpuPercent),
-          borderColor: '#38bdf8',
+          borderColor: '#0f172a',
           backgroundColor: gradient,
           fill: true,
           tension: 0.35,
-          pointBackgroundColor: '#38bdf8',
+          pointBackgroundColor: '#0f172a',
           pointBorderColor: '#ffffff',
           pointBorderWidth: 2,
           pointRadius: 4,
@@ -120,18 +120,18 @@ export class StatsChartComponent implements AfterViewInit, OnChanges, OnDestroy 
       ];
     } else if (this.type === 'ram') {
       const gradient = ctx.createLinearGradient(0, 0, 0, 240);
-      gradient.addColorStop(0, 'rgba(168, 85, 247, 0.4)');
-      gradient.addColorStop(1, 'rgba(168, 85, 247, 0.0)');
+      gradient.addColorStop(0, 'rgba(37, 99, 235, 0.12)');
+      gradient.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
 
       datasets = [
         {
           label: 'RAM (%)',
           data: this.items.map((i) => i.memPercent),
-          borderColor: '#a855f7',
+          borderColor: '#1e40af',
           backgroundColor: gradient,
           fill: true,
           tension: 0.35,
-          pointBackgroundColor: '#a855f7',
+          pointBackgroundColor: '#1e40af',
           pointBorderColor: '#ffffff',
           pointBorderWidth: 2,
           pointRadius: 4,
@@ -143,21 +143,21 @@ export class StatsChartComponent implements AfterViewInit, OnChanges, OnDestroy 
         {
           label: 'Download (Mbps)',
           data: this.items.map((i) => i.netDown),
-          borderColor: '#38bdf8',
-          backgroundColor: 'rgba(56, 189, 248, 0.1)',
+          borderColor: '#0f172a',
+          backgroundColor: 'rgba(15, 23, 42, 0.05)',
           fill: false,
           tension: 0.35,
-          pointBackgroundColor: '#38bdf8',
+          pointBackgroundColor: '#0f172a',
           pointRadius: 4,
         },
         {
           label: 'Upload (Mbps)',
           data: this.items.map((i) => i.netUp),
-          borderColor: '#f43f5e',
-          backgroundColor: 'rgba(244, 63, 94, 0.1)',
+          borderColor: '#dc2626',
+          backgroundColor: 'rgba(220, 38, 38, 0.05)',
           fill: false,
           tension: 0.35,
-          pointBackgroundColor: '#f43f5e',
+          pointBackgroundColor: '#dc2626',
           pointRadius: 4,
         },
       ];
@@ -180,16 +180,16 @@ export class StatsChartComponent implements AfterViewInit, OnChanges, OnDestroy 
           legend: {
             display: this.type === 'network',
             labels: {
-              color: '#94a3b8',
-              font: { size: 12 },
+              color: '#475569',
+              font: { size: 12, weight: 500 },
               usePointStyle: true,
             },
           },
           tooltip: {
             backgroundColor: '#0f172a',
-            titleColor: '#f8fafc',
-            bodyColor: '#cbd5e1',
-            borderColor: '#334155',
+            titleColor: '#ffffff',
+            bodyColor: '#e2e8f0',
+            borderColor: '#e2e8f0',
             borderWidth: 1,
             padding: 10,
             cornerRadius: 8,
@@ -198,10 +198,10 @@ export class StatsChartComponent implements AfterViewInit, OnChanges, OnDestroy 
         scales: {
           x: {
             grid: {
-              color: 'rgba(51, 65, 85, 0.4)',
+              color: '#f1f5f9',
             },
             ticks: {
-              color: '#94a3b8',
+              color: '#64748b',
               font: { size: 11 },
               maxRotation: 45,
             },
@@ -210,10 +210,10 @@ export class StatsChartComponent implements AfterViewInit, OnChanges, OnDestroy 
             beginAtZero: true,
             max: this.type === 'cpu' || this.type === 'ram' ? 100 : undefined,
             grid: {
-              color: 'rgba(51, 65, 85, 0.4)',
+              color: '#f1f5f9',
             },
             ticks: {
-              color: '#94a3b8',
+              color: '#64748b',
               font: { size: 11 },
               callback: (value) => (this.type === 'network' ? `${value} M` : `${value}%`),
             },
