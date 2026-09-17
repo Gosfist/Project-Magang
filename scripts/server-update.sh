@@ -68,6 +68,22 @@ if [[ "$MODE" == "all" || "$MODE" == "bot" ]]; then
   log "Install dependency bot WhatsApp"
   install_node_modules "$BOTWA_DIR" "Bot WhatsApp"
 
+  log "Sinkronisasi environment bot WhatsApp"
+  if [[ ! -f "$BOTWA_DIR/.env" ]] && [[ -f "$BOTWA_DIR/.env.example" ]]; then
+    cp "$BOTWA_DIR/.env.example" "$BOTWA_DIR/.env"
+  fi
+
+  if [[ -f "$BACKEND_DIR/.env" ]] && [[ -f "$BOTWA_DIR/.env" ]]; then
+    DB_URL=$(grep -E '^DATABASE_URL=' "$BACKEND_DIR/.env" | head -n 1 | cut -d '=' -f2- | tr -d '"' | tr -d "'" || true)
+    if [[ -n "$DB_URL" ]]; then
+      if grep -q '^DATABASE_URL=' "$BOTWA_DIR/.env"; then
+        sed -i "s|^DATABASE_URL=.*|DATABASE_URL=\"$DB_URL\"|" "$BOTWA_DIR/.env"
+      else
+        echo "DATABASE_URL=\"$DB_URL\"" >> "$BOTWA_DIR/.env"
+      fi
+    fi
+  fi
+
   log "Setup dan restart bot WhatsApp"
   if [[ -f "$BOTWA_DIR/unzanet-botwa.service" ]]; then
     sudo cp "$BOTWA_DIR/unzanet-botwa.service" /etc/systemd/system/

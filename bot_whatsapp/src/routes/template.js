@@ -25,7 +25,13 @@ router.get('/templates', async (req, res) => {
       registration: settings.get('wa_template_registration') || DEFAULT_REGISTRATION_TEMPLATE,
     });
   } catch (err) {
-    res.status(500).json({ message: 'Gagal memuat template.' });
+    console.error('[Template GET Error]:', err.message);
+    // Fallback template agar halaman tetap bisa dibuka tanpa error 500
+    res.json({
+      enabled: false,
+      registration: DEFAULT_REGISTRATION_TEMPLATE,
+      warning: 'Gagal membaca database: ' + (err.message || String(err)),
+    });
   }
 });
 
@@ -47,7 +53,8 @@ router.patch('/templates', async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ message: 'Gagal menyimpan template.' });
+    console.error('[Template PATCH Error]:', err.message);
+    res.status(500).json({ message: 'Gagal menyimpan template: ' + (err.message || 'Koneksi database bermasalah.') });
   }
 });
 
