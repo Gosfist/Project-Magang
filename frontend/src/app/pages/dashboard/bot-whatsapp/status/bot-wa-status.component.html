@@ -5,6 +5,11 @@
         <h2 class="text-lg font-semibold">Login Bot Wa</h2>
         <p class="mt-1 text-sm text-slate-500">Kelola koneksi WhatsApp untuk notifikasi pelanggan.</p>
       </div>
+      @if (waStatus().status === 'disconnected') {
+        <button class="btn-primary" (click)="connect()" [disabled]="actionLoading()">
+          {{ actionLoading() ? 'Menghubungkan...' : 'Hubungkan WhatsApp' }}
+        </button>
+      }
     </div>
   </div>
 
@@ -22,13 +27,32 @@
   <!-- Connected Info -->
   @if (waStatus().status === 'connected') {
     <div class="card space-y-4 p-5 sm:p-6">
-      <div class="flex items-center gap-3">
-        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+          </div>
+          <div>
+            <p class="font-semibold text-green-700">WhatsApp Terhubung</p>
+            <p class="text-sm text-slate-500">Bot siap mengirim notifikasi ke pelanggan.</p>
+          </div>
         </div>
-        <div>
-          <p class="font-semibold text-green-700">WhatsApp Terhubung</p>
-          <p class="text-sm text-slate-500">Bot siap mengirim notifikasi ke pelanggan.</p>
+
+        <div class="flex items-center gap-2">
+          <button
+            class="btn-secondary text-xs sm:text-sm px-3.5 py-2"
+            (click)="restart()"
+            [disabled]="actionLoading()"
+          >
+            {{ actionLoading() ? 'Memproses...' : 'Hubungkan Ulang' }}
+          </button>
+          <button
+            class="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2 text-xs sm:text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+            (click)="disconnect()"
+            [disabled]="actionLoading()"
+          >
+            {{ actionLoading() ? 'Memproses...' : 'Putuskan Koneksi' }}
+          </button>
         </div>
       </div>
 
@@ -85,28 +109,6 @@
   @if (waStatus().status === 'disconnected' && waStatus().message) {
     <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
       {{ waStatus().message }}
-    </div>
-  }
-
-  <!-- Actions -->
-  @if (waStatus().status === 'connected' || waStatus().status === 'disconnected') {
-    <div class="card p-5 sm:p-6">
-      <h3 class="mb-4 text-base font-semibold">Aksi</h3>
-      <div class="flex flex-wrap gap-3">
-        @if (waStatus().status === 'disconnected') {
-          <button class="btn-primary" (click)="connect()" [disabled]="actionLoading()">
-            {{ actionLoading() ? 'Menghubungkan...' : 'Hubungkan WhatsApp' }}
-          </button>
-        }
-        @if (waStatus().status === 'connected') {
-          <button class="btn-secondary" (click)="restart()" [disabled]="actionLoading()">
-            {{ actionLoading() ? 'Memproses...' : 'Hubungkan Ulang' }}
-          </button>
-          <button class="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50" (click)="disconnect()" [disabled]="actionLoading()">
-            {{ actionLoading() ? 'Memproses...' : 'Putuskan Koneksi' }}
-          </button>
-        }
-      </div>
     </div>
   }
 
