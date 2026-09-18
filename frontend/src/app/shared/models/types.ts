@@ -1,4 +1,4 @@
-export type User = { id: string; name: string; email: string; phone?: string | null; role: 'admin' | 'petugas' | 'finance' | 'sales' | 'pengepul'; status: 'active' | 'inactive' };
+export type User = { id: string; name: string; email: string; phone?: string | null; role: 'admin' | 'petugas' | 'finance' | 'sales' | 'kolektor'; status: 'active' | 'inactive' };
 export type PageMeta = { currentPage: number; lastPage: number; perPage: number; total: number };
 export type MainCoreNode = {
   id: string; parentId: string | null; parentPortOut: number | null; namaTitik: string;

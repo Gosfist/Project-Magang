@@ -91,13 +91,13 @@
             </td>
             <td>
               <span class="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
-                {{ t.category }}
+                {{ formatCategory(t.category) }}
               </span>
             </td>
             <td class="font-medium text-slate-900 max-w-sm">
               <p class="truncate">{{ t.description }}</p>
               @if (t.referenceType) {
-                <span class="text-[11px] text-slate-400">Ref: {{ t.referenceType }}</span>
+                <span class="text-[11px] text-slate-400">Ref: {{ formatReference(t.referenceType) }}</span>
               }
             </td>
             <td
@@ -165,7 +165,7 @@
             [(ngModel)]="form.category"
             name="category"
             required
-            placeholder="Cth: OPERASIONAL, GAJI, DLL"
+            placeholder="Cth: Operasional, Gaji, dll"
             class="input"
           />
         </div>

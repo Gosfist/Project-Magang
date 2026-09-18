@@ -96,15 +96,15 @@ export class AreaService {
     await this.findArea(areaId);
     const user = await this.prisma.user.findUnique({ where: { id: BigInt(dto.userId) } });
     if (!user) throw new NotFoundException('Pengguna tidak ditemukan.');
-    if (user.role !== 'pengepul') throw new BadRequestException('Hanya pengguna dengan role pengepul yang dapat ditugaskan ke area.');
+    if (user.role !== 'kolektor') throw new BadRequestException('Hanya pengguna dengan role kolektor yang dapat ditugaskan ke area.');
     try {
       await this.prisma.areaCollector.create({
         data: { areaId: BigInt(areaId), userId: BigInt(dto.userId) },
       });
-      return { message: `Pengepul ${user.name} berhasil ditugaskan ke area.` };
+      return { message: `Kolektor ${user.name} berhasil ditugaskan ke area.` };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('Pengepul sudah ditugaskan ke area ini.');
+        throw new ConflictException('Kolektor sudah ditugaskan ke area ini.');
       }
       throw error;
     }
@@ -114,13 +114,13 @@ export class AreaService {
     const deleted = await this.prisma.areaCollector.deleteMany({
       where: { areaId: BigInt(areaId), userId: BigInt(userId) },
     });
-    if (deleted.count === 0) throw new NotFoundException('Pengepul tidak ditemukan di area ini.');
-    return { message: 'Pengepul berhasil dihapus dari area.' };
+    if (deleted.count === 0) throw new NotFoundException('Kolektor tidak ditemukan di area ini.');
+    return { message: 'Kolektor berhasil dihapus dari area.' };
   }
 
   async collectorOptions() {
     const data = await this.prisma.user.findMany({
-      where: { role: 'pengepul', status: 'active' },
+      where: { role: 'kolektor', status: 'active' },
       select: { id: true, name: true, email: true, phone: true },
       orderBy: { name: 'asc' },
     });

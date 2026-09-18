@@ -173,4 +173,16 @@ export class FinanceTransactionsComponent implements OnInit {
       timeZone: 'Asia/Jakarta',
     }).format(new Date(date));
   }
+
+  formatCategory(cat?: string): string {
+    if (!cat) return '-';
+    if (cat === 'SETORAN_KOLEKTOR') return 'Setoran Kolektor';
+    return cat;
+  }
+
+  formatReference(ref?: string): string {
+    if (!ref) return '-';
+    if (ref === 'DEPOSIT') return 'Setoran Kolektor';
+    return ref;
+  }
 }

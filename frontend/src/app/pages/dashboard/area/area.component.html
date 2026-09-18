@@ -24,7 +24,7 @@
         <tr>
           <th>Nama Area</th>
           <th>Deskripsi</th>
-          <th>Pengepul Ditugaskan</th>
+          <th>Kolektor Ditugaskan</th>
           <th class="text-center">Jumlah Pelanggan</th>
           @if (auth.isAdmin()) {
             <th class="text-right">Aksi</th>
@@ -60,7 +60,7 @@
                         type="button"
                         (click)="removeCollector(area, c.userId)"
                         class="ml-0.5 text-slate-400 hover:text-red-600"
-                        title="Hapus pengepul"
+                        title="Hapus kolektor"
                       >
                         <svg lucideX [size]="12"></svg>
                       </button>
@@ -68,16 +68,16 @@
                   </span>
                 }
                 @if (!area.collectors || area.collectors.length === 0) {
-                  <span class="text-xs text-slate-400 italic">Belum ada pengepul</span>
+                  <span class="text-xs text-slate-400 italic">Belum ada kolektor</span>
                 }
                 @if (auth.isAdmin()) {
                   <button
                     type="button"
                     (click)="openAssignModal(area)"
                     class="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2 py-0.5 text-xs text-slate-500 hover:border-slate-800 hover:text-slate-900 transition-colors"
-                    title="Tambah pengepul ke area ini"
+                    title="Tambah kolektor ke area ini"
                   >
-                    <svg lucideUserPlus [size]="12"></svg> + Pengepul
+                    <svg lucideUserPlus [size]="12"></svg> + Kolektor
                   </button>
                 }
               </div>
@@ -160,23 +160,23 @@
   <!-- Assign Collector Modal -->
   <app-modal
     [open]="assignModalOpen()"
-    [title]="'Tugaskan Pengepul: ' + (assignArea?.name || '')"
+    [title]="'Tugaskan Kolektor: ' + (assignArea?.name || '')"
     (closeModal)="assignModalOpen.set(false)"
   >
     <div class="space-y-4">
       <p class="text-xs text-slate-500">
-        Pilih pengguna dengan role <strong>pengepul</strong> untuk ditugaskan memungut tagihan di area ini.
+        Pilih pengguna dengan role <strong>kolektor</strong> untuk ditugaskan memungut tagihan di area ini.
       </p>
 
       @if (collectorOptions().length === 0) {
         <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-          Tidak ada akun role pengepul yang tersedia. Tambahkan user dengan peran "Pengepul" terlebih dahulu di menu <strong>Data Petugas</strong>.
+          Tidak ada akun role kolektor yang tersedia. Tambahkan user dengan peran "Kolektor" terlebih dahulu di menu <strong>Data Petugas</strong>.
         </div>
       } @else {
         <div>
-          <label class="label">Pilih Pengepul</label>
+          <label class="label">Pilih Kolektor</label>
           <select class="input" [(ngModel)]="selectedCollectorId">
-            <option value="">-- Pilih Pengepul --</option>
+            <option value="">-- Pilih Kolektor --</option>
             @for (c of collectorOptions(); track c.id) {
               <option [value]="c.id">{{ c.name }} ({{ c.email }})</option>
             }
@@ -192,7 +192,7 @@
           [disabled]="!selectedCollectorId || assigning()"
           (click)="assignCollector()"
         >
-          {{ assigning() ? 'Menugaskan...' : 'Tugaskan Pengepul' }}
+          {{ assigning() ? 'Menugaskan...' : 'Tugaskan Kolektor' }}
         </button>
       </div>
     </div>

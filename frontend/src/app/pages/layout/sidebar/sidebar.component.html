@@ -45,7 +45,7 @@
         (click)="financeOpen.set(!financeOpen())"
       >
         <svg lucideDollarSign [size]="20"></svg>
-        <span class="flex-1 text-left">Finance</span>
+        <span class="flex-1 text-left">Keuangan</span>
         <svg
           lucideChevronDown
           [size]="16"
@@ -65,7 +65,7 @@
           }
         </div>
       }
-    } @else if (auth.isPengepul()) {
+    } @else if (auth.isKolektor()) {
       <a
         routerLink="/dashboard/finance/setoran"
         routerLinkActive="bg-white/15 text-white"
@@ -76,8 +76,8 @@
       </a>
     }
 
-    <!-- Area & Pengepul -->
-    @if (auth.hasRole('admin', 'finance', 'sales', 'pengepul', 'petugas')) {
+    <!-- Area & Kolektor -->
+    @if (auth.hasRole('admin', 'finance', 'sales', 'kolektor', 'petugas')) {
       <a
         routerLink="/dashboard/area"
         routerLinkActive="bg-white/15 text-white"
@@ -292,7 +292,7 @@
       >
       <div class="min-w-0 flex-1">
         <p class="truncate text-sm font-medium">{{ auth.user()!.name }}</p>
-        <p class="text-xs capitalize text-slate-400">{{ auth.user()!.role }}</p>
+        <p class="text-xs text-slate-400">{{ roleLabel(auth.user()!.role) }}</p>
       </div>
       <button
         (click)="auth.logout()"

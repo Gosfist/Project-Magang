@@ -38,6 +38,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard/bot-whatsapp/logs': 'Log Notifikasi Bot WhatsApp',
     '/dashboard/tools/kalkulator-redaman': 'Kalkulator Redaman',
     '/dashboard/tools/pengaturan': 'Pengaturan',
+    '/dashboard/finance/ringkasan': 'Ringkasan Keuangan',
+    '/dashboard/finance/transaksi': 'Transaksi Keuangan',
+    '/dashboard/finance/setoran': 'Setoran Kolektor',
+    '/dashboard/area': 'Data Area',
   };
 
   title = signal('Dasbor');

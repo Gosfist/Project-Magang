@@ -100,7 +100,7 @@ export const routes: Routes = [
           import('./pages/dashboard/finance/deposits/finance-deposits.component').then(
             (m) => m.FinanceDepositsComponent,
           ),
-        canActivate: [roleGuard('admin', 'finance', 'pengepul')],
+        canActivate: [roleGuard('admin', 'finance', 'kolektor')],
       },
 
       // Area
@@ -110,7 +110,7 @@ export const routes: Routes = [
           import('./pages/dashboard/area/area.component').then(
             (m) => m.AreaComponent,
           ),
-        canActivate: [roleGuard('admin', 'finance', 'sales', 'pengepul', 'petugas')],
+        canActivate: [roleGuard('admin', 'finance', 'sales', 'kolektor', 'petugas')],
       },
     ],
   },

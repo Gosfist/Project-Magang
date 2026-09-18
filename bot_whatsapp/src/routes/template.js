@@ -34,13 +34,13 @@ Abaikan pesan ini jika Anda sudah melakukan pembayaran. Terima kasih.
 
 const DEFAULT_DEPOSIT_COLLECTOR_TEMPLATE = `Halo {nama}! 📝
 
-Kami informasikan bahwa tagihan Anda telah disetor ke pengepul kami.
+Kami informasikan bahwa tagihan Anda telah disetor ke kolektor kami.
 
 📋 *Detail Setoran:*
 • Nomor Pelanggan: {nomor_pelanggan}
 • Jumlah: {jumlah}
 • Tanggal Setor: {tanggal_setor}
-• Pengepul: {nama_pengepul}
+• Kolektor: {nama_pengepul}
 • Area: {area}
 
 Setoran Anda sedang diverifikasi oleh tim kami. Anda akan menerima notifikasi setelah pembayaran dikonfirmasi.

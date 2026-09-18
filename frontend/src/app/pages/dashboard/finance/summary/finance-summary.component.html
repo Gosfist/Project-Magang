@@ -1,22 +1,31 @@
 <div class="space-y-4">
   <!-- Filter Bar -->
-  <div class="card flex flex-wrap items-center justify-between gap-3 p-4">
-    <div>
-      <h2 class="text-base font-bold text-slate-900">Ringkasan Keuangan</h2>
-      <p class="text-xs text-slate-500">Laporan pemasukan, pengeluaran, dan saldo kas</p>
-    </div>
-    <div class="flex flex-wrap items-center gap-2">
-      <select [(ngModel)]="selectedMonth" (ngModelChange)="load()" class="input w-auto">
+  <div class="card p-4">
+    <div class="grid gap-3 sm:grid-cols-[1fr_160px_120px_auto]">
+      <!-- Title / info -->
+      <div class="flex items-center gap-2">
+        <div>
+          <h2 class="text-sm font-bold text-slate-900">Ringkasan Keuangan</h2>
+          <p class="text-xs text-slate-500">Laporan pemasukan, pengeluaran, dan saldo kas</p>
+        </div>
+      </div>
+
+      <!-- Month select -->
+      <select [(ngModel)]="selectedMonth" (ngModelChange)="load()" class="input">
         @for (m of months; track m.value) {
           <option [value]="m.value">{{ m.label }}</option>
         }
       </select>
-      <select [(ngModel)]="selectedYear" (ngModelChange)="load()" class="input w-auto">
+
+      <!-- Year select -->
+      <select [(ngModel)]="selectedYear" (ngModelChange)="load()" class="input">
         @for (y of years; track y) {
           <option [value]="y">{{ y }}</option>
         }
       </select>
-      <a routerLink="/dashboard/finance/transaksi" class="btn-primary">
+
+      <!-- Action button -->
+      <a routerLink="/dashboard/finance/transaksi" class="btn-primary whitespace-nowrap">
         <svg lucidePlus [size]="16"></svg> Catat Transaksi
       </a>
     </div>
@@ -92,7 +101,7 @@
           {{ summary()!.pendingDeposits }}
         </p>
         <div class="mt-1 flex items-center justify-between">
-          <span class="text-xs text-slate-500">Dari setoran pengepul</span>
+          <span class="text-xs text-slate-500">Dari setoran kolektor</span>
           <a routerLink="/dashboard/finance/setoran" class="text-xs font-semibold text-slate-900 hover:underline">
             Periksa →
           </a>
@@ -155,7 +164,7 @@
               <svg lucideClock [size]="18"></svg>
             </span>
             <div>
-              <p class="text-sm font-semibold text-slate-900">Setoran Pengepul</p>
+              <p class="text-sm font-semibold text-slate-900">Setoran Kolektor</p>
               <p class="text-xs text-slate-500">Verifikasi & ACC setoran tagihan pelanggan</p>
             </div>
           </div>

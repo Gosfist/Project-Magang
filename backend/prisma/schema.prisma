@@ -13,7 +13,7 @@ model User {
   email    String @unique
   phone    String? @db.VarChar(30)
   password String
-  role     String @default("petugas") // admin, petugas, finance, sales, pengepul
+  role     String @default("petugas") // admin, petugas, finance, sales, kolektor
   status   String @default("active")
 
   areaCollectors      AreaCollector[]

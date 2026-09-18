@@ -90,4 +90,21 @@ export class UsersComponent implements OnInit {
       error: (e) => this.toast.set({ message: e.message, type: 'error' }),
     });
   }
+
+  roleLabel(role?: string): string {
+    switch (role) {
+      case 'admin':
+        return 'Admin';
+      case 'petugas':
+        return 'Petugas';
+      case 'finance':
+        return 'Keuangan';
+      case 'sales':
+        return 'Sales';
+      case 'kolektor':
+        return 'Kolektor';
+      default:
+        return role || '';
+    }
+  }
 }

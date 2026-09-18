@@ -177,14 +177,14 @@ export class DepositService {
         phone: account.phone,
         amount: dto.amount,
         depositDate: dto.depositDate,
-        collectorName: collector?.name || 'Pengepul',
+        collectorName: collector?.name || 'Kolektor',
         areaName: account.area?.name || '-',
       }).catch((err) => {
         this.logger.warn(`Notifikasi WA setoran error: ${err?.message || err}`);
       });
     }
 
-    return serialize({ message: 'Setoran berhasil dicatat. Menunggu konfirmasi dari tim finance.', deposit: { ...deposit, amount: Number(deposit.amount) } });
+    return serialize({ message: 'Setoran berhasil dicatat. Menunggu konfirmasi dari tim keuangan.', deposit: { ...deposit, amount: Number(deposit.amount) } });
   }
 
   async accept(id: string, acceptedByUserId: string) {
@@ -209,9 +209,9 @@ export class DepositService {
       await tx.financeTransaction.create({
         data: {
           type: 'INCOME',
-          category: 'SETORAN_PENGEPUL',
+          category: 'SETORAN_KOLEKTOR',
           amount: deposit.amount,
-          description: `Setoran dari pengepul ${deposit.collector.name} untuk pelanggan ${deposit.account.customerName}`,
+          description: `Setoran dari kolektor ${deposit.collector.name} untuk pelanggan ${deposit.account.customerName}`,
           referenceType: 'DEPOSIT',
           referenceId: deposit.id,
           createdByUserId: BigInt(acceptedByUserId),
@@ -261,7 +261,7 @@ export class DepositService {
 
     await this.prisma.collectorDeposit.update({
       where: { id: deposit.id },
-      data: { status: 'REJECTED', notes: dto.reason ? `Ditolak: ${dto.reason}` : 'Ditolak oleh finance.' },
+      data: { status: 'REJECTED', notes: dto.reason ? `Ditolak: ${dto.reason}` : 'Ditolak oleh bagian keuangan.' },
     });
 
     return { message: 'Setoran ditolak.' };

@@ -19,7 +19,7 @@
         <option value="REJECTED">Ditolak</option>
       </select>
 
-      @if (auth.hasRole('admin', 'pengepul')) {
+      @if (auth.hasRole('admin', 'kolektor')) {
         <button class="btn-primary whitespace-nowrap" (click)="openCreateModal()">
           <svg lucidePlus [size]="18"></svg> Catat Setoran
         </button>
@@ -35,7 +35,7 @@
           <th>Tanggal</th>
           <th>Pelanggan</th>
           <th>Area</th>
-          <th>Pengepul</th>
+          <th>Kolektor</th>
           <th>No. Tagihan</th>
           <th class="text-right">Jumlah</th>
           <th>Status</th>
@@ -264,7 +264,7 @@
   >
     <div class="space-y-4">
       <p class="text-sm text-slate-700">
-        Setoran dari pengepul <strong>{{ rejectingDeposit?.collector?.name }}</strong> untuk pelanggan
+        Setoran dari kolektor <strong>{{ rejectingDeposit?.collector?.name }}</strong> untuk pelanggan
         <strong>{{ rejectingDeposit?.account?.customerName }}</strong> sebesar
         <strong>{{ formatCurrency(rejectingDeposit?.amount || 0) }}</strong> akan ditolak.
       </p>

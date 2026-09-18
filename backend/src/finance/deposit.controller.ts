@@ -12,7 +12,7 @@ export class DepositController {
   constructor(private readonly deposits: DepositService) {}
 
   @Get()
-  @Roles('admin', 'finance', 'pengepul')
+  @Roles('admin', 'finance', 'kolektor')
   list(
     @Query('status') status = '',
     @Query('collectorId') collectorId = '',
@@ -25,13 +25,13 @@ export class DepositController {
   }
 
   @Get('unpaid-invoices')
-  @Roles('admin', 'finance', 'pengepul')
+  @Roles('admin', 'finance', 'kolektor')
   unpaidInvoices(@Query('search') search = '') {
     return this.deposits.unpaidInvoices(search.trim());
   }
 
   @Post()
-  @Roles('admin', 'finance', 'pengepul')
+  @Roles('admin', 'finance', 'kolektor')
   create(@Body() dto: CreateDepositDto, @Req() req: AuthRequest) {
     return this.deposits.create(dto, req.user.id);
   }

@@ -132,7 +132,7 @@ export class FinanceDepositsComponent implements OnInit {
         this.saving.set(false);
         this.createModalOpen.set(false);
         this.toast.set({
-          message: 'Setoran berhasil dicatat dan menunggu verifikasi (ACC) Finance.',
+          message: 'Setoran berhasil dicatat dan menunggu verifikasi (ACC) Keuangan.',
           type: 'success',
         });
         this.load();
@@ -145,7 +145,7 @@ export class FinanceDepositsComponent implements OnInit {
   }
 
   accept(d: CollectorDeposit) {
-    if (!confirm(`ACC setoran dari pengepul ${d.collector?.name} untuk pelanggan ${d.account?.customerName}? Tagihan akan otomatis lunas dan tercatat di pemasukan kas.`)) return;
+    if (!confirm(`ACC setoran dari kolektor ${d.collector?.name} untuk pelanggan ${d.account?.customerName}? Tagihan akan otomatis lunas dan tercatat di pemasukan kas.`)) return;
     this.api.patch(`/finance/deposits/${d.id}/accept`, {}).subscribe({
       next: () => {
         this.toast.set({ message: 'Setoran berhasil di-ACC dan dicatat ke pembukuan kas.', type: 'success' });

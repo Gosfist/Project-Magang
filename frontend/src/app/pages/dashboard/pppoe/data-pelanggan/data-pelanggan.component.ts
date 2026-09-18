@@ -435,7 +435,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   areaCollectorNames(area: any): string {
     if (!area.collectors || area.collectors.length === 0) return '';
     const names = area.collectors.map((c: any) => c.user?.name).filter(Boolean).join(', ');
-    return names ? ` (Pengepul: ${names})` : '';
+    return names ? ` (Kolektor: ${names})` : '';
   }
 
   selectedAreaInfo(): string {

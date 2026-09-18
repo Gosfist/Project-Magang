@@ -78,7 +78,7 @@ export class SidebarComponent implements OnInit {
   readonly financeLinks = [
     ['Ringkasan', '/dashboard/finance/ringkasan'],
     ['Transaksi', '/dashboard/finance/transaksi'],
-    ['Setoran Pengepul', '/dashboard/finance/setoran'],
+    ['Setoran Kolektor', '/dashboard/finance/setoran'],
   ];
 
   ngOnInit(): void {
@@ -90,5 +90,22 @@ export class SidebarComponent implements OnInit {
     if (url.includes('/tools')) this.toolOpen.set(true);
     if (url.includes('/bot-whatsapp')) this.botWaOpen.set(true);
     if (url.includes('/finance')) this.financeOpen.set(true);
+  }
+
+  roleLabel(role?: string): string {
+    switch (role) {
+      case 'admin':
+        return 'Admin';
+      case 'petugas':
+        return 'Petugas';
+      case 'finance':
+        return 'Keuangan';
+      case 'sales':
+        return 'Sales';
+      case 'kolektor':
+        return 'Kolektor';
+      default:
+        return role || '';
+    }
   }
 }

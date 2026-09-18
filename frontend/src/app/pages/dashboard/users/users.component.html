@@ -9,6 +9,9 @@
         <option value="">Semua peran</option>
         <option value="admin">Admin</option>
         <option value="petugas">Petugas</option>
+        <option value="finance">Keuangan</option>
+        <option value="sales">Sales</option>
+        <option value="kolektor">Kolektor</option>
       </select>
       <select class="input" [(ngModel)]="status" (ngModelChange)="load()">
         <option value="">Semua status</option>
@@ -34,7 +37,7 @@
             <td class="font-medium text-slate-900">{{ user.name }}</td>
             <td>{{ user.email }}</td>
             <td>{{ user.phone || '-' }}</td>
-            <td class="capitalize">{{ user.role }}</td>
+            <td>{{ roleLabel(user.role) }}</td>
             <td>
               <span [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (user.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')">{{ user.status === 'active' ? 'Aktif' : 'Tidak aktif' }}</span>
             </td>
@@ -83,6 +86,9 @@
           <select class="input" [(ngModel)]="form.role" name="role">
             <option value="admin">Admin</option>
             <option value="petugas">Petugas</option>
+            <option value="finance">Keuangan</option>
+            <option value="sales">Sales</option>
+            <option value="kolektor">Kolektor</option>
           </select>
         </div>
         <div>

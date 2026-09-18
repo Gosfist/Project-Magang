@@ -142,7 +142,7 @@ export class AreaComponent implements OnInit {
         this.assignModalOpen.set(true);
       },
       error: (err) => {
-        this.toast.set({ message: err.message || 'Gagal memuat opsi pengepul', type: 'error' });
+        this.toast.set({ message: err.message || 'Gagal memuat opsi kolektor', type: 'error' });
       },
     });
   }
@@ -154,25 +154,25 @@ export class AreaComponent implements OnInit {
       next: () => {
         this.assigning.set(false);
         this.assignModalOpen.set(false);
-        this.toast.set({ message: 'Pengepul berhasil ditugaskan ke area.', type: 'success' });
+        this.toast.set({ message: 'Kolektor berhasil ditugaskan ke area.', type: 'success' });
         this.load();
       },
       error: (err) => {
         this.assigning.set(false);
-        this.toast.set({ message: err.message || 'Gagal menugaskan pengepul', type: 'error' });
+        this.toast.set({ message: err.message || 'Gagal menugaskan kolektor', type: 'error' });
       },
     });
   }
 
   removeCollector(area: Area, userId: string) {
-    if (!confirm('Hapus penugasan pengepul ini dari area?')) return;
+    if (!confirm('Hapus penugasan kolektor ini dari area?')) return;
     this.api.delete(`/areas/${area.id}/collectors/${userId}`).subscribe({
       next: () => {
-        this.toast.set({ message: 'Pengepul berhasil dilepas dari area.', type: 'success' });
+        this.toast.set({ message: 'Kolektor berhasil dilepas dari area.', type: 'success' });
         this.load();
       },
       error: (err) => {
-        this.toast.set({ message: err.message || 'Gagal melepas pengepul', type: 'error' });
+        this.toast.set({ message: err.message || 'Gagal melepas kolektor', type: 'error' });
       },
     });
   }

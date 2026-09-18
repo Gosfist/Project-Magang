@@ -163,7 +163,7 @@ export class WhatsappNotifyService {
         .replace(/\{nama_pengepul\}/g, account.collectorName)
         .replace(/\{area\}/g, account.areaName);
 
-      this.logger.log(`Mengirim notifikasi WA setoran ke pengepul ke ${account.phone}...`);
+      this.logger.log(`Mengirim notifikasi WA setoran ke kolektor ke ${account.phone}...`);
 
       const response = await fetch(`${this.botUrl}/api/wa/send`, {
         method: 'POST',
@@ -174,13 +174,13 @@ export class WhatsappNotifyService {
 
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        this.logger.warn(`Notifikasi WA setoran pengepul gagal: ${response.status} - ${body.message || 'Unknown'}`);
+        this.logger.warn(`Notifikasi WA setoran kolektor gagal: ${response.status} - ${body.message || 'Unknown'}`);
       } else {
-        this.logger.log(`Notifikasi WA setoran pengepul terkirim ke ${account.phone}`);
+        this.logger.log(`Notifikasi WA setoran kolektor terkirim ke ${account.phone}`);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Notifikasi WA setoran pengepul error: ${message}`);
+      this.logger.warn(`Notifikasi WA setoran kolektor error: ${message}`);
     }
   }
 
@@ -232,7 +232,7 @@ export class WhatsappNotifyService {
   }
 
   private defaultDepositCollectorTemplate(): string {
-    return `Halo {nama}! 📝\n\nKami informasikan bahwa tagihan Anda telah disetor ke pengepul kami.\n\n📋 *Detail Setoran:*\n• Nomor Pelanggan: {nomor_pelanggan}\n• Jumlah: {jumlah}\n• Tanggal Setor: {tanggal_setor}\n• Pengepul: {nama_pengepul}\n• Area: {area}\n\nSetoran Anda sedang diverifikasi oleh tim kami. Anda akan menerima notifikasi setelah pembayaran dikonfirmasi.\n\n— PT Unzanet`;
+    return `Halo {nama}! 📝\n\nKami informasikan bahwa tagihan Anda telah disetor ke kolektor kami.\n\n📋 *Detail Setoran:*\n• Nomor Pelanggan: {nomor_pelanggan}\n• Jumlah: {jumlah}\n• Tanggal Setor: {tanggal_setor}\n• Kolektor: {nama_pengepul}\n• Area: {area}\n\nSetoran Anda sedang diverifikasi oleh tim kami. Anda akan menerima notifikasi setelah pembayaran dikonfirmasi.\n\n— PT Unzanet`;
   }
 
   private defaultDepositAcceptedTemplate(): string {
