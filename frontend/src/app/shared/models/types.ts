@@ -104,6 +104,36 @@ export type AreaCollector = {
   user?: { id: string; name: string; email: string; phone?: string | null; role: string };
 };
 
+export type AreaCustomer = {
+  id: string;
+  customerNumber: string;
+  customerName: string;
+  username: string;
+  phone?: string | null;
+  address?: string | null;
+  isActive: boolean;
+  package?: { id: string; name: string; price: number } | null;
+  isPaid: boolean;
+  billingStatus: 'PAID' | 'UNPAID' | 'OVERDUE' | 'PENDING_VERIFICATION';
+  unpaidAmount: number;
+  unpaidCount: number;
+  activeInvoice?: {
+    id: string;
+    invoiceNumber: string;
+    amount: number;
+    dueDate: string;
+    hasPendingDeposit: boolean;
+    depositId?: string | null;
+  } | null;
+};
+
+export type AreaBillingSummary = {
+  totalCustomers: number;
+  unpaidCustomers: number;
+  paidCustomers: number;
+  totalUnpaidAmount: number;
+};
+
 export type CollectorDeposit = {
   id: string;
   pppoeAccountId: string;

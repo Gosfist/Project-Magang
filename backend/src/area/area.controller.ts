@@ -58,4 +58,13 @@ export class AreaController {
   removeCollector(@Param('id') id: string, @Param('userId') userId: string) {
     return this.areas.removeCollector(id, userId);
   }
+
+  @Get(':id/customers')
+  customers(
+    @Param('id') id: string,
+    @Query('search') search = '',
+    @Query('status') status = 'ALL',
+  ) {
+    return this.areas.getAreaCustomers(id, search.trim(), status);
+  }
 }

@@ -57,6 +57,11 @@ export class AreaService {
       const area = await this.prisma.area.create({
         data: { name: dto.name.trim(), description: dto.description?.trim() || null },
       });
+      if (dto.collectorUserId) {
+        await this.prisma.areaCollector.create({
+          data: { areaId: area.id, userId: BigInt(dto.collectorUserId) },
+        }).catch(() => {});
+      }
       return serialize({ message: 'Area berhasil ditambahkan.', area });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -125,6 +130,153 @@ export class AreaService {
       orderBy: { name: 'asc' },
     });
     return serialize({ data });
+  }
+
+  async getAreaCustomers(areaId: string, search = '', status = 'ALL') {
+    const area = await this.findArea(areaId);
+
+    const collectors = await this.prisma.areaCollector.findMany({
+      where: { areaId: BigInt(areaId) },
+      include: { user: { select: { id: true, name: true, phone: true } } },
+    });
+
+    const where: Prisma.PppoeAccountWhereInput = {
+      areaId: BigInt(areaId),
+    };
+
+    if (search.trim()) {
+      where.OR = [
+        { customerName: { contains: search.trim() } },
+        { username: { contains: search.trim() } },
+        { phone: { contains: search.trim() } },
+        { address: { contains: search.trim() } },
+      ];
+    }
+
+    const accounts = await this.prisma.pppoeAccount.findMany({
+      where,
+      include: {
+        package: { select: { id: true, name: true, price: true } },
+        invoices: {
+          select: {
+            id: true,
+            invoiceNumber: true,
+            amount: true,
+            status: true,
+            dueDate: true,
+            paidAt: true,
+            deposits: {
+              select: { id: true, status: true, amount: true, createdAt: true },
+              orderBy: { id: 'desc' },
+              take: 1,
+            },
+          },
+          orderBy: [{ status: 'asc' }, { dueDate: 'desc' }, { id: 'desc' }],
+        },
+      },
+      orderBy: { customerName: 'asc' },
+    });
+
+    const mapped = accounts.map((acc) => {
+      const unpaidInvoices = acc.invoices.filter((inv) => ['PENDING', 'OVERDUE'].includes(inv.status));
+      const isPaid = unpaidInvoices.length === 0;
+      const unpaidAmount = unpaidInvoices.reduce((sum, inv) => sum + Number(inv.amount), 0);
+
+      const activeInvoice = unpaidInvoices[0] || null;
+      const latestDeposit = activeInvoice?.deposits?.[0] || null;
+      const hasPendingDeposit = latestDeposit?.status === 'PENDING';
+
+      const now = new Date();
+      const isOverdue = unpaidInvoices.some((inv) => new Date(inv.dueDate) < now);
+
+      let billingStatus = 'PAID';
+      if (!isPaid) {
+        if (hasPendingDeposit) {
+          billingStatus = 'PENDING_VERIFICATION';
+        } else if (isOverdue) {
+          billingStatus = 'OVERDUE';
+        } else {
+          billingStatus = 'UNPAID';
+        }
+      }
+
+      return {
+        id: acc.id,
+        customerNumber: acc.customerNumber,
+        customerName: acc.customerName,
+        username: acc.username,
+        phone: acc.phone,
+        address: acc.address,
+        isActive: acc.isActive,
+        package: acc.package ? { ...acc.package, price: Number(acc.package.price) } : null,
+        isPaid,
+        billingStatus,
+        unpaidAmount,
+        unpaidCount: unpaidInvoices.length,
+        activeInvoice: activeInvoice
+          ? {
+              id: activeInvoice.id,
+              invoiceNumber: activeInvoice.invoiceNumber,
+              amount: Number(activeInvoice.amount),
+              dueDate: activeInvoice.dueDate,
+              hasPendingDeposit,
+              depositId: latestDeposit?.id || null,
+            }
+          : null,
+      };
+    });
+
+    const allAccountsInArea = await this.prisma.pppoeAccount.findMany({
+      where: { areaId: BigInt(areaId) },
+      select: {
+        id: true,
+        invoices: {
+          where: { status: { in: ['PENDING', 'OVERDUE'] } },
+          select: { amount: true },
+        },
+      },
+    });
+
+    let totalUnpaidAmount = 0;
+    let unpaidCustomers = 0;
+    let paidCustomers = 0;
+
+    for (const a of allAccountsInArea) {
+      if (a.invoices.length > 0) {
+        unpaidCustomers++;
+        totalUnpaidAmount += a.invoices.reduce((sum, inv) => sum + Number(inv.amount), 0);
+      } else {
+        paidCustomers++;
+      }
+    }
+
+    let filteredData = mapped;
+    if (status === 'UNPAID') {
+      filteredData = mapped.filter((m) => !m.isPaid);
+    } else if (status === 'PAID') {
+      filteredData = mapped.filter((m) => m.isPaid);
+    }
+
+    return serialize({
+      area: {
+        id: area.id,
+        name: area.name,
+        description: area.description,
+        collectors: collectors.map((c) => ({
+          id: c.id,
+          userId: c.userId,
+          name: c.user.name,
+          phone: c.user.phone,
+        })),
+      },
+      summary: {
+        totalCustomers: allAccountsInArea.length,
+        unpaidCustomers,
+        paidCustomers,
+        totalUnpaidAmount,
+      },
+      customers: filteredData,
+    });
   }
 
   private async findArea(id: string) {

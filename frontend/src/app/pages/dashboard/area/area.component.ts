@@ -9,10 +9,22 @@ import {
   LucideMapPin,
   LucideUserPlus,
   LucideX,
+  LucideArrowLeft,
+  LucideUsers,
+  LucideCheckCircle2,
+  LucideAlertCircle,
+  LucideClock,
+  LucideDollarSign,
+  LucideSend,
 } from '@lucide/angular';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Area, PageMeta } from '../../../shared/models/types';
+import {
+  Area,
+  AreaBillingSummary,
+  AreaCustomer,
+  PageMeta,
+} from '../../../shared/models/types';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastComponent } from '../../../shared/components/toast/toast.component';
@@ -33,6 +45,13 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
     LucideMapPin,
     LucideUserPlus,
     LucideX,
+    LucideArrowLeft,
+    LucideUsers,
+    LucideCheckCircle2,
+    LucideAlertCircle,
+    LucideClock,
+    LucideDollarSign,
+    LucideSend,
   ],
   templateUrl: './area.component.html',
   styleUrl: './area.component.css',
@@ -40,6 +59,9 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
 export class AreaComponent implements OnInit {
   private api = inject(ApiService);
   auth = inject(AuthService);
+
+  // View Mode: 'list' (Tabel Area) | 'detail' (Daftar Penagihan Pelanggan Area)
+  viewMode = signal<'list' | 'detail'>('list');
 
   loading = signal(true);
   saving = signal(false);
@@ -56,10 +78,36 @@ export class AreaComponent implements OnInit {
   editing: Area | null = null;
   assignArea: Area | null = null;
   selectedCollectorId = '';
-  form = { name: '', description: '' };
+  form = { name: '', description: '', collectorUserId: '' };
+
+  // Area Detail & Customer Billing State
+  selectedArea = signal<Area | null>(null);
+  areaSummary = signal<AreaBillingSummary | null>(null);
+  customers = signal<AreaCustomer[]>([]);
+  loadingCustomers = signal(false);
+  customerSearch = '';
+  customerStatusFilter = signal<'ALL' | 'UNPAID' | 'PAID'>('ALL');
+
+  // Quick Deposit modal state
+  quickDepositModalOpen = signal(false);
+  depositTargetCustomer: AreaCustomer | null = null;
+  quickDepositForm = {
+    amount: 0,
+    depositDate: new Date().toISOString().slice(0, 10),
+    notes: '',
+  };
+  submittingDeposit = signal(false);
 
   ngOnInit() {
     this.load();
+    this.loadCollectorOptions();
+  }
+
+  loadCollectorOptions() {
+    this.api.get<{ data: { id: string; name: string; email: string }[] }>('/areas/collector-options').subscribe({
+      next: (res) => this.collectorOptions.set(res.data),
+      error: () => {},
+    });
   }
 
   load() {
@@ -84,8 +132,9 @@ export class AreaComponent implements OnInit {
   openModal(area?: Area) {
     this.editing = area || null;
     this.form = area
-      ? { name: area.name, description: area.description || '' }
-      : { name: '', description: '' };
+      ? { name: area.name, description: area.description || '', collectorUserId: '' }
+      : { name: '', description: '', collectorUserId: '' };
+    this.loadCollectorOptions();
     this.modalOpen.set(true);
   }
 
@@ -156,6 +205,9 @@ export class AreaComponent implements OnInit {
         this.assignModalOpen.set(false);
         this.toast.set({ message: 'Kolektor berhasil ditugaskan ke area.', type: 'success' });
         this.load();
+        if (this.viewMode() === 'detail' && this.selectedArea()?.id === this.assignArea?.id) {
+          this.loadAreaCustomers();
+        }
       },
       error: (err) => {
         this.assigning.set(false);
@@ -170,10 +222,144 @@ export class AreaComponent implements OnInit {
       next: () => {
         this.toast.set({ message: 'Kolektor berhasil dilepas dari area.', type: 'success' });
         this.load();
+        if (this.viewMode() === 'detail' && this.selectedArea()?.id === area.id) {
+          this.loadAreaCustomers();
+        }
       },
       error: (err) => {
         this.toast.set({ message: err.message || 'Gagal melepas kolektor', type: 'error' });
       },
     });
+  }
+
+  // === Detail Penagihan Pelanggan Area ===
+  openAreaDetail(area: Area) {
+    this.selectedArea.set(area);
+    this.viewMode.set('detail');
+    this.customerStatusFilter.set('ALL');
+    this.customerSearch = '';
+    this.loadAreaCustomers();
+  }
+
+  backToList() {
+    this.viewMode.set('list');
+    this.selectedArea.set(null);
+    this.load();
+  }
+
+  setCustomerFilter(status: 'ALL' | 'UNPAID' | 'PAID') {
+    this.customerStatusFilter.set(status);
+    this.loadAreaCustomers();
+  }
+
+  loadAreaCustomers() {
+    const current = this.selectedArea();
+    if (!current) return;
+    this.loadingCustomers.set(true);
+
+    const params = new URLSearchParams();
+    if (this.customerSearch.trim()) params.set('search', this.customerSearch.trim());
+    params.set('status', this.customerStatusFilter());
+
+    this.api
+      .get<{
+        area: Area;
+        summary: AreaBillingSummary;
+        customers: AreaCustomer[];
+      }>(`/areas/${current.id}/customers?${params}`)
+      .subscribe({
+        next: (res) => {
+          this.selectedArea.set(res.area);
+          this.areaSummary.set(res.summary);
+          this.customers.set(res.customers);
+          this.loadingCustomers.set(false);
+        },
+        error: (err) => {
+          this.loadingCustomers.set(false);
+          this.toast.set({ message: err.message || 'Gagal memuat data pelanggan area', type: 'error' });
+        },
+      });
+  }
+
+  // === Quick Deposit dari Daftar Pelanggan ===
+  openQuickDeposit(customer: AreaCustomer) {
+    if (!customer.activeInvoice) {
+      this.toast.set({ message: 'Pelanggan tidak memiliki tagihan aktif untuk dibayar.', type: 'error' });
+      return;
+    }
+    this.depositTargetCustomer = customer;
+    this.quickDepositForm = {
+      amount: customer.activeInvoice.amount,
+      depositDate: new Date().toISOString().slice(0, 10),
+      notes: '',
+    };
+    this.quickDepositModalOpen.set(true);
+  }
+
+  closeQuickDeposit() {
+    this.quickDepositModalOpen.set(false);
+    this.depositTargetCustomer = null;
+  }
+
+  saveQuickDeposit(event: Event) {
+    event.preventDefault();
+    if (!this.depositTargetCustomer?.activeInvoice || this.quickDepositForm.amount <= 0) return;
+
+    this.submittingDeposit.set(true);
+    const payload = {
+      pppoeAccountId: this.depositTargetCustomer.id,
+      invoiceId: this.depositTargetCustomer.activeInvoice.id,
+      amount: this.quickDepositForm.amount,
+      depositDate: this.quickDepositForm.depositDate,
+      notes: this.quickDepositForm.notes.trim() || undefined,
+    };
+
+    this.api.post('/finance/deposits', payload).subscribe({
+      next: () => {
+        this.submittingDeposit.set(false);
+        this.closeQuickDeposit();
+        this.toast.set({
+          message: 'Setoran berhasil dicatat & notifikasi WhatsApp terkirim ke pelanggan!',
+          type: 'success',
+        });
+        this.loadAreaCustomers();
+      },
+      error: (err) => {
+        this.submittingDeposit.set(false);
+        this.toast.set({ message: err.message || 'Gagal mencatat setoran.', type: 'error' });
+      },
+    });
+  }
+
+  sendWaReminder(customer: AreaCustomer) {
+    if (!customer.phone) {
+      this.toast.set({ message: 'Pelanggan tidak memiliki nomor telepon terdaftar.', type: 'error' });
+      return;
+    }
+    const cleanPhone = customer.phone.replace(/[^\d]/g, '');
+    const phone = cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone;
+    const amount = customer.activeInvoice?.amount || customer.unpaidAmount;
+    const amountFormatted = this.formatCurrency(amount);
+
+    const message = encodeURIComponent(
+      `Halo Bapak/Ibu ${customer.customerName},\n\nKami dari PT UNZANET menginformasikan bahwa tagihan internet Anda sebesar *${amountFormatted}* telah terbit/jatuh tempo. Petugas kolektor kami akan melakukan penagihan di wilayah Anda.\n\nMohon siapkan pembayaran saat petugas kami berkunjung. Terima kasih! 🙏\n\n— PT UNZANET`
+    );
+
+    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+  }
+
+  formatCurrency(value: number): string {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      maximumFractionDigits: 0,
+    }).format(value);
+  }
+
+  formatDate(date: string): string {
+    return new Intl.DateTimeFormat('id-ID', {
+      dateStyle: 'medium',
+      timeZone: 'Asia/Jakarta',
+    }).format(new Date(date));
   }
 }

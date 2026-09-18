@@ -1,204 +1,638 @@
 <div class="space-y-4">
-  <!-- Search and Action Bar -->
-  <div class="card flex flex-wrap gap-3 p-4">
-    <div class="relative flex-1 min-w-[200px]">
-      <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
-      <input
-        class="input pl-10"
-        placeholder="Cari nama area atau deskripsi..."
-        [(ngModel)]="search"
-        (ngModelChange)="page.set(1); load()"
-      />
+  <!-- ========================================== -->
+  <!-- VIEW 1: DAFTAR AREA                       -->
+  <!-- ========================================== -->
+  @if (viewMode() === 'list') {
+    <!-- Search and Action Bar -->
+    <div class="card flex flex-wrap items-center justify-between gap-3 p-4">
+      <div class="relative flex-1 min-w-[240px]">
+        <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
+        <input
+          class="input pl-10"
+          placeholder="Cari nama area atau deskripsi..."
+          [(ngModel)]="search"
+          (ngModelChange)="page.set(1); load()"
+        />
+      </div>
+      <div class="flex items-center gap-2">
+        @if (auth.isAdmin()) {
+          <button class="btn-primary" (click)="openModal()">
+            <svg lucidePlus [size]="18"></svg> Tambah Area
+          </button>
+        }
+      </div>
     </div>
-    @if (auth.isAdmin()) {
-      <button class="btn-primary" (click)="openModal()">
-        <svg lucidePlus [size]="18"></svg> Tambah Area
-      </button>
-    }
-  </div>
 
-  <!-- Area Table -->
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Nama Area</th>
-          <th>Deskripsi</th>
-          <th>Kolektor Ditugaskan</th>
-          <th class="text-center">Jumlah Pelanggan</th>
-          @if (auth.isAdmin()) {
-            <th class="text-right">Aksi</th>
-          }
-        </tr>
-      </thead>
-      <tbody>
-        @for (area of areas(); track area.id) {
+    <!-- Area Table -->
+    <div class="table-wrap">
+      <table>
+        <thead>
           <tr>
-            <td>
-              <div class="flex items-center gap-2">
-                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                  <svg lucideMapPin [size]="16"></svg>
-                </span>
-                <div>
-                  <p class="font-semibold text-slate-900">{{ area.name }}</p>
-                </div>
-              </div>
-            </td>
-            <td class="text-slate-600 max-w-xs">
-              {{ area.description || '—' }}
-            </td>
-            <td>
-              <div class="flex flex-wrap items-center gap-1.5">
-                @for (c of area.collectors; track c.id) {
-                  <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-800">
-                    {{ c.user?.name }}
-                    @if (c.user?.phone) {
-                      <span class="text-slate-400 text-[10px]">({{ c.user?.phone }})</span>
-                    }
-                    @if (auth.isAdmin()) {
-                      <button
-                        type="button"
-                        (click)="removeCollector(area, c.userId)"
-                        class="ml-0.5 text-slate-400 hover:text-red-600"
-                        title="Hapus kolektor"
-                      >
-                        <svg lucideX [size]="12"></svg>
-                      </button>
-                    }
-                  </span>
-                }
-                @if (!area.collectors || area.collectors.length === 0) {
-                  <span class="text-xs text-slate-400 italic">Belum ada kolektor</span>
-                }
-                @if (auth.isAdmin()) {
-                  <button
-                    type="button"
-                    (click)="openAssignModal(area)"
-                    class="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2 py-0.5 text-xs text-slate-500 hover:border-slate-800 hover:text-slate-900 transition-colors"
-                    title="Tambah kolektor ke area ini"
-                  >
-                    <svg lucideUserPlus [size]="12"></svg> + Kolektor
-                  </button>
-                }
-              </div>
-            </td>
-            <td class="text-center font-medium">
-              <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
-                {{ area.accountsCount || 0 }} pelanggan
-              </span>
-            </td>
-            @if (auth.isAdmin()) {
+            <th>Nama Area</th>
+            <th>Deskripsi</th>
+            <th>Kolektor Ditugaskan</th>
+            <th class="text-center">Jumlah Pelanggan</th>
+            <th class="text-right">Aksi & Penagihan</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (area of areas(); track area.id) {
+            <tr class="hover:bg-slate-50/80 transition-colors">
               <td>
-                <div class="flex justify-end gap-2">
-                  <button class="btn-secondary px-3" (click)="openModal(area)" title="Edit Area">
-                    <svg lucidePencil [size]="15"></svg>
-                  </button>
-                  <button class="btn-danger" (click)="remove(area)" title="Hapus Area">
-                    <svg lucideTrash2 [size]="15"></svg>
-                  </button>
+                <div class="flex items-center gap-2.5">
+                  <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
+                    <svg lucideMapPin [size]="18"></svg>
+                  </span>
+                  <div>
+                    <p class="font-bold text-slate-900">{{ area.name }}</p>
+                  </div>
                 </div>
               </td>
-            }
-          </tr>
-        }
-        @if (loading()) {
-          <tr>
-            <td [attr.colspan]="auth.isAdmin() ? 5 : 4" class="py-8 text-center text-slate-400">
-              Memuat data area...
-            </td>
-          </tr>
-        } @else if (areas().length === 0) {
-          <tr>
-            <td [attr.colspan]="auth.isAdmin() ? 5 : 4" class="py-8 text-center text-slate-400">
-              Data area belum tersedia.
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
+              <td class="text-slate-600 max-w-xs text-sm">
+                {{ area.description || '—' }}
+              </td>
+              <td>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  @for (c of area.collectors; track c.id) {
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-800 border border-slate-200">
+                      <span>{{ c.user?.name }}</span>
+                      @if (c.user?.phone) {
+                        <span class="text-slate-500 font-normal text-[11px]">({{ c.user?.phone }})</span>
+                      }
+                      @if (auth.isAdmin()) {
+                        <button
+                          type="button"
+                          (click)="removeCollector(area, c.userId)"
+                          class="ml-0.5 text-slate-400 hover:text-red-600"
+                          title="Hapus penugasan kolektor"
+                        >
+                          <svg lucideX [size]="13"></svg>
+                        </button>
+                      }
+                    </span>
+                  }
+                  @if (!area.collectors || area.collectors.length === 0) {
+                    <span class="text-xs text-slate-400 italic">Belum ada kolektor</span>
+                  }
+                  @if (auth.isAdmin()) {
+                    <button
+                      type="button"
+                      (click)="openAssignModal(area)"
+                      class="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-blue-500 hover:text-blue-600 transition-colors cursor-pointer"
+                      title="Tugaskan kolektor ke area ini"
+                    >
+                      <svg lucideUserPlus [size]="13"></svg> + Kolektor
+                    </button>
+                  }
+                </div>
+              </td>
+              <td class="text-center font-medium">
+                <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                  {{ area.accountsCount || 0 }} pelanggan
+                </span>
+              </td>
+              <td>
+                <div class="flex items-center justify-end gap-2">
+                  <!-- Tombol Buka Daftar Penagihan Area -->
+                  <button
+                    type="button"
+                    class="btn-primary py-1.5 px-3 text-xs flex items-center gap-1.5 shadow-xs"
+                    (click)="openAreaDetail(area)"
+                    title="Buka daftar pelanggan dan status penagihan area ini"
+                  >
+                    <svg lucideUsers [size]="15"></svg>
+                    <span>Daftar Tagihan</span>
+                  </button>
 
-  <!-- Pagination -->
-  @if (meta()) {
-    <app-pagination [meta]="meta()!" (pageChange)="page.set($event); load()"></app-pagination>
+                  @if (auth.isAdmin()) {
+                    <button class="btn-secondary px-2.5 py-1.5" (click)="openModal(area)" title="Edit Area">
+                      <svg lucidePencil [size]="15"></svg>
+                    </button>
+                    <button class="btn-danger px-2.5 py-1.5" (click)="remove(area)" title="Hapus Area">
+                      <svg lucideTrash2 [size]="15"></svg>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="text-center py-10 text-slate-400">
+                @if (loading()) {
+                  Memuat data area...
+                } @else {
+                  Tidak ada area yang ditemukan.
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (meta()) {
+      <app-pagination [meta]="meta()!" (pageChange)="page.set($event); load()"></app-pagination>
+    }
   }
 
-  <!-- Create / Edit Area Modal -->
-  <app-modal [open]="modalOpen()" [title]="(editing ? 'Edit' : 'Tambah') + ' Data Area'" (closeModal)="closeModal()">
+  <!-- ========================================== -->
+  <!-- VIEW 2: DAFTAR PELANGGAN & PENAGIHAN AREA  -->
+  <!-- ========================================== -->
+  @if (viewMode() === 'detail' && selectedArea()) {
+    <!-- Breadcrumb & Area Header Banner -->
+    <div class="card p-5 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            class="btn-secondary px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer"
+            (click)="backToList()"
+          >
+            <svg lucideArrowLeft [size]="15"></svg>
+            <span>Kembali ke Daftar Area</span>
+          </button>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-100 text-blue-700">
+                <svg lucideMapPin [size]="14"></svg>
+              </span>
+              <h2 class="text-xl font-bold text-slate-900">Area: {{ selectedArea()?.name }}</h2>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">{{ selectedArea()?.description || 'Wilayah penagihan pelanggan' }}</p>
+          </div>
+        </div>
+
+        <!-- Kolektor Ditugaskan -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold text-slate-500">Kolektor:</span>
+          <div class="flex flex-wrap items-center gap-1.5">
+            @for (c of selectedArea()?.collectors; track c.id) {
+              <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-xs font-semibold text-blue-800">
+                {{ c.user?.name }}
+                @if (c.user?.phone) {
+                  <span class="text-blue-500 font-normal">({{ c.user?.phone }})</span>
+                }
+              </span>
+            }
+            @if (!selectedArea()?.collectors?.length) {
+              <span class="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 font-medium">Belum ada kolektor</span>
+            }
+            @if (auth.isAdmin()) {
+              <button
+                type="button"
+                (click)="openAssignModal(selectedArea()!)"
+                class="inline-flex items-center gap-1 rounded-full border border-slate-300 px-2 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-100 cursor-pointer"
+              >
+                <svg lucideUserPlus [size]="12"></svg> + Kolektor
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Ringkasan Status Penagihan (Merah vs Hijau) -->
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <!-- Card 1: Belum Lunas (Merah / Harus Ditagih) -->
+        <div
+          class="rounded-2xl border border-red-200 bg-red-50/80 p-4 transition-all cursor-pointer hover:shadow-sm"
+          [class.ring-2]="customerStatusFilter() === 'UNPAID'"
+          [class.ring-red-500]="customerStatusFilter() === 'UNPAID'"
+          (click)="setCustomerFilter('UNPAID')"
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-red-700">🔴 HARUS DITAGIH (BELUM LUNAS)</span>
+            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-red-200/80 text-red-700">
+              <svg lucideAlertCircle [size]="16"></svg>
+            </span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span class="text-2xl font-black text-red-900">{{ areaSummary()?.unpaidCustomers || 0 }}</span>
+            <span class="text-xs font-medium text-red-700">pelanggan</span>
+          </div>
+          <p class="mt-1 text-xs font-semibold text-red-800">
+            Total Tunggakan: {{ formatCurrency(areaSummary()?.totalUnpaidAmount || 0) }}
+          </p>
+        </div>
+
+        <!-- Card 2: Sudah Lunas (Hijau) -->
+        <div
+          class="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 transition-all cursor-pointer hover:shadow-sm"
+          [class.ring-2]="customerStatusFilter() === 'PAID'"
+          [class.ring-emerald-500]="customerStatusFilter() === 'PAID'"
+          (click)="setCustomerFilter('PAID')"
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">🟢 SUDAH LUNAS</span>
+            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-200/80 text-emerald-700">
+              <svg lucideCheckCircle2 [size]="16"></svg>
+            </span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span class="text-2xl font-black text-emerald-900">{{ areaSummary()?.paidCustomers || 0 }}</span>
+            <span class="text-xs font-medium text-emerald-700">pelanggan</span>
+          </div>
+          <p class="mt-1 text-xs text-emerald-700 font-medium">
+            Tidak ada tunggakan pembayaran
+          </p>
+        </div>
+
+        <!-- Card 3: Total Pelanggan Area -->
+        <div
+          class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 transition-all cursor-pointer hover:shadow-sm"
+          [class.ring-2]="customerStatusFilter() === 'ALL'"
+          [class.ring-slate-800]="customerStatusFilter() === 'ALL'"
+          (click)="setCustomerFilter('ALL')"
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-700">TOTAL PELANGGAN AREA</span>
+            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-slate-700">
+              <svg lucideUsers [size]="16"></svg>
+            </span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span class="text-2xl font-black text-slate-900">{{ areaSummary()?.totalCustomers || 0 }}</span>
+            <span class="text-xs font-medium text-slate-600">pelanggan terdaftar</span>
+          </div>
+          <p class="mt-1 text-xs text-slate-500">
+            Klik untuk melihat semua pelanggan
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Tab Bar & Search Pelanggan -->
+    <div class="card p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <!-- Tabs Filter -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            (click)="setCustomerFilter('ALL')"
+            class="rounded-xl px-3.5 py-2 text-xs font-bold transition-all border cursor-pointer"
+            [class.bg-slate-900]="customerStatusFilter() === 'ALL'"
+            [class.text-white]="customerStatusFilter() === 'ALL'"
+            [class.border-slate-900]="customerStatusFilter() === 'ALL'"
+            [class.bg-white]="customerStatusFilter() !== 'ALL'"
+            [class.text-slate-700]="customerStatusFilter() !== 'ALL'"
+            [class.border-slate-200]="customerStatusFilter() !== 'ALL'"
+          >
+            Semua ({{ areaSummary()?.totalCustomers || 0 }})
+          </button>
+
+          <button
+            type="button"
+            (click)="setCustomerFilter('UNPAID')"
+            class="rounded-xl px-3.5 py-2 text-xs font-bold transition-all border cursor-pointer flex items-center gap-1.5"
+            [class.bg-red-600]="customerStatusFilter() === 'UNPAID'"
+            [class.text-white]="customerStatusFilter() === 'UNPAID'"
+            [class.border-red-600]="customerStatusFilter() === 'UNPAID'"
+            [class.bg-red-50]="customerStatusFilter() !== 'UNPAID'"
+            [class.text-red-700]="customerStatusFilter() !== 'UNPAID'"
+            [class.border-red-200]="customerStatusFilter() !== 'UNPAID'"
+          >
+            <span>🔴 Harus Ditagih</span>
+            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-[10px]">{{ areaSummary()?.unpaidCustomers || 0 }}</span>
+          </button>
+
+          <button
+            type="button"
+            (click)="setCustomerFilter('PAID')"
+            class="rounded-xl px-3.5 py-2 text-xs font-bold transition-all border cursor-pointer flex items-center gap-1.5"
+            [class.bg-emerald-600]="customerStatusFilter() === 'PAID'"
+            [class.text-white]="customerStatusFilter() === 'PAID'"
+            [class.border-emerald-600]="customerStatusFilter() === 'PAID'"
+            [class.bg-emerald-50]="customerStatusFilter() !== 'PAID'"
+            [class.text-emerald-700]="customerStatusFilter() !== 'PAID'"
+            [class.border-emerald-200]="customerStatusFilter() !== 'PAID'"
+          >
+            <span>🟢 Sudah Lunas</span>
+            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-[10px]">{{ areaSummary()?.paidCustomers || 0 }}</span>
+          </button>
+        </div>
+
+        <!-- Search Input -->
+        <div class="relative w-full sm:w-80">
+          <svg lucideSearch [size]="16" class="absolute left-3 top-2.5 text-slate-400"></svg>
+          <input
+            class="input pl-9 text-xs py-2 w-full"
+            placeholder="Cari pelanggan, telepon, username..."
+            [(ngModel)]="customerSearch"
+            (ngModelChange)="loadAreaCustomers()"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabel Pelanggan Area & Status Tagihan (MERAH vs HIJAU) -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Pelanggan</th>
+            <th>Kontak & Alamat</th>
+            <th>Paket Internet</th>
+            <th>Status Tagihan (Penagihan)</th>
+            <th class="text-right">Aksi Kolektor</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of customers(); track c.id) {
+            <tr
+              class="transition-colors hover:bg-slate-50"
+              [class.bg-red-50]="!c.isPaid"
+            >
+              <!-- Nama & No Pelanggan -->
+              <td>
+                <div class="flex items-start gap-2.5">
+                  <span
+                    class="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg font-bold text-xs"
+                    [class.bg-red-100]="!c.isPaid"
+                    [class.text-red-700]="!c.isPaid"
+                    [class.bg-emerald-100]="c.isPaid"
+                    [class.text-emerald-700]="c.isPaid"
+                  >
+                    {{ !c.isPaid ? '!' : '✓' }}
+                  </span>
+                  <div>
+                    <p class="font-bold text-slate-900 leading-tight">{{ c.customerName }}</p>
+                    <div class="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500 font-mono">
+                      <span>#{{ c.customerNumber }}</span>
+                      <span>•</span>
+                      <span>{{ c.username }}</span>
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Kontak & Alamat -->
+              <td>
+                <div>
+                  @if (c.phone) {
+                    <p class="font-mono text-xs font-semibold text-slate-800">{{ c.phone }}</p>
+                  } @else {
+                    <p class="text-xs text-slate-400 italic">Tanpa nomor telepon</p>
+                  }
+                  <p class="text-xs text-slate-500 max-w-xs truncate mt-0.5" [title]="c.address || ''">
+                    {{ c.address || '—' }}
+                  </p>
+                </div>
+              </td>
+
+              <!-- Paket Layanan -->
+              <td>
+                <div>
+                  <p class="text-xs font-bold text-slate-800">{{ c.package?.name || '-' }}</p>
+                  <p class="text-[11px] text-slate-500 font-mono">
+                    {{ formatCurrency(c.package?.price || 0) }}/bln
+                  </p>
+                </div>
+              </td>
+
+              <!-- Status Tagihan: MERAH (Harus Ditagih) vs HIJAU (Lunas) -->
+              <td>
+                @if (c.billingStatus === 'PAID') {
+                  <div>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
+                      <svg lucideCheckCircle2 [size]="14"></svg> LUNAS
+                    </span>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Tidak ada tunggakan</p>
+                  </div>
+                } @else if (c.billingStatus === 'PENDING_VERIFICATION') {
+                  <div>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900">
+                      <svg lucideClock [size]="14"></svg> MENUNGGU ACC FINANCE
+                    </span>
+                    <p class="text-xs font-bold text-amber-900 mt-1">
+                      Setoran: {{ formatCurrency(c.activeInvoice?.amount || c.unpaidAmount) }}
+                    </p>
+                    <p class="text-[11px] text-amber-700">Sudah disetor ke kolektor</p>
+                  </div>
+                } @else {
+                  <!-- MERAH: HARUS DITAGIH -->
+                  <div>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-black text-red-700 border border-red-200">
+                      <svg lucideAlertCircle [size]="14"></svg> HARUS DITAGIH
+                    </span>
+                    <div class="mt-1 flex items-baseline gap-1.5">
+                      <span class="text-sm font-black text-red-600">
+                        {{ formatCurrency(c.activeInvoice?.amount || c.unpaidAmount) }}
+                      </span>
+                    </div>
+                    @if (c.activeInvoice?.dueDate) {
+                      <p class="text-[11px] text-red-500 font-medium">
+                        Tempo: {{ formatDate(c.activeInvoice!.dueDate) }}
+                      </p>
+                    }
+                  </div>
+                }
+              </td>
+
+              <!-- Aksi Kolektor -->
+              <td>
+                <div class="flex items-center justify-end gap-2">
+                  @if (!c.isPaid && c.activeInvoice) {
+                    <!-- Tombol Catat Setoran Kolektor -->
+                    <button
+                      type="button"
+                      class="btn-primary py-1.5 px-3 text-xs flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 border-emerald-600 shadow-xs cursor-pointer whitespace-nowrap"
+                      (click)="openQuickDeposit(c)"
+                      title="Catat penerimaan uang tagihan dari pelanggan ini"
+                    >
+                      <svg lucideDollarSign [size]="14"></svg>
+                      <span>Catat Setoran</span>
+                    </button>
+
+                    <!-- Tombol WhatsApp Pengingat Tagihan -->
+                    @if (c.phone) {
+                      <button
+                        type="button"
+                        class="btn-secondary py-1.5 px-2 text-xs text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 cursor-pointer"
+                        (click)="sendWaReminder(c)"
+                        title="Kirim pesan tagihan via WhatsApp"
+                      >
+                        <svg lucideSend [size]="14"></svg>
+                      </button>
+                    }
+                  } @else if (c.isPaid) {
+                    <span class="text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                      <svg lucideCheckCircle2 [size]="14"></svg> Sudah Bayar
+                    </span>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="text-center py-12 text-slate-400">
+                @if (loadingCustomers()) {
+                  Memuat data pelanggan dan status penagihan...
+                } @else {
+                  Tidak ada pelanggan yang sesuai dengan filter ini.
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- MODAL 1: TAMBAH / EDIT AREA               -->
+  <!-- ========================================== -->
+  <app-modal
+    [open]="modalOpen()"
+    [title]="(editing ? 'Edit' : 'Tambah') + ' Area Penagihan'"
+    (closeModal)="closeModal()"
+  >
     <form (submit)="save($event)" class="space-y-4">
       <div>
         <label class="label">Nama Area *</label>
         <input
-          class="input"
-          required
-          maxlength="150"
+          type="text"
           [(ngModel)]="form.name"
           name="name"
-          placeholder="Cth: Area Kecamatan Utara"
+          required
+          placeholder="Cth: Dukuh Pakis, Wonokromo, Rungkut"
+          class="input"
         />
       </div>
+
       <div>
-        <label class="label">Deskripsi (Opsional)</label>
+        <label class="label">Deskripsi / Keterangan Wilayah</label>
         <textarea
-          class="input"
-          rows="3"
-          maxlength="500"
           [(ngModel)]="form.description"
           name="description"
-          placeholder="Deskripsi batas wilayah, cakupan area, dll..."
+          rows="3"
+          placeholder="Cth: Cakupan RT 01 - RT 05 RW 03, wilayah barat jalan utama..."
+          class="input font-sans"
         ></textarea>
       </div>
+
+      @if (!editing && auth.isAdmin()) {
+        <div>
+          <label class="label">Tugaskan Kolektor Awal (Opsional)</label>
+          <select [(ngModel)]="form.collectorUserId" name="collectorUserId" class="input">
+            <option value="">-- Pilih Kolektor (Bisa ditugaskan nanti) --</option>
+            @for (opt of collectorOptions(); track opt.id) {
+              <option [value]="opt.id">{{ opt.name }} ({{ opt.email }})</option>
+            }
+          </select>
+          <p class="mt-1 text-xs text-slate-400">Akun kolektor yang akan bertanggung jawab menagih di wilayah ini.</p>
+        </div>
+      }
+
       <div class="flex justify-end gap-3 pt-2">
         <button type="button" class="btn-secondary" (click)="closeModal()">Batal</button>
         <button type="submit" class="btn-primary" [disabled]="saving()">
-          {{ saving() ? 'Menyimpan...' : 'Simpan' }}
+          {{ saving() ? 'Menyimpan...' : 'Simpan Area' }}
         </button>
       </div>
     </form>
   </app-modal>
 
-  <!-- Assign Collector Modal -->
+  <!-- ========================================== -->
+  <!-- MODAL 2: TUGASKAN KOLEKTOR KE AREA        -->
+  <!-- ========================================== -->
   <app-modal
     [open]="assignModalOpen()"
-    [title]="'Tugaskan Kolektor: ' + (assignArea?.name || '')"
+    [title]="'Tugaskan Kolektor ke ' + (assignArea?.name || 'Area')"
     (closeModal)="assignModalOpen.set(false)"
   >
-    <div class="space-y-4">
-      <p class="text-xs text-slate-500">
-        Pilih pengguna dengan role <strong>kolektor</strong> untuk ditugaskan memungut tagihan di area ini.
-      </p>
-
-      @if (collectorOptions().length === 0) {
-        <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-          Tidak ada akun role kolektor yang tersedia. Tambahkan user dengan peran "Kolektor" terlebih dahulu di menu <strong>Data Petugas</strong>.
-        </div>
-      } @else {
-        <div>
-          <label class="label">Pilih Kolektor</label>
-          <select class="input" [(ngModel)]="selectedCollectorId">
-            <option value="">-- Pilih Kolektor --</option>
-            @for (c of collectorOptions(); track c.id) {
-              <option [value]="c.id">{{ c.name }} ({{ c.email }})</option>
-            }
-          </select>
-        </div>
-      }
+    <form (submit)="$event.preventDefault(); assignCollector()" class="space-y-4">
+      <div>
+        <label class="label">Pilih Akun Kolektor *</label>
+        <select [(ngModel)]="selectedCollectorId" name="collectorId" required class="input">
+          <option value="">-- Pilih Kolektor --</option>
+          @for (c of collectorOptions(); track c.id) {
+            <option [value]="c.id">{{ c.name }} ({{ c.email }})</option>
+          }
+        </select>
+        <p class="mt-1.5 text-xs text-slate-400">
+          Kolektor yang dipilih akan mendapatkan daftar pelanggan di area ini untuk dilakukan penagihan.
+        </p>
+      </div>
 
       <div class="flex justify-end gap-3 pt-2">
-        <button type="button" class="btn-secondary" (click)="assignModalOpen.set(false)">Tutup</button>
-        <button
-          type="button"
-          class="btn-primary"
-          [disabled]="!selectedCollectorId || assigning()"
-          (click)="assignCollector()"
-        >
+        <button type="button" class="btn-secondary" (click)="assignModalOpen.set(false)">Batal</button>
+        <button type="submit" class="btn-primary" [disabled]="assigning() || !selectedCollectorId">
           {{ assigning() ? 'Menugaskan...' : 'Tugaskan Kolektor' }}
         </button>
       </div>
-    </div>
+    </form>
   </app-modal>
 
-  <!-- Toast Feedback -->
+  <!-- ========================================== -->
+  <!-- MODAL 3: QUICK CATAT SETORAN KOLEKTOR     -->
+  <!-- ========================================== -->
+  <app-modal
+    [open]="quickDepositModalOpen()"
+    [title]="'Catat Setoran: ' + (depositTargetCustomer?.customerName || '')"
+    (closeModal)="closeQuickDeposit()"
+  >
+    <form (submit)="saveQuickDeposit($event)" class="space-y-4">
+      <div class="rounded-xl bg-slate-50 border border-slate-200 p-3 space-y-1.5 text-xs">
+        <div class="flex justify-between">
+          <span class="text-slate-500">Pelanggan:</span>
+          <span class="font-bold text-slate-900">{{ depositTargetCustomer?.customerName }} (#{{ depositTargetCustomer?.customerNumber }})</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">No. Invoice:</span>
+          <span class="font-mono font-semibold text-slate-800">{{ depositTargetCustomer?.activeInvoice?.invoiceNumber }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Paket:</span>
+          <span class="font-medium text-slate-700">{{ depositTargetCustomer?.package?.name }}</span>
+        </div>
+      </div>
+
+      <div>
+        <label class="label">Nominal Pembayaran Diterima (Rp) *</label>
+        <input
+          type="number"
+          [(ngModel)]="quickDepositForm.amount"
+          name="amount"
+          required
+          min="1"
+          class="input font-mono text-base font-bold text-slate-900"
+        />
+        <p class="mt-1 text-xs text-slate-400">Nominal uang tunai/transfer yang diterima dari pelanggan.</p>
+      </div>
+
+      <div>
+        <label class="label">Tanggal Setor *</label>
+        <input
+          type="date"
+          [(ngModel)]="quickDepositForm.depositDate"
+          name="depositDate"
+          required
+          class="input"
+        />
+      </div>
+
+      <div>
+        <label class="label">Catatan Tambahan (Opsional)</label>
+        <input
+          type="text"
+          [(ngModel)]="quickDepositForm.notes"
+          name="notes"
+          maxlength="200"
+          placeholder="Cth: Diterima tunai oleh Pak Budi..."
+          class="input"
+        />
+      </div>
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" class="btn-secondary" (click)="closeQuickDeposit()">Batal</button>
+        <button type="submit" class="btn-primary" [disabled]="submittingDeposit() || quickDepositForm.amount <= 0">
+          {{ submittingDeposit() ? 'Menyimpan...' : 'Simpan & Kirim Notif WA' }}
+        </button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Feedback Toast -->
   @if (toast()) {
     <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
   }
