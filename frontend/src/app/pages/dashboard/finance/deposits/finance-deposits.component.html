@@ -1,0 +1,300 @@
+<div class="space-y-4">
+  <!-- Search & Filters Bar -->
+  <div class="card p-4">
+    <div class="grid gap-3 sm:grid-cols-[1fr_200px_auto]">
+      <div class="relative">
+        <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
+        <input
+          class="input pl-10"
+          placeholder="Cari nama pelanggan, username..."
+          [(ngModel)]="search"
+          (ngModelChange)="page.set(1); load()"
+        />
+      </div>
+
+      <select class="input" [(ngModel)]="filterStatus" (ngModelChange)="page.set(1); load()">
+        <option value="">Semua Status</option>
+        <option value="PENDING">Menunggu ACC</option>
+        <option value="ACCEPTED">Diterima</option>
+        <option value="REJECTED">Ditolak</option>
+      </select>
+
+      @if (auth.hasRole('admin', 'pengepul')) {
+        <button class="btn-primary whitespace-nowrap" (click)="openCreateModal()">
+          <svg lucidePlus [size]="18"></svg> Catat Setoran
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Deposits Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Tanggal</th>
+          <th>Pelanggan</th>
+          <th>Area</th>
+          <th>Pengepul</th>
+          <th>No. Tagihan</th>
+          <th class="text-right">Jumlah</th>
+          <th>Status</th>
+          <th>Catatan</th>
+          @if (auth.hasRole('admin', 'finance')) {
+            <th class="text-right">Aksi</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (d of deposits(); track d.id) {
+          <tr>
+            <td class="whitespace-nowrap font-mono text-xs text-slate-700">
+              {{ formatDate(d.depositDate) }}
+            </td>
+            <td>
+              <p class="font-semibold text-slate-900">{{ d.account?.customerName || '-' }}</p>
+              <p class="text-xs text-slate-500">
+                {{ d.account?.username }} · ID: {{ d.account?.customerNumber }}
+              </p>
+            </td>
+            <td>
+              <span class="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                📍 {{ d.account?.area?.name || 'Tanpa Area' }}
+              </span>
+            </td>
+            <td class="font-medium text-slate-800">
+              {{ d.collector?.name || '-' }}
+            </td>
+            <td class="font-mono text-xs text-slate-600">
+              {{ d.invoice?.invoiceNumber || '-' }}
+            </td>
+            <td class="text-right font-bold text-slate-900 whitespace-nowrap">
+              {{ formatCurrency(d.amount) }}
+            </td>
+            <td>
+              <span
+                [class]="
+                  'rounded-full px-2.5 py-1 text-xs font-semibold ' +
+                  (d.status === 'PENDING'
+                    ? 'bg-amber-100 text-amber-800'
+                    : d.status === 'ACCEPTED'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-red-100 text-red-700')
+                "
+              >
+                {{ statusLabel(d.status) }}
+              </span>
+            </td>
+            <td class="text-xs text-slate-500 max-w-xs truncate">
+              {{ d.notes || '—' }}
+            </td>
+            @if (auth.hasRole('admin', 'finance')) {
+              <td>
+                <div class="flex justify-end gap-2">
+                  @if (d.status === 'PENDING') {
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 transition-colors"
+                      (click)="accept(d)"
+                      title="ACC & Masukkan ke Pembukuan"
+                    >
+                      <svg lucideCheck [size]="14"></svg> ACC
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-danger"
+                      (click)="openRejectModal(d)"
+                      title="Tolak Setoran"
+                    >
+                      <svg lucideX [size]="14"></svg> Tolak
+                    </button>
+                  } @else {
+                    <span class="text-xs text-slate-400">
+                      {{ d.acceptedBy?.name ? 'Oleh ' + d.acceptedBy?.name : 'Selesai' }}
+                    </span>
+                  }
+                </div>
+              </td>
+            }
+          </tr>
+        }
+        @if (loading()) {
+          <tr>
+            <td [attr.colspan]="auth.hasRole('admin', 'finance') ? 9 : 8" class="py-8 text-center text-slate-400">
+              Memuat data setoran...
+            </td>
+          </tr>
+        } @else if (deposits().length === 0) {
+          <tr>
+            <td [attr.colspan]="auth.hasRole('admin', 'finance') ? 9 : 8" class="py-8 text-center text-slate-400">
+              Data setoran belum tersedia.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  @if (meta()) {
+    <app-pagination [meta]="meta()!" (pageChange)="page.set($event); load()"></app-pagination>
+  }
+
+  <!-- Modal Catat Setoran -->
+  <app-modal
+    [open]="createModalOpen()"
+    title="Catat Setoran Pelanggan"
+    (closeModal)="createModalOpen.set(false)"
+  >
+    <form (submit)="saveDeposit($event)" class="space-y-4">
+      <!-- Unpaid Invoice Picker -->
+      <div>
+        <label class="label">Pilih Tagihan Pelanggan *</label>
+        @if (!selectedInvoice) {
+          <div class="space-y-2">
+            <div class="relative">
+              <svg lucideSearch [size]="16" class="absolute left-3 top-3 text-slate-400"></svg>
+              <input
+                type="text"
+                placeholder="Ketik nama pelanggan, username, atau no. tagihan..."
+                [(ngModel)]="invoiceSearch"
+                name="invoiceSearch"
+                (ngModelChange)="loadUnpaidInvoices()"
+                class="input pl-9 text-xs"
+              />
+            </div>
+            <div class="max-h-44 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100 bg-white">
+              @if (loadingInvoices()) {
+                <p class="p-3 text-center text-xs text-slate-400">Mencari tagihan belum lunas...</p>
+              } @else if (unpaidInvoices().length === 0) {
+                <p class="p-3 text-center text-xs text-slate-400">Tidak ada tagihan tertunggak ditemukan.</p>
+              } @else {
+                @for (inv of unpaidInvoices(); track inv.id) {
+                  <button
+                    type="button"
+                    (click)="selectInvoice(inv)"
+                    class="w-full text-left p-3 hover:bg-slate-50 transition-colors flex items-center justify-between"
+                  >
+                    <div>
+                      <p class="text-sm font-semibold text-slate-900">
+                        {{ inv.account?.customerName }}
+                        <span class="font-normal text-xs text-slate-500">({{ inv.account?.username }})</span>
+                      </p>
+                      <p class="text-xs text-slate-400">
+                        No: {{ inv.invoiceNumber }} · Area: {{ inv.account?.area?.name || 'Tanpa Area' }}
+                      </p>
+                    </div>
+                    <span class="text-sm font-bold text-slate-900">{{ formatCurrency(inv.amount) }}</span>
+                  </button>
+                }
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="rounded-lg border border-slate-300 bg-slate-50 p-3 flex items-center justify-between">
+            <div>
+              <p class="text-sm font-semibold text-slate-900">{{ selectedInvoice.account?.customerName }}</p>
+              <p class="text-xs text-slate-500">
+                No. Tagihan: <span class="font-mono">{{ selectedInvoice.invoiceNumber }}</span> · Area: {{ selectedInvoice.account?.area?.name || 'Tanpa Area' }}
+              </p>
+            </div>
+            <button
+              type="button"
+              (click)="selectedInvoice = null"
+              class="text-xs font-semibold text-slate-900 hover:underline"
+            >
+              Ganti Tagihan
+            </button>
+          </div>
+        }
+      </div>
+
+      <div>
+        <label class="label">Jumlah Setor (Rp) *</label>
+        <input
+          type="number"
+          [(ngModel)]="depositForm.amount"
+          name="amount"
+          required
+          min="1"
+          class="input"
+        />
+      </div>
+
+      <div>
+        <label class="label">Tanggal Setor *</label>
+        <input
+          type="date"
+          [(ngModel)]="depositForm.depositDate"
+          name="depositDate"
+          required
+          class="input"
+        />
+      </div>
+
+      <div>
+        <label class="label">Catatan (Opsional)</label>
+        <input
+          type="text"
+          [(ngModel)]="depositForm.notes"
+          name="notes"
+          placeholder="Cth: Titip bayar via tunai/transfer..."
+          class="input"
+        />
+      </div>
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" class="btn-secondary" (click)="createModalOpen.set(false)">Batal</button>
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="saving() || !depositForm.invoiceId || depositForm.amount <= 0"
+        >
+          {{ saving() ? 'Menyimpan...' : 'Simpan Setoran' }}
+        </button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Modal Tolak Setoran -->
+  <app-modal
+    [open]="rejectModalOpen()"
+    title="Tolak Setoran Pelanggan"
+    (closeModal)="rejectModalOpen.set(false)"
+  >
+    <div class="space-y-4">
+      <p class="text-sm text-slate-700">
+        Setoran dari pengepul <strong>{{ rejectingDeposit?.collector?.name }}</strong> untuk pelanggan
+        <strong>{{ rejectingDeposit?.account?.customerName }}</strong> sebesar
+        <strong>{{ formatCurrency(rejectingDeposit?.amount || 0) }}</strong> akan ditolak.
+      </p>
+
+      <div>
+        <label class="label">Alasan Penolakan (Opsional)</label>
+        <textarea
+          class="input"
+          rows="3"
+          [(ngModel)]="rejectReason"
+          placeholder="Cth: Jumlah tidak sesuai dengan tagihan, nomor salah, dll..."
+        ></textarea>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" class="btn-secondary" (click)="rejectModalOpen.set(false)">Batal</button>
+        <button
+          type="button"
+          class="btn-danger"
+          [disabled]="rejecting()"
+          (click)="confirmReject()"
+        >
+          {{ rejecting() ? 'Menolak...' : 'Konfirmasi Tolak' }}
+        </button>
+      </div>
+    </div>
+  </app-modal>
+
+  <!-- Toast Feedback -->
+  @if (toast()) {
+    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
+  }
+</div>

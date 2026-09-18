@@ -1,0 +1,205 @@
+<div class="space-y-4">
+  <!-- Search and Action Bar -->
+  <div class="card flex flex-wrap gap-3 p-4">
+    <div class="relative flex-1 min-w-[200px]">
+      <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
+      <input
+        class="input pl-10"
+        placeholder="Cari nama area atau deskripsi..."
+        [(ngModel)]="search"
+        (ngModelChange)="page.set(1); load()"
+      />
+    </div>
+    @if (auth.isAdmin()) {
+      <button class="btn-primary" (click)="openModal()">
+        <svg lucidePlus [size]="18"></svg> Tambah Area
+      </button>
+    }
+  </div>
+
+  <!-- Area Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nama Area</th>
+          <th>Deskripsi</th>
+          <th>Pengepul Ditugaskan</th>
+          <th class="text-center">Jumlah Pelanggan</th>
+          @if (auth.isAdmin()) {
+            <th class="text-right">Aksi</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (area of areas(); track area.id) {
+          <tr>
+            <td>
+              <div class="flex items-center gap-2">
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                  <svg lucideMapPin [size]="16"></svg>
+                </span>
+                <div>
+                  <p class="font-semibold text-slate-900">{{ area.name }}</p>
+                </div>
+              </div>
+            </td>
+            <td class="text-slate-600 max-w-xs">
+              {{ area.description || '—' }}
+            </td>
+            <td>
+              <div class="flex flex-wrap items-center gap-1.5">
+                @for (c of area.collectors; track c.id) {
+                  <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-800">
+                    {{ c.user?.name }}
+                    @if (c.user?.phone) {
+                      <span class="text-slate-400 text-[10px]">({{ c.user?.phone }})</span>
+                    }
+                    @if (auth.isAdmin()) {
+                      <button
+                        type="button"
+                        (click)="removeCollector(area, c.userId)"
+                        class="ml-0.5 text-slate-400 hover:text-red-600"
+                        title="Hapus pengepul"
+                      >
+                        <svg lucideX [size]="12"></svg>
+                      </button>
+                    }
+                  </span>
+                }
+                @if (!area.collectors || area.collectors.length === 0) {
+                  <span class="text-xs text-slate-400 italic">Belum ada pengepul</span>
+                }
+                @if (auth.isAdmin()) {
+                  <button
+                    type="button"
+                    (click)="openAssignModal(area)"
+                    class="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2 py-0.5 text-xs text-slate-500 hover:border-slate-800 hover:text-slate-900 transition-colors"
+                    title="Tambah pengepul ke area ini"
+                  >
+                    <svg lucideUserPlus [size]="12"></svg> + Pengepul
+                  </button>
+                }
+              </div>
+            </td>
+            <td class="text-center font-medium">
+              <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+                {{ area.accountsCount || 0 }} pelanggan
+              </span>
+            </td>
+            @if (auth.isAdmin()) {
+              <td>
+                <div class="flex justify-end gap-2">
+                  <button class="btn-secondary px-3" (click)="openModal(area)" title="Edit Area">
+                    <svg lucidePencil [size]="15"></svg>
+                  </button>
+                  <button class="btn-danger" (click)="remove(area)" title="Hapus Area">
+                    <svg lucideTrash2 [size]="15"></svg>
+                  </button>
+                </div>
+              </td>
+            }
+          </tr>
+        }
+        @if (loading()) {
+          <tr>
+            <td [attr.colspan]="auth.isAdmin() ? 5 : 4" class="py-8 text-center text-slate-400">
+              Memuat data area...
+            </td>
+          </tr>
+        } @else if (areas().length === 0) {
+          <tr>
+            <td [attr.colspan]="auth.isAdmin() ? 5 : 4" class="py-8 text-center text-slate-400">
+              Data area belum tersedia.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  @if (meta()) {
+    <app-pagination [meta]="meta()!" (pageChange)="page.set($event); load()"></app-pagination>
+  }
+
+  <!-- Create / Edit Area Modal -->
+  <app-modal [open]="modalOpen()" [title]="(editing ? 'Edit' : 'Tambah') + ' Data Area'" (closeModal)="closeModal()">
+    <form (submit)="save($event)" class="space-y-4">
+      <div>
+        <label class="label">Nama Area *</label>
+        <input
+          class="input"
+          required
+          maxlength="150"
+          [(ngModel)]="form.name"
+          name="name"
+          placeholder="Cth: Area Kecamatan Utara"
+        />
+      </div>
+      <div>
+        <label class="label">Deskripsi (Opsional)</label>
+        <textarea
+          class="input"
+          rows="3"
+          maxlength="500"
+          [(ngModel)]="form.description"
+          name="description"
+          placeholder="Deskripsi batas wilayah, cakupan area, dll..."
+        ></textarea>
+      </div>
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" class="btn-secondary" (click)="closeModal()">Batal</button>
+        <button type="submit" class="btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Menyimpan...' : 'Simpan' }}
+        </button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Assign Collector Modal -->
+  <app-modal
+    [open]="assignModalOpen()"
+    [title]="'Tugaskan Pengepul: ' + (assignArea?.name || '')"
+    (closeModal)="assignModalOpen.set(false)"
+  >
+    <div class="space-y-4">
+      <p class="text-xs text-slate-500">
+        Pilih pengguna dengan role <strong>pengepul</strong> untuk ditugaskan memungut tagihan di area ini.
+      </p>
+
+      @if (collectorOptions().length === 0) {
+        <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+          Tidak ada akun role pengepul yang tersedia. Tambahkan user dengan peran "Pengepul" terlebih dahulu di menu <strong>Data Petugas</strong>.
+        </div>
+      } @else {
+        <div>
+          <label class="label">Pilih Pengepul</label>
+          <select class="input" [(ngModel)]="selectedCollectorId">
+            <option value="">-- Pilih Pengepul --</option>
+            @for (c of collectorOptions(); track c.id) {
+              <option [value]="c.id">{{ c.name }} ({{ c.email }})</option>
+            }
+          </select>
+        </div>
+      }
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" class="btn-secondary" (click)="assignModalOpen.set(false)">Tutup</button>
+        <button
+          type="button"
+          class="btn-primary"
+          [disabled]="!selectedCollectorId || assigning()"
+          (click)="assignCollector()"
+        >
+          {{ assigning() ? 'Menugaskan...' : 'Tugaskan Pengepul' }}
+        </button>
+      </div>
+    </div>
+  </app-modal>
+
+  <!-- Toast Feedback -->
+  @if (toast()) {
+    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
+  }
+</div>

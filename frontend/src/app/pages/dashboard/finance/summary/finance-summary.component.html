@@ -1,0 +1,167 @@
+<div class="space-y-4">
+  <!-- Filter Bar -->
+  <div class="card flex flex-wrap items-center justify-between gap-3 p-4">
+    <div>
+      <h2 class="text-base font-bold text-slate-900">Ringkasan Keuangan</h2>
+      <p class="text-xs text-slate-500">Laporan pemasukan, pengeluaran, dan saldo kas</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <select [(ngModel)]="selectedMonth" (ngModelChange)="load()" class="input w-auto">
+        @for (m of months; track m.value) {
+          <option [value]="m.value">{{ m.label }}</option>
+        }
+      </select>
+      <select [(ngModel)]="selectedYear" (ngModelChange)="load()" class="input w-auto">
+        @for (y of years; track y) {
+          <option [value]="y">{{ y }}</option>
+        }
+      </select>
+      <a routerLink="/dashboard/finance/transaksi" class="btn-primary">
+        <svg lucidePlus [size]="16"></svg> Catat Transaksi
+      </a>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="card p-12 text-center text-slate-400">
+      Memuat ringkasan keuangan...
+    </div>
+  } @else if (summary()) {
+    <!-- Monthly Metrics Grid -->
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <!-- Monthly Income -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Pemasukan Bulan Ini</span>
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+            <svg lucideArrowUpRight [size]="18"></svg>
+          </span>
+        </div>
+        <p class="mt-3 text-2xl font-bold text-slate-900">
+          {{ formatCurrency(summary()!.monthlyIncome) }}
+        </p>
+        <p class="mt-1 text-xs text-slate-500">
+          {{ summary()!.monthlyIncomeCount }} transaksi tercatat
+        </p>
+      </div>
+
+      <!-- Monthly Expense -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Pengeluaran Bulan Ini</span>
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
+            <svg lucideArrowDownLeft [size]="18"></svg>
+          </span>
+        </div>
+        <p class="mt-3 text-2xl font-bold text-slate-900">
+          {{ formatCurrency(summary()!.monthlyExpense) }}
+        </p>
+        <p class="mt-1 text-xs text-slate-500">
+          {{ summary()!.monthlyExpenseCount }} transaksi operasional
+        </p>
+      </div>
+
+      <!-- Monthly Net Balance -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Saldo Bersih Bulan Ini</span>
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+            <svg lucideWallet [size]="18"></svg>
+          </span>
+        </div>
+        <p
+          class="mt-3 text-2xl font-bold"
+          [class]="summary()!.monthlyBalance >= 0 ? 'text-emerald-600' : 'text-red-600'"
+        >
+          {{ formatCurrency(summary()!.monthlyBalance) }}
+        </p>
+        <p class="mt-1 text-xs text-slate-500">
+          Pemasukan dikurangi pengeluaran
+        </p>
+      </div>
+
+      <!-- Pending Deposits -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Setoran Menunggu ACC</span>
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+            <svg lucideClock [size]="18"></svg>
+          </span>
+        </div>
+        <p class="mt-3 text-2xl font-bold text-amber-600">
+          {{ summary()!.pendingDeposits }}
+        </p>
+        <div class="mt-1 flex items-center justify-between">
+          <span class="text-xs text-slate-500">Dari setoran pengepul</span>
+          <a routerLink="/dashboard/finance/setoran" class="text-xs font-semibold text-slate-900 hover:underline">
+            Periksa →
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overall Balance Cards -->
+    <div class="grid gap-4 sm:grid-cols-3">
+      <div class="card p-5 border-l-4 border-l-emerald-500">
+        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Akumulasi Pemasukan</p>
+        <p class="mt-2 text-xl font-bold text-slate-900">{{ formatCurrency(summary()!.totalIncome) }}</p>
+        <p class="mt-1 text-xs text-slate-400">Total seluruh pemasukan tercatat</p>
+      </div>
+
+      <div class="card p-5 border-l-4 border-l-red-500">
+        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Akumulasi Pengeluaran</p>
+        <p class="mt-2 text-xl font-bold text-slate-900">{{ formatCurrency(summary()!.totalExpense) }}</p>
+        <p class="mt-1 text-xs text-slate-400">Total seluruh beban operasional</p>
+      </div>
+
+      <div class="card p-5 border-l-4 border-l-slate-900">
+        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Saldo Kas Tersedia</p>
+        <p
+          class="mt-2 text-xl font-bold"
+          [class]="summary()!.totalBalance >= 0 ? 'text-slate-900' : 'text-red-600'"
+        >
+          {{ formatCurrency(summary()!.totalBalance) }}
+        </p>
+        <p class="mt-1 text-xs text-slate-400">Akumulasi saldo kas bersih</p>
+      </div>
+    </div>
+
+    <!-- Quick Links Card -->
+    <div class="card p-5">
+      <h3 class="text-sm font-bold text-slate-900 mb-3">Tautan Cepat Fitur Keuangan</h3>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <a
+          routerLink="/dashboard/finance/transaksi"
+          class="flex items-center justify-between rounded-lg border border-slate-200 p-3 hover:border-slate-800 hover:bg-slate-50 transition-colors"
+        >
+          <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+              <svg lucideFileText [size]="18"></svg>
+            </span>
+            <div>
+              <p class="text-sm font-semibold text-slate-900">Daftar Transaksi</p>
+              <p class="text-xs text-slate-500">Kelola catatan pemasukan & pengeluaran operasional</p>
+            </div>
+          </div>
+          <span class="text-slate-400">›</span>
+        </a>
+
+        <a
+          routerLink="/dashboard/finance/setoran"
+          class="flex items-center justify-between rounded-lg border border-slate-200 p-3 hover:border-slate-800 hover:bg-slate-50 transition-colors"
+        >
+          <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+              <svg lucideClock [size]="18"></svg>
+            </span>
+            <div>
+              <p class="text-sm font-semibold text-slate-900">Setoran Pengepul</p>
+              <p class="text-xs text-slate-500">Verifikasi & ACC setoran tagihan pelanggan</p>
+            </div>
+          </div>
+          <span class="text-slate-400">›</span>
+        </a>
+      </div>
+    </div>
+  }
+</div>

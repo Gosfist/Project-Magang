@@ -1,0 +1,224 @@
+<div class="space-y-4">
+  <!-- Search & Filters Bar -->
+  <div class="card p-4">
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_160px_150px_150px_auto]">
+      <!-- Search input -->
+      <div class="relative">
+        <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
+        <input
+          class="input pl-10"
+          placeholder="Cari deskripsi transaksi..."
+          [(ngModel)]="search"
+          (ngModelChange)="page.set(1); load()"
+        />
+      </div>
+
+      <!-- Type filter -->
+      <select class="input" [(ngModel)]="filterType" (ngModelChange)="page.set(1); load()">
+        <option value="">Semua Jenis</option>
+        <option value="INCOME">Pemasukan</option>
+        <option value="EXPENSE">Pengeluaran</option>
+      </select>
+
+      <!-- Start date -->
+      <input
+        type="date"
+        class="input"
+        [(ngModel)]="startDate"
+        (ngModelChange)="page.set(1); load()"
+        title="Tanggal Mulai"
+      />
+
+      <!-- End date -->
+      <input
+        type="date"
+        class="input"
+        [(ngModel)]="endDate"
+        (ngModelChange)="page.set(1); load()"
+        title="Tanggal Akhir"
+      />
+
+      <!-- Action button -->
+      <div class="flex gap-2">
+        @if (filterType || startDate || endDate || search) {
+          <button
+            type="button"
+            class="btn-secondary px-3"
+            (click)="resetFilters()"
+            title="Reset Filter"
+          >
+            <svg lucideRotateCcw [size]="16"></svg>
+          </button>
+        }
+        <button class="btn-primary flex-1 whitespace-nowrap" (click)="openModal()">
+          <svg lucidePlus [size]="18"></svg> Tambah
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transactions Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Tanggal</th>
+          <th>Jenis</th>
+          <th>Kategori</th>
+          <th>Deskripsi</th>
+          <th class="text-right">Jumlah</th>
+          <th>Dicatat Oleh</th>
+          <th class="text-right">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (t of transactions(); track t.id) {
+          <tr>
+            <td class="whitespace-nowrap font-mono text-xs text-slate-700">
+              {{ formatDate(t.transactionDate) }}
+            </td>
+            <td>
+              <span
+                [class]="
+                  'rounded-full px-2.5 py-1 text-xs font-semibold ' +
+                  (t.type === 'INCOME'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-red-100 text-red-700')
+                "
+              >
+                {{ t.type === 'INCOME' ? 'Pemasukan' : 'Pengeluaran' }}
+              </span>
+            </td>
+            <td>
+              <span class="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                {{ t.category }}
+              </span>
+            </td>
+            <td class="font-medium text-slate-900 max-w-sm">
+              <p class="truncate">{{ t.description }}</p>
+              @if (t.referenceType) {
+                <span class="text-[11px] text-slate-400">Ref: {{ t.referenceType }}</span>
+              }
+            </td>
+            <td
+              class="text-right font-bold whitespace-nowrap"
+              [class]="t.type === 'INCOME' ? 'text-emerald-600' : 'text-red-600'"
+            >
+              {{ t.type === 'INCOME' ? '+' : '-' }} {{ formatCurrency(t.amount) }}
+            </td>
+            <td class="text-xs text-slate-500">
+              {{ t.createdBy?.name || '—' }}
+            </td>
+            <td>
+              <div class="flex justify-end gap-2">
+                <button class="btn-secondary px-3" (click)="openModal(t)" title="Edit Transaksi">
+                  <svg lucidePencil [size]="15"></svg>
+                </button>
+                <button class="btn-danger" (click)="remove(t)" title="Hapus Transaksi">
+                  <svg lucideTrash2 [size]="15"></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+        @if (loading()) {
+          <tr>
+            <td colspan="7" class="py-8 text-center text-slate-400">
+              Memuat data transaksi...
+            </td>
+          </tr>
+        } @else if (transactions().length === 0) {
+          <tr>
+            <td colspan="7" class="py-8 text-center text-slate-400">
+              Data transaksi belum tersedia.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  @if (meta()) {
+    <app-pagination [meta]="meta()!" (pageChange)="page.set($event); load()"></app-pagination>
+  }
+
+  <!-- Modal Tambah / Edit Transaksi -->
+  <app-modal
+    [open]="modalOpen()"
+    [title]="(editing ? 'Edit' : 'Tambah') + ' Transaksi Keuangan'"
+    (closeModal)="closeModal()"
+  >
+    <form (submit)="save($event)" class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="label">Jenis Transaksi *</label>
+          <select [(ngModel)]="form.type" name="type" required class="input">
+            <option value="INCOME">Pemasukan</option>
+            <option value="EXPENSE">Pengeluaran</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">Kategori *</label>
+          <input
+            type="text"
+            [(ngModel)]="form.category"
+            name="category"
+            required
+            placeholder="Cth: OPERASIONAL, GAJI, DLL"
+            class="input"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label class="label">Nominal (Rp) *</label>
+        <input
+          type="number"
+          [(ngModel)]="form.amount"
+          name="amount"
+          required
+          min="1"
+          placeholder="Masukkan jumlah rupiah"
+          class="input"
+        />
+      </div>
+
+      <div>
+        <label class="label">Deskripsi *</label>
+        <input
+          type="text"
+          [(ngModel)]="form.description"
+          name="description"
+          required
+          maxlength="500"
+          placeholder="Keterangan transaksi..."
+          class="input"
+        />
+      </div>
+
+      <div>
+        <label class="label">Tanggal Transaksi *</label>
+        <input
+          type="date"
+          [(ngModel)]="form.transactionDate"
+          name="transactionDate"
+          required
+          class="input"
+        />
+      </div>
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" class="btn-secondary" (click)="closeModal()">Batal</button>
+        <button type="submit" class="btn-primary" [disabled]="saving()">
+          {{ saving() ? 'Menyimpan...' : 'Simpan' }}
+        </button>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Toast Feedback -->
+  @if (toast()) {
+    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
+  }
+</div>
