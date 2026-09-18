@@ -1,4 +1,4 @@
-export type User = { id: string; name: string; email: string; phone?: string | null; role: 'admin' | 'petugas'; status: 'active' | 'inactive' };
+export type User = { id: string; name: string; email: string; phone?: string | null; role: 'admin' | 'petugas' | 'finance' | 'sales' | 'pengepul'; status: 'active' | 'inactive' };
 export type PageMeta = { currentPage: number; lastPage: number; perPage: number; total: number };
 export type MainCoreNode = {
   id: string; parentId: string | null; parentPortOut: number | null; namaTitik: string;
@@ -13,7 +13,7 @@ export type OdpOption = { id: string; namaTitik: string; alamat: string | null; 
 export type Invoice = { id: string; pppoeAccountId: string; invoiceNumber: string; amount: number; baseAmount: number; discount: number; invoiceType: 'PRORATE' | 'MONTHLY'; status: 'PENDING' | 'PAID' | 'CANCELLED'; dueDate: string; paidAt: string | null; notes: string | null };
 
 export type PppoePackage = { id: string; name: string; downloadMbps: number; uploadMbps: number; price: number; costPrice: number; addressPool: string | null; ipPool: IpPool | null; validityDays: number; isActive: boolean; accountsCount?: number; rateLimit?: string };
-export type PppoeAccount = { id: string; pppoePackageId: string; customerName: string; username: string; phone: string | null; address: string | null; expiresAt: string | null; isActive: boolean; notes: string | null; idCardNumber: string | null; idCardPhoto: string | null; latitude: number | null; longitude: number | null; subscriptionType: string; billingDay: number; discount: number; odp: string | null; routerNasId: number | null; routerNas: NasOption | null; uptime?: string | null; package: PppoePackage };
+export type PppoeAccount = { id: string; pppoePackageId: string; customerName: string; username: string; phone: string | null; address: string | null; expiresAt: string | null; isActive: boolean; notes: string | null; idCardNumber: string | null; idCardPhoto: string | null; latitude: number | null; longitude: number | null; subscriptionType: string; billingDay: number; discount: number; odp: string | null; routerNasId: number | null; routerNas: NasOption | null; uptime?: string | null; package: PppoePackage; areaId?: string | null; area?: { id: string; name: string } | null };
 
 export type RouterItem = {
   id: string;
@@ -85,3 +85,73 @@ export type WireguardScriptData = {
   clientPublicKey: string;
   script: string;
 };
+
+// === Finance & Area Types ===
+
+export type Area = {
+  id: string;
+  name: string;
+  description?: string | null;
+  accountsCount?: number;
+  collectors?: AreaCollector[];
+};
+
+export type AreaCollector = {
+  id: string;
+  areaId: string;
+  userId: string;
+  isDefault: boolean;
+  user?: { id: string; name: string; email: string; phone?: string | null; role: string };
+};
+
+export type CollectorDeposit = {
+  id: string;
+  pppoeAccountId: string;
+  invoiceId: string;
+  collectorUserId: string;
+  amount: number;
+  depositDate: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+  acceptedAt?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  account?: {
+    id: string;
+    customerNumber: string;
+    customerName: string;
+    phone?: string | null;
+    username: string;
+    area?: { id: string; name: string } | null;
+  };
+  invoice?: { id: string; invoiceNumber: string; amount: number; dueDate: string; status: string };
+  collector?: { id: string; name: string; phone?: string | null };
+  acceptedBy?: { id: string; name: string } | null;
+};
+
+export type FinanceTransaction = {
+  id: string;
+  type: 'INCOME' | 'EXPENSE';
+  category: string;
+  amount: number;
+  description: string;
+  referenceType?: string | null;
+  referenceId?: string | null;
+  transactionDate: string;
+  createdAt: string;
+  createdBy?: { id: string; name: string; role: string };
+};
+
+export type FinanceSummary = {
+  month: number;
+  year: number;
+  monthlyIncome: number;
+  monthlyExpense: number;
+  monthlyBalance: number;
+  monthlyIncomeCount: number;
+  monthlyExpenseCount: number;
+  totalIncome: number;
+  totalExpense: number;
+  totalBalance: number;
+  pendingDeposits: number;
+};
+

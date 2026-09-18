@@ -13,8 +13,13 @@ model User {
   email    String @unique
   phone    String? @db.VarChar(30)
   password String
-  role     String @default("petugas")
+  role     String @default("petugas") // admin, petugas, finance, sales, pengepul
   status   String @default("active")
+
+  areaCollectors      AreaCollector[]
+  collectorDeposits   CollectorDeposit[]  @relation("CollectorDeposits")
+  acceptedDeposits    CollectorDeposit[]  @relation("AcceptedDeposits")
+  financeTransactions FinanceTransaction[]
 
   @@map("users")
 }
@@ -86,13 +91,17 @@ model PppoeAccount {
   createdAt      DateTime?    @map("created_at")
   updatedAt      DateTime?    @map("updated_at")
   package        PppoePackage @relation(fields: [pppoePackageId], references: [id], onDelete: Restrict)
+  areaId           BigInt?    @map("area_id") @db.UnsignedBigInt
   routerNas        Nas?       @relation(fields: [routerNasId], references: [id], onDelete: SetNull)
+  area             Area?      @relation(fields: [areaId], references: [id], onDelete: SetNull)
     invoices         Invoice[]
     addons           CustomerAddon[]
     paymentPromises  PaymentPromise[]
+    deposits         CollectorDeposit[]
 
   @@index([pppoePackageId])
   @@index([routerNasId])
+  @@index([areaId])
   @@map("pppoe_accounts")
 }
 
@@ -123,6 +132,7 @@ model Invoice {
   createdAt      DateTime?    @map("created_at")
   updatedAt      DateTime?    @map("updated_at")
   account        PppoeAccount @relation(fields: [pppoeAccountId], references: [id], onDelete: Cascade)
+  deposits       CollectorDeposit[]
 
   @@index([pppoeAccountId])
   @@index([status])
@@ -460,4 +470,76 @@ model RouterStatYearly {
 
   @@unique([nasId, year])
   @@map("router_stats_yearly")
+}
+
+model Area {
+  id          BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  name        String           @unique @db.VarChar(150)
+  description String?          @db.Text
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  collectors  AreaCollector[]
+  accounts    PppoeAccount[]
+
+  @@map("areas")
+}
+
+model AreaCollector {
+  id        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  areaId    BigInt   @map("area_id") @db.UnsignedBigInt
+  userId    BigInt   @map("user_id") @db.UnsignedBigInt
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  area      Area     @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([areaId, userId])
+  @@index([userId])
+  @@map("area_collectors")
+}
+
+model CollectorDeposit {
+  id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  pppoeAccountId   BigInt    @map("pppoe_account_id") @db.UnsignedBigInt
+  invoiceId        BigInt    @map("invoice_id") @db.UnsignedBigInt
+  collectorUserId  BigInt    @map("collector_user_id") @db.UnsignedBigInt
+  amount           BigInt    @db.UnsignedBigInt
+  depositDate      DateTime  @map("deposit_date") @db.Date
+  status           String    @default("PENDING") @db.VarChar(20)
+  acceptedByUserId BigInt?   @map("accepted_by_user_id") @db.UnsignedBigInt
+  acceptedAt       DateTime? @map("accepted_at")
+  notes            String?   @db.Text
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  account    PppoeAccount @relation(fields: [pppoeAccountId], references: [id], onDelete: Cascade)
+  invoice    Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  collector  User         @relation("CollectorDeposits", fields: [collectorUserId], references: [id])
+  acceptedBy User?        @relation("AcceptedDeposits", fields: [acceptedByUserId], references: [id])
+
+  @@index([pppoeAccountId])
+  @@index([collectorUserId])
+  @@index([status])
+  @@map("collector_deposits")
+}
+
+model FinanceTransaction {
+  id              BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  type            String   @db.VarChar(15)
+  category        String   @db.VarChar(50)
+  amount          BigInt   @db.UnsignedBigInt
+  description     String   @db.VarChar(500)
+  referenceType   String?  @map("reference_type") @db.VarChar(30)
+  referenceId     BigInt?  @map("reference_id") @db.UnsignedBigInt
+  createdByUserId BigInt   @map("created_by_user_id") @db.UnsignedBigInt
+  transactionDate DateTime @map("transaction_date") @db.Date
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  createdBy User @relation(fields: [createdByUserId], references: [id])
+
+  @@index([type])
+  @@index([transactionDate])
+  @@index([createdByUserId])
+  @@map("finance_transactions")
 }

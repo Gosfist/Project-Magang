@@ -9,6 +9,8 @@ import { MainCoreModule } from './main-core/main-core.module.js';
 import { PppoeModule } from './pppoe/pppoe.module.js';
 import { RouterModule } from './router/router.module.js';
 import { SettingsModule } from './settings/settings.module.js';
+import { AreaModule } from './area/area.module.js';
+import { FinanceModule } from './finance/finance.module.js';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { SettingsModule } from './settings/settings.module.js';
     MonitoringModule,
     RouterModule,
     SettingsModule,
+    AreaModule,
+    FinanceModule,
   ],
 })
 export class AppModule {}

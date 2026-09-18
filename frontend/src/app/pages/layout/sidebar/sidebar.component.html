@@ -38,190 +38,248 @@
       </a>
     }
 
-    <p
-      class="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-500"
-    >
-      Data Jaringan
-    </p>
+    <!-- Finance (Admin & Finance) -->
+    @if (auth.isAdmin() || auth.isFinance()) {
+      <button
+        class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
+        (click)="financeOpen.set(!financeOpen())"
+      >
+        <svg lucideDollarSign [size]="20"></svg>
+        <span class="flex-1 text-left">Finance</span>
+        <svg
+          lucideChevronDown
+          [size]="16"
+          [class]="!financeOpen() ? '-rotate-90' : ''"
+        ></svg>
+      </button>
+      @if (financeOpen()) {
+        <div class="mt-1 space-y-1 pl-11 pr-2">
+          @for (link of financeLinks; track link[1]) {
+            <a
+              [routerLink]="link[1]"
+              routerLinkActive="bg-white/15 text-white"
+              class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+              (click)="mobile.set(false)"
+              >{{ link[0] }}</a
+            >
+          }
+        </div>
+      }
+    } @else if (auth.isPengepul()) {
+      <a
+        routerLink="/dashboard/finance/setoran"
+        routerLinkActive="bg-white/15 text-white"
+        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+        (click)="mobile.set(false)"
+      >
+        <svg lucideDollarSign [size]="20"></svg> Setoran Tagihan
+      </a>
+    }
 
-    <!-- PPPoE -->
-    <button
-      class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
-      (click)="pppoeOpen.set(!pppoeOpen())"
-    >
-      <svg lucideNetwork [size]="20"></svg>
-      <span class="flex-1 text-left">PPPoE</span>
-      <svg
-        lucideChevronDown
-        [size]="16"
-        [class]="!pppoeOpen() ? '-rotate-90' : ''"
-      ></svg>
-    </button>
-    @if (pppoeOpen()) {
-      <div class="mt-1 space-y-1 pl-11 pr-2">
-        @for (link of pppoeLinks; track link[1]) {
+    <!-- Area & Pengepul -->
+    @if (auth.hasRole('admin', 'finance', 'sales', 'pengepul', 'petugas')) {
+      <a
+        routerLink="/dashboard/area"
+        routerLinkActive="bg-white/15 text-white"
+        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+        (click)="mobile.set(false)"
+      >
+        <svg lucideMapPin [size]="20"></svg> Data Area
+      </a>
+    }
+
+    @if (auth.hasRole('admin', 'sales', 'petugas')) {
+      <p
+        class="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-500"
+      >
+        Data Jaringan
+      </p>
+
+      <!-- PPPoE -->
+      <button
+        class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
+        (click)="pppoeOpen.set(!pppoeOpen())"
+      >
+        <svg lucideNetwork [size]="20"></svg>
+        <span class="flex-1 text-left">PPPoE</span>
+        <svg
+          lucideChevronDown
+          [size]="16"
+          [class]="!pppoeOpen() ? '-rotate-90' : ''"
+        ></svg>
+      </button>
+      @if (pppoeOpen()) {
+        <div class="mt-1 space-y-1 pl-11 pr-2">
+          @for (link of pppoeLinks; track link[1]) {
+            <a
+              [routerLink]="link[1]"
+              routerLinkActive="bg-white/15 text-white"
+              class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+              (click)="mobile.set(false)"
+              >{{ link[0] }}</a
+            >
+          }
+        </div>
+      }
+
+      <!-- Menu pengelolaan router. -->
+      <button
+        class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
+        (click)="routerOpen.set(!routerOpen())"
+      >
+        <svg lucideRouter [size]="20"></svg>
+        <span class="flex-1 text-left">Router</span>
+        <svg
+          lucideChevronDown
+          [size]="16"
+          [class]="!routerOpen() ? '-rotate-90' : ''"
+        ></svg>
+      </button>
+      @if (routerOpen()) {
+        <div class="mt-1 space-y-1 pl-11 pr-2">
+          @for (link of routerLinks; track link[1]) {
+            <a
+              [routerLink]="link[1]"
+              routerLinkActive="bg-white/15 text-white"
+              class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+              (click)="mobile.set(false)"
+              >{{ link[0] }}</a
+            >
+          }
+        </div>
+      }
+
+      <!-- monitoring -->
+      <button
+        class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
+        (click)="monitoringOpen.set(!monitoringOpen())"
+        [attr.aria-expanded]="monitoringOpen()"
+      >
+        <svg lucideNetwork [size]="20"></svg>
+        <span class="flex-1 text-left">Monitoring</span>
+        <svg
+          lucideChevronDown
+          [size]="16"
+          [class]="!monitoringOpen() ? '-rotate-90' : ''"
+        ></svg>
+      </button>
+      @if (monitoringOpen()) {
+        <div class="mt-1 space-y-1 pl-11 pr-2">
           <a
-            [routerLink]="link[1]"
+            routerLink="/dashboard/monitoring/server"
             routerLinkActive="bg-white/15 text-white"
             class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
             (click)="mobile.set(false)"
-            >{{ link[0] }}</a
+            >Server</a
           >
-        }
-      </div>
-    }
-
-    <!-- Menu pengelolaan router. -->
-    <button
-      class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
-      (click)="routerOpen.set(!routerOpen())"
-    >
-      <svg lucideRouter [size]="20"></svg>
-      <span class="flex-1 text-left">Router</span>
-      <svg
-        lucideChevronDown
-        [size]="16"
-        [class]="!routerOpen() ? '-rotate-90' : ''"
-      ></svg>
-    </button>
-    @if (routerOpen()) {
-      <div class="mt-1 space-y-1 pl-11 pr-2">
-        @for (link of routerLinks; track link[1]) {
           <a
-            [routerLink]="link[1]"
+            routerLink="/dashboard/monitoring/router"
             routerLinkActive="bg-white/15 text-white"
             class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
             (click)="mobile.set(false)"
-            >{{ link[0] }}</a
+            >NAS / Router</a
           >
-        }
-      </div>
-    }
-
-    <!-- monitoring -->
-    <button
-      class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
-      (click)="monitoringOpen.set(!monitoringOpen())"
-      [attr.aria-expanded]="monitoringOpen()"
-    >
-      <svg lucideNetwork [size]="20"></svg>
-      <span class="flex-1 text-left">Monitoring</span>
-      <svg
-        lucideChevronDown
-        [size]="16"
-        [class]="!monitoringOpen() ? '-rotate-90' : ''"
-      ></svg>
-    </button>
-    @if (monitoringOpen()) {
-      <div class="mt-1 space-y-1 pl-11 pr-2">
-        <a
-          routerLink="/dashboard/monitoring/server"
-          routerLinkActive="bg-white/15 text-white"
-          class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
-          (click)="mobile.set(false)"
-          >Server</a
-        >
-        <a
-          routerLink="/dashboard/monitoring/router"
-          routerLinkActive="bg-white/15 text-white"
-          class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
-          (click)="mobile.set(false)"
-          >NAS / Router</a
-        >
-        <a
-          routerLink="/dashboard/monitoring/radius"
-          routerLinkActive="bg-white/15 text-white"
-          class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
-          (click)="mobile.set(false)"
-          >FreeRADIUS</a
-        >
-      </div>
-    }
-
-    <!-- Main Core -->
-    <button
-      class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
-      (click)="coreOpen.set(!coreOpen())"
-    >
-      <svg lucideGitBranch [size]="20"></svg>
-      <span class="flex-1 text-left">Main Core</span>
-      <svg
-        lucideChevronDown
-        [size]="16"
-        [class]="!coreOpen() ? '-rotate-90' : ''"
-      ></svg>
-    </button>
-    @if (coreOpen()) {
-      <div class="mt-1 space-y-1 pl-11 pr-2">
-        @for (link of coreLinks; track link[1]) {
           <a
-            [routerLink]="link[1]"
+            routerLink="/dashboard/monitoring/radius"
             routerLinkActive="bg-white/15 text-white"
             class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
             (click)="mobile.set(false)"
-            >{{ link[0] }}</a
+            >FreeRADIUS</a
           >
-        }
-      </div>
+        </div>
+      }
+
+      <!-- Main Core -->
+      <button
+        class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
+        (click)="coreOpen.set(!coreOpen())"
+      >
+        <svg lucideGitBranch [size]="20"></svg>
+        <span class="flex-1 text-left">Main Core</span>
+        <svg
+          lucideChevronDown
+          [size]="16"
+          [class]="!coreOpen() ? '-rotate-90' : ''"
+        ></svg>
+      </button>
+      @if (coreOpen()) {
+        <div class="mt-1 space-y-1 pl-11 pr-2">
+          @for (link of coreLinks; track link[1]) {
+            <a
+              [routerLink]="link[1]"
+              routerLinkActive="bg-white/15 text-white"
+              class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+              (click)="mobile.set(false)"
+              >{{ link[0] }}</a
+            >
+          }
+        </div>
+      }
     }
 
     <!-- Bot WhatsApp -->
-    <button
-      class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
-      (click)="botWaOpen.set(!botWaOpen())"
-    >
-      <svg lucideMessageCircle [size]="20"></svg>
-      <span class="flex-1 text-left">Bot WhatsApp</span>
-      <svg
-        lucideChevronDown
-        [size]="16"
-        [class]="!botWaOpen() ? '-rotate-90' : ''"
-      ></svg>
-    </button>
-    @if (botWaOpen()) {
-      <div class="mt-1 space-y-1 pl-11 pr-2">
-        @for (link of botWaLinks; track link[1]) {
-          <a
-            [routerLink]="link[1]"
-            routerLinkActive="bg-white/15 text-white"
-            class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
-            (click)="mobile.set(false)"
-            >{{ link[0] }}</a
-          >
-        }
-      </div>
+    @if (auth.isAdmin()) {
+      <button
+        class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
+        (click)="botWaOpen.set(!botWaOpen())"
+      >
+        <svg lucideMessageCircle [size]="20"></svg>
+        <span class="flex-1 text-left">Bot WhatsApp</span>
+        <svg
+          lucideChevronDown
+          [size]="16"
+          [class]="!botWaOpen() ? '-rotate-90' : ''"
+        ></svg>
+      </button>
+      @if (botWaOpen()) {
+        <div class="mt-1 space-y-1 pl-11 pr-2">
+          @for (link of botWaLinks; track link[1]) {
+            <a
+              [routerLink]="link[1]"
+              routerLinkActive="bg-white/15 text-white"
+              class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+              (click)="mobile.set(false)"
+              >{{ link[0] }}</a
+            >
+          }
+        </div>
+      }
     }
 
     <!-- Tool -->
-    <button
-      class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
-      (click)="toolOpen.set(!toolOpen())"
-    >
-      <svg lucideCalculator [size]="20"></svg>
-      <span class="flex-1 text-left">Alat</span>
-      <svg
-        lucideChevronDown
-        [size]="16"
-        [class]="!toolOpen() ? '-rotate-90' : ''"
-      ></svg>
-    </button>
-    @if (toolOpen()) {
-      <div class="mt-1 space-y-1 pl-11 pr-2">
-        <a
-          routerLink="/dashboard/tools/kalkulator-redaman"
-          routerLinkActive="bg-white/15 text-white"
-          class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
-          (click)="mobile.set(false)"
-          >Kalkulator Redaman</a
-        >
-        <a
-          routerLink="/dashboard/tools/pengaturan"
-          routerLinkActive="bg-white/15 text-white"
-          class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
-          (click)="mobile.set(false)"
-          >Pengaturan</a
-        >
-      </div>
+    @if (auth.hasRole('admin', 'sales', 'petugas')) {
+      <button
+        class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
+        (click)="toolOpen.set(!toolOpen())"
+      >
+        <svg lucideCalculator [size]="20"></svg>
+        <span class="flex-1 text-left">Alat</span>
+        <svg
+          lucideChevronDown
+          [size]="16"
+          [class]="!toolOpen() ? '-rotate-90' : ''"
+        ></svg>
+      </button>
+      @if (toolOpen()) {
+        <div class="mt-1 space-y-1 pl-11 pr-2">
+          <a
+            routerLink="/dashboard/tools/kalkulator-redaman"
+            routerLinkActive="bg-white/15 text-white"
+            class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+            (click)="mobile.set(false)"
+            >Kalkulator Redaman</a
+          >
+          @if (auth.isAdmin()) {
+            <a
+              routerLink="/dashboard/tools/pengaturan"
+              routerLinkActive="bg-white/15 text-white"
+              class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+              (click)="mobile.set(false)"
+              >Pengaturan</a
+            >
+          }
+        </div>
+      }
     }
   </nav>
 

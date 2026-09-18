@@ -95,6 +95,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   packages = signal<PppoePackage[]>([]);
   nasOptions = signal<NasOption[]>([]);
   odpOptions = signal<OdpOption[]>([]);
+  areaOptions = signal<{ id: string; name: string; collectors?: { user?: { name: string } }[] }[]>([]);
   odpOpen = signal(false);
   odpSearch = '';
   nasOpen = signal(false);
@@ -205,7 +206,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   form: any = {
     customerName: '', phone: '', idCardNumber: '', idCardPhoto: '', latitude: '', longitude: '', address: '',
     pppoePackageId: '', subscriptionType: 'POSTPAID', billingDay: '1', discount: '0',
-    username: '', password: '', routerNasId: '', odp: '',
+    username: '', password: '', routerNasId: '', odp: '', areaId: '',
     expiresAt: '', isActive: true, notes: '', firstInvoice: 'prorate',
   };
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -217,6 +218,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     });
     this.api.get<{ data: NasOption[] }>('/pppoe/nas/options').subscribe({ next: (r) => this.nasOptions.set(r.data) });
     this.api.get<{ data: OdpOption[] }>('/pppoe/odp/options').subscribe({ next: (r) => this.odpOptions.set(r.data) });
+    this.api.get<{ data: any[] }>('/areas/options').subscribe({ next: (r) => this.areaOptions.set(r.data) });
   }
 
   load(): void {
@@ -275,6 +277,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
           password: '',
           routerNasId: item.routerNasId ?? '',
           odp: item.odp ?? '',
+          areaId: item.areaId ? String(item.areaId) : '',
           expiresAt: item.expiresAt?.slice(0, 10) ?? '',
           isActive: item.isActive,
           notes: item.notes ?? '',
@@ -283,7 +286,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
       : {
           customerName: '', phone: '', idCardNumber: '', idCardPhoto: '', latitude: '', longitude: '', address: '',
           pppoePackageId: '', subscriptionType: 'POSTPAID', billingDay: '1', discount: '0',
-          username: '', password: '', routerNasId: '', odp: '',
+          username: '', password: '', routerNasId: '', odp: '', areaId: '',
           expiresAt: '', isActive: true, notes: '', firstInvoice: 'prorate',
         };
     this.calculateProrate();
@@ -412,6 +415,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
       billingDay: Number(this.form.billingDay),
       discount: Number(this.form.discount),
       routerNasId: this.form.routerNasId ? String(this.form.routerNasId) : undefined,
+      areaId: this.form.areaId ? String(this.form.areaId) : undefined,
     };
     const req = this.editing()
       ? this.api.patch<{ message: string; warnings?: string[] }>(`/pppoe/accounts/${this.editing()!.id}`, body)
@@ -426,6 +430,18 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
       },
       error: (e) => { this.saving.set(false); this.formError.set(e.message); },
     });
+  }
+
+  areaCollectorNames(area: any): string {
+    if (!area.collectors || area.collectors.length === 0) return '';
+    const names = area.collectors.map((c: any) => c.user?.name).filter(Boolean).join(', ');
+    return names ? ` (Pengepul: ${names})` : '';
+  }
+
+  selectedAreaInfo(): string {
+    const area = this.areaOptions().find(a => String(a.id) === String(this.form.areaId));
+    if (!area || !area.collectors || area.collectors.length === 0) return '';
+    return area.collectors.map((c: any) => c.user?.name).filter(Boolean).join(', ');
   }
 
   disconnecting = signal<string | null>(null);

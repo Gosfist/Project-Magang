@@ -178,7 +178,7 @@ export class PppoeService {
     ] };
     if (status) where.AND = [status === 'active' ? active : { NOT: active }];
     const [items, count] = await this.prisma.$transaction([
-      this.prisma.pppoeAccount.findMany({ where, include: { paymentPromises: { where: { status: 'ACTIVE' }, select: { deadline: true }, take: 1 }, package: { include: { ipPool: true } }, routerNas: { select: { id: true, nasname: true, shortname: true, description: true } } }, omit: { password: true }, orderBy: { customerNumber: 'asc' }, ...(session ? {} : { skip: (page - 1) * 5, take: 5 }) }),
+      this.prisma.pppoeAccount.findMany({ where, include: { paymentPromises: { where: { status: 'ACTIVE' }, select: { deadline: true }, take: 1 }, package: { include: { ipPool: true } }, routerNas: { select: { id: true, nasname: true, shortname: true, description: true } }, area: { select: { id: true, name: true } } }, omit: { password: true }, orderBy: { customerNumber: 'asc' }, ...(session ? {} : { skip: (page - 1) * 5, take: 5 }) }),
       this.prisma.pppoeAccount.count({ where }),
     ]);
     const presence = await this.network.accountPresence(items);
@@ -332,6 +332,7 @@ export class PppoeService {
       discount: BigInt(dto.discount || 0),
       odp: dto.odp?.trim() || null,
       routerNasId: dto.routerNasId ? Number(dto.routerNasId) : null,
+      areaId: dto.areaId ? BigInt(dto.areaId) : null,
       expiresAt: dto.expiresAt ? new Date(`${dto.expiresAt}T00:00:00.000Z`) : null,
       isActive: creating ? true : dto.isActive ?? false, notes: dto.notes?.trim() || null,
       updatedAt: now, ...(creating ? { createdAt: now } : {}),

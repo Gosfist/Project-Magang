@@ -12,6 +12,13 @@ export class AuthService {
   user = signal<User | null>(null);
   loading = signal<boolean>(true);
   isAdmin = computed(() => this.user()?.role === 'admin');
+  isFinance = computed(() => this.user()?.role === 'finance');
+  isSales = computed(() => this.user()?.role === 'sales');
+  isPengepul = computed(() => this.user()?.role === 'pengepul');
+  hasRole = (...roles: string[]) => {
+    const role = this.user()?.role;
+    return role ? roles.includes(role) : false;
+  };
 
   async loadUser(): Promise<void> {
     const token = localStorage.getItem('unzanet_token');

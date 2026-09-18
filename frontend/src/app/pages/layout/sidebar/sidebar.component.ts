@@ -11,6 +11,8 @@ import {
   LucideUsers,
   LucideX,
   LucideMessageCircle,
+  LucideDollarSign,
+  LucideMapPin,
 } from '@lucide/angular';
 import { AuthService } from '../../../core/services/auth.service';
 
@@ -30,6 +32,8 @@ import { AuthService } from '../../../core/services/auth.service';
     LucideUsers,
     LucideX,
     LucideMessageCircle,
+    LucideDollarSign,
+    LucideMapPin,
   ],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css',
@@ -46,6 +50,7 @@ export class SidebarComponent implements OnInit {
   toolOpen = signal(false);
   monitoringOpen = signal(false);
   botWaOpen = signal(false);
+  financeOpen = signal(false);
 
   // Navigation links
   readonly coreLinks = [
@@ -70,6 +75,11 @@ export class SidebarComponent implements OnInit {
     ['Template Pesan', '/dashboard/bot-whatsapp/template'],
     ['Log Notifikasi', '/dashboard/bot-whatsapp/logs']
   ];
+  readonly financeLinks = [
+    ['Ringkasan', '/dashboard/finance/ringkasan'],
+    ['Transaksi', '/dashboard/finance/transaksi'],
+    ['Setoran Pengepul', '/dashboard/finance/setoran'],
+  ];
 
   ngOnInit(): void {
     const url = this.router.url;
@@ -79,5 +89,6 @@ export class SidebarComponent implements OnInit {
     if (url.includes('/monitoring')) this.monitoringOpen.set(true);
     if (url.includes('/tools')) this.toolOpen.set(true);
     if (url.includes('/bot-whatsapp')) this.botWaOpen.set(true);
+    if (url.includes('/finance')) this.financeOpen.set(true);
   }
 }

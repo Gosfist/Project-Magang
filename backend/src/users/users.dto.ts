@@ -5,7 +5,7 @@ export class CreateUserDto {
   @IsEmail({}, { message: 'Format email tidak valid.' }) email: string;
   @IsOptional() @IsString() @MaxLength(30) phone?: string;
   @IsString() @MinLength(6, { message: 'Kata sandi minimal 6 karakter.' }) password: string;
-  @IsIn(['admin', 'petugas']) role: string;
+  @IsIn(['admin', 'petugas', 'finance', 'sales', 'pengepul']) role: string;
   @IsIn(['active', 'inactive']) status: string;
 }
 

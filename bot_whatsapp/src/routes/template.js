@@ -32,13 +32,44 @@ Abaikan pesan ini jika Anda sudah melakukan pembayaran. Terima kasih.
 
 — PT Unzanet`;
 
+const DEFAULT_DEPOSIT_COLLECTOR_TEMPLATE = `Halo {nama}! 📝
+
+Kami informasikan bahwa tagihan Anda telah disetor ke pengepul kami.
+
+📋 *Detail Setoran:*
+• Nomor Pelanggan: {nomor_pelanggan}
+• Jumlah: {jumlah}
+• Tanggal Setor: {tanggal_setor}
+• Pengepul: {nama_pengepul}
+• Area: {area}
+
+Setoran Anda sedang diverifikasi oleh tim kami. Anda akan menerima notifikasi setelah pembayaran dikonfirmasi.
+
+— PT Unzanet`;
+
+const DEFAULT_DEPOSIT_ACCEPTED_TEMPLATE = `Halo {nama}! ✅
+
+Pembayaran tagihan Anda telah berhasil diterima dan dikonfirmasi oleh perusahaan.
+
+📋 *Detail Pembayaran:*
+• Nomor Pelanggan: {nomor_pelanggan}
+• Jumlah: {jumlah}
+• Bulan Tagihan: {bulan_tagihan}
+• Diterima Pada: {tanggal_diterima}
+
+Terima kasih atas pembayaran Anda! Layanan internet Anda tetap aktif.
+
+— PT Unzanet`;
+
 router.get('/templates', async (req, res) => {
   try {
-    const settings = await getSettings(['wa_bot_enabled', 'wa_template_registration', 'wa_template_isolation']);
+    const settings = await getSettings(['wa_bot_enabled', 'wa_template_registration', 'wa_template_isolation', 'wa_template_deposit_collector', 'wa_template_deposit_accepted']);
     res.json({
       enabled: settings.get('wa_bot_enabled') === 'true',
       registration: settings.get('wa_template_registration') || DEFAULT_REGISTRATION_TEMPLATE,
       isolation: settings.get('wa_template_isolation') || DEFAULT_ISOLATION_TEMPLATE,
+      deposit_collector: settings.get('wa_template_deposit_collector') || DEFAULT_DEPOSIT_COLLECTOR_TEMPLATE,
+      deposit_accepted: settings.get('wa_template_deposit_accepted') || DEFAULT_DEPOSIT_ACCEPTED_TEMPLATE,
     });
   } catch (err) {
     console.error('[Template GET Error]:', err.message);
@@ -47,13 +78,15 @@ router.get('/templates', async (req, res) => {
       enabled: false,
       registration: DEFAULT_REGISTRATION_TEMPLATE,
       isolation: DEFAULT_ISOLATION_TEMPLATE,
+      deposit_collector: DEFAULT_DEPOSIT_COLLECTOR_TEMPLATE,
+      deposit_accepted: DEFAULT_DEPOSIT_ACCEPTED_TEMPLATE,
       warning: 'Gagal membaca database: ' + (err.message || String(err)),
     });
   }
 });
 
 router.patch('/templates', async (req, res) => {
-  const { enabled, registration, isolation, ...otherTemplates } = req.body;
+  const { enabled, registration, isolation, deposit_collector, deposit_accepted, ...otherTemplates } = req.body;
   try {
     if (typeof enabled === 'boolean') {
       await setSetting('wa_bot_enabled', String(enabled));
@@ -64,19 +97,27 @@ router.patch('/templates', async (req, res) => {
     if (typeof isolation === 'string' && isolation.trim()) {
       await setSetting('wa_template_isolation', isolation.trim());
     }
+    if (typeof deposit_collector === 'string' && deposit_collector.trim()) {
+      await setSetting('wa_template_deposit_collector', deposit_collector.trim());
+    }
+    if (typeof deposit_accepted === 'string' && deposit_accepted.trim()) {
+      await setSetting('wa_template_deposit_accepted', deposit_accepted.trim());
+    }
     for (const [key, val] of Object.entries(otherTemplates)) {
       if (typeof val === 'string' && val.trim()) {
         await setSetting(`wa_template_${key}`, val.trim());
       }
     }
 
-    const settings = await getSettings(['wa_bot_enabled', 'wa_template_registration', 'wa_template_isolation']);
+    const settings = await getSettings(['wa_bot_enabled', 'wa_template_registration', 'wa_template_isolation', 'wa_template_deposit_collector', 'wa_template_deposit_accepted']);
     res.json({
       message: 'Template berhasil disimpan.',
       data: {
         enabled: settings.get('wa_bot_enabled') === 'true',
         registration: settings.get('wa_template_registration') || DEFAULT_REGISTRATION_TEMPLATE,
         isolation: settings.get('wa_template_isolation') || DEFAULT_ISOLATION_TEMPLATE,
+        deposit_collector: settings.get('wa_template_deposit_collector') || DEFAULT_DEPOSIT_COLLECTOR_TEMPLATE,
+        deposit_accepted: settings.get('wa_template_deposit_accepted') || DEFAULT_DEPOSIT_ACCEPTED_TEMPLATE,
       },
     });
   } catch (err) {
@@ -86,3 +127,4 @@ router.patch('/templates', async (req, res) => {
 });
 
 export default router;
+
