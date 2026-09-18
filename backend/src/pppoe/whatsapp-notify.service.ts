@@ -160,6 +160,7 @@ export class WhatsappNotifyService {
         .replace(/\{nomor_pelanggan\}/g, customerId)
         .replace(/\{jumlah\}/g, amountStr)
         .replace(/\{tanggal_setor\}/g, dateStr)
+        .replace(/\{nama_kolektor\}/g, account.collectorName)
         .replace(/\{nama_pengepul\}/g, account.collectorName)
         .replace(/\{area\}/g, account.areaName);
 
@@ -232,7 +233,7 @@ export class WhatsappNotifyService {
   }
 
   private defaultDepositCollectorTemplate(): string {
-    return `Halo {nama}! 📝\n\nKami informasikan bahwa tagihan Anda telah disetor ke kolektor kami.\n\n📋 *Detail Setoran:*\n• Nomor Pelanggan: {nomor_pelanggan}\n• Jumlah: {jumlah}\n• Tanggal Setor: {tanggal_setor}\n• Kolektor: {nama_pengepul}\n• Area: {area}\n\nSetoran Anda sedang diverifikasi oleh tim kami. Anda akan menerima notifikasi setelah pembayaran dikonfirmasi.\n\n— PT Unzanet`;
+    return `Halo {nama}! 📝\n\nKami informasikan bahwa tagihan Anda telah disetor ke kolektor kami.\n\n📋 *Detail Setoran:*\n• Nomor Pelanggan: {nomor_pelanggan}\n• Jumlah: {jumlah}\n• Tanggal Setor: {tanggal_setor}\n• Kolektor: {nama_kolektor}\n• Area: {area}\n\nSetoran Anda sedang diverifikasi oleh tim kami. Anda akan menerima notifikasi setelah pembayaran dikonfirmasi.\n\n— PT Unzanet`;
   }
 
   private defaultDepositAcceptedTemplate(): string {

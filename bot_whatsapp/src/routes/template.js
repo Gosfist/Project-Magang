@@ -40,7 +40,7 @@ Kami informasikan bahwa tagihan Anda telah disetor ke kolektor kami.
 • Nomor Pelanggan: {nomor_pelanggan}
 • Jumlah: {jumlah}
 • Tanggal Setor: {tanggal_setor}
-• Kolektor: {nama_pengepul}
+• Kolektor: {nama_kolektor}
 • Area: {area}
 
 Setoran Anda sedang diverifikasi oleh tim kami. Anda akan menerima notifikasi setelah pembayaran dikonfirmasi.

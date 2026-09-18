@@ -58,6 +58,50 @@ export const TEMPLATE_LIST: TemplateConfig[] = [
       '{jatuh_tempo}': '20 September 2026',
     },
   },
+  {
+    id: 'deposit_collector',
+    name: 'Setoran Kolektor',
+    title: 'Template Notifikasi Setoran ke Kolektor',
+    label: 'Pesan Setoran ke Kolektor',
+    description: 'Pesan otomatis yang dikirim ke pelanggan saat tagihan disetorkan/dititipkan ke kolektor lapangan.',
+    placeholders: [
+      { key: '{nama}', desc: 'Nama lengkap pelanggan' },
+      { key: '{nomor_pelanggan}', desc: 'Nomor pelanggan (6 digit)' },
+      { key: '{jumlah}', desc: 'Nominal uang yang disetor' },
+      { key: '{tanggal_setor}', desc: 'Tanggal penyetoran ke kolektor' },
+      { key: '{nama_kolektor}', desc: 'Nama petugas kolektor' },
+      { key: '{area}', desc: 'Nama wilayah/area pelanggan' },
+    ],
+    sampleData: {
+      '{nama}': 'Ahmad Fauzi',
+      '{nomor_pelanggan}': '000123',
+      '{jumlah}': 'Rp 165.000',
+      '{tanggal_setor}': '18 September 2026',
+      '{nama_kolektor}': 'Budi Santoso',
+      '{area}': 'Dukuh Pakis',
+    },
+  },
+  {
+    id: 'deposit_accepted',
+    name: 'Pembayaran Berhasil',
+    title: 'Template Konfirmasi Pembayaran Berhasil',
+    label: 'Pesan Konfirmasi Pembayaran Berhasil',
+    description: 'Pesan otomatis yang dikirim ke pelanggan saat pembayaran telah diverifikasi & diterima oleh perusahaan.',
+    placeholders: [
+      { key: '{nama}', desc: 'Nama lengkap pelanggan' },
+      { key: '{nomor_pelanggan}', desc: 'Nomor pelanggan (6 digit)' },
+      { key: '{jumlah}', desc: 'Nominal pembayaran yang diterima' },
+      { key: '{bulan_tagihan}', desc: 'Bulan periode tagihan' },
+      { key: '{tanggal_diterima}', desc: 'Tanggal pembayaran disetujui perusahaan' },
+    ],
+    sampleData: {
+      '{nama}': 'Ahmad Fauzi',
+      '{nomor_pelanggan}': '000123',
+      '{jumlah}': 'Rp 165.000',
+      '{bulan_tagihan}': 'September 2026',
+      '{tanggal_diterima}': '18 September 2026',
+    },
+  },
 ];
 
 @Component({
@@ -80,6 +124,8 @@ export class BotWaTemplateComponent implements OnInit {
   templatesData: Record<string, string> = {
     registration: '',
     isolation: '',
+    deposit_collector: '',
+    deposit_accepted: '',
   };
 
   currentTemplate = computed(() => {
