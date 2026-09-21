@@ -11,5 +11,5 @@ import { BillingIsolationService } from './billing-isolation.service.js';
 import { SettingsModule } from '../settings/settings.module.js';
 import { WhatsappNotifyService } from './whatsapp-notify.service.js';
 
-@Module({ imports: [AuthModule, RouterModule, SettingsModule], controllers: [PppoeController], providers: [PppoeService, RadiusService, SecretService, PppoeNetworkService, CustomerServicesService, BillingIsolationService, WhatsappNotifyService], exports: [WhatsappNotifyService] })
+@Module({ imports: [AuthModule, RouterModule, SettingsModule], controllers: [PppoeController], providers: [PppoeService, RadiusService, SecretService, PppoeNetworkService, CustomerServicesService, BillingIsolationService, WhatsappNotifyService], exports: [WhatsappNotifyService, RadiusService, SecretService] })
 export class PppoeModule { }

@@ -10,9 +10,9 @@ async function main() {
     create: { name: 'Administrator', email: 'admin@unzanet.com', password: await hash('123', 12), role: 'admin', status: 'active' },
   });
   await prisma.user.upsert({
-    where: { email: 'petugas@unzanet.com' },
+    where: { email: 'teknisi@unzanet.com' },
     update: {},
-    create: { name: 'Petugas Demo', email: 'petugas@unzanet.com', password: await hash('password', 12), role: 'petugas', status: 'active' },
+    create: { name: 'Teknisi Demo', email: 'teknisi@unzanet.com', password: await hash('password', 12), role: 'teknisi', status: 'active' },
   });
 }
 

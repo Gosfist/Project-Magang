@@ -7,4 +7,6 @@ export class BillingSettingsDto {
   @IsIn(['WIB', 'WITA', 'WIT']) billingTimezone: string;
   @Type(() => Boolean) @IsBoolean() autoIsolationEnabled: boolean;
   @Type(() => Number) @IsInt() @Min(0) @Max(23) isolationCheckHour: number;
+  @IsIn(['full', 'prorate']) psbPaymentMode: string;
+  @Type(() => Number) @IsInt() @Min(0) psbFee: number;
 }

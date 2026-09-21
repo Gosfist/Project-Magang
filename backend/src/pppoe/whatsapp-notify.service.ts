@@ -13,6 +13,32 @@ export class WhatsappNotifyService {
     this.apiKey = this.config.get<string>('BOT_API_KEY', 'bot-wa-secret-key-change-me') || 'bot-wa-secret-key-change-me';
   }
 
+  async notifySalesRegistration(account: { customerName: string; customerNumber: bigint; phone: string; address: string; packageName: string }) {
+    const template = await this.template('sales', `Halo Bapak/Ibu {nama},\n\nProses registrasi pelanggan baru telah berhasil. Mohon bersabar, teknisi kami akan melakukan kunjungan.\n\nNo. Pelanggan: {nomor_pelanggan}\nNama: {nama}\nNomor WA: {nomor_wa}\nAlamat: {alamat}\nLayanan: {layanan}\n\n— PT Unzanet`);
+    return this.send(account.phone, template.replace(/\{nama\}/g, account.customerName).replace(/\{nomor_pelanggan\}/g, account.customerNumber.toString().padStart(6, '0')).replace(/\{nomor_wa\}/g, account.phone).replace(/\{alamat\}/g, account.address).replace(/\{layanan\}/g, account.packageName));
+  }
+
+  async notifyPsbCompleted(account: { customerName: string; customerNumber: bigint; phone: string; packageName: string; installationFee: number; billingStartDay: number; billingEndDay: number }) {
+    const template = await this.template('psb', `Halo Bapak/Ibu {nama},\n\nInternet Anda telah aktif.\n\nNo. Pelanggan: {nomor_pelanggan}\nLayanan: {layanan}\nBiaya PSB: {biaya_psb}\nPembayaran berikutnya tanggal {tanggal_mulai}-{tanggal_akhir} setiap bulan. Jika melewati jatuh tempo, layanan dapat diisolir.\n\n— PT Unzanet`);
+    const fee = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(account.installationFee);
+    return this.send(account.phone, template.replace(/\{nama\}/g, account.customerName).replace(/\{nomor_pelanggan\}/g, account.customerNumber.toString().padStart(6, '0')).replace(/\{layanan\}/g, account.packageName).replace(/\{biaya_psb\}/g, fee).replace(/\{tanggal_mulai\}/g, String(account.billingStartDay)).replace(/\{tanggal_akhir\}/g, String(account.billingEndDay)));
+  }
+
+  private async template(name: string, fallback: string) {
+    const row = await this.prisma.appSetting.findUnique({ where: { key: `wa_template_${name}` } });
+    return row?.value || fallback;
+  }
+
+  private async send(phone: string, message: string) {
+    if (!phone?.trim()) return;
+    try {
+      const enabled = await this.prisma.appSetting.findUnique({ where: { key: 'wa_bot_enabled' } });
+      if (enabled?.value === 'false') return;
+      const response = await fetch(`${this.botUrl}/api/wa/send`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': this.apiKey }, body: JSON.stringify({ phone, message }), signal: AbortSignal.timeout(10000) });
+      if (!response.ok) this.logger.warn(`Notifikasi WA gagal: HTTP ${response.status}`);
+    } catch (error) { this.logger.warn(`Notifikasi WA gagal: ${error instanceof Error ? error.message : String(error)}`); }
+  }
+
   async notifyRegistration(account: {
     customerName: string;
     customerNumber: bigint;
@@ -240,4 +266,3 @@ export class WhatsappNotifyService {
     return `Halo {nama}! ✅\n\nPembayaran tagihan Anda telah berhasil diterima dan dikonfirmasi oleh perusahaan.\n\n📋 *Detail Pembayaran:*\n• Nomor Pelanggan: {nomor_pelanggan}\n• Jumlah: {jumlah}\n• Bulan Tagihan: {bulan_tagihan}\n• Diterima Pada: {tanggal_diterima}\n\nTerima kasih atas pembayaran Anda! Layanan internet Anda tetap aktif.\n\n— PT Unzanet`;
   }
 }
-

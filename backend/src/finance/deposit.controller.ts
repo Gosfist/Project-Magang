@@ -14,6 +14,7 @@ export class DepositController {
   @Get()
   @Roles('admin', 'finance', 'kolektor')
   list(
+    @Req() req: AuthRequest,
     @Query('status') status = '',
     @Query('collectorId') collectorId = '',
     @Query('startDate') startDate = '',
@@ -21,7 +22,7 @@ export class DepositController {
     @Query('search') search = '',
     @Query('page', new ParseIntPipe({ optional: true })) page = 1,
   ) {
-    return this.deposits.list(status, collectorId, startDate, endDate, search.trim(), Math.max(1, page));
+    return this.deposits.list(status, req.user.role === 'kolektor' ? req.user.id : collectorId, startDate, endDate, search.trim(), Math.max(1, page));
   }
 
   @Get('unpaid-invoices')

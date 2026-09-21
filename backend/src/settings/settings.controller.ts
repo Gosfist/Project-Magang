@@ -9,8 +9,9 @@ import { SettingsService } from './settings.service.js';
 export class SettingsController {
   constructor(private readonly settings: SettingsService) {}
 
-  @Get('billing') billing() {
-    return this.settings.billing();
+  @Get('billing') async billing() {
+    const [billing, psb] = await Promise.all([this.settings.billing(), this.settings.psb()]);
+    return { ...billing, psbPaymentMode: psb.paymentMode, psbFee: psb.installationFee };
   }
 
   @Patch('billing') updateBilling(@Body() dto: BillingSettingsDto) {

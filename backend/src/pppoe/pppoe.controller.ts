@@ -2,6 +2,8 @@ import { Body, Controller, Delete, Get, Header, Param, ParseIntPipe, Patch, Post
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ID_CARD_MAX_BYTES, readIdCardPhoto, storeIdCardPhoto } from './id-card-photo.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { RolesGuard } from '../auth/roles.guard.js';
+import { Roles } from '../auth/roles.decorator.js';
 import { SaveAccountDto, SavePackageDto } from './pppoe.dto.js';
 import { SaveIpPoolDto } from './ip-pool.dto.js';
 import { PppoeService } from './pppoe.service.js';
@@ -9,15 +11,18 @@ import { CustomerServicesService } from './customer-services.service.js';
 import { CreateAddonDto, CreatePromiseDto } from './customer-services.dto.js';
 
 @Controller('pppoe')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')
 export class PppoeController {
   constructor(private readonly pppoe: PppoeService, private readonly customers: CustomerServicesService) { }
 
   @Post('id-card-photo')
+  @Roles()
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: ID_CARD_MAX_BYTES, files: 1 } }))
   uploadIdCardPhoto(@UploadedFile() file?: { buffer: Buffer }) { return storeIdCardPhoto(file); }
 
   @Get('id-card-photo/:filename')
+  @Roles()
   @Header('Cache-Control', 'private, no-store')
   @Header('X-Content-Type-Options', 'nosniff')
   idCardPhoto(@Param('filename') filename: string) { return readIdCardPhoto(filename); }
@@ -28,10 +33,10 @@ export class PppoeController {
   @Patch('ip-pools/:id') updateIpPool(@Param('id') id: string, @Body() dto: SaveIpPoolDto) { return this.pppoe.updateIpPool(id, dto); }
   @Delete('ip-pools/:id') removeIpPool(@Param('id') id: string) { return this.pppoe.removeIpPool(id); }
 
-  @Get('nas/options') nasOptions() { return this.pppoe.nasOptions(); }
-  @Get('odp/options') odpOptions() { return this.pppoe.odpOptions(); }
+  @Get('nas/options') @Roles('admin', 'teknisi') nasOptions() { return this.pppoe.nasOptions(); }
+  @Get('odp/options') @Roles('admin', 'teknisi') odpOptions() { return this.pppoe.odpOptions(); }
 
-  @Get('packages/options') packageOptions() { return this.pppoe.packageOptions(); }
+  @Get('packages/options') @Roles('admin', 'sales', 'teknisi') packageOptions() { return this.pppoe.packageOptions(); }
   @Get('packages') packages(@Query('search') search = '', @Query('page', new ParseIntPipe({ optional: true })) page = 1) { return this.pppoe.packages(search.trim(), Math.max(1, page)); }
   @Post('packages') createPackage(@Body() dto: SavePackageDto) { return this.pppoe.createPackage(dto); }
   @Patch('packages/:id') updatePackage(@Param('id') id: string, @Body() dto: SavePackageDto) { return this.pppoe.updatePackage(id, dto); }

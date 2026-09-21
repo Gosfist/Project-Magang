@@ -133,6 +133,7 @@ export class DepositService {
   }
 
   async create(dto: CreateDepositDto, collectorUserId: string) {
+    if (dto.receiptPhoto.length > 8_000_000) throw new BadRequestException('Foto bukti pembayaran maksimal sekitar 5 MB.');
     // Validate account and invoice exist
     const account = await this.prisma.pppoeAccount.findUnique({
       where: { id: BigInt(dto.pppoeAccountId) },
@@ -166,6 +167,7 @@ export class DepositService {
         amount: BigInt(dto.amount),
         depositDate: new Date(`${dto.depositDate}T00:00:00.000Z`),
         notes: dto.notes?.trim() || null,
+        receiptPhoto: dto.receiptPhoto,
       },
     });
 

@@ -15,6 +15,7 @@ export class AuthService {
   isFinance = computed(() => this.user()?.role === 'finance');
   isSales = computed(() => this.user()?.role === 'sales');
   isKolektor = computed(() => this.user()?.role === 'kolektor');
+  isTeknisi = computed(() => this.user()?.role === 'teknisi');
   hasRole = (...roles: string[]) => {
     const role = this.user()?.role;
     return role ? roles.includes(role) : false;

@@ -33,7 +33,7 @@ export class UsersComponent implements OnInit {
   page = signal(1);
   open = signal(false);
   editing = signal<User | null>(null);
-  form = { name: '', email: '', phone: '', password: '', role: 'petugas', status: 'active' };
+  form = { name: '', email: '', phone: '', password: '', role: 'teknisi', status: 'active' };
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
   ngOnInit(): void {
@@ -58,7 +58,7 @@ export class UsersComponent implements OnInit {
     this.editing.set(user ?? null);
     this.form = user
       ? { name: user.name, email: user.email, phone: user.phone ?? '', password: '', role: user.role, status: user.status }
-      : { name: '', email: '', phone: '', password: '', role: 'petugas', status: 'active' };
+      : { name: '', email: '', phone: '', password: '', role: 'teknisi', status: 'active' };
     this.open.set(true);
   }
 
@@ -95,8 +95,8 @@ export class UsersComponent implements OnInit {
     switch (role) {
       case 'admin':
         return 'Admin';
-      case 'petugas':
-        return 'Petugas';
+      case 'teknisi':
+        return 'Teknisi';
       case 'finance':
         return 'Keuangan';
       case 'sales':

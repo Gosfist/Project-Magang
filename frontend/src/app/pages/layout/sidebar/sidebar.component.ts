@@ -96,8 +96,8 @@ export class SidebarComponent implements OnInit {
     switch (role) {
       case 'admin':
         return 'Admin';
-      case 'petugas':
-        return 'Petugas';
+      case 'teknisi':
+        return 'Teknisi';
       case 'finance':
         return 'Keuangan';
       case 'sales':

@@ -1,10 +1,13 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { RolesGuard } from '../auth/roles.guard.js';
+import { Roles } from '../auth/roles.decorator.js';
 import { SaveMainCoreDto } from './main-core.dto.js';
 import { MainCoreService } from './main-core.service.js';
 
 @Controller('main-core')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin', 'teknisi')
 export class MainCoreController {
   constructor(private readonly mainCore: MainCoreService) { }
 

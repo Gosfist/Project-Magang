@@ -8,18 +8,21 @@ datasource db {
 }
 
 model User {
-  id       BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  id       BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
   name     String
-  email    String @unique
+  email    String  @unique
   phone    String? @db.VarChar(30)
   password String
-  role     String @default("petugas") // admin, petugas, finance, sales, kolektor
-  status   String @default("active")
+  role     String  @default("teknisi") // admin, teknisi, finance, sales, kolektor
+  status   String  @default("active")
 
   areaCollectors      AreaCollector[]
-  collectorDeposits   CollectorDeposit[]  @relation("CollectorDeposits")
-  acceptedDeposits    CollectorDeposit[]  @relation("AcceptedDeposits")
+  collectorDeposits   CollectorDeposit[]   @relation("CollectorDeposits")
+  acceptedDeposits    CollectorDeposit[]   @relation("AcceptedDeposits")
   financeTransactions FinanceTransaction[]
+  salesOrders         PsbOrder[]           @relation("PsbSales")
+  activatedOrders     PsbOrder[]           @relation("PsbActivatedBy")
+  completedOrders     PsbOrder[]           @relation("PsbCompletedBy")
 
   @@map("users")
 }
@@ -62,47 +65,86 @@ model PppoePackage {
   updatedAt    DateTime?      @map("updated_at")
   accounts     PppoeAccount[]
   ipPool       IpPool?        @relation(fields: [ipPoolId], references: [id], onDelete: SetNull)
+  psbOrders    PsbOrder[]
 
   @@index([ipPoolId])
   @@map("pppoe_packages")
 }
 
 model PppoeAccount {
-  id             BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
-  customerNumber BigInt       @unique @map("customer_number") @db.UnsignedBigInt
-  pppoePackageId BigInt       @map("pppoe_package_id") @db.UnsignedBigInt
-  customerName   String       @map("customer_name")
-  idCardNumber     String?    @map("id_card_number") @db.VarChar(50)
-  idCardPhoto      String?    @map("id_card_photo") @db.VarChar(500)
-  username       String       @unique @db.VarChar(64)
-  password       String       @db.Text
-  phone          String?      @db.VarChar(30)
-  address        String?      @db.Text
+  id               BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  customerNumber   BigInt             @unique @map("customer_number") @db.UnsignedBigInt
+  pppoePackageId   BigInt             @map("pppoe_package_id") @db.UnsignedBigInt
+  customerName     String             @map("customer_name")
+  idCardNumber     String?            @map("id_card_number") @db.VarChar(50)
+  idCardPhoto      String?            @map("id_card_photo") @db.VarChar(500)
+  username         String             @unique @db.VarChar(64)
+  password         String             @db.Text
+  phone            String?            @db.VarChar(30)
+  address          String?            @db.Text
   latitude         Float?
   longitude        Float?
-  subscriptionType String     @default("POSTPAID") @map("subscription_type") @db.VarChar(10)
-  billingDay       Int        @default(1) @map("billing_day") @db.UnsignedInt
-  discount         BigInt     @default(0) @db.UnsignedBigInt
-  odp              String?    @db.VarChar(100)
-  routerNasId      Int?       @map("router_nas_id") @db.UnsignedInt
-  expiresAt      DateTime?    @map("expires_at") @db.Date
-  isActive       Boolean      @default(true) @map("is_active")
-  notes          String?      @db.Text
-  createdAt      DateTime?    @map("created_at")
-  updatedAt      DateTime?    @map("updated_at")
-  package        PppoePackage @relation(fields: [pppoePackageId], references: [id], onDelete: Restrict)
-  areaId           BigInt?    @map("area_id") @db.UnsignedBigInt
-  routerNas        Nas?       @relation(fields: [routerNasId], references: [id], onDelete: SetNull)
-  area             Area?      @relation(fields: [areaId], references: [id], onDelete: SetNull)
-    invoices         Invoice[]
-    addons           CustomerAddon[]
-    paymentPromises  PaymentPromise[]
-    deposits         CollectorDeposit[]
+  subscriptionType String             @default("POSTPAID") @map("subscription_type") @db.VarChar(10)
+  billingDay       Int                @default(1) @map("billing_day") @db.UnsignedInt
+  discount         BigInt             @default(0) @db.UnsignedBigInt
+  odp              String?            @db.VarChar(100)
+  routerNasId      Int?               @map("router_nas_id") @db.UnsignedInt
+  expiresAt        DateTime?          @map("expires_at") @db.Date
+  isActive         Boolean            @default(true) @map("is_active")
+  notes            String?            @db.Text
+  createdAt        DateTime?          @map("created_at")
+  updatedAt        DateTime?          @map("updated_at")
+  package          PppoePackage       @relation(fields: [pppoePackageId], references: [id], onDelete: Restrict)
+  areaId           BigInt?            @map("area_id") @db.UnsignedBigInt
+  routerNas        Nas?               @relation(fields: [routerNasId], references: [id], onDelete: SetNull)
+  area             Area?              @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  invoices         Invoice[]
+  addons           CustomerAddon[]
+  paymentPromises  PaymentPromise[]
+  deposits         CollectorDeposit[]
+  psbOrder         PsbOrder?
 
   @@index([pppoePackageId])
   @@index([routerNasId])
   @@index([areaId])
   @@map("pppoe_accounts")
+}
+
+model PsbOrder {
+  id                BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  customerNumber    BigInt    @unique @map("customer_number") @db.UnsignedBigInt
+  customerName      String    @map("customer_name") @db.VarChar(150)
+  phone             String    @db.VarChar(30)
+  address           String    @db.Text
+  pppoePackageId    BigInt    @map("pppoe_package_id") @db.UnsignedBigInt
+  areaId            BigInt?   @map("area_id") @db.UnsignedBigInt
+  salesUserId       BigInt    @map("sales_user_id") @db.UnsignedBigInt
+  status            String    @default("PROCESS") @db.VarChar(20)
+  username          String?   @db.VarChar(64)
+  password          String?   @db.Text
+  odp               String?   @db.VarChar(100)
+  routerNasId       Int?      @map("router_nas_id") @db.UnsignedInt
+  installationPhoto String?   @map("installation_photo") @db.LongText
+  pppoeAccountId    BigInt?   @unique @map("pppoe_account_id") @db.UnsignedBigInt
+  activatedByUserId BigInt?   @map("activated_by_user_id") @db.UnsignedBigInt
+  completedByUserId BigInt?   @map("completed_by_user_id") @db.UnsignedBigInt
+  activatedAt       DateTime? @map("activated_at")
+  completedAt       DateTime? @map("completed_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  package     PppoePackage  @relation(fields: [pppoePackageId], references: [id], onDelete: Restrict)
+  area        Area?         @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  sales       User          @relation("PsbSales", fields: [salesUserId], references: [id])
+  activatedBy User?         @relation("PsbActivatedBy", fields: [activatedByUserId], references: [id])
+  completedBy User?         @relation("PsbCompletedBy", fields: [completedByUserId], references: [id])
+  account     PppoeAccount? @relation(fields: [pppoeAccountId], references: [id], onDelete: SetNull)
+  routerNas   Nas?          @relation(fields: [routerNasId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([salesUserId])
+  @@index([pppoePackageId])
+  @@map("psb_orders")
 }
 
 model IpPool {
@@ -118,20 +160,20 @@ model IpPool {
 }
 
 model Invoice {
-  id             BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
-  pppoeAccountId BigInt       @map("pppoe_account_id") @db.UnsignedBigInt
-  invoiceNumber  String       @unique @map("invoice_number") @db.VarChar(50)
-  amount         BigInt       @default(0) @db.UnsignedBigInt
-  baseAmount     BigInt       @default(0) @map("base_amount") @db.UnsignedBigInt
-  discount       BigInt       @default(0) @db.UnsignedBigInt
-  invoiceType    String       @default("MONTHLY") @map("invoice_type") @db.VarChar(10)
-  status         String       @default("PENDING") @db.VarChar(10)
-  dueDate        DateTime     @map("due_date") @db.Date
-  paidAt         DateTime?    @map("paid_at")
-  notes          String?      @db.Text
-  createdAt      DateTime?    @map("created_at")
-  updatedAt      DateTime?    @map("updated_at")
-  account        PppoeAccount @relation(fields: [pppoeAccountId], references: [id], onDelete: Cascade)
+  id             BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  pppoeAccountId BigInt             @map("pppoe_account_id") @db.UnsignedBigInt
+  invoiceNumber  String             @unique @map("invoice_number") @db.VarChar(50)
+  amount         BigInt             @default(0) @db.UnsignedBigInt
+  baseAmount     BigInt             @default(0) @map("base_amount") @db.UnsignedBigInt
+  discount       BigInt             @default(0) @db.UnsignedBigInt
+  invoiceType    String             @default("MONTHLY") @map("invoice_type") @db.VarChar(10)
+  status         String             @default("PENDING") @db.VarChar(10)
+  dueDate        DateTime           @map("due_date") @db.Date
+  paidAt         DateTime?          @map("paid_at")
+  notes          String?            @db.Text
+  createdAt      DateTime?          @map("created_at")
+  updatedAt      DateTime?          @map("updated_at")
+  account        PppoeAccount       @relation(fields: [pppoeAccountId], references: [id], onDelete: Cascade)
   deposits       CollectorDeposit[]
 
   @@index([pppoeAccountId])
@@ -141,32 +183,34 @@ model Invoice {
 }
 
 model CustomerAddon {
-  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  pppoeAccountId BigInt @map("pppoe_account_id") @db.UnsignedBigInt
-  name String @db.VarChar(150)
-  amount BigInt @db.UnsignedBigInt
-  feeType String @default("ONCE") @map("fee_type") @db.VarChar(15)
-  notes String? @db.Text
-  invoiceNumber String @map("invoice_number") @db.VarChar(50)
-  createdAt DateTime @default(now()) @map("created_at")
-  account PppoeAccount @relation(fields: [pppoeAccountId], references: [id], onDelete: Cascade)
+  id             BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  pppoeAccountId BigInt       @map("pppoe_account_id") @db.UnsignedBigInt
+  name           String       @db.VarChar(150)
+  amount         BigInt       @db.UnsignedBigInt
+  feeType        String       @default("ONCE") @map("fee_type") @db.VarChar(15)
+  notes          String?      @db.Text
+  invoiceNumber  String       @map("invoice_number") @db.VarChar(50)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  account        PppoeAccount @relation(fields: [pppoeAccountId], references: [id], onDelete: Cascade)
+
   @@index([pppoeAccountId])
   @@map("customer_addons")
 }
 
 model PaymentPromise {
-  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  pppoeAccountId BigInt @map("pppoe_account_id") @db.UnsignedBigInt
-  promisedDate DateTime @map("promised_date") @db.Date
-  deadline DateTime
-  notes String? @db.Text
-  status String @default("ACTIVE") @db.VarChar(15)
-  invoiceIds Json @map("invoice_ids")
-  originalExpiresAt DateTime? @map("original_expires_at") @db.Date
-  disconnectPending Boolean @default(false) @map("disconnect_pending")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  account PppoeAccount @relation(fields: [pppoeAccountId], references: [id], onDelete: Cascade)
+  id                BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  pppoeAccountId    BigInt       @map("pppoe_account_id") @db.UnsignedBigInt
+  promisedDate      DateTime     @map("promised_date") @db.Date
+  deadline          DateTime
+  notes             String?      @db.Text
+  status            String       @default("ACTIVE") @db.VarChar(15)
+  invoiceIds        Json         @map("invoice_ids")
+  originalExpiresAt DateTime?    @map("original_expires_at") @db.Date
+  disconnectPending Boolean      @default(false) @map("disconnect_pending")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+  account           PppoeAccount @relation(fields: [pppoeAccountId], references: [id], onDelete: Cascade)
+
   @@index([pppoeAccountId, status])
   @@index([status, deadline])
   @@map("payment_promises")
@@ -350,6 +394,7 @@ model Nas {
   createdAt       DateTime?      @default(now()) @map("created_at")
   updatedAt       DateTime?      @default(now()) @updatedAt @map("updated_at")
   accounts        PppoeAccount[]
+  psbOrders       PsbOrder[]
   vpnClient       VpnClient?     @relation(fields: [vpnClientId], references: [id], onDelete: SetNull)
 
   @@index([nasname])
@@ -365,23 +410,25 @@ model Nasreload {
 }
 
 model MonitoringError {
-  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  id        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
   createdAt DateTime @default(now()) @map("created_at")
-  method String @db.VarChar(16)
-  route String @db.VarChar(255)
-  status Int
+  method    String   @db.VarChar(16)
+  route     String   @db.VarChar(255)
+  status    Int
+
   @@map("monitoring_errors")
 }
 
 model ActivityLog {
-  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  createdAt DateTime @default(now()) @map("created_at")
-  userName String @map("user_name") @db.VarChar(255)
-  role String @db.VarChar(30)
-  module String @db.VarChar(40)
-  action String @db.VarChar(40)
-  description String @db.VarChar(500)
-  status String @db.VarChar(20)
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  createdAt   DateTime @default(now()) @map("created_at")
+  userName    String   @map("user_name") @db.VarChar(255)
+  role        String   @db.VarChar(30)
+  module      String   @db.VarChar(40)
+  action      String   @db.VarChar(40)
+  description String   @db.VarChar(500)
+  status      String   @db.VarChar(20)
+
   @@index([createdAt])
   @@map("activity_logs")
 }
@@ -418,68 +465,69 @@ model RouterStat {
 }
 
 model ServerStatMonthly {
-  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  year       Int      @db.UnsignedSmallInt
-  month      Int      @db.UnsignedTinyInt
-  cpuPercent Float    @map("cpu_percent")
-  memPercent Float    @map("mem_percent")
-  netDown    Float    @map("net_down")
-  netUp      Float    @map("net_up")
-  samples    Int      @default(0) @db.UnsignedInt
+  id         BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  year       Int    @db.UnsignedSmallInt
+  month      Int    @db.UnsignedTinyInt
+  cpuPercent Float  @map("cpu_percent")
+  memPercent Float  @map("mem_percent")
+  netDown    Float  @map("net_down")
+  netUp      Float  @map("net_up")
+  samples    Int    @default(0) @db.UnsignedInt
 
   @@unique([year, month])
   @@map("server_stats_monthly")
 }
 
 model RouterStatMonthly {
-  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  nasId      Int      @map("nas_id") @db.UnsignedInt
-  year       Int      @db.UnsignedSmallInt
-  month      Int      @db.UnsignedTinyInt
-  cpuPercent Float    @map("cpu_percent")
-  memPercent Float    @map("mem_percent")
-  netDown    Float    @map("net_down")
-  netUp      Float    @map("net_up")
-  samples    Int      @default(0) @db.UnsignedInt
+  id         BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  nasId      Int    @map("nas_id") @db.UnsignedInt
+  year       Int    @db.UnsignedSmallInt
+  month      Int    @db.UnsignedTinyInt
+  cpuPercent Float  @map("cpu_percent")
+  memPercent Float  @map("mem_percent")
+  netDown    Float  @map("net_down")
+  netUp      Float  @map("net_up")
+  samples    Int    @default(0) @db.UnsignedInt
 
   @@unique([nasId, year, month])
   @@map("router_stats_monthly")
 }
 
 model ServerStatYearly {
-  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  year       Int      @unique @db.UnsignedSmallInt
-  cpuPercent Float    @map("cpu_percent")
-  memPercent Float    @map("mem_percent")
-  netDown    Float    @map("net_down")
-  netUp      Float    @map("net_up")
-  samples    Int      @default(0) @db.UnsignedInt
+  id         BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  year       Int    @unique @db.UnsignedSmallInt
+  cpuPercent Float  @map("cpu_percent")
+  memPercent Float  @map("mem_percent")
+  netDown    Float  @map("net_down")
+  netUp      Float  @map("net_up")
+  samples    Int    @default(0) @db.UnsignedInt
 
   @@map("server_stats_yearly")
 }
 
 model RouterStatYearly {
-  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  nasId      Int      @map("nas_id") @db.UnsignedInt
-  year       Int      @db.UnsignedSmallInt
-  cpuPercent Float    @map("cpu_percent")
-  memPercent Float    @map("mem_percent")
-  netDown    Float    @map("net_down")
-  netUp      Float    @map("net_up")
-  samples    Int      @default(0) @db.UnsignedInt
+  id         BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  nasId      Int    @map("nas_id") @db.UnsignedInt
+  year       Int    @db.UnsignedSmallInt
+  cpuPercent Float  @map("cpu_percent")
+  memPercent Float  @map("mem_percent")
+  netDown    Float  @map("net_down")
+  netUp      Float  @map("net_up")
+  samples    Int    @default(0) @db.UnsignedInt
 
   @@unique([nasId, year])
   @@map("router_stats_yearly")
 }
 
 model Area {
-  id          BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
-  name        String           @unique @db.VarChar(150)
-  description String?          @db.Text
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
+  id          BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  name        String          @unique @db.VarChar(150)
+  description String?         @db.Text
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
   collectors  AreaCollector[]
   accounts    PppoeAccount[]
+  psbOrders   PsbOrder[]
 
   @@map("areas")
 }
@@ -509,6 +557,7 @@ model CollectorDeposit {
   acceptedByUserId BigInt?   @map("accepted_by_user_id") @db.UnsignedBigInt
   acceptedAt       DateTime? @map("accepted_at")
   notes            String?   @db.Text
+  receiptPhoto     String?   @map("receipt_photo") @db.LongText
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 

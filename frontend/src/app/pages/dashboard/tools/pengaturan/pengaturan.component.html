@@ -14,6 +14,18 @@
   <form class="card space-y-5 p-5 sm:p-6" (ngSubmit)="save()">
     <div class="grid gap-4 md:grid-cols-2">
       <div>
+        <label class="label">Pembayaran Awal Pelanggan</label>
+        <select class="input" [(ngModel)]="form.psbPaymentMode" name="psbPaymentMode">
+          <option value="full">Bayar penuh</option>
+          <option value="prorate">Prorata sesuai sisa hari</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Biaya Pasang Baru</label>
+        <input class="input" type="number" min="0" required [(ngModel)]="form.psbFee" name="psbFee" />
+        <p class="mt-1 text-xs text-slate-500">Nominal ini dicantumkan pada tagihan dan notifikasi PSB selesai.</p>
+      </div>
+      <div>
         <label class="label">Tanggal Mulai Pembayaran</label>
         <input class="input" type="number" min="1" max="28" required [(ngModel)]="form.billingStartDay" name="billingStartDay" />
         <p class="mt-1 text-xs text-slate-500">Awal rentang pembayaran bulanan.</p>

@@ -19,8 +19,36 @@ export class DashboardController {
     ]);
     const result: Record<string, number> = { totalServerCores, totalOdcs, totalOdps, totalWithRedaman };
     if (request.user.role === 'admin') {
-      result.totalPetugas = await this.prisma.user.count({ where: { role: 'petugas' } });
+      result.totalTeknisi = await this.prisma.user.count({ where: { role: 'teknisi' } });
       result.totalUsers = await this.prisma.user.count();
+    } else if (request.user.role === 'sales') {
+      const salesUserId = BigInt(request.user.id);
+      const [totalRegistrations, processOrders, completedOrders] = await this.prisma.$transaction([
+        this.prisma.psbOrder.count({ where: { salesUserId } }),
+        this.prisma.psbOrder.count({ where: { salesUserId, status: { not: 'COMPLETED' } } }),
+        this.prisma.psbOrder.count({ where: { salesUserId, status: 'COMPLETED' } }),
+      ]);
+      return { totalRegistrations, processOrders, completedOrders };
+    } else if (request.user.role === 'teknisi') {
+      const [newOrders, activatedOrders, completedOrders] = await this.prisma.$transaction([
+        this.prisma.psbOrder.count({ where: { status: 'PROCESS' } }),
+        this.prisma.psbOrder.count({ where: { status: 'ACTIVATED' } }),
+        this.prisma.psbOrder.count({ where: { status: 'COMPLETED' } }),
+      ]);
+      return { newOrders, activatedOrders, completedOrders };
+    } else if (request.user.role === 'kolektor') {
+      const [assignedCustomers, pendingDeposits, acceptedDeposits] = await this.prisma.$transaction([
+        this.prisma.pppoeAccount.count({ where: { area: { collectors: { some: { userId: BigInt(request.user.id) } } } } }),
+        this.prisma.collectorDeposit.count({ where: { collectorUserId: BigInt(request.user.id), status: 'PENDING' } }),
+        this.prisma.collectorDeposit.count({ where: { collectorUserId: BigInt(request.user.id), status: 'ACCEPTED' } }),
+      ]);
+      return { assignedCustomers, pendingDeposits, acceptedDeposits };
+    } else if (request.user.role === 'finance') {
+      const [pendingDeposits, acceptedDeposits] = await this.prisma.$transaction([
+        this.prisma.collectorDeposit.count({ where: { status: 'PENDING' } }),
+        this.prisma.collectorDeposit.count({ where: { status: 'ACCEPTED' } }),
+      ]);
+      return { pendingDeposits, acceptedDeposits };
     }
     return result;
   }

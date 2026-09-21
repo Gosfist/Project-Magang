@@ -1,4 +1,4 @@
-export type User = { id: string; name: string; email: string; phone?: string | null; role: 'admin' | 'petugas' | 'finance' | 'sales' | 'kolektor'; status: 'active' | 'inactive' };
+export type User = { id: string; name: string; email: string; phone?: string | null; role: 'admin' | 'teknisi' | 'finance' | 'sales' | 'kolektor'; status: 'active' | 'inactive' };
 export type PageMeta = { currentPage: number; lastPage: number; perPage: number; total: number };
 export type MainCoreNode = {
   id: string; parentId: string | null; parentPortOut: number | null; namaTitik: string;
@@ -144,6 +144,7 @@ export type CollectorDeposit = {
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
   acceptedAt?: string | null;
   notes?: string | null;
+  receiptPhoto?: string | null;
   createdAt: string;
   account?: {
     id: string;
@@ -185,3 +186,9 @@ export type FinanceSummary = {
   pendingDeposits: number;
 };
 
+export type PsbOrder = {
+  id: string; customerNumber: string; customerId: string; customerName: string; phone: string; address: string;
+  pppoePackageId: string; areaId?: string | null; status: 'PROCESS' | 'ACTIVATED' | 'COMPLETED'; username?: string | null;
+  installationPhoto?: string | null; createdAt: string; completedAt?: string | null;
+  package: { id: string; name: string; price: number }; area?: { id: string; name: string } | null; sales?: { id: string; name: string };
+};

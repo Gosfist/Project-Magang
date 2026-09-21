@@ -11,6 +11,7 @@ import { RouterModule } from './router/router.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 import { AreaModule } from './area/area.module.js';
 import { FinanceModule } from './finance/finance.module.js';
+import { PsbModule } from './psb/psb.module.js';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { FinanceModule } from './finance/finance.module.js';
     SettingsModule,
     AreaModule,
     FinanceModule,
+    PsbModule,
   ],
 })
 export class AppModule {}

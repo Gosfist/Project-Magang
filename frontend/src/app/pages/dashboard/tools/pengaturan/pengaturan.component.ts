@@ -9,6 +9,8 @@ type BillingSettings = {
   billingTimezone: 'WIB' | 'WITA' | 'WIT';
   autoIsolationEnabled: boolean;
   isolationCheckHour: number;
+  psbPaymentMode: 'full' | 'prorate';
+  psbFee: number;
 };
 
 @Component({
@@ -28,6 +30,8 @@ export class PengaturanComponent implements OnInit {
     billingTimezone: 'WIB',
     autoIsolationEnabled: false,
     isolationCheckHour: 0,
+    psbPaymentMode: 'full',
+    psbFee: 0,
   };
 
   ngOnInit(): void {

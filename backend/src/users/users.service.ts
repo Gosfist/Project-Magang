@@ -52,7 +52,7 @@ export class UsersService {
         data: { ...dto, password },
         omit: { password: true },
       });
-      return serialize({ message: 'Data petugas berhasil diperbarui.', user });
+      return serialize({ message: 'Data akun berhasil diperbarui.', user });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException('Email sudah digunakan.');

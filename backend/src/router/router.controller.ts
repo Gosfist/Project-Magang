@@ -1,10 +1,11 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { AdminGuard } from '../auth/roles.guard.js';
 import { RouterService } from './router.service.js';
 import { SaveRouterDto, SaveVpnClientDto, SaveVpnServerDto } from './router.dto.js';
 
 @Controller('router')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, AdminGuard)
 export class RouterController {
   constructor(private readonly routerService: RouterService) {}
 

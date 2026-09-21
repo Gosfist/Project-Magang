@@ -8,10 +8,11 @@ import { AssignCollectorDto, SaveAreaDto } from './area.dto.js';
 export class AreaService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async list(search = '', page = 1, perPage = 10) {
-    const where: Prisma.AreaWhereInput = search
-      ? { OR: [{ name: { contains: search } }, { description: { contains: search } }] }
-      : {};
+  async list(search = '', page = 1, perPage = 10, user?: { id: string; role: string }) {
+    const where: Prisma.AreaWhereInput = {
+      ...(search ? { OR: [{ name: { contains: search } }, { description: { contains: search } }] } : {}),
+      ...(user?.role === 'kolektor' ? { collectors: { some: { userId: BigInt(user.id) } } } : {}),
+    };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.area.findMany({
         where,
@@ -132,8 +133,11 @@ export class AreaService {
     return serialize({ data });
   }
 
-  async getAreaCustomers(areaId: string, search = '', status = 'ALL') {
+  async getAreaCustomers(areaId: string, search = '', status = 'ALL', user?: { id: string; role: string }) {
     const area = await this.findArea(areaId);
+    if (user?.role === 'kolektor' && !await this.prisma.areaCollector.findFirst({ where: { areaId: BigInt(areaId), userId: BigInt(user.id) } })) {
+      throw new BadRequestException('Area ini bukan tugas kolektor Anda. Gunakan menu Titipan untuk pelanggan di luar area.');
+    }
 
     const collectors = await this.prisma.areaCollector.findMany({
       where: { areaId: BigInt(areaId) },

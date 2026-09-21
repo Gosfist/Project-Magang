@@ -17,6 +17,25 @@ export interface TemplateConfig {
 
 export const TEMPLATE_LIST: TemplateConfig[] = [
   {
+    id: 'sales', name: 'Sales', title: 'Template Registrasi Sales', label: 'Pesan Registrasi Sales',
+    description: 'Dikirim setelah Sales mendaftarkan calon pelanggan.',
+    placeholders: [
+      { key: '{nama}', desc: 'Nama pelanggan' }, { key: '{nomor_pelanggan}', desc: 'Nomor pelanggan' },
+      { key: '{nomor_wa}', desc: 'Nomor WhatsApp' }, { key: '{alamat}', desc: 'Alamat pelanggan' }, { key: '{layanan}', desc: 'Paket layanan' },
+    ],
+    sampleData: { '{nama}': 'Ahmad Fauzi', '{nomor_pelanggan}': '000123', '{nomor_wa}': '081234567890', '{alamat}': 'Jl. Contoh No. 1', '{layanan}': 'Paket 20 Mbps' },
+  },
+  {
+    id: 'psb', name: 'PSB', title: 'Template Pasang Baru Selesai', label: 'Pesan Internet Aktif',
+    description: 'Dikirim ketika teknisi menyelesaikan pemasangan.',
+    placeholders: [
+      { key: '{nama}', desc: 'Nama pelanggan' }, { key: '{nomor_pelanggan}', desc: 'Nomor pelanggan' },
+      { key: '{layanan}', desc: 'Paket layanan' }, { key: '{biaya_psb}', desc: 'Biaya pasang baru' },
+      { key: '{tanggal_mulai}', desc: 'Awal pembayaran' }, { key: '{tanggal_akhir}', desc: 'Jatuh tempo' },
+    ],
+    sampleData: { '{nama}': 'Ahmad Fauzi', '{nomor_pelanggan}': '000123', '{layanan}': 'Paket 20 Mbps', '{biaya_psb}': 'Rp 150.000', '{tanggal_mulai}': '1', '{tanggal_akhir}': '10' },
+  },
+  {
     id: 'registration',
     name: 'Add Pelanggan',
     title: 'Template Registrasi Pelanggan Baru',
@@ -122,6 +141,8 @@ export class BotWaTemplateComponent implements OnInit {
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
   templatesData: Record<string, string> = {
+    sales: '',
+    psb: '',
     registration: '',
     isolation: '',
     deposit_collector: '',

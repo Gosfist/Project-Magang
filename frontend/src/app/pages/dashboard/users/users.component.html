@@ -8,7 +8,7 @@
       <select class="input" [(ngModel)]="role" (ngModelChange)="load()">
         <option value="">Semua peran</option>
         <option value="admin">Admin</option>
-        <option value="petugas">Petugas</option>
+        <option value="teknisi">Teknisi</option>
         <option value="finance">Keuangan</option>
         <option value="sales">Sales</option>
         <option value="kolektor">Kolektor</option>
@@ -54,7 +54,7 @@
           </tr>
         }
         @if (items().length === 0) {
-          <tr><td colspan="6" class="py-8 text-center text-slate-400">Data petugas belum tersedia.</td></tr>
+          <tr><td colspan="6" class="py-8 text-center text-slate-400">Data akun belum tersedia.</td></tr>
         }
       </tbody>
     </table>
@@ -62,7 +62,7 @@
 
   <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
 
-  <app-modal [open]="open()" [title]="editing() ? 'Edit Data Petugas' : 'Tambah Petugas'" (closeModal)="open.set(false)">
+  <app-modal [open]="open()" [title]="editing() ? 'Edit Akun' : 'Tambah Akun'" (closeModal)="open.set(false)">
     <form (ngSubmit)="save()" class="space-y-4">
       <div>
         <label class="label">Nama *</label>
@@ -85,7 +85,7 @@
           <label class="label">Peran</label>
           <select class="input" [(ngModel)]="form.role" name="role">
             <option value="admin">Admin</option>
-            <option value="petugas">Petugas</option>
+            <option value="teknisi">Teknisi</option>
             <option value="finance">Keuangan</option>
             <option value="sales">Sales</option>
             <option value="kolektor">Kolektor</option>

@@ -11,6 +11,7 @@
       <img src="logo.png" width="86" height="36" alt="Unzanet" />
       <span class="text-sm font-bold">PT UNZANET</span>
     </a>
+
     <button class="lg:hidden" (click)="mobile.set(false)">
       <svg lucideX [size]="24"></svg>
     </button>
@@ -27,6 +28,17 @@
       <svg lucideLayoutDashboard [size]="20"></svg> Dasbor
     </a>
 
+    @if (auth.isSales()) {
+      <a routerLink="/dashboard/registrasi-pelanggan" routerLinkActive="bg-white/15 text-white" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white" (click)="mobile.set(false)"><svg lucideUsers [size]="20"></svg> Registrasi Pengguna Baru</a>
+    }
+    @if (auth.isTeknisi() || auth.isAdmin()) {
+      <a routerLink="/dashboard/pasang-baru" routerLinkActive="bg-white/15 text-white" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white" (click)="mobile.set(false)"><svg lucideNetwork [size]="20"></svg> Pasang Baru</a>
+    }
+    @if (auth.isTeknisi()) {
+      <button class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10" (click)="coreOpen.set(!coreOpen())"><svg lucideGitBranch [size]="20"></svg><span class="flex-1 text-left">Main Core</span><svg lucideChevronDown [size]="16" [class]="!coreOpen() ? '-rotate-90' : ''"></svg></button>
+      @if (coreOpen()) { <div class="mt-1 space-y-1 pl-11 pr-2">@for (link of coreLinks; track link[1]) { <a [routerLink]="link[1]" routerLinkActive="bg-white/15 text-white" class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white" (click)="mobile.set(false)">{{ link[0] }}</a> }</div> }
+    }
+
     @if (auth.isAdmin()) {
       <a
         routerLink="/dashboard/users"
@@ -34,12 +46,12 @@
         class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
         (click)="mobile.set(false)"
       >
-        <svg lucideUsers [size]="20"></svg> Data Petugas
+        <svg lucideUsers [size]="20"></svg> Akun & Role
       </a>
     }
 
     <!-- Finance (Admin & Finance) -->
-    @if (auth.isAdmin() || auth.isFinance()) {
+    @if (auth.isAdmin()) {
       <button
         class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
         (click)="financeOpen.set(!financeOpen())"
@@ -65,19 +77,22 @@
           }
         </div>
       }
-    } @else if (auth.isKolektor()) {
+    } @else if (auth.isFinance()) {
       <a
-        routerLink="/dashboard/finance/setoran"
+        routerLink="/dashboard/finance/tagihan"
         routerLinkActive="bg-white/15 text-white"
         class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
         (click)="mobile.set(false)"
       >
-        <svg lucideDollarSign [size]="20"></svg> Setoran Tagihan
+        <svg lucideDollarSign [size]="20"></svg> Tagihan
       </a>
+    } @else if (auth.isKolektor()) {
+      <a routerLink="/dashboard/kolektor/tagihan" routerLinkActive="bg-white/15 text-white" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white" (click)="mobile.set(false)"><svg lucideDollarSign [size]="20"></svg> Tagihan</a>
+      <a routerLink="/dashboard/kolektor/titipan" routerLinkActive="bg-white/15 text-white" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white" (click)="mobile.set(false)"><svg lucideDollarSign [size]="20"></svg> Titipan</a>
     }
 
     <!-- Area & Kolektor -->
-    @if (auth.hasRole('admin', 'finance', 'sales', 'kolektor', 'petugas')) {
+    @if (auth.isAdmin()) {
       <a
         routerLink="/dashboard/area"
         routerLinkActive="bg-white/15 text-white"
@@ -88,7 +103,7 @@
       </a>
     }
 
-    @if (auth.hasRole('admin', 'sales', 'petugas')) {
+    @if (auth.isAdmin()) {
       <p
         class="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-500"
       >
@@ -247,7 +262,7 @@
     }
 
     <!-- Tool -->
-    @if (auth.hasRole('admin', 'sales', 'petugas')) {
+    @if (auth.hasRole('admin', 'teknisi')) {
       <button
         class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
         (click)="toolOpen.set(!toolOpen())"

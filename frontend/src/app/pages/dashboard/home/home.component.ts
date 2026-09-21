@@ -34,15 +34,38 @@ export class HomeComponent implements OnInit {
 
   private buildCards(): void {
     const s = this.stats();
-    const result: StatCard[] = [
+    let result: StatCard[] = [
       { label: 'Server Inti', value: s['totalServerCores'], type: 'server' },
       { label: 'Total ODC', value: s['totalOdcs'], type: 'odc' },
       { label: 'Total ODP', value: s['totalOdps'], type: 'odp' },
       { label: 'Data Redaman', value: s['totalWithRedaman'], type: 'redaman' },
     ];
     if (this.auth.isAdmin()) {
-      result.push({ label: 'Total Petugas', value: s['totalPetugas'], type: 'users' });
+      result.push({ label: 'Total Teknisi', value: s['totalTeknisi'], type: 'users' });
       result.push({ label: 'Total Pengguna', value: s['totalUsers'], type: 'users' });
+    } else if (this.auth.isSales()) {
+      result = [
+        { label: 'Total Registrasi', value: s['totalRegistrations'], type: 'users' },
+        { label: 'Dalam Proses', value: s['processOrders'], type: 'redaman' },
+        { label: 'Pemasangan Selesai', value: s['completedOrders'], type: 'odp' },
+      ];
+    } else if (this.auth.isTeknisi()) {
+      result = [
+        { label: 'Order Baru', value: s['newOrders'], type: 'users' },
+        { label: 'Menunggu Selesai', value: s['activatedOrders'], type: 'redaman' },
+        { label: 'Pemasangan Selesai', value: s['completedOrders'], type: 'odc' },
+      ];
+    } else if (this.auth.isKolektor()) {
+      result = [
+        { label: 'Pelanggan Tugas', value: s['assignedCustomers'], type: 'users' },
+        { label: 'Menunggu Finance', value: s['pendingDeposits'], type: 'redaman' },
+        { label: 'Pembayaran Selesai', value: s['acceptedDeposits'], type: 'odc' },
+      ];
+    } else if (this.auth.isFinance()) {
+      result = [
+        { label: 'Menunggu Diterima', value: s['pendingDeposits'], type: 'redaman' },
+        { label: 'Pembayaran Selesai', value: s['acceptedDeposits'], type: 'odc' },
+      ];
     }
     this.cards.set(result);
   }
