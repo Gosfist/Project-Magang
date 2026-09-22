@@ -32,7 +32,7 @@
             <td>{{ node.redamanIn === null ? '—' : node.redamanIn + ' dBm' }}</td>
             <td>{{ node.tanggal ? formatDate(node.tanggal) : '—' }}</td>
             <td>
-              <div class="flex">
+              <div class="flex gap-2">
                 <button class="btn-secondary px-3" (click)="show(node)">
                   <svg lucidePencil [size]="15"></svg>
                 </button>

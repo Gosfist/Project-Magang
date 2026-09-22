@@ -54,7 +54,7 @@
               {{ item.freeIps ?? "?" }}
             </td>
             <td>
-              <div class="flex">
+              <div class="flex gap-2">
                 <button
                   class="btn-secondary px-3"
                   [disabled]="!item.networkStart || !item.networkEnd"

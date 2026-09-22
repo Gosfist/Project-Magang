@@ -53,7 +53,7 @@
               <span [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (user.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')">{{ user.status === 'active' ? 'Aktif' : 'Tidak aktif' }}</span>
             </td>
             <td>
-              <div class="flex">
+              <div class="flex gap-2">
                 <button class="btn-secondary px-3" (click)="show(user)">
                   <svg lucidePencil [size]="15"></svg>
                 </button>
