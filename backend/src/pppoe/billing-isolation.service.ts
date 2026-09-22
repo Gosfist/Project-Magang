@@ -53,6 +53,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
         isActive: true,
         package: { isActive: true },
         invoices: { some: { status: 'PENDING', dueDate: { lte: cutoffDate } } },
+        paymentPromises: { none: { status: 'ACTIVE', deadline: { gt: new Date() } } },
       },
       include: { package: { include: { ipPool: true } }, invoices: { where: { status: 'PENDING', dueDate: { lte: cutoffDate } }, select: { id: true, amount: true, dueDate: true }, take: 10 } },
       take: 100,
