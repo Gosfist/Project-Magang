@@ -28,8 +28,10 @@ export class PsbComponent implements OnInit {
   loadOptions() {
     this.api.get<{ data: PppoePackage[] }>('/pppoe/packages/options').subscribe(r => this.packages.set(r.data.filter(x => x.isActive)));
     this.api.get<{ data: Area[] }>('/areas/options').subscribe(r => this.areas.set(r.data));
-    this.api.get<{ data: OdpOption[] }>('/pppoe/odp/options').subscribe(r => this.odps.set(r.data));
-    this.api.get<{ data: NasOption[] }>('/pppoe/nas/options').subscribe(r => this.routers.set(r.data));
+    if (!this.auth.hasRole('sales')) {
+      this.api.get<{ data: OdpOption[] }>('/pppoe/odp/options').subscribe(r => this.odps.set(r.data));
+      this.api.get<{ data: NasOption[] }>('/pppoe/nas/options').subscribe(r => this.routers.set(r.data));
+    }
   }
   openForm(item?: PsbOrder) { this.editing.set(item || null); this.form = item ? { customerName: item.customerName, phone: item.phone, idCardNumber: item.idCardNumber || '', idCardPhoto: item.idCardPhoto || '', latitude: item.latitude?.toString() || '', address: item.address, pppoePackageId: item.pppoePackageId, areaId: item.areaId || '' } : { customerName: '', phone: '', idCardNumber: '', idCardPhoto: '', latitude: '', address: '', pppoePackageId: '', areaId: '' }; this.formOpen.set(true); }
   chooseKtp(event: Event) { const file = (event.target as HTMLInputElement).files?.[0]; if (!file) return; if (file.size > 5 * 1024 * 1024) return this.toast.set({ message: 'Foto KTP maksimal 5 MB.', type: 'error' }); const reader = new FileReader(); reader.onload = () => this.form.idCardPhoto = String(reader.result); reader.readAsDataURL(file); }

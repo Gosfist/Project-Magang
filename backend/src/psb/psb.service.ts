@@ -154,7 +154,11 @@ export class PsbService {
   }
 
   private customerData(dto: CreatePsbOrderDto) {
-    return { customerName: dto.customerName.trim(), phone: dto.phone.trim(), idCardNumber: dto.idCardNumber?.trim() || null, idCardPhoto: dto.idCardPhoto || null, address: dto.address.trim(), latitude: dto.latitude ?? null, pppoePackageId: BigInt(dto.pppoePackageId), areaId: dto.areaId ? BigInt(dto.areaId) : null };
+    const rawLatitude = dto.latitude as unknown;
+    const latitude = rawLatitude === undefined || rawLatitude === null || rawLatitude === ''
+      ? null
+      : Number(rawLatitude);
+    return { customerName: dto.customerName.trim(), phone: dto.phone.trim(), idCardNumber: dto.idCardNumber?.trim() || null, idCardPhoto: dto.idCardPhoto || null, address: dto.address.trim(), latitude, pppoePackageId: BigInt(dto.pppoePackageId), areaId: dto.areaId ? BigInt(dto.areaId) : null };
   }
   private async validateCustomer(dto: CreatePsbOrderDto) {
     if (!await this.prisma.pppoePackage.findUnique({ where: { id: BigInt(dto.pppoePackageId) } })) throw new NotFoundException('Paket layanan tidak ditemukan.');
