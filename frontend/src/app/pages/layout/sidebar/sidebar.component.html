@@ -363,7 +363,7 @@
       <span
         class="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white font-bold text-slate-950"
         >@if (auth.user()!.photo) {
-          <img [src]="auth.user()!.photo" alt="Foto profil" class="h-full w-full object-cover" />
+          <img [src]="auth.user()!.photo" alt="Foto profil" class="h-full w-full object-cover object-top" />
         } @else {
           {{ auth.user()!.name[0].toUpperCase() }}
         }</span
