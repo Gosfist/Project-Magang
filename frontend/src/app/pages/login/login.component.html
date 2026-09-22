@@ -1,24 +1,51 @@
-<main class="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-4">
+<main
+  class="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-4"
+>
   <div class="w-full max-w-md rounded-2xl bg-white p-7 shadow-2xl sm:p-9">
     <a routerLink="/" class="mb-7 flex justify-center">
       <img src="logo.png" alt="PT UNZANET" width="130" height="64" />
     </a>
-    <h1 class="text-center text-2xl font-bold">Masuk Dasbor</h1>
-    <p class="mt-2 text-center text-sm text-slate-500">Gunakan akun Anda untuk masuk.</p>
+    <h1 class="text-center text-2xl font-bold">Masuk Dashboard</h1>
+    <p class="mt-2 text-center text-sm text-slate-500">
+      Gunakan akun Anda untuk masuk.
+    </p>
     @if (error) {
-      <p class="mt-5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ error }}</p>
+      <p
+        class="mt-5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+      >
+        {{ error }}
+      </p>
     }
     <form (ngSubmit)="submit()" class="mt-6 space-y-4">
       <div>
         <label class="label">Email</label>
-        <input class="input" type="email" [(ngModel)]="email" name="email" required autofocus />
+        <input
+          class="input"
+          type="email"
+          [(ngModel)]="email"
+          name="email"
+          required
+          autofocus
+        />
       </div>
       <div>
         <label class="label">Kata Sandi</label>
-        <input class="input" type="password" [(ngModel)]="password" name="password" required />
+        <input
+          class="input"
+          type="password"
+          [(ngModel)]="password"
+          name="password"
+          required
+        />
       </div>
-      <button class="btn-primary w-full" [disabled]="busy">{{ busy ? 'Memproses...' : 'Masuk' }}</button>
+      <button class="btn-primary w-full" [disabled]="busy">
+        {{ busy ? "Memproses..." : "Masuk" }}
+      </button>
     </form>
-    <a routerLink="/" class="mt-5 block text-center text-sm text-slate-500 hover:text-blue-700">← Kembali ke profil perusahaan</a>
+    <a
+      routerLink="/"
+      class="mt-5 block text-center text-sm text-slate-500 hover:text-blue-700"
+      >← Kembali ke profil perusahaan</a
+    >
   </div>
 </main>
