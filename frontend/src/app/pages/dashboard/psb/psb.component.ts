@@ -20,7 +20,7 @@ export class PsbComponent implements OnInit {
   odpPickerOpen = false; odpSearch = ''; activationViewOnly = false;
   form = { customerName: '', phone: '', idCardNumber: '', idCardPhoto: '', latitude: '', longitude: '', address: '', pppoePackageId: '', areaId: '' };
   activation = { username: '', password: '', odp: '', routerNasId: '', installationPhoto: '' };
-  saving = signal(false); toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
+  saving = signal(false); completeConfirm = signal<PsbOrder | null>(null); toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
   ngOnInit() { this.load(); this.loadOptions(); }
   load() { this.api.get<{ data: PsbOrder[]; meta: PageMeta }>(`/psb?search=${encodeURIComponent(this.search)}&status=${this.status}&page=${this.page()}`).subscribe({ next: r => { this.items.set(r.data); this.meta.set(r.meta); }, error: e => this.error(e) }); }
@@ -39,7 +39,8 @@ export class PsbComponent implements OnInit {
   selectOdp(item: OdpOption) { this.activation.odp = item.id; this.odpSearch = `${item.namaTitik} (${item.tipeTitik.toUpperCase()})`; this.odpPickerOpen = false; }
   choosePhoto(event: Event) { const file = (event.target as HTMLInputElement).files?.[0]; if (!file) return; if (file.size > 5 * 1024 * 1024) return this.toast.set({ message: 'Foto maksimal 5 MB.', type: 'error' }); const reader = new FileReader(); reader.onload = () => this.activation.installationPhoto = String(reader.result); reader.readAsDataURL(file); }
   activate() { if (!this.activation.installationPhoto) return this.toast.set({ message: 'Foto instalasi wajib dipilih.', type: 'error' }); this.saving.set(true); this.api.post<any>(`/psb/${this.selected()!.id}/activate`, this.activation).subscribe({ next: r => { this.saving.set(false); this.activationOpen.set(false); this.toast.set({ message: r.message, type: 'success' }); this.load(); }, error: e => { this.saving.set(false); this.error(e); } }); }
-  complete(item: PsbOrder) { if (!confirm(`Tandai pemasangan ${item.customerName} selesai dan kirim notifikasi WA?`)) return; this.api.post<any>(`/psb/${item.id}/complete`, {}).subscribe({ next: r => { this.toast.set({ message: r.message, type: 'success' }); this.load(); }, error: e => this.error(e) }); }
+  requestComplete(item: PsbOrder) { this.completeConfirm.set(item); }
+  complete() { const item = this.completeConfirm(); if (!item) return; this.completeConfirm.set(null); this.api.post<any>('/psb/' + item.id + '/complete', {}).subscribe({ next: r => { this.toast.set({ message: r.message, type: 'success' }); this.load(); }, error: e => this.error(e) }); }
   statusLabel(value: string) { return value === 'COMPLETED' ? 'Selesai' : 'Proses'; }
   private error(e: any) { this.toast.set({ message: e.message || 'Terjadi kesalahan.', type: 'error' }); }
 }

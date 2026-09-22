@@ -79,7 +79,7 @@
                   auth.hasRole("admin", "teknisi") &&
                   item.status === "ACTIVATED"
                 ) {
-                  <button class="btn-primary" (click)="complete(item)">
+                  <button class="btn-primary" (click)="requestComplete(item)">
                     Selesai
                   </button>
                 }
@@ -446,6 +446,25 @@
             </button>
           }
         </div>
+      </div>
+    }
+  </app-modal>
+  <app-modal
+    [open]="!!completeConfirm()"
+    title="Konfirmasi Pemasangan"
+    (closeModal)="completeConfirm.set(null)"
+  >
+    @if (completeConfirm(); as item) {
+      <p class="text-slate-700">
+        Tandai pemasangan {{ item.customerName }} selesai dan kirim notifikasi WA?
+      </p>
+      <div class="mt-6 flex justify-end gap-3">
+        <button type="button" class="btn-secondary" (click)="completeConfirm.set(null)">
+          Batal
+        </button>
+        <button type="button" class="btn-primary" (click)="complete()">
+          Iya
+        </button>
       </div>
     }
   </app-modal>
