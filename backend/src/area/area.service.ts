@@ -133,6 +133,47 @@ export class AreaService {
     return serialize({ data });
   }
 
+  async getCollectorCustomers(search = '', status = 'ALL', user?: { id: string; role: string }) {
+    if (user?.role !== 'kolektor') {
+      throw new BadRequestException('Daftar gabungan pelanggan hanya tersedia untuk kolektor.');
+    }
+
+    const assignments = await this.prisma.areaCollector.findMany({
+      where: { userId: BigInt(user.id) },
+      select: { areaId: true },
+    });
+
+    const results = await Promise.all(
+      assignments.map((assignment) =>
+        this.getAreaCustomers(String(assignment.areaId), search, status, user),
+      ),
+    );
+
+    const customers = results
+      .flatMap((result) => result.customers)
+      .sort((a, b) => a.customerName.localeCompare(b.customerName, 'id'));
+    const summary = results.reduce(
+      (total, result) => ({
+        totalCustomers: total.totalCustomers + result.summary.totalCustomers,
+        unpaidCustomers: total.unpaidCustomers + result.summary.unpaidCustomers,
+        paidCustomers: total.paidCustomers + result.summary.paidCustomers,
+        totalUnpaidAmount: total.totalUnpaidAmount + result.summary.totalUnpaidAmount,
+      }),
+      { totalCustomers: 0, unpaidCustomers: 0, paidCustomers: 0, totalUnpaidAmount: 0 },
+    );
+
+    return serialize({
+      area: {
+        id: 'collector-all',
+        name: 'Daftar Tagihan',
+        description: 'Gabungan seluruh pelanggan dari area yang ditugaskan.',
+        collectors: [],
+      },
+      summary,
+      customers,
+    });
+  }
+
   async getAreaCustomers(areaId: string, search = '', status = 'ALL', user?: { id: string; role: string }) {
     const area = await this.findArea(areaId);
     if (user?.role === 'kolektor' && !await this.prisma.areaCollector.findFirst({ where: { areaId: BigInt(areaId), userId: BigInt(user.id) } })) {

@@ -142,11 +142,12 @@ export class PsbService {
     const nextMonth = new Date(Date.UTC(now.getUTCFullYear(), nextMonthIndex, Math.min(billing.billingEndDay, nextMonthDays)));
     const daysInMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
     const remaining = Math.max(1, daysInMonth - now.getUTCDate() + 1);
-    const serviceAmount = psb.paymentMode === 'prorate' ? Math.round(Number(order.package.price) * remaining / daysInMonth) : Number(order.package.price);
+    // Tagihan pertama selalu prorata. Tagihan bulan berikutnya dibuat penuh oleh scheduler billing.
+    const serviceAmount = Math.round(Number(order.package.price) * remaining / daysInMonth);
     const total = serviceAmount + psb.installationFee;
     await this.prisma.$transaction(async tx => {
       await tx.psbOrder.update({ where: { id: order.id }, data: { status: 'COMPLETED', completedByUserId: BigInt(technicianId), completedAt: now } });
-      await tx.invoice.create({ data: { pppoeAccountId: order.pppoeAccountId!, invoiceNumber: `PSB-${this.customerId(order.customerNumber)}-${Date.now().toString(36).toUpperCase()}`, amount: BigInt(total), baseAmount: BigInt(total), discount: 0n, invoiceType: psb.paymentMode === 'prorate' ? 'PRORATE' : 'MONTHLY', status: 'PENDING', dueDate: nextMonth, notes: `Aktivasi pasang baru (layanan Rp${serviceAmount.toLocaleString('id-ID')} + biaya PSB Rp${psb.installationFee.toLocaleString('id-ID')})`, createdAt: now, updatedAt: now } });
+      await tx.invoice.create({ data: { pppoeAccountId: order.pppoeAccountId!, invoiceNumber: `PSB-${this.customerId(order.customerNumber)}-${Date.now().toString(36).toUpperCase()}`, amount: BigInt(total), baseAmount: BigInt(total), discount: 0n, invoiceType: 'PRORATE', status: 'PENDING', dueDate: nextMonth, notes: `Aktivasi pasang baru (layanan prorata Rp${serviceAmount.toLocaleString('id-ID')} + biaya PSB Rp${psb.installationFee.toLocaleString('id-ID')})`, createdAt: now, updatedAt: now } });
     });
     void this.wa.notifyPsbCompleted({ customerName: order.customerName, customerNumber: order.customerNumber, phone: order.phone, packageName: order.package.name, installationFee: psb.installationFee, billingStartDay: billing.billingStartDay, billingEndDay: billing.billingEndDay });
     return { message: 'Pemasangan selesai. Status Sales dan Teknisi telah diperbarui serta notifikasi pelanggan diproses.' };

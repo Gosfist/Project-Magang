@@ -99,6 +99,17 @@ export class AreaComponent implements OnInit {
   submittingDeposit = signal(false);
 
   ngOnInit() {
+    if (this.auth.isKolektor()) {
+      this.viewMode.set('detail');
+      this.selectedArea.set({
+        id: 'collector-all',
+        name: 'Daftar Tagihan',
+        description: 'Gabungan seluruh pelanggan dari area yang ditugaskan.',
+      });
+      this.loadCollectorCustomers();
+      return;
+    }
+
     this.load();
     this.loadCollectorOptions();
   }
@@ -253,6 +264,11 @@ export class AreaComponent implements OnInit {
   }
 
   loadAreaCustomers() {
+    if (this.auth.isKolektor()) {
+      this.loadCollectorCustomers();
+      return;
+    }
+
     const current = this.selectedArea();
     if (!current) return;
     this.loadingCustomers.set(true);
@@ -277,6 +293,33 @@ export class AreaComponent implements OnInit {
         error: (err) => {
           this.loadingCustomers.set(false);
           this.toast.set({ message: err.message || 'Gagal memuat data pelanggan area', type: 'error' });
+        },
+      });
+  }
+
+  loadCollectorCustomers() {
+    this.loadingCustomers.set(true);
+
+    const params = new URLSearchParams();
+    if (this.customerSearch.trim()) params.set('search', this.customerSearch.trim());
+    params.set('status', this.customerStatusFilter());
+
+    this.api
+      .get<{
+        area: Area;
+        summary: AreaBillingSummary;
+        customers: AreaCustomer[];
+      }>(`/areas/customers?${params}`)
+      .subscribe({
+        next: (res) => {
+          this.selectedArea.set(res.area);
+          this.areaSummary.set(res.summary);
+          this.customers.set(res.customers);
+          this.loadingCustomers.set(false);
+        },
+        error: (err) => {
+          this.loadingCustomers.set(false);
+          this.toast.set({ message: err.message || 'Gagal memuat daftar tagihan', type: 'error' });
         },
       });
   }

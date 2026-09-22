@@ -9,7 +9,7 @@ export interface BillingSettings {
   isolationCheckHour: number;
 }
 
-export interface PsbSettings { paymentMode: 'full' | 'prorate'; installationFee: number; }
+export interface PsbSettings { installationFee: number; }
 
 const defaults: BillingSettings = {
   billingStartDay: 1,
@@ -36,10 +36,9 @@ export class SettingsService {
   }
 
   async psb(): Promise<PsbSettings> {
-    const rows = await this.prisma.appSetting.findMany({ where: { key: { in: ['psb_payment_mode', 'psb_fee'] } } });
+    const rows = await this.prisma.appSetting.findMany({ where: { key: 'psb_fee' } });
     const data = new Map(rows.map(row => [row.key, row.value]));
-    const paymentMode = data.get('psb_payment_mode') === 'prorate' ? 'prorate' : 'full';
-    return { paymentMode, installationFee: Math.max(0, Number(data.get('psb_fee') || 0)) };
+    return { installationFee: Math.max(0, Number(data.get('psb_fee') || 0)) };
   }
 
   async updateBilling(dto: BillingSettingsDto) {
@@ -49,10 +48,9 @@ export class SettingsService {
       this.upsert('billing_end_day', String(settings.billingEndDay)),
       this.upsert('billing_timezone', settings.billingTimezone),
       this.upsert('isolation_check_hour', String(settings.isolationCheckHour)),
-      this.upsert('psb_payment_mode', dto.psbPaymentMode),
       this.upsert('psb_fee', String(dto.psbFee)),
     ]);
-    return { message: 'Pengaturan penagihan berhasil disimpan.', data: { ...settings, psbPaymentMode: dto.psbPaymentMode, psbFee: dto.psbFee } };
+    return { message: 'Pengaturan penagihan berhasil disimpan.', data: { ...settings, psbFee: dto.psbFee } };
   }
 
   private upsert(key: string, value: string) {

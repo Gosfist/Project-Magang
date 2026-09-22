@@ -144,26 +144,33 @@
     <div class="card p-5 space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div class="flex items-center gap-3">
-          <button
-            type="button"
-            class="btn-secondary px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer"
-            (click)="backToList()"
-          >
-            <svg lucideArrowLeft [size]="15"></svg>
-            <span>Kembali ke Daftar Area</span>
-          </button>
+          @if (!auth.isKolektor()) {
+            <button
+              type="button"
+              class="btn-secondary px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer"
+              (click)="backToList()"
+            >
+              <svg lucideArrowLeft [size]="15"></svg>
+              <span>Kembali ke Daftar Area</span>
+            </button>
+          }
           <div>
             <div class="flex items-center gap-2">
               <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-100 text-blue-700">
                 <svg lucideMapPin [size]="14"></svg>
               </span>
-              <h2 class="text-xl font-bold text-slate-900">Area: {{ selectedArea()?.name }}</h2>
+              <h2 class="text-xl font-bold text-slate-900">
+                {{ auth.isKolektor() ? 'Daftar Tagihan' : 'Area: ' + selectedArea()?.name }}
+              </h2>
             </div>
-            <p class="text-xs text-slate-500 mt-0.5">{{ selectedArea()?.description || 'Wilayah penagihan pelanggan' }}</p>
+            <p class="text-xs text-slate-500 mt-0.5">
+              {{ auth.isKolektor() ? 'Seluruh pelanggan dari area yang ditugaskan kepada Anda.' : (selectedArea()?.description || 'Wilayah penagihan pelanggan') }}
+            </p>
           </div>
         </div>
 
         <!-- Kolektor Ditugaskan -->
+        @if (!auth.isKolektor()) {
         <div class="flex items-center gap-2">
           <span class="text-xs font-semibold text-slate-500">Kolektor:</span>
           <div class="flex flex-wrap items-center gap-1.5">
@@ -189,6 +196,7 @@
             }
           </div>
         </div>
+        }
       </div>
 
       <!-- Ringkasan Status Penagihan (Merah vs Hijau) -->

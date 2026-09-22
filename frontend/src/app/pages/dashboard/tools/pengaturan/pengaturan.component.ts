@@ -8,7 +8,6 @@ type BillingSettings = {
   billingEndDay: number;
   billingTimezone: 'WIB' | 'WITA' | 'WIT';
   isolationCheckHour: number;
-  psbPaymentMode: 'full' | 'prorate';
   psbFee: number;
 };
 
@@ -28,7 +27,6 @@ export class PengaturanComponent implements OnInit {
     billingEndDay: 10,
     billingTimezone: 'WIB',
     isolationCheckHour: 0,
-    psbPaymentMode: 'full',
     psbFee: 0,
   };
 

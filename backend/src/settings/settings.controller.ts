@@ -11,7 +11,7 @@ export class SettingsController {
 
   @Get('billing') async billing() {
     const [billing, psb] = await Promise.all([this.settings.billing(), this.settings.psb()]);
-    return { ...billing, psbPaymentMode: psb.paymentMode, psbFee: psb.installationFee };
+    return { ...billing, psbFee: psb.installationFee };
   }
 
   @Patch('billing') updateBilling(@Body() dto: BillingSettingsDto) {

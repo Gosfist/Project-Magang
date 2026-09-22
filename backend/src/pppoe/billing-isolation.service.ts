@@ -38,12 +38,64 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
     try {
       const settings = await this.settings.billing();
       const local = this.localNow(settings.billingTimezone);
+      if (local.day >= settings.billingStartDay) {
+        await this.createMonthlyInvoices(settings, local.year, local.month);
+      }
       if (local.hour < settings.isolationCheckHour || local.day <= settings.billingEndDay) return;
       await this.isolateOverdue(settings, this.utcDate(local.year, local.month, settings.billingEndDay));
     } catch (error) {
       this.logger.error(`Auto isolir gagal. ${error instanceof Error ? error.message : error}`);
     } finally {
       this.running = false;
+    }
+  }
+
+  private async createMonthlyInvoices(settings: BillingSettings, year: number, month: number) {
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const dueDay = Math.min(settings.billingEndDay, daysInMonth);
+    const dueDate = this.utcDate(year, month, dueDay);
+    const monthStart = this.utcDate(year, month, 1);
+    const nextMonthStart = month === 12 ? this.utcDate(year + 1, 1, 1) : this.utcDate(year, month + 1, 1);
+    const accounts = await this.prisma.pppoeAccount.findMany({
+      where: {
+        subscriptionType: 'POSTPAID',
+        package: { isActive: true },
+        createdAt: { lt: nextMonthStart },
+      },
+      select: {
+        id: true,
+        customerNumber: true,
+        package: { select: { price: true } },
+        discount: true,
+        invoices: {
+          where: { invoiceType: { in: ['PRORATE', 'MONTHLY'] }, dueDate: { gte: monthStart, lt: nextMonthStart } },
+          select: { id: true },
+          take: 1,
+        },
+      },
+      take: 500,
+    });
+
+    for (const account of accounts) {
+      if (account.invoices.length) continue;
+      const amount = Math.max(0, Number(account.package.price) - Number(account.discount));
+      await this.prisma.invoice.create({
+        data: {
+          pppoeAccountId: account.id,
+          invoiceNumber: `INV-${year}${String(month).padStart(2, '0')}-${account.customerNumber}-${Date.now().toString(36).toUpperCase()}`,
+          amount: BigInt(amount),
+          baseAmount: BigInt(Number(account.package.price)),
+          discount: account.discount,
+          invoiceType: 'MONTHLY',
+          status: 'PENDING',
+          dueDate,
+          notes: `Tagihan bulanan ${String(month).padStart(2, '0')}/${year}`,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      }).catch((error) => {
+        this.logger.warn(`Invoice bulanan pelanggan ${account.customerNumber} tidak dibuat: ${error instanceof Error ? error.message : error}`);
+      });
     }
   }
 

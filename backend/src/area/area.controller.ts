@@ -31,6 +31,15 @@ export class AreaController {
     return this.areas.collectorOptions();
   }
 
+  @Get('customers')
+  collectorCustomers(
+    @Req() req: AuthRequest,
+    @Query('search') search = '',
+    @Query('status') status = 'ALL',
+  ) {
+    return this.areas.getCollectorCustomers(search.trim(), status, req.user);
+  }
+
   @Post()
   @Roles('admin')
   create(@Body() dto: SaveAreaDto) {
