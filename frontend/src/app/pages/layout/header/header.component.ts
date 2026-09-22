@@ -26,7 +26,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard/monitoring/radius': 'Monitoring FreeRADIUS',
     '/dashboard/users': 'Data Petugas',
     '/dashboard/sales': 'Sales',
-    '/dashboard/registrasi-pelanggan': 'Registrasi',
+    '/dashboard/registrasi-pelanggan': 'Registrasi Pelanggan',
     '/dashboard/pasang-baru': 'Pasang Baru',
     '/dashboard/mainCore/traceJalur': 'Telusuri Jalur',
     '/dashboard/mainCore/server': 'Server',
