@@ -188,7 +188,7 @@ export type FinanceSummary = {
 
 export type PsbOrder = {
   id: string; customerNumber: string; customerId: string; customerName: string; phone: string; address: string; idCardNumber?: string | null; idCardPhoto?: string | null; latitude?: number | null; longitude?: number | null;
-  pppoePackageId: string; areaId?: string | null; status: 'PROCESS' | 'ACTIVATED' | 'COMPLETED'; username?: string | null;
+  pppoePackageId: string; areaId?: string | null; status: 'PROCESS' | 'ACTIVATED' | 'COMPLETED'; username?: string | null; odp?: string | null; routerNasId?: number | null;
   installationPhoto?: string | null; createdAt: string; completedAt?: string | null;
   package: { id: string; name: string; price: number }; area?: { id: string; name: string } | null; sales?: { id: string; name: string };
 };

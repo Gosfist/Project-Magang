@@ -79,8 +79,19 @@
                   auth.hasRole("admin", "teknisi") &&
                   item.status === "ACTIVATED"
                 ) {
+                  <button class="btn-secondary" (click)="openActivation(item)">
+                    Edit
+                  </button>
                   <button class="btn-primary" (click)="complete(item)">
                     Selesai
+                  </button>
+                }
+                @if (
+                  auth.hasRole("admin", "teknisi") &&
+                  item.status === "COMPLETED"
+                ) {
+                  <button class="btn-secondary" (click)="openActivation(item)">
+                    Edit
                   </button>
                 }
               </div>

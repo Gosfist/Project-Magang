@@ -71,10 +71,27 @@ export class PsbService {
 
   async activate(id: string, dto: ActivatePsbOrderDto, technicianId: string) {
     const order = await this.find(id, true);
-    if (order.status !== 'PROCESS') throw new BadRequestException('Pesanan ini sudah diaktivasi.');
     if (dto.installationPhoto.length > 8_000_000) throw new BadRequestException('Foto instalasi maksimal sekitar 5 MB.');
     const odp = await this.prisma.mainCore.findFirst({ where: { id: BigInt(dto.odp), tipeTitik: { in: ['odc', 'odp'] } } });
     if (!odp) throw new BadRequestException('ODC / ODP tidak ditemukan.');
+    if (order.status !== 'PROCESS') {
+      if (!order.pppoeAccountId || !['ACTIVATED', 'COMPLETED'].includes(order.status)) {
+        throw new BadRequestException('Pesanan ini tidak dapat diedit.');
+      }
+      const updated = await this.prisma.$transaction(async tx => {
+        const account = await tx.pppoeAccount.update({
+          where: { id: order.pppoeAccountId! },
+          data: { odp: dto.odp, routerNasId: dto.routerNasId ? Number(dto.routerNasId) : null },
+          include: { package: { include: { ipPool: true } } },
+        });
+        await this.radius.sync(tx, account);
+        return tx.psbOrder.update({
+          where: { id: order.id },
+          data: { odp: dto.odp, routerNasId: dto.routerNasId ? Number(dto.routerNasId) : null, installationPhoto: dto.installationPhoto },
+        });
+      });
+      return serialize({ message: 'Data aktivasi berhasil diperbarui.', order: updated });
+    }
     try {
       const result = await this.prisma.$transaction(async tx => {
         const account = await tx.pppoeAccount.create({
