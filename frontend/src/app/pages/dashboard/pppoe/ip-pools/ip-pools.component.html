@@ -29,7 +29,7 @@
           <th>Total IP</th>
           <th>IP Terpakai</th>
           <th>IP Tersedia</th>
-          <th class="text-right">Aksi</th>
+          <th>Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -54,7 +54,7 @@
               {{ item.freeIps ?? "?" }}
             </td>
             <td>
-              <div class="flex justify-end gap-2">
+              <div class="flex">
                 <button
                   class="btn-secondary px-3"
                   [disabled]="!item.networkStart || !item.networkEnd"

@@ -22,7 +22,7 @@
           <th>Nama Core</th>
           <th>Redaman</th>
           <th>Tanggal</th>
-          <th class="text-right">Aksi</th>
+          <th>Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -32,7 +32,7 @@
             <td>{{ node.redamanIn === null ? '—' : node.redamanIn + ' dBm' }}</td>
             <td>{{ node.tanggal ? formatDate(node.tanggal) : '—' }}</td>
             <td>
-              <div class="flex justify-end gap-2">
+              <div class="flex">
                 <button class="btn-secondary px-3" (click)="show(node)">
                   <svg lucidePencil [size]="15"></svg>
                 </button>

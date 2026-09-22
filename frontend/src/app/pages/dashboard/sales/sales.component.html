@@ -45,8 +45,8 @@
           <th>Nama</th>
           <th>No WA</th>
           <th>Status</th>
-          <th class="text-center">Bulan Ini</th>
-          <th class="text-center">Total</th>
+          <th>Bulan Ini</th>
+          <th>Total</th>
         </tr>
       </thead>
       <tbody>
@@ -60,8 +60,8 @@
                 {{ item.status === 'active' ? 'Aktif' : 'Non Aktif' }}
               </span>
             </td>
-            <td class="text-center font-semibold text-slate-900">{{ item.monthRegistrations }}</td>
-            <td class="text-center font-semibold text-slate-900">{{ item.totalRegistrations }}</td>
+            <td class="font-semibold text-slate-900">{{ item.monthRegistrations }}</td>
+            <td class="font-semibold text-slate-900">{{ item.totalRegistrations }}</td>
           </tr>
         }
 

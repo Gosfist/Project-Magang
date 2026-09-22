@@ -55,14 +55,14 @@
           <tr>
             <th class="px-4 py-2.5">Waktu / Periode</th>
             @if (type === 'cpu') {
-              <th class="px-4 py-2.5 text-right">Beban CPU</th>
+              <th class="px-4 py-2.5">Beban CPU</th>
             }
             @if (type === 'ram') {
-              <th class="px-4 py-2.5 text-right">Penggunaan RAM</th>
+              <th class="px-4 py-2.5">Penggunaan RAM</th>
             }
             @if (type === 'network') {
-              <th class="px-4 py-2.5 text-right">Unduh (Mbps)</th>
-              <th class="px-4 py-2.5 text-right">Unggah (Mbps)</th>
+              <th class="px-4 py-2.5">Unduh (Mbps)</th>
+              <th class="px-4 py-2.5">Unggah (Mbps)</th>
             }
           </tr>
         </thead>
@@ -71,20 +71,20 @@
             <tr class="hover:bg-slate-50/80 transition-colors">
               <td class="px-4 py-2 font-mono text-slate-900 font-medium">{{ item.label }}</td>
               @if (type === 'cpu') {
-                <td class="px-4 py-2 text-right font-bold text-slate-900">
+                <td class="px-4 py-2 font-bold text-slate-900">
                   {{ item.cpuPercent }}%
                 </td>
               }
               @if (type === 'ram') {
-                <td class="px-4 py-2 text-right font-bold text-blue-700">
+                <td class="px-4 py-2 font-bold text-blue-700">
                   {{ item.memPercent }}%
                 </td>
               }
               @if (type === 'network') {
-                <td class="px-4 py-2 text-right font-bold text-slate-900">
+                <td class="px-4 py-2 font-bold text-slate-900">
                   {{ item.netDown }}
                 </td>
-                <td class="px-4 py-2 text-right font-bold text-rose-600">
+                <td class="px-4 py-2 font-bold text-rose-600">
                   {{ item.netUp }}
                 </td>
               }

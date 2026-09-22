@@ -37,12 +37,12 @@
           <th>Area</th>
           <th>Kolektor</th>
           <th>No. Tagihan</th>
-          <th class="text-right">Jumlah</th>
+          <th>Jumlah</th>
           <th>Status</th>
           <th>Catatan</th>
           <th>Bukti</th>
           @if (auth.hasRole('admin', 'finance')) {
-            <th class="text-right">Aksi</th>
+            <th>Aksi</th>
           }
         </tr>
       </thead>
@@ -69,7 +69,7 @@
             <td class="font-mono text-xs text-slate-600">
               {{ d.invoice?.invoiceNumber || '-' }}
             </td>
-            <td class="text-right font-bold text-slate-900 whitespace-nowrap">
+            <td class="font-bold text-slate-900 whitespace-nowrap">
               {{ formatCurrency(d.amount) }}
             </td>
             <td>
@@ -95,7 +95,7 @@
             </td>
             @if (auth.hasRole('admin', 'finance')) {
               <td>
-                <div class="flex justify-end gap-2">
+                <div class="flex">
                   @if (d.status === 'PENDING') {
                     <button
                       type="button"

@@ -99,7 +99,7 @@
           <th style="width: 170px;">Target</th>
           <th style="width: 110px;">Status</th>
           <th>Text Notifikasi</th>
-          <th class="text-right" style="width: 110px;">Aksi</th>
+          <th style="width: 110px;">Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -169,8 +169,8 @@
               </td>
 
               <!-- Aksi -->
-              <td class="text-right whitespace-nowrap">
-                <div class="flex items-center justify-end gap-1.5" (click)="$event.stopPropagation()">
+              <td class="whitespace-nowrap">
+                <div class="flex items-center" (click)="$event.stopPropagation()">
                   <button
                     type="button"
                     class="btn-secondary"

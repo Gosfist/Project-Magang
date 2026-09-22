@@ -66,9 +66,9 @@
           <th>Jenis</th>
           <th>Kategori</th>
           <th>Deskripsi</th>
-          <th class="text-right">Jumlah</th>
+          <th>Jumlah</th>
           <th>Dicatat Oleh</th>
-          <th class="text-right">Aksi</th>
+          <th>Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -101,7 +101,7 @@
               }
             </td>
             <td
-              class="text-right font-bold whitespace-nowrap"
+              class="font-bold whitespace-nowrap"
               [class]="t.type === 'INCOME' ? 'text-emerald-600' : 'text-red-600'"
             >
               {{ t.type === 'INCOME' ? '+' : '-' }} {{ formatCurrency(t.amount) }}
@@ -110,7 +110,7 @@
               {{ t.createdBy?.name || '—' }}
             </td>
             <td>
-              <div class="flex justify-end gap-2">
+              <div class="flex">
                 <button class="btn-secondary px-3" (click)="openModal(t)" title="Edit Transaksi">
                   <svg lucidePencil [size]="15"></svg>
                 </button>
