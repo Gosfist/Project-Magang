@@ -24,6 +24,7 @@ export const routes: Routes = [
       { path: 'monitoring/router', loadComponent: () => import('./pages/dashboard/monitoring/router/router-monitoring.component').then((m) => m.RouterMonitoringComponent), canActivate: [roleGuard('admin')] },
       { path: 'monitoring/radius', loadComponent: () => import('./pages/dashboard/monitoring/radius/radius-monitoring.component').then((m) => m.RadiusMonitoringComponent), canActivate: [roleGuard('admin')] },
       { path: 'users', component: UsersComponent, canActivate: [adminGuard] },
+      { path: 'sales', loadComponent: () => import('./pages/dashboard/sales/sales.component').then(m => m.SalesComponent), canActivate: [adminGuard] },
       {
         path: 'mainCore',
         canActivate: [roleGuard('admin', 'teknisi')],

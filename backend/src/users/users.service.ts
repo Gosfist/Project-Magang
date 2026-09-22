@@ -9,6 +9,58 @@ import { CreateUserDto, UpdateUserDto } from './users.dto.js';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async salesSummary() {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    const [activeSales, inactiveSales, monthRegistrations, sales, monthlyGroups, totalGroups] =
+      await this.prisma.$transaction([
+        this.prisma.user.count({ where: { role: 'sales', status: 'active' } }),
+        this.prisma.user.count({ where: { role: 'sales', status: 'inactive' } }),
+        this.prisma.psbOrder.count({
+          where: {
+            status: 'COMPLETED',
+            completedAt: { gte: monthStart, lt: nextMonthStart },
+          },
+        }),
+        this.prisma.user.findMany({
+          where: { role: 'sales' },
+          omit: { password: true },
+          orderBy: { name: 'asc' },
+        }),
+        this.prisma.psbOrder.groupBy({
+          by: ['salesUserId'],
+          where: {
+            status: 'COMPLETED',
+            completedAt: { gte: monthStart, lt: nextMonthStart },
+          },
+          _count: { _all: true },
+        }),
+        this.prisma.psbOrder.groupBy({
+          by: ['salesUserId'],
+          where: { status: 'COMPLETED' },
+          _count: { _all: true },
+        }),
+      ]);
+
+    const monthlyMap = new Map(monthlyGroups.map((item) => [item.salesUserId.toString(), item._count._all]));
+    const totalMap = new Map(totalGroups.map((item) => [item.salesUserId.toString(), item._count._all]));
+
+    return serialize({
+      summary: {
+        activeSales,
+        inactiveSales,
+        monthRegistrations,
+      },
+      data: sales.map((item) => ({
+        ...item,
+        monthRegistrations: monthlyMap.get(item.id.toString()) ?? 0,
+        totalRegistrations: totalMap.get(item.id.toString()) ?? 0,
+      })),
+    });
+  }
+
   async list(search = '', role = '', status = '', page = 1, perPage = 15) {
     const where: Prisma.UserWhereInput = {
       ...(search ? { OR: [{ name: { contains: search } }, { email: { contains: search } }] } : {}),

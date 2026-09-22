@@ -1,0 +1,86 @@
+<div class="space-y-5">
+  <div class="grid gap-4 md:grid-cols-3">
+    <div class="card p-5">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <p class="text-sm font-medium text-slate-500">Sales Aktif</p>
+          <p class="mt-2 text-3xl font-bold text-slate-950">{{ summary().activeSales }}</p>
+        </div>
+        <span class="rounded-lg bg-green-100 p-3 text-green-700">
+          <svg lucideCheckCircle2 [size]="24"></svg>
+        </span>
+      </div>
+    </div>
+
+    <div class="card p-5">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <p class="text-sm font-medium text-slate-500">Sales Non Aktif</p>
+          <p class="mt-2 text-3xl font-bold text-slate-950">{{ summary().inactiveSales }}</p>
+        </div>
+        <span class="rounded-lg bg-slate-100 p-3 text-slate-600">
+          <svg lucideClock3 [size]="24"></svg>
+        </span>
+      </div>
+    </div>
+
+    <div class="card p-5">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <p class="text-sm font-medium text-slate-500">Registrasi Bulan Ini</p>
+          <p class="mt-2 text-3xl font-bold text-slate-950">{{ summary().monthRegistrations }}</p>
+        </div>
+        <span class="rounded-lg bg-blue-100 p-3 text-blue-700">
+          <svg lucideTrendingUp [size]="24"></svg>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="w-16">No</th>
+          <th>Nama</th>
+          <th>No WA</th>
+          <th>Status</th>
+          <th class="text-center">Bulan Ini</th>
+          <th class="text-center">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of items(); track item.id; let index = $index) {
+          <tr>
+            <td>{{ index + 1 }}</td>
+            <td class="font-medium text-slate-900">{{ item.name }}</td>
+            <td>{{ item.phone || '-' }}</td>
+            <td>
+              <span [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (item.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')">
+                {{ item.status === 'active' ? 'Aktif' : 'Non Aktif' }}
+              </span>
+            </td>
+            <td class="text-center font-semibold text-slate-900">{{ item.monthRegistrations }}</td>
+            <td class="text-center font-semibold text-slate-900">{{ item.totalRegistrations }}</td>
+          </tr>
+        }
+
+        @if (!loading() && items().length === 0) {
+          <tr>
+            <td colspan="6" class="py-8 text-center text-slate-400">Data sales belum tersedia.</td>
+          </tr>
+        }
+
+        @if (loading()) {
+          <tr>
+            <td colspan="6" class="py-8 text-center text-slate-400">Memuat data sales...</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (toast()) {
+    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
+  }
+</div>

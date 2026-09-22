@@ -18,6 +18,8 @@ export class UsersController {
     return this.users.list(search.trim(), role, status, Math.max(1, page));
   }
 
+  @Get('sales-summary') salesSummary() { return this.users.salesSummary(); }
+
   @Post() create(@Body() dto: CreateUserDto) { return this.users.create(dto); }
   @Patch(':id') update(@Param('id') id: string, @Body() dto: UpdateUserDto) { return this.users.update(id, dto); }
   @Delete(':id') remove(@Param('id') id: string, @Req() req: AuthRequest) { return this.users.remove(id, req.user.id); }
