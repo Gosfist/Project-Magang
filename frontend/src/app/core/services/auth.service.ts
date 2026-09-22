@@ -46,6 +46,12 @@ export class AuthService {
     this.router.navigate(['/dashboard']);
   }
 
+  async updateProfile(form: { name: string; phone?: string | null; photo?: string | null; password?: string }): Promise<string> {
+    const result = await firstValueFrom(this.api.patch<{ message: string; user: User }>('/auth/profile', form));
+    this.user.set(result.user);
+    return result.message;
+  }
+
   async logout(): Promise<void> {
     try { await firstValueFrom(this.api.post('/auth/logout', {})); } catch { /* Pengguna tetap dapat keluar secara lokal saat koneksi terputus. */ }
     localStorage.removeItem('unzanet_token');

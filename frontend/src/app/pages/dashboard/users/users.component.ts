@@ -36,7 +36,7 @@ export class UsersComponent implements OnInit {
   open = signal(false);
   editing = signal<User | null>(null);
   showPassword = signal(false);
-  form = { name: '', email: '', phone: '', password: '', role: 'teknisi', status: 'active' };
+  form = { name: '', email: '', phone: '', photo: '', password: '', role: 'teknisi', status: 'active' };
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
   ngOnInit(): void {
@@ -61,9 +61,34 @@ export class UsersComponent implements OnInit {
     this.editing.set(user ?? null);
     this.showPassword.set(false);
     this.form = user
-      ? { name: user.name, email: user.email, phone: user.phone ?? '', password: '', role: user.role, status: user.status }
-      : { name: '', email: '', phone: '', password: '', role: 'teknisi', status: 'active' };
+      ? { name: user.name, email: user.email, phone: user.phone ?? '', photo: user.photo ?? '', password: '', role: user.role, status: user.status }
+      : { name: '', email: '', phone: '', photo: '', password: '', role: 'teknisi', status: 'active' };
     this.open.set(true);
+  }
+
+  choosePhoto(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!file.type.match(/^image\/(jpeg|png|webp)$/)) {
+      this.toast.set({ message: 'Foto wajib JPG, PNG, atau WebP.', type: 'error' });
+      input.value = '';
+      return;
+    }
+    if (file.size > 2_000_000) {
+      this.toast.set({ message: 'Foto maksimal 2 MB.', type: 'error' });
+      input.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.form = { ...this.form, photo: String(reader.result || '') };
+    };
+    reader.readAsDataURL(file);
+  }
+
+  clearPhoto(): void {
+    this.form = { ...this.form, photo: '' };
   }
 
   save(): void {

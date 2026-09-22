@@ -77,6 +77,24 @@
         <input class="input" type="tel" autocomplete="tel" maxlength="30" placeholder="08xxxxxxxxxx" [(ngModel)]="form.phone" name="phone" />
       </div>
       <div>
+        <label class="label">Foto Profil</label>
+        <div class="flex items-center gap-4">
+          <span class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 font-bold text-slate-700">
+            @if (form.photo) {
+              <img [src]="form.photo" alt="Foto profil" class="h-full w-full object-cover" />
+            } @else {
+              {{ form.name ? form.name[0].toUpperCase() : 'A' }}
+            }
+          </span>
+          <div class="flex-1">
+            <input class="input" type="file" accept="image/jpeg,image/png,image/webp" (change)="choosePhoto($event)" />
+            @if (form.photo) {
+              <button type="button" class="mt-2 text-sm font-medium text-red-600" (click)="clearPhoto()">Hapus foto</button>
+            }
+          </div>
+        </div>
+      </div>
+      <div>
         <label class="label">Kata Sandi @if (editing()) { <small class="text-slate-400">(kosongkan jika tidak diubah)</small> }</label>
         <div class="relative">
           <input

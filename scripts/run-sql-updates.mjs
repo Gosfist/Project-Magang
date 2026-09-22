@@ -28,6 +28,7 @@ const features = new Map([
   ['20260917_monitoring_stats.sql', 'Grafik monitoring server dan router'],
   ['20260917_bot_wa_logs.sql', 'Log notifikasi Bot WhatsApp'],
   ['20260918_finance_and_areas.sql', 'Modul Keuangan dan Manajemen Area'],
+  ['20260922_user_photo.sql', 'Foto profil petugas'],
 ]);
 
 function checksum(content) {
@@ -96,6 +97,8 @@ async function looksAlreadyApplied(filename) {
       return tableExists('bot_wa_logs');
     case '20260918_finance_and_areas.sql':
       return (await tableExists('finance_transactions')) && (await tableExists('areas')) && (await tableExists('collector_deposits'));
+    case '20260922_user_photo.sql':
+      return columnExists('users', 'photo');
     default:
       return false;
   }
