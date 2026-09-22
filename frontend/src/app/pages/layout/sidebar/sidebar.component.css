@@ -9,6 +9,8 @@
   position: relative;
   width: 100%;
   aspect-ratio: 3 / 4;
+  max-height: calc(12.5rem * 4 / 3);
+  align-self: end;
   overflow: hidden;
   border-radius: 0.5rem;
   padding: 0;
@@ -80,6 +82,10 @@
 
   .profile-card {
     aspect-ratio: 3 / 4;
+    width: auto;
+    max-width: 100%;
+    max-height: 30vh;
+    justify-self: center;
   }
 
   .account-settings-actions {
