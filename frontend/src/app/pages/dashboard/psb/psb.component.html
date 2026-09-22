@@ -455,10 +455,15 @@
   >
     @if (completeConfirm(); as item) {
       <p class="text-slate-700">
-        Tandai pemasangan {{ item.customerName }} selesai dan kirim notifikasi WA?
+        Tandai pemasangan {{ item.customerName }} selesai dan kirim notifikasi
+        WA?
       </p>
       <div class="mt-6 flex justify-end gap-3">
-        <button type="button" class="btn-secondary" (click)="completeConfirm.set(null)">
+        <button
+          type="button"
+          class="btn-secondary"
+          (click)="completeConfirm.set(null)"
+        >
           Batal
         </button>
         <button type="button" class="btn-primary" (click)="complete()">
