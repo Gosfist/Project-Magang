@@ -1,12 +1,9 @@
 <div class="space-y-4">
   <div class="card p-4">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div><h2 class="text-lg font-semibold">{{ auth.isSales() ? 'Registrasi Pelanggan Baru' : 'Pasang Baru' }}</h2><p class="text-sm text-slate-500">Order terbaru tampil paling atas.</p></div>
-      @if (auth.hasRole('admin', 'sales')) { <button class="btn-primary" (click)="openForm()">+ Registrasi Pelanggan</button> }
-    </div>
-    <div class="mt-4 grid gap-3 sm:grid-cols-[1fr_180px]">
+    <div class="flex flex-wrap items-center gap-3">
       <input class="input" placeholder="Cari nama atau nomor WA..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
       <select class="input" [(ngModel)]="status" (ngModelChange)="page.set(1); load()"><option value="">Semua status</option><option value="PROCESS">Proses</option><option value="ACTIVATED">Aktivasi tersimpan</option><option value="COMPLETED">Selesai</option></select>
+      @if (auth.hasRole('admin', 'sales')) { <button class="btn-primary" (click)="openForm()">+ Registrasi Pelanggan</button> }
     </div>
   </div>
   <div class="table-wrap"><table><thead><tr><th>ID Pelanggan</th><th>Nama</th><th>No. WA</th><th>Alamat</th><th>Layanan</th><th>Status</th><th>Sales</th><th class="text-right">Aksi</th></tr></thead><tbody>
