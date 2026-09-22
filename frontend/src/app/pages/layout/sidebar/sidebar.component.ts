@@ -15,6 +15,8 @@ import {
   LucideMessageCircle,
   LucideDollarSign,
   LucideMapPin,
+  LucideEye,
+  LucideEyeOff,
 } from '@lucide/angular';
 import { AuthService } from '../../../core/services/auth.service';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
@@ -40,6 +42,8 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
     LucideMessageCircle,
     LucideDollarSign,
     LucideMapPin,
+    LucideEye,
+    LucideEyeOff,
     ModalComponent,
     ToastComponent,
   ],
@@ -62,8 +66,10 @@ export class SidebarComponent implements OnInit {
   profileOpen = signal(false);
   savingProfile = signal(false);
   changePassword = signal(false);
+  showNewPassword = signal(false);
+  showConfirmPassword = signal(false);
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
-  profileForm = { name: '', phone: '', photo: '', password: '' };
+  profileForm = { name: '', phone: '', photo: '', password: '', passwordConfirm: '' };
 
   // Navigation links
   readonly coreLinks = [
@@ -113,6 +119,7 @@ export class SidebarComponent implements OnInit {
       phone: user.phone ?? '',
       photo: user.photo ?? '',
       password: '',
+      passwordConfirm: '',
     };
     this.changePassword.set(false);
     this.profileOpen.set(true);
@@ -144,12 +151,16 @@ export class SidebarComponent implements OnInit {
   }
 
   openPasswordForm(): void {
-    this.profileForm = { ...this.profileForm, password: '' };
+    this.profileForm = { ...this.profileForm, password: '', passwordConfirm: '' };
+    this.showNewPassword.set(false);
+    this.showConfirmPassword.set(false);
     this.changePassword.set(true);
   }
 
   closePasswordForm(): void {
-    this.profileForm = { ...this.profileForm, password: '' };
+    this.profileForm = { ...this.profileForm, password: '', passwordConfirm: '' };
+    this.showNewPassword.set(false);
+    this.showConfirmPassword.set(false);
     this.changePassword.set(false);
   }
 
@@ -181,6 +192,10 @@ export class SidebarComponent implements OnInit {
       this.toast.set({ message: 'Password baru minimal 6 karakter.', type: 'error' });
       return;
     }
+    if (this.profileForm.password !== this.profileForm.passwordConfirm) {
+      this.toast.set({ message: 'Konfirmasi password tidak sama.', type: 'error' });
+      return;
+    }
     this.savingProfile.set(true);
     try {
       const message = await this.auth.updateProfile({
@@ -189,7 +204,9 @@ export class SidebarComponent implements OnInit {
         photo: this.profileForm.photo,
         password: this.profileForm.password,
       });
-      this.profileForm = { ...this.profileForm, password: '' };
+      this.profileForm = { ...this.profileForm, password: '', passwordConfirm: '' };
+      this.showNewPassword.set(false);
+      this.showConfirmPassword.set(false);
       this.changePassword.set(false);
       this.toast.set({ message, type: 'success' });
     } catch (error: any) {

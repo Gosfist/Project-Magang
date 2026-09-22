@@ -405,29 +405,29 @@
   (closeModal)="profileOpen.set(false)"
 >
   @if (!changePassword()) {
-    <form class="space-y-4" (ngSubmit)="saveProfile()">
+    <form (ngSubmit)="saveProfile()">
       <div class="account-settings-layout">
-        <div class="flex flex-col items-center gap-2">
         <button
           type="button"
-          class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-2xl font-bold text-slate-700"
+          class="profile-card"
           title="Klik untuk ganti foto profil"
           (click)="profilePhotoInput.click()"
         >
-          @if (profileForm.photo) {
-            <img [src]="profileForm.photo" alt="Foto profil" class="h-full w-full object-cover" />
-          } @else {
-            {{ profileForm.name ? profileForm.name[0].toUpperCase() : 'A' }}
-          }
+          <span class="profile-photo">
+            @if (profileForm.photo) {
+              <img [src]="profileForm.photo" alt="Foto profil" class="h-full w-full object-cover" />
+            } @else {
+              {{ profileForm.name ? profileForm.name[0].toUpperCase() : 'A' }}
+            }
+          </span>
+          <span class="min-w-0 text-center">
+            <span class="block font-semibold text-slate-950">{{ profileForm.name || 'Akun' }}</span>
+            <span class="block text-sm text-slate-500">{{ roleLabel(auth.user()?.role) }}</span>
+          </span>
         </button>
-        <div class="min-w-0 text-center">
-          <p class="font-semibold text-slate-950">{{ profileForm.name || 'Akun' }}</p>
-          <p class="text-sm text-slate-500">{{ roleLabel(auth.user()?.role) }}</p>
-        </div>
         <input #profilePhotoInput type="file" accept="image/jpeg,image/png,image/webp" class="hidden" (change)="chooseProfilePhoto($event)" />
-      </div>
 
-        <div class="min-w-0 space-y-4">
+        <div class="account-settings-fields">
           <div>
             <label class="label">Nama</label>
             <input class="input" required [(ngModel)]="profileForm.name" name="profileName" />
@@ -437,7 +437,7 @@
             <label class="label">No HP</label>
             <input class="input" type="tel" maxlength="30" [(ngModel)]="profileForm.phone" name="profilePhone" />
           </div>
-          <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <div class="account-settings-actions">
             <button type="button" class="btn-secondary" (click)="openPasswordForm()">Ganti Password</button>
             <button class="btn-primary" [disabled]="savingProfile()">{{ savingProfile() ? 'Menyimpan...' : 'Simpan' }}</button>
           </div>
@@ -448,7 +448,54 @@
     <form class="space-y-4" (ngSubmit)="savePassword()">
       <div>
         <label class="label">Masukan Password Baru</label>
-        <input class="input" type="password" minlength="6" required [(ngModel)]="profileForm.password" name="profilePassword" />
+        <div class="relative">
+          <input
+            class="input pr-12"
+            [type]="showNewPassword() ? 'text' : 'password'"
+            minlength="6"
+            required
+            [(ngModel)]="profileForm.password"
+            name="profilePassword"
+          />
+          <button
+            type="button"
+            class="password-eye"
+            title="Lihat password"
+            (click)="showNewPassword.set(!showNewPassword())"
+          >
+            @if (showNewPassword()) {
+              <svg lucideEyeOff [size]="20"></svg>
+            } @else {
+              <svg lucideEye [size]="20"></svg>
+            }
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label class="label">Konfirmasi Password Baru</label>
+        <div class="relative">
+          <input
+            class="input pr-12"
+            [type]="showConfirmPassword() ? 'text' : 'password'"
+            minlength="6"
+            required
+            [(ngModel)]="profileForm.passwordConfirm"
+            name="profilePasswordConfirm"
+          />
+          <button
+            type="button"
+            class="password-eye"
+            title="Lihat konfirmasi password"
+            (click)="showConfirmPassword.set(!showConfirmPassword())"
+          >
+            @if (showConfirmPassword()) {
+              <svg lucideEyeOff [size]="20"></svg>
+            } @else {
+              <svg lucideEye [size]="20"></svg>
+            }
+          </button>
+        </div>
       </div>
 
       <div class="flex justify-end gap-3 pt-2">
