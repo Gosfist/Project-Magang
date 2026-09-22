@@ -37,7 +37,6 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
     this.running = true;
     try {
       const settings = await this.settings.billing();
-      if (!settings.autoIsolationEnabled) return;
       const local = this.localNow(settings.billingTimezone);
       if (local.hour < settings.isolationCheckHour || local.day <= settings.billingEndDay) return;
       await this.isolateOverdue(settings, this.utcDate(local.year, local.month, settings.billingEndDay));

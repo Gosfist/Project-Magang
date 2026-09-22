@@ -7,7 +7,6 @@ type BillingSettings = {
   billingStartDay: number;
   billingEndDay: number;
   billingTimezone: 'WIB' | 'WITA' | 'WIT';
-  autoIsolationEnabled: boolean;
   isolationCheckHour: number;
   psbPaymentMode: 'full' | 'prorate';
   psbFee: number;
@@ -28,7 +27,6 @@ export class PengaturanComponent implements OnInit {
     billingStartDay: 1,
     billingEndDay: 10,
     billingTimezone: 'WIB',
-    autoIsolationEnabled: false,
     isolationCheckHour: 0,
     psbPaymentMode: 'full',
     psbFee: 0,

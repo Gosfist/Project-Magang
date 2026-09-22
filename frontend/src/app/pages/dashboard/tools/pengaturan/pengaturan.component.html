@@ -3,11 +3,8 @@
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h2 class="text-lg font-semibold">Pengaturan Penagihan</h2>
-        <p class="mt-1 text-sm text-slate-500">Atur batas pembayaran dan auto isolir pelanggan PPPoE.</p>
+        <p class="mt-1 text-sm text-slate-500">Atur batas pembayaran pelanggan PPPoE.</p>
       </div>
-      <span [class]="'rounded-full px-3 py-1 text-xs font-semibold ' + (form.autoIsolationEnabled ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600')">
-        {{ form.autoIsolationEnabled ? 'Auto isolir aktif' : 'Auto isolir nonaktif' }}
-      </span>
     </div>
   </div>
 
@@ -48,18 +45,6 @@
         <input class="input" type="number" min="0" max="23" required [(ngModel)]="form.isolationCheckHour" name="isolationCheckHour" />
         <p class="mt-1 text-xs text-slate-500">Contoh: 0 berarti boleh jalan mulai jam 00.00 sesuai zona waktu.</p>
       </div>
-    </div>
-
-    <label class="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-slate-200 p-4">
-      <span>
-        <b class="block text-sm text-slate-900">Auto Isolir PPPoE</b>
-        <small class="text-slate-500">Akun aktif dengan tagihan belum lunas akan dinonaktifkan setelah melewati tanggal akhir pembayaran.</small>
-      </span>
-      <input type="checkbox" class="h-5 w-5" [(ngModel)]="form.autoIsolationEnabled" name="autoIsolationEnabled" />
-    </label>
-
-    <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-      Aturan ini membaca tagihan berstatus menunggu pembayaran. Setelah auto isolir berjalan, RADIUS disinkronkan dan sesi PPPoE pelanggan diputus.
     </div>
 
     <div class="flex justify-end gap-3">
