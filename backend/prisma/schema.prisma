@@ -78,7 +78,7 @@ model PppoeAccount {
   pppoePackageId   BigInt             @map("pppoe_package_id") @db.UnsignedBigInt
   customerName     String             @map("customer_name")
   idCardNumber     String?            @map("id_card_number") @db.VarChar(50)
-  idCardPhoto      String?            @map("id_card_photo") @db.VarChar(500)
+  idCardPhoto      String?            @map("id_card_photo") @db.LongText
   username         String             @unique @db.VarChar(64)
   password         String             @db.Text
   phone            String?            @db.VarChar(30)
@@ -116,7 +116,11 @@ model PsbOrder {
   customerNumber    BigInt    @unique @map("customer_number") @db.UnsignedBigInt
   customerName      String    @map("customer_name") @db.VarChar(150)
   phone             String    @db.VarChar(30)
+  idCardNumber      String?   @map("id_card_number") @db.VarChar(50)
+  idCardPhoto       String?   @map("id_card_photo") @db.LongText
   address           String    @db.Text
+  latitude          Float?
+  longitude         Float?
   pppoePackageId    BigInt    @map("pppoe_package_id") @db.UnsignedBigInt
   areaId            BigInt?   @map("area_id") @db.UnsignedBigInt
   salesUserId       BigInt    @map("sales_user_id") @db.UnsignedBigInt

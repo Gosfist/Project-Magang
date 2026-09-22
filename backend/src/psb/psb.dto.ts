@@ -3,7 +3,11 @@ import { IsIn, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class
 export class CreatePsbOrderDto {
   @IsString() @Matches(/\S/, { message: 'Nama pelanggan wajib diisi.' }) @MaxLength(150) customerName: string;
   @IsString() @Matches(/\d/, { message: 'Nomor WhatsApp wajib diisi.' }) @MaxLength(30) phone: string;
+  @IsOptional() @IsString() @MaxLength(50) idCardNumber?: string;
+  @IsOptional() @IsString() idCardPhoto?: string;
   @IsString() @Matches(/\S/, { message: 'Alamat wajib diisi.' }) @MaxLength(1000) address: string;
+  @IsOptional() latitude?: number;
+  @IsOptional() longitude?: number;
   @IsString() pppoePackageId: string;
   @IsOptional() @IsString() areaId?: string;
 }
