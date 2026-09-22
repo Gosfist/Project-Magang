@@ -143,13 +143,41 @@ export class SidebarComponent implements OnInit {
     this.profileForm = { ...this.profileForm, photo: '' };
   }
 
+  openPasswordForm(): void {
+    this.profileForm = { ...this.profileForm, password: '' };
+    this.changePassword.set(true);
+  }
+
+  closePasswordForm(): void {
+    this.profileForm = { ...this.profileForm, password: '' };
+    this.changePassword.set(false);
+  }
+
   async saveProfile(): Promise<void> {
     if (this.savingProfile()) return;
     if (!this.profileForm.name.trim()) {
       this.toast.set({ message: 'Nama wajib diisi.', type: 'error' });
       return;
     }
-    if (this.changePassword() && this.profileForm.password.length < 6) {
+    this.savingProfile.set(true);
+    try {
+      const message = await this.auth.updateProfile({
+        name: this.profileForm.name.trim(),
+        phone: this.profileForm.phone.trim(),
+        photo: this.profileForm.photo,
+      });
+      this.profileOpen.set(false);
+      this.toast.set({ message, type: 'success' });
+    } catch (error: any) {
+      this.toast.set({ message: error.message || 'Pengaturan akun gagal disimpan.', type: 'error' });
+    } finally {
+      this.savingProfile.set(false);
+    }
+  }
+
+  async savePassword(): Promise<void> {
+    if (this.savingProfile()) return;
+    if (this.profileForm.password.length < 6) {
       this.toast.set({ message: 'Password baru minimal 6 karakter.', type: 'error' });
       return;
     }
@@ -159,12 +187,13 @@ export class SidebarComponent implements OnInit {
         name: this.profileForm.name.trim(),
         phone: this.profileForm.phone.trim(),
         photo: this.profileForm.photo,
-        ...(this.changePassword() && this.profileForm.password ? { password: this.profileForm.password } : {}),
+        password: this.profileForm.password,
       });
-      this.profileOpen.set(false);
+      this.profileForm = { ...this.profileForm, password: '' };
+      this.changePassword.set(false);
       this.toast.set({ message, type: 'success' });
     } catch (error: any) {
-      this.toast.set({ message: error.message || 'Pengaturan akun gagal disimpan.', type: 'error' });
+      this.toast.set({ message: error.message || 'Password gagal disimpan.', type: 'error' });
     } finally {
       this.savingProfile.set(false);
     }

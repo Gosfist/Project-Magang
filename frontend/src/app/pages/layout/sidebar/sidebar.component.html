@@ -399,67 +399,73 @@
   ></button>
 }
 
-<app-modal [open]="profileOpen()" title="Pengaturan Akun" (closeModal)="profileOpen.set(false)">
-  <form class="space-y-4" (ngSubmit)="saveProfile()">
-    <div class="flex items-center gap-4">
+<app-modal
+  [open]="profileOpen()"
+  [title]="changePassword() ? 'Ganti Password' : 'Pengaturan Akun'"
+  (closeModal)="profileOpen.set(false)"
+>
+  @if (!changePassword()) {
+    <form class="space-y-4" (ngSubmit)="saveProfile()">
+      <div class="flex items-center gap-4">
+        <button
+          type="button"
+          class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-2xl font-bold text-slate-700"
+          title="Klik untuk ganti foto profil"
+          (click)="profilePhotoInput.click()"
+        >
+          @if (profileForm.photo) {
+            <img [src]="profileForm.photo" alt="Foto profil" class="h-full w-full object-cover" />
+          } @else {
+            {{ profileForm.name ? profileForm.name[0].toUpperCase() : 'A' }}
+          }
+        </button>
+        <div class="min-w-0 flex-1">
+          <p class="font-semibold text-slate-950">{{ profileForm.name || 'Akun' }}</p>
+          <p class="text-sm text-slate-500">{{ roleLabel(auth.user()?.role) }}</p>
+        </div>
+        <input #profilePhotoInput type="file" accept="image/jpeg,image/png,image/webp" class="hidden" (change)="chooseProfilePhoto($event)" />
+      </div>
+
+      <div>
+        <label class="label">Nama</label>
+        <input class="input" required [(ngModel)]="profileForm.name" name="profileName" />
+      </div>
+
+      <div>
+        <label class="label">No HP</label>
+        <input class="input" type="tel" maxlength="30" [(ngModel)]="profileForm.phone" name="profilePhone" />
+      </div>
+
       <button
         type="button"
-        class="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-2xl font-bold text-slate-700"
-        title="Ganti foto profil"
-        (click)="profilePhotoInput.click()"
+        class="flex w-full items-center justify-between rounded-lg border border-slate-200 px-4 py-3 text-left hover:bg-slate-50"
+        (click)="openPasswordForm()"
       >
-        @if (profileForm.photo) {
-          <img [src]="profileForm.photo" alt="Foto profil" class="h-full w-full object-cover" />
-        } @else {
-          {{ profileForm.name ? profileForm.name[0].toUpperCase() : 'A' }}
-        }
+        <span>
+          <b class="block text-slate-950">Ganti Password</b>
+          <small class="text-slate-500">Isi password baru saja.</small>
+        </span>
+        <span class="btn-secondary pointer-events-none">Ganti</span>
       </button>
-      <div class="min-w-0 flex-1">
-        <p class="font-semibold text-slate-950">{{ profileForm.name || 'Akun' }}</p>
-        <p class="text-sm text-slate-500">{{ roleLabel(auth.user()?.role) }}</p>
-        <div class="mt-2 flex flex-wrap gap-2">
-          <button type="button" class="btn-secondary py-1.5 text-sm" (click)="profilePhotoInput.click()">Ganti Foto</button>
-          @if (profileForm.photo) {
-            <button type="button" class="btn-danger py-1.5 text-sm" (click)="clearProfilePhoto()">Hapus</button>
-          }
-        </div>
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" class="btn-secondary" (click)="profileOpen.set(false)">Batal</button>
+        <button class="btn-primary" [disabled]="savingProfile()">{{ savingProfile() ? 'Menyimpan...' : 'Simpan' }}</button>
       </div>
-      <input #profilePhotoInput type="file" accept="image/jpeg,image/png,image/webp" class="hidden" (change)="chooseProfilePhoto($event)" />
-    </div>
-
-    <div>
-      <label class="label">Nama</label>
-      <input class="input" required [(ngModel)]="profileForm.name" name="profileName" />
-    </div>
-
-    <div>
-      <label class="label">No HP</label>
-      <input class="input" type="tel" maxlength="30" [(ngModel)]="profileForm.phone" name="profilePhone" />
-    </div>
-
-    <div class="rounded-lg border border-slate-200 p-4">
-      <div class="flex items-center justify-between gap-3">
-        <div>
-          <p class="font-semibold text-slate-950">Ganti Password</p>
-          <p class="text-sm text-slate-500">Isi password baru saja.</p>
-        </div>
-        <button type="button" class="btn-secondary" (click)="changePassword.set(!changePassword())">
-          {{ changePassword() ? 'Batal' : 'Ganti' }}
-        </button>
+    </form>
+  } @else {
+    <form class="space-y-4" (ngSubmit)="savePassword()">
+      <div>
+        <label class="label">Masukan Password Baru</label>
+        <input class="input" type="password" minlength="6" required [(ngModel)]="profileForm.password" name="profilePassword" />
       </div>
-      @if (changePassword()) {
-        <div class="mt-4">
-          <label class="label">Password Baru</label>
-          <input class="input" type="password" minlength="6" [(ngModel)]="profileForm.password" name="profilePassword" />
-        </div>
-      }
-    </div>
 
-    <div class="flex justify-end gap-3 pt-2">
-      <button type="button" class="btn-secondary" (click)="profileOpen.set(false)">Batal</button>
-      <button class="btn-primary" [disabled]="savingProfile()">{{ savingProfile() ? 'Menyimpan...' : 'Simpan' }}</button>
-    </div>
-  </form>
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" class="btn-secondary" (click)="closePasswordForm()">Batal</button>
+        <button class="btn-primary" [disabled]="savingProfile()">{{ savingProfile() ? 'Menyimpan...' : 'Simpan' }}</button>
+      </div>
+    </form>
+  }
 </app-modal>
 
 @if (toast()) {
