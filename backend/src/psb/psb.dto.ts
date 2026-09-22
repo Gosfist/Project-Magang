@@ -6,7 +6,6 @@ export class CreatePsbOrderDto {
   @IsOptional() @IsString() @MaxLength(50) idCardNumber?: string;
   @IsOptional() @IsString() idCardPhoto?: string;
   @IsString() @Matches(/\S/, { message: 'Alamat wajib diisi.' }) @MaxLength(1000) address: string;
-  @IsOptional() latitude?: number;
   @IsString() pppoePackageId: string;
   @IsOptional() @IsString() areaId?: string;
 }

@@ -204,7 +204,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   prorateEstimate = signal<{amount: number, daysActive: number, daysInMonth: number, nextBilling: Date} | null>(null);
 
   form: any = {
-    customerName: '', phone: '', idCardNumber: '', idCardPhoto: '', latitude: '', address: '',
+    customerName: '', phone: '', idCardNumber: '', idCardPhoto: '', address: '',
     pppoePackageId: '', subscriptionType: 'POSTPAID', billingDay: '1', discount: '0',
     username: '', password: '', routerNasId: '', odp: '', areaId: '',
     expiresAt: '', isActive: true, notes: '', firstInvoice: 'prorate',
@@ -266,7 +266,6 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
           phone: item.phone ?? '',
           idCardNumber: item.idCardNumber ?? '',
           idCardPhoto: item.idCardPhoto ?? '',
-          latitude: item.latitude ?? '',
           address: item.address ?? '',
           pppoePackageId: item.pppoePackageId,
           subscriptionType: item.subscriptionType || 'POSTPAID',
@@ -283,7 +282,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
           firstInvoice: 'prorate',
         }
       : {
-          customerName: '', phone: '', idCardNumber: '', idCardPhoto: '', latitude: '', address: '',
+          customerName: '', phone: '', idCardNumber: '', idCardPhoto: '', address: '',
           pppoePackageId: '', subscriptionType: 'POSTPAID', billingDay: '1', discount: '0',
           username: '', password: '', routerNasId: '', odp: '', areaId: '',
           expiresAt: '', isActive: true, notes: '', firstInvoice: 'prorate',
@@ -294,9 +293,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   }
 
   customerValid(): boolean {
-    return ['customerName', 'phone', 'idCardNumber', 'idCardPhoto', 'address'].every(key => String(this.form[key] ?? '').trim())
-      && this.form.latitude !== '' && this.form.latitude != null && Number.isFinite(Number(this.form.latitude))
-      && this.form.latitude !== '' && this.form.latitude != null && Number.isFinite(Number(this.form.latitude));
+    return ['customerName', 'phone', 'idCardNumber', 'idCardPhoto', 'address'].every(key => String(this.form[key] ?? '').trim());
   }
 
   paymentValid(): boolean {
@@ -409,7 +406,6 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
       firstInvoice: this.editing() ? 'none' : this.form.subscriptionType === 'PREPAID' ? 'full' : this.form.firstInvoice,
       password: this.form.password || undefined,
       expiresAt: this.form.expiresAt || undefined,
-      latitude: this.form.latitude !== '' && this.form.latitude != null ? Number(this.form.latitude) : undefined,
       billingDay: Number(this.form.billingDay),
       discount: Number(this.form.discount),
       routerNasId: this.form.routerNasId ? String(this.form.routerNasId) : undefined,

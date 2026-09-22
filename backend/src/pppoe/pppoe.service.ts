@@ -307,9 +307,8 @@ export class PppoeService {
   private async validateAccountForm(dto: SaveAccountDto, creating: boolean) {
     if (creating) {
       const fields = [dto.customerName, dto.phone, dto.idCardNumber, dto.idCardPhoto, dto.address];
-      if (fields.some(value => !value?.trim()) || dto.latitude == null
-        || !Number.isFinite(dto.latitude)) {
-        throw new BadRequestException('Seluruh data pelanggan, termasuk foto KTP dan koordinat, wajib diisi.');
+      if (fields.some(value => !value?.trim())) {
+        throw new BadRequestException('Seluruh data pelanggan, termasuk foto KTP, wajib diisi.');
       }
       await validateIdCardPhoto(dto.idCardPhoto!);
     }
@@ -325,7 +324,6 @@ export class PppoeService {
       phone: dto.phone?.trim() || null, address: dto.address?.trim() || null,
       idCardNumber: dto.idCardNumber?.trim() || null,
       idCardPhoto: dto.idCardPhoto?.trim() || null,
-      latitude: dto.latitude ?? null,
       subscriptionType: dto.subscriptionType || 'POSTPAID',
       billingDay: dto.billingDay ?? 1,
       discount: BigInt(dto.discount || 0),

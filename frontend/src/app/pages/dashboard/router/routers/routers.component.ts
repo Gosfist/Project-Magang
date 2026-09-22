@@ -71,7 +71,6 @@ export class RoutersComponent implements OnInit {
     ports: 1812,
     secret: '',
     vpnClientId: '',
-    latitude: '',
     description: '',
     isActive: true,
   };
@@ -132,7 +131,6 @@ export class RoutersComponent implements OnInit {
           ports: item.ports ?? 1812,
           secret: item.secret,
           vpnClientId: item.vpnClientId ?? '',
-          latitude: item.latitude ?? '',
           description: item.description ?? '',
           isActive: item.isActive,
         }
@@ -148,7 +146,6 @@ export class RoutersComponent implements OnInit {
           ports: 1812,
           secret: this.generateSecret(),
           vpnClientId: '',
-          latitude: '',
           description: '',
           isActive: true,
         };
@@ -166,7 +163,6 @@ export class RoutersComponent implements OnInit {
       ...this.form,
       port: Number(this.form.port) || 8728,
       ports: Number(this.form.ports) || 1812,
-      latitude: this.form.latitude ? Number(this.form.latitude) : undefined,
       vpnClientId: this.form.vpnClientId || undefined,
       password: this.form.password || undefined,
     };

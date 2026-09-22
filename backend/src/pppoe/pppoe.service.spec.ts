@@ -37,7 +37,7 @@ describe('PPPoE billing and account deactivation', () => {
     }) };
     const service = new PppoeService(prisma as unknown as PrismaService, radius as unknown as RadiusService, secrets as unknown as SecretService, network as unknown as PppoeNetworkService);
     const dto = { pppoePackageId: '1', customerName: 'Andi', username: 'andi', password: 'password', subscriptionType: 'PREPAID', billingDay: 1, discount: 10000, routerNasId: '3', firstInvoice: 'prorate', isActive: true } as SaveAccountDto;
-    Object.assign(dto, { phone: '08123456789', idCardNumber: '1234567890123456', idCardPhoto: 'id-cards/test.png', latitude: 0, address: 'Alamat pelanggan', odp: '4' });
+    Object.assign(dto, { phone: '08123456789', idCardNumber: '1234567890123456', idCardPhoto: 'id-cards/test.png', address: 'Alamat pelanggan', odp: '4' });
     return { service, dto, invoice, network, radius, tx, prisma };
   }
   beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 8, 16, 0, 0, 0)); });
@@ -105,12 +105,6 @@ describe('PPPoE billing and account deactivation', () => {
     const { service, dto, tx } = setup();
     await expect(service.createAccount({ ...dto, [field]: '  ' })).rejects.toThrow('Seluruh data pelanggan');
     expect(tx.pppoeAccount.create).not.toHaveBeenCalled();
-  });
-  it('rejects absent coordinates but accepts zero coordinates', async () => {
-    const { service, dto, tx } = setup();
-    await expect(service.createAccount({ ...dto, latitude: undefined })).rejects.toThrow('Seluruh data pelanggan');
-    await service.createAccount(dto);
-    expect(tx.pppoeAccount.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ latitude: 0 }) }));
   });
   it('requires a real ODP on create and edit', async () => {
     const { service, dto, prisma, tx } = setup();

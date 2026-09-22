@@ -21,7 +21,6 @@ export class SaveAccountDto {
   @IsOptional() @IsString() @MinLength(6, { message: 'Kata sandi PPPoE minimal 6 karakter.' }) @MaxLength(64) password?: string;
   @IsOptional() @IsString() @MaxLength(30) phone?: string;
   @IsOptional() @IsString() @MaxLength(500) address?: string;
-  @IsOptional() @Type(() => Number) @IsNumber() latitude?: number;
   @IsOptional() @IsIn(['PREPAID', 'POSTPAID']) subscriptionType?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(31) billingDay?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) discount?: number;
