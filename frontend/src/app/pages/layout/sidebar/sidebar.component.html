@@ -411,6 +411,7 @@
           type="button"
           class="profile-card"
           title="Klik untuk ganti foto profil"
+          aria-label="Ganti foto profil"
           (click)="profilePhotoInput.click()"
         >
           <span class="profile-photo">
@@ -419,10 +420,6 @@
             } @else {
               {{ profileForm.name ? profileForm.name[0].toUpperCase() : 'A' }}
             }
-          </span>
-          <span class="min-w-0 text-center">
-            <span class="block font-semibold text-slate-950">{{ profileForm.name || 'Akun' }}</span>
-            <span class="block text-sm text-slate-500">{{ roleLabel(auth.user()?.role) }}</span>
           </span>
         </button>
         <input #profilePhotoInput type="file" accept="image/jpeg,image/png,image/webp" class="hidden" (change)="chooseProfilePhoto($event)" />
