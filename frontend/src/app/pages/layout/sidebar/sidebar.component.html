@@ -406,7 +406,7 @@
 >
   @if (!changePassword()) {
     <form class="space-y-4" (ngSubmit)="saveProfile()">
-      <div class="grid gap-5 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-start">
+      <div class="account-settings-layout">
         <div class="flex flex-col items-center gap-2">
         <button
           type="button"
@@ -427,7 +427,7 @@
         <input #profilePhotoInput type="file" accept="image/jpeg,image/png,image/webp" class="hidden" (change)="chooseProfilePhoto($event)" />
       </div>
 
-        <div class="space-y-4">
+        <div class="min-w-0 space-y-4">
           <div>
             <label class="label">Nama</label>
             <input class="input" required [(ngModel)]="profileForm.name" name="profileName" />
@@ -437,24 +437,11 @@
             <label class="label">No HP</label>
             <input class="input" type="tel" maxlength="30" [(ngModel)]="profileForm.phone" name="profilePhone" />
           </div>
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <button type="button" class="btn-secondary" (click)="openPasswordForm()">Ganti Password</button>
+            <button class="btn-primary" [disabled]="savingProfile()">{{ savingProfile() ? 'Menyimpan...' : 'Simpan' }}</button>
+          </div>
         </div>
-      </div>
-
-      <button
-        type="button"
-        class="flex w-full items-center justify-between rounded-lg border border-slate-200 px-4 py-3 text-left hover:bg-slate-50"
-        (click)="openPasswordForm()"
-      >
-        <span>
-          <b class="block text-slate-950">Ganti Password</b>
-          <small class="text-slate-500">Isi password baru saja.</small>
-        </span>
-        <span class="btn-secondary pointer-events-none">Ganti</span>
-      </button>
-
-      <div class="flex justify-end gap-3 pt-2">
-        <button type="button" class="btn-secondary" (click)="profileOpen.set(false)">Batal</button>
-        <button class="btn-primary" [disabled]="savingProfile()">{{ savingProfile() ? 'Menyimpan...' : 'Simpan' }}</button>
       </div>
     </form>
   } @else {
