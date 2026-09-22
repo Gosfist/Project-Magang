@@ -6,8 +6,8 @@
       @if (auth.hasRole('admin', 'sales')) { <button class="btn-primary" (click)="openForm()">+ Registrasi Pelanggan</button> }
     </div>
   </div>
-  <div class="table-wrap"><table><thead><tr><th>ID Pelanggan</th><th>Nama</th><th>No. WA</th><th>Alamat</th><th>Layanan</th><th>Status</th><th>Sales</th><th class="text-right">Aksi</th></tr></thead><tbody>
-    @for (item of items(); track item.id) { <tr><td class="font-semibold">{{ item.customerId }}</td><td>{{ item.customerName }}</td><td>{{ item.phone }}</td><td>{{ item.address }}</td><td>{{ item.package.name }}</td><td><span [class]="'rounded-full px-2 py-1 text-xs font-semibold ' + (item.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700')">{{ statusLabel(item.status) }}</span></td><td>{{ item.sales?.name || '-' }}</td><td><div class="flex justify-end gap-2">
+  <div class="table-wrap"><table><thead><tr><th>ID Pelanggan</th><th>Nama</th><th>No. WA</th><th>Alamat</th><th>Layanan</th><th>Status</th><th>Sales</th><th class="text-center">Aksi</th></tr></thead><tbody>
+    @for (item of items(); track item.id) { <tr><td class="font-semibold">{{ item.customerId }}</td><td>{{ item.customerName }}</td><td>{{ item.phone }}</td><td>{{ item.address }}</td><td>{{ item.package.name }}</td><td><span [class]="'rounded-full px-2 py-1 text-xs font-semibold ' + (item.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700')">{{ statusLabel(item.status) }}</span></td><td>{{ item.sales?.name || '-' }}</td><td><div class="flex justify-center gap-2">
       @if (auth.hasRole('admin', 'sales') && item.status === 'PROCESS') { <button class="btn-secondary" (click)="openForm(item)">Edit</button><button class="btn-danger" (click)="remove(item)">Hapus</button> }
       @if (auth.hasRole('admin', 'teknisi') && item.status === 'PROCESS') { <button class="btn-primary" (click)="openActivation(item)">Aktivasi</button> }
       @if (auth.hasRole('admin', 'teknisi') && item.status === 'ACTIVATED') { <button class="btn-primary" (click)="complete(item)">Selesai</button> }
