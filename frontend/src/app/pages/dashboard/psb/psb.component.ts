@@ -37,6 +37,6 @@ export class PsbComponent implements OnInit {
   choosePhoto(event: Event) { const file = (event.target as HTMLInputElement).files?.[0]; if (!file) return; if (file.size > 5 * 1024 * 1024) return this.toast.set({ message: 'Foto maksimal 5 MB.', type: 'error' }); const reader = new FileReader(); reader.onload = () => this.activation.installationPhoto = String(reader.result); reader.readAsDataURL(file); }
   activate() { if (!this.activation.installationPhoto) return this.toast.set({ message: 'Foto instalasi wajib dipilih.', type: 'error' }); this.saving.set(true); this.api.post<any>(`/psb/${this.selected()!.id}/activate`, this.activation).subscribe({ next: r => { this.saving.set(false); this.activationOpen.set(false); this.toast.set({ message: r.message, type: 'success' }); this.load(); }, error: e => { this.saving.set(false); this.error(e); } }); }
   complete(item: PsbOrder) { if (!confirm(`Tandai pemasangan ${item.customerName} selesai dan kirim notifikasi WA?`)) return; this.api.post<any>(`/psb/${item.id}/complete`, {}).subscribe({ next: r => { this.toast.set({ message: r.message, type: 'success' }); this.load(); }, error: e => this.error(e) }); }
-  statusLabel(value: string) { return value === 'COMPLETED' ? 'Selesai' : value === 'ACTIVATED' ? 'Aktivasi tersimpan' : 'Proses'; }
+  statusLabel(value: string) { return value === 'COMPLETED' ? 'Selesai' : 'Proses'; }
   private error(e: any) { this.toast.set({ message: e.message || 'Terjadi kesalahan.', type: 'error' }); }
 }

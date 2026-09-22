@@ -2,7 +2,7 @@
   <div class="card p-4">
     <div class="grid grid-cols-[minmax(0,1fr)_180px_auto] items-center gap-3">
       <input class="input" placeholder="Cari nama atau nomor WA..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
-      <select class="input" [(ngModel)]="status" (ngModelChange)="page.set(1); load()"><option value="">Semua status</option><option value="PROCESS">Proses</option><option value="ACTIVATED">Aktivasi tersimpan</option><option value="COMPLETED">Selesai</option></select>
+      <select class="input" [(ngModel)]="status" (ngModelChange)="page.set(1); load()"><option value="">Semua status</option><option value="PROCESS">Proses</option><option value="COMPLETED">Selesai</option></select>
       @if (auth.hasRole('admin', 'sales')) { <button class="btn-primary" (click)="openForm()">+ Registrasi Pelanggan</button> }
     </div>
   </div>
