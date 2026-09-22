@@ -407,6 +407,7 @@
   @if (!changePassword()) {
     <form (ngSubmit)="saveProfile()">
       <div class="account-settings-layout">
+        <div class="profile-photo-slot">
         <button
           type="button"
           class="profile-card"
@@ -422,6 +423,7 @@
             }
           </span>
         </button>
+        </div>
         <input #profilePhotoInput type="file" accept="image/jpeg,image/png,image/webp" class="hidden" (change)="chooseProfilePhoto($event)" />
 
         <div class="account-settings-fields">

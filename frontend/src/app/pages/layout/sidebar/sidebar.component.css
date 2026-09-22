@@ -1,16 +1,22 @@
 .account-settings-layout {
   display: grid;
-  grid-template-columns: 12.5rem minmax(0, 1fr);
+  grid-template-columns: 10rem minmax(0, 1fr);
   align-items: stretch;
   gap: 1.5rem;
 }
 
-.profile-card {
+.profile-photo-slot {
   position: relative;
-  width: 100%;
+  min-width: 0;
+}
+
+.profile-card {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: auto;
   aspect-ratio: 3 / 4;
-  max-height: calc(12.5rem * 4 / 3);
-  align-self: end;
   overflow: hidden;
   border-radius: 0.5rem;
   padding: 0;
@@ -75,22 +81,32 @@
   color: #0f172a;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .account-settings-layout {
     grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .profile-photo-slot {
+    height: clamp(3rem, calc(100dvh - 25rem), 10rem);
   }
 
   .profile-card {
-    aspect-ratio: 3 / 4;
-    width: auto;
-    max-width: 100%;
-    max-height: 30vh;
-    justify-self: center;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+  }
+
+  .account-settings-fields {
+    gap: 0.75rem;
   }
 
   .account-settings-actions {
-    align-items: stretch;
-    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .account-settings-actions button {
+    padding-inline: 0.75rem;
   }
 }
 
