@@ -58,7 +58,7 @@
             </td>
             <td>{{ item.sales?.name || "-" }}</td>
             <td>
-              <div>
+              <div class="flex justify-center gap-2">
                 @if (
                   auth.hasRole("admin", "sales") && item.status === "PROCESS"
                 ) {
@@ -79,9 +79,6 @@
                   auth.hasRole("admin", "teknisi") &&
                   item.status === "ACTIVATED"
                 ) {
-                  <button class="btn-secondary" (click)="openActivation(item)">
-                    Edit
-                  </button>
                   <button class="btn-primary" (click)="complete(item)">
                     Selesai
                   </button>
@@ -90,8 +87,8 @@
                   auth.hasRole("admin", "teknisi") &&
                   item.status === "COMPLETED"
                 ) {
-                  <button class="btn-secondary" (click)="openActivation(item)">
-                    Edit
+                  <button class="btn-secondary" (click)="openActivation(item, true)">
+                    Lihat
                   </button>
                 }
               </div>
@@ -292,7 +289,7 @@
 
   <app-modal
     [open]="activationOpen()"
-    title="Aktivasi Pasang Baru"
+    [title]="activationViewOnly ? 'Data Aktivasi' : 'Aktivasi Pasang Baru'"
     (closeModal)="activationOpen.set(false)"
   >
     <div class="mb-6 flex items-start justify-center px-4">
@@ -343,6 +340,7 @@
           ><button
             type="button"
             class="input flex w-full items-center justify-between text-left"
+            [disabled]="activationViewOnly"
             (click)="odpPickerOpen = !odpPickerOpen"
           >
             <span
@@ -412,6 +410,7 @@
             class="input"
             type="file"
             accept="image/jpeg,image/png,image/webp"
+            [disabled]="activationViewOnly"
             (change)="choosePhoto($event)"
           />
         </div>
@@ -425,13 +424,17 @@
         <div class="flex justify-between">
           <button class="btn-secondary" (click)="activationStep.set(1)">
             Kembali</button
-          ><button
-            class="btn-primary"
-            [disabled]="saving() || !activation.installationPhoto"
-            (click)="activate()"
-          >
-            {{ saving() ? "Menyimpan..." : "Simpan Aktivasi" }}
-          </button>
+          >@if (activationViewOnly) {
+            <button type="button" class="btn-primary" (click)="activationOpen.set(false)">Tutup</button>
+          } @else {
+            <button
+              class="btn-primary"
+              [disabled]="saving() || !activation.installationPhoto"
+              (click)="activate()"
+            >
+              {{ saving() ? "Menyimpan..." : "Simpan Aktivasi" }}
+            </button>
+          }
         </div>
       </div>
     }
