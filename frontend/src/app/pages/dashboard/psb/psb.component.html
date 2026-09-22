@@ -1,53 +1,435 @@
 <div class="space-y-4">
   <div class="card p-4">
     <div class="grid grid-cols-[minmax(0,1fr)_180px_auto] items-center gap-3">
-      <input class="input" placeholder="Cari nama atau nomor WA..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
-      <select class="input" [(ngModel)]="status" (ngModelChange)="page.set(1); load()"><option value="">Semua status</option><option value="PROCESS">Proses</option><option value="COMPLETED">Selesai</option></select>
-      @if (auth.hasRole('admin', 'sales')) { <button class="btn-primary" (click)="openForm()">+ Registrasi Pelanggan</button> }
+      <input
+        class="input"
+        placeholder="Cari nama atau nomor WA..."
+        [(ngModel)]="search"
+        (ngModelChange)="page.set(1); load()"
+      />
+      <select
+        class="input"
+        [(ngModel)]="status"
+        (ngModelChange)="page.set(1); load()"
+      >
+        <option value="">Semua status</option>
+        <option value="PROCESS">Proses</option>
+        <option value="COMPLETED">Selesai</option>
+      </select>
+      @if (auth.hasRole("admin", "sales")) {
+        <button class="btn-primary" (click)="openForm()">
+          + Registrasi Pelanggan
+        </button>
+      }
     </div>
   </div>
-  <div class="table-wrap"><table><thead><tr><th>ID Pelanggan</th><th>Nama</th><th>No. WA</th><th>Alamat</th><th>Layanan</th><th>Status</th><th>Sales</th><th class="text-center">Aksi</th></tr></thead><tbody>
-    @for (item of items(); track item.id) { <tr><td class="font-semibold">{{ item.customerId }}</td><td>{{ item.customerName }}</td><td>{{ item.phone }}</td><td>{{ item.address }}</td><td>{{ item.package.name }}</td><td><span [class]="'rounded-full px-2 py-1 text-xs font-semibold ' + (item.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700')">{{ statusLabel(item.status) }}</span></td><td>{{ item.sales?.name || '-' }}</td><td><div class="flex justify-center gap-2">
-      @if (auth.hasRole('admin', 'sales') && item.status === 'PROCESS') { <button class="btn-secondary" (click)="openForm(item)">Edit</button><button class="btn-danger" (click)="remove(item)">Hapus</button> }
-      @if (auth.hasRole('admin', 'teknisi') && item.status === 'PROCESS') { <button class="btn-primary" (click)="openActivation(item)">Aktivasi</button> }
-      @if (auth.hasRole('admin', 'teknisi') && item.status === 'ACTIVATED') { <button class="btn-primary" (click)="complete(item)">Selesai</button> }
-    </div></td></tr> }
-    @if (!items().length) { <tr><td colspan="8" class="py-8 text-center text-slate-400">Belum ada registrasi pasang baru.</td></tr> }
-  </tbody></table></div>
-  <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID Pelanggan</th>
+          <th>Nama</th>
+          <th>No. WA</th>
+          <th>Alamat</th>
+          <th>Layanan</th>
+          <th>Status</th>
+          <th>Sales</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of items(); track item.id) {
+          <tr>
+            <td class="font-semibold">{{ item.customerId }}</td>
+            <td>{{ item.customerName }}</td>
+            <td>{{ item.phone }}</td>
+            <td>{{ item.address }}</td>
+            <td>{{ item.package.name }}</td>
+            <td>
+              <span
+                [class]="
+                  'rounded-full px-2 py-1 text-xs font-semibold ' +
+                  (item.status === 'COMPLETED'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-amber-100 text-amber-700')
+                "
+                >{{ statusLabel(item.status) }}</span
+              >
+            </td>
+            <td>{{ item.sales?.name || "-" }}</td>
+            <td>
+              <div>
+                @if (
+                  auth.hasRole("admin", "sales") && item.status === "PROCESS"
+                ) {
+                  <button class="btn-secondary" (click)="openForm(item)">
+                    Edit</button
+                  ><button class="btn-danger" (click)="remove(item)">
+                    Hapus
+                  </button>
+                }
+                @if (
+                  auth.hasRole("admin", "teknisi") && item.status === "PROCESS"
+                ) {
+                  <button class="btn-primary" (click)="openActivation(item)">
+                    Aktivasi
+                  </button>
+                }
+                @if (
+                  auth.hasRole("admin", "teknisi") &&
+                  item.status === "ACTIVATED"
+                ) {
+                  <button class="btn-primary" (click)="complete(item)">
+                    Selesai
+                  </button>
+                }
+              </div>
+            </td>
+          </tr>
+        }
+        @if (!items().length) {
+          <tr>
+            <td colspan="8" class="py-8 text-center text-slate-400">
+              Belum ada registrasi pasang baru.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <app-pagination
+    [meta]="meta()"
+    (pageChange)="page.set($event); load()"
+  ></app-pagination>
 
-  <app-modal [open]="formOpen()" [title]="editing() ? 'Edit Registrasi' : 'Registrasi Pelanggan Baru'" (closeModal)="formOpen.set(false)"><form class="space-y-4" (ngSubmit)="save()">
-      <div><label class="label">Nama Pelanggan *</label><input class="input" required [(ngModel)]="form.customerName" name="customerName" /></div>
+  <app-modal
+    [open]="formOpen()"
+    [title]="editing() ? 'Edit Registrasi' : 'Registrasi Pelanggan Baru'"
+    (closeModal)="formOpen.set(false)"
+    ><form class="space-y-4" (ngSubmit)="save()">
+      <div>
+        <label class="label">Nama Pelanggan *</label
+        ><input
+          class="input"
+          required
+          [(ngModel)]="form.customerName"
+          name="customerName"
+        />
+      </div>
       @if (auth.isSales()) {
         <div class="grid gap-4 sm:grid-cols-2">
-          <div><label class="label">Nomor Telepon *</label><input class="input" type="tel" required [(ngModel)]="form.phone" name="phone" /></div>
-          <div><label class="label">No KTP *</label><input class="input" required [(ngModel)]="form.idCardNumber" name="idCardNumber" /></div>
+          <div>
+            <label class="label">Nomor Telepon *</label
+            ><input
+              class="input"
+              type="tel"
+              required
+              [(ngModel)]="form.phone"
+              name="phone"
+            />
+          </div>
+          <div>
+            <label class="label">No KTP *</label
+            ><input
+              class="input"
+              required
+              [(ngModel)]="form.idCardNumber"
+              name="idCardNumber"
+            />
+          </div>
         </div>
-        <div class="rounded-xl border border-slate-200 p-3"><label class="label">Foto KTP *</label><input #ktpInput class="hidden" type="file" accept="image/jpeg,image/png,image/webp" (change)="chooseKtp($event)" />
-          @if (form.idCardPhoto) { <button type="button" class="block w-full overflow-hidden rounded-lg border" (click)="ktpInput.click()"><img [src]="form.idCardPhoto" alt="Foto KTP" class="max-h-40 w-full object-contain" /></button> } @else { <button type="button" class="flex min-h-20 w-full flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-500" (click)="ktpInput.click()">Ambil Foto KTP / Pilih Gambar<span class="text-xs">JPG, PNG, atau WebP · Maksimal 5 MB</span></button> }
+        <div class="rounded-xl border border-slate-200 p-3">
+          <label class="label">Foto KTP *</label
+          ><input
+            #ktpInput
+            class="hidden"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            (change)="chooseKtp($event)"
+          />
+          @if (form.idCardPhoto) {
+            <button
+              type="button"
+              class="block w-full overflow-hidden rounded-lg border"
+              (click)="ktpInput.click()"
+            >
+              <img
+                [src]="form.idCardPhoto"
+                alt="Foto KTP"
+                class="max-h-40 w-full object-contain"
+              />
+            </button>
+          } @else {
+            <button
+              type="button"
+              class="flex min-h-20 w-full flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-500"
+              (click)="ktpInput.click()"
+            >
+              Ambil Foto KTP / Pilih Gambar<span class="text-xs"
+                >JPG, PNG, atau WebP · Maksimal 5 MB</span
+              >
+            </button>
+          }
         </div>
-        <div class="grid gap-4 sm:grid-cols-2"><div><label class="label">Latitude *</label><input class="input" type="number" step="any" required [(ngModel)]="form.latitude" name="latitude" /></div><div><label class="label">Longitude *</label><input class="input" type="number" step="any" required [(ngModel)]="form.longitude" name="longitude" /></div></div>
-      } @else { <div><label class="label">Nomor WhatsApp *</label><input class="input" required [(ngModel)]="form.phone" name="phone" /></div> }
-      <div><label class="label">Alamat *</label><textarea class="input" required [(ngModel)]="form.address" name="address"></textarea></div>
-      @if (auth.isSales()) { <div><label class="label">Area & Kolektor</label><select class="input" [(ngModel)]="form.areaId" name="area"><option value="">Pilih Area (Opsional)</option>@for (a of areas(); track a.id) { <option [value]="a.id">{{ a.name }}</option> }</select></div><div><label class="label">Layanan *</label><select class="input" required [(ngModel)]="form.pppoePackageId" name="package"><option value="">Pilih layanan</option>@for (p of packages(); track p.id) { <option [value]="p.id">{{ p.name }}</option> }</select></div> }
-      @if (!auth.isSales()) { <div><label class="label">Layanan *</label><select class="input" required [(ngModel)]="form.pppoePackageId" name="package"><option value="">Pilih layanan</option>@for (p of packages(); track p.id) { <option [value]="p.id">{{ p.name }}</option> }</select></div><div><label class="label">Area</label><select class="input" [(ngModel)]="form.areaId" name="area"><option value="">Belum ditentukan</option>@for (a of areas(); track a.id) { <option [value]="a.id">{{ a.name }}</option> }</select></div> }
-      <div class="flex justify-end gap-2"><button type="button" class="btn-secondary" (click)="formOpen.set(false)">Batal</button><button class="btn-primary" [disabled]="saving()">{{ saving() ? 'Menyimpan...' : 'Simpan' }}</button></div>
-  </form></app-modal>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="label">Latitude *</label
+            ><input
+              class="input"
+              type="number"
+              step="any"
+              required
+              [(ngModel)]="form.latitude"
+              name="latitude"
+            />
+          </div>
+          <div>
+            <label class="label">Longitude *</label
+            ><input
+              class="input"
+              type="number"
+              step="any"
+              required
+              [(ngModel)]="form.longitude"
+              name="longitude"
+            />
+          </div>
+        </div>
+      } @else {
+        <div>
+          <label class="label">Nomor WhatsApp *</label
+          ><input
+            class="input"
+            required
+            [(ngModel)]="form.phone"
+            name="phone"
+          />
+        </div>
+      }
+      <div>
+        <label class="label">Alamat *</label
+        ><textarea
+          class="input"
+          required
+          [(ngModel)]="form.address"
+          name="address"
+        ></textarea>
+      </div>
+      @if (auth.isSales()) {
+        <div>
+          <label class="label">Area & Kolektor</label
+          ><select class="input" [(ngModel)]="form.areaId" name="area">
+            <option value="">Pilih Area (Opsional)</option>
+            @for (a of areas(); track a.id) {
+              <option [value]="a.id">{{ a.name }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="label">Layanan *</label
+          ><select
+            class="input"
+            required
+            [(ngModel)]="form.pppoePackageId"
+            name="package"
+          >
+            <option value="">Pilih layanan</option>
+            @for (p of packages(); track p.id) {
+              <option [value]="p.id">{{ p.name }}</option>
+            }
+          </select>
+        </div>
+      }
+      @if (!auth.isSales()) {
+        <div>
+          <label class="label">Layanan *</label
+          ><select
+            class="input"
+            required
+            [(ngModel)]="form.pppoePackageId"
+            name="package"
+          >
+            <option value="">Pilih layanan</option>
+            @for (p of packages(); track p.id) {
+              <option [value]="p.id">{{ p.name }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="label">Area</label
+          ><select class="input" [(ngModel)]="form.areaId" name="area">
+            <option value="">Belum ditentukan</option>
+            @for (a of areas(); track a.id) {
+              <option [value]="a.id">{{ a.name }}</option>
+            }
+          </select>
+        </div>
+      }
+      <div class="flex justify-end gap-2">
+        <button
+          type="button"
+          class="btn-secondary"
+          (click)="formOpen.set(false)"
+        >
+          Batal</button
+        ><button class="btn-primary" [disabled]="saving()">
+          {{ saving() ? "Menyimpan..." : "Simpan" }}
+        </button>
+      </div>
+    </form></app-modal
+  >
 
-  <app-modal [open]="activationOpen()" title="Aktivasi Pasang Baru" (closeModal)="activationOpen.set(false)">
+  <app-modal
+    [open]="activationOpen()"
+    title="Aktivasi Pasang Baru"
+    (closeModal)="activationOpen.set(false)"
+  >
     <div class="mb-6 flex items-start justify-center px-4">
       <div class="flex w-32 flex-col items-center gap-2 text-center text-sm">
-        <span [class]="'flex h-9 w-9 items-center justify-center rounded-full font-semibold ' + (activationStep() === 1 ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400')">1</span>
-        <span [class]="activationStep() === 1 ? 'text-slate-700' : 'text-slate-400'">Akun PPPoE</span>
+        <span
+          [class]="
+            'flex h-9 w-9 items-center justify-center rounded-full font-semibold ' +
+            (activationStep() === 1
+              ? 'bg-indigo-600 text-white'
+              : 'bg-slate-100 text-slate-400')
+          "
+          >1</span
+        >
+        <span
+          [class]="activationStep() === 1 ? 'text-slate-700' : 'text-slate-400'"
+          >Akun PPPoE</span
+        >
       </div>
       <div class="mt-4 h-0.5 w-20 bg-slate-200"></div>
       <div class="flex w-32 flex-col items-center gap-2 text-center text-sm">
-        <span [class]="'flex h-9 w-9 items-center justify-center rounded-full font-semibold ' + (activationStep() === 2 ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400')">2</span>
-        <span [class]="activationStep() === 2 ? 'text-slate-700' : 'text-slate-400'">Foto Instalasi</span>
+        <span
+          [class]="
+            'flex h-9 w-9 items-center justify-center rounded-full font-semibold ' +
+            (activationStep() === 2
+              ? 'bg-indigo-600 text-white'
+              : 'bg-slate-100 text-slate-400')
+          "
+          >2</span
+        >
+        <span
+          [class]="activationStep() === 2 ? 'text-slate-700' : 'text-slate-400'"
+          >Foto Instalasi</span
+        >
       </div>
     </div>
-    @if (activationStep() === 1) { <div class="space-y-4"><div><label class="label">Username PPPoE</label><input class="input" readonly [(ngModel)]="activation.username" /></div><div><label class="label">Password PPPoE</label><input class="input" readonly [(ngModel)]="activation.password" /></div><div class="relative"><label class="label">ODC / ODP *</label><button type="button" class="input flex w-full items-center justify-between text-left" (click)="odpPickerOpen = !odpPickerOpen"><span [class]="activation.odp ? 'text-slate-900' : 'text-slate-500'">{{ odpSearch || 'Pilih ODC / ODP' }}</span><span>⌄</span></button>@if (odpPickerOpen) { <div class="absolute left-0 right-0 top-full z-20 mt-1 rounded-lg border border-slate-200 bg-white p-2 shadow-xl"><input class="input" placeholder="Cari ODC / ODP" [(ngModel)]="odpSearch" name="odpSearch" autofocus /> <div class="mt-1 max-h-40 overflow-y-auto">@for (o of filteredOdps(); track o.id) { <button type="button" class="block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-blue-50" (click)="selectOdp(o)">{{ o.namaTitik }} <span class="text-slate-400">({{ o.tipeTitik.toUpperCase() }})</span></button> } @if (!filteredOdps().length) { <p class="px-3 py-2 text-sm text-slate-400">ODC / ODP tidak ditemukan.</p> }</div></div> }</div><div><label class="label">Router / NAS</label><select class="input" [(ngModel)]="activation.routerNasId"><option value="">Otomatis</option>@for (r of routers(); track r.id) { <option [value]="r.id">{{ r.shortname || r.nasname }}</option> }</select></div><div class="flex justify-end"><button class="btn-primary" [disabled]="!activation.username || !activation.password || !activation.odp" (click)="activationStep.set(2)">Berikutnya</button></div></div> }
-    @else { <div class="space-y-4"><div><label class="label">Foto Instalasi *</label><input class="input" type="file" accept="image/jpeg,image/png,image/webp" (change)="choosePhoto($event)" /></div>@if (activation.installationPhoto) { <img [src]="activation.installationPhoto" alt="Foto instalasi" class="max-h-64 rounded-lg border object-contain" /> }<div class="flex justify-between"><button class="btn-secondary" (click)="activationStep.set(1)">Kembali</button><button class="btn-primary" [disabled]="saving() || !activation.installationPhoto" (click)="activate()">{{ saving() ? 'Menyimpan...' : 'Simpan Aktivasi' }}</button></div></div> }
+    @if (activationStep() === 1) {
+      <div class="space-y-4">
+        <div>
+          <label class="label">Username PPPoE</label
+          ><input class="input" readonly [(ngModel)]="activation.username" />
+        </div>
+        <div>
+          <label class="label">Password PPPoE</label
+          ><input class="input" readonly [(ngModel)]="activation.password" />
+        </div>
+        <div class="relative">
+          <label class="label">ODC / ODP *</label
+          ><button
+            type="button"
+            class="input flex w-full items-center justify-between text-left"
+            (click)="odpPickerOpen = !odpPickerOpen"
+          >
+            <span
+              [class]="activation.odp ? 'text-slate-900' : 'text-slate-500'"
+              >{{ odpSearch || "Pilih ODC / ODP" }}</span
+            ><span>⌄</span>
+          </button>
+          @if (odpPickerOpen) {
+            <div
+              class="absolute left-0 right-0 top-full z-20 mt-1 rounded-lg border border-slate-200 bg-white p-2 shadow-xl"
+            >
+              <input
+                class="input"
+                placeholder="Cari ODC / ODP"
+                [(ngModel)]="odpSearch"
+                name="odpSearch"
+                autofocus
+              />
+              <div class="mt-1 max-h-40 overflow-y-auto">
+                @for (o of filteredOdps(); track o.id) {
+                  <button
+                    type="button"
+                    class="block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-blue-50"
+                    (click)="selectOdp(o)"
+                  >
+                    {{ o.namaTitik }}
+                    <span class="text-slate-400"
+                      >({{ o.tipeTitik.toUpperCase() }})</span
+                    >
+                  </button>
+                }
+                @if (!filteredOdps().length) {
+                  <p class="px-3 py-2 text-sm text-slate-400">
+                    ODC / ODP tidak ditemukan.
+                  </p>
+                }
+              </div>
+            </div>
+          }
+        </div>
+        <div>
+          <label class="label">Router / NAS</label
+          ><select class="input" [(ngModel)]="activation.routerNasId">
+            <option value="">Otomatis</option>
+            @for (r of routers(); track r.id) {
+              <option [value]="r.id">{{ r.shortname || r.nasname }}</option>
+            }
+          </select>
+        </div>
+        <div class="flex justify-end">
+          <button
+            class="btn-primary"
+            [disabled]="
+              !activation.username || !activation.password || !activation.odp
+            "
+            (click)="activationStep.set(2)"
+          >
+            Berikutnya
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="space-y-4">
+        <div>
+          <label class="label">Foto Instalasi *</label
+          ><input
+            class="input"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            (change)="choosePhoto($event)"
+          />
+        </div>
+        @if (activation.installationPhoto) {
+          <img
+            [src]="activation.installationPhoto"
+            alt="Foto instalasi"
+            class="max-h-64 rounded-lg border object-contain"
+          />
+        }
+        <div class="flex justify-between">
+          <button class="btn-secondary" (click)="activationStep.set(1)">
+            Kembali</button
+          ><button
+            class="btn-primary"
+            [disabled]="saving() || !activation.installationPhoto"
+            (click)="activate()"
+          >
+            {{ saving() ? "Menyimpan..." : "Simpan Aktivasi" }}
+          </button>
+        </div>
+      </div>
+    }
   </app-modal>
-  @if (toast()) { <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast> }
+  @if (toast()) {
+    <app-toast
+      [message]="toast()!.message"
+      [type]="toast()!.type"
+      (close)="toast.set(null)"
+    ></app-toast>
+  }
 </div>
