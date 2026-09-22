@@ -26,6 +26,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard/monitoring/radius': 'Monitoring FreeRADIUS',
     '/dashboard/users': 'Data Petugas',
     '/dashboard/sales': 'Sales',
+    '/dashboard/registrasi-pelanggan': 'Registrasi',
+    '/dashboard/pasang-baru': 'Pasang Baru',
     '/dashboard/mainCore/traceJalur': 'Telusuri Jalur',
     '/dashboard/mainCore/server': 'Server',
     '/dashboard/mainCore/rasio': 'Rasio',
@@ -34,6 +36,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard/pppoe/paket-layanan': 'Daftar Paket PPPoE',
     '/dashboard/pppoe/data-pelanggan': 'Data Pelanggan',
     '/dashboard/pppoe/ip-pools': 'IP Pool',
+    '/dashboard/router/routers': 'Router / NAS',
+    '/dashboard/router/vpn-server': 'Server VPN',
+    '/dashboard/router/vpn-client': 'Klien VPN',
     '/dashboard/bot-whatsapp/status': 'Login Bot Wa',
     '/dashboard/bot-whatsapp/template': 'Template Pesan WhatsApp',
     '/dashboard/bot-whatsapp/logs': 'Log Notifikasi Bot WhatsApp',
@@ -42,6 +47,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard/finance/ringkasan': 'Ringkasan Keuangan',
     '/dashboard/finance/transaksi': 'Transaksi Keuangan',
     '/dashboard/finance/setoran': 'Setoran Kolektor',
+    '/dashboard/finance/tagihan': 'Tagihan',
+    '/dashboard/kolektor/tagihan': 'Tagihan',
+    '/dashboard/kolektor/titipan': 'Titipan',
     '/dashboard/area': 'Data Area',
   };
 
@@ -64,7 +72,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   private updateTitle(url: string): void {
-    this.title.set(this.titles[url] ?? url.split('/').pop()?.toUpperCase() ?? 'Dashboard');
+    this.title.set(this.titles[url] ?? 'Dashboard');
   }
 
   private updateDateTime(): void {
