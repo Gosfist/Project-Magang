@@ -58,7 +58,7 @@
             </td>
             <td>{{ item.sales?.name || "-" }}</td>
             <td>
-              <div class="flex justify-center gap-2">
+              <div class="flex gap-2">
                 @if (
                   auth.hasRole("admin", "sales") && item.status === "PROCESS"
                 ) {
@@ -87,7 +87,10 @@
                   auth.hasRole("admin", "teknisi") &&
                   item.status === "COMPLETED"
                 ) {
-                  <button class="btn-secondary" (click)="openActivation(item, true)">
+                  <button
+                    class="btn-secondary"
+                    (click)="openActivation(item, true)"
+                  >
                     Lihat
                   </button>
                 }
@@ -423,9 +426,16 @@
         }
         <div class="flex justify-between">
           <button class="btn-secondary" (click)="activationStep.set(1)">
-            Kembali</button
-          >@if (activationViewOnly) {
-            <button type="button" class="btn-primary" (click)="activationOpen.set(false)">Tutup</button>
+            Kembali
+          </button>
+          @if (activationViewOnly) {
+            <button
+              type="button"
+              class="btn-primary"
+              (click)="activationOpen.set(false)"
+            >
+              Tutup
+            </button>
           } @else {
             <button
               class="btn-primary"
