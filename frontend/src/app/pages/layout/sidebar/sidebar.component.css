@@ -8,6 +8,7 @@
 .profile-card {
   position: relative;
   width: 100%;
+  aspect-ratio: 3 / 4;
   overflow: hidden;
   border-radius: 0.5rem;
   padding: 0;
@@ -78,7 +79,7 @@
   }
 
   .profile-card {
-    aspect-ratio: 1;
+    aspect-ratio: 3 / 4;
   }
 
   .account-settings-actions {
