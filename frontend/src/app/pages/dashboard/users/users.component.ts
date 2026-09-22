@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
+import { LucideEye, LucideEyeOff, LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
 import { ApiService } from '../../../core/services/api.service';
 import { User, PageMeta } from '../../../shared/models/types';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
@@ -12,6 +12,8 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
   standalone: true,
   imports: [
     FormsModule,
+    LucideEye,
+    LucideEyeOff,
     LucidePencil,
     LucidePlus,
     LucideSearch,
@@ -33,6 +35,7 @@ export class UsersComponent implements OnInit {
   page = signal(1);
   open = signal(false);
   editing = signal<User | null>(null);
+  showPassword = signal(false);
   form = { name: '', email: '', phone: '', password: '', role: 'teknisi', status: 'active' };
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -56,6 +59,7 @@ export class UsersComponent implements OnInit {
 
   show(user?: User): void {
     this.editing.set(user ?? null);
+    this.showPassword.set(false);
     this.form = user
       ? { name: user.name, email: user.email, phone: user.phone ?? '', password: '', role: user.role, status: user.status }
       : { name: '', email: '', phone: '', password: '', role: 'teknisi', status: 'active' };

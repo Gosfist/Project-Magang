@@ -78,7 +78,29 @@
       </div>
       <div>
         <label class="label">Kata Sandi @if (editing()) { <small class="text-slate-400">(kosongkan jika tidak diubah)</small> }</label>
-        <input class="input" type="password" [required]="!editing()" minlength="6" [(ngModel)]="form.password" name="password" />
+        <div class="relative">
+          <input
+            class="input pr-12"
+            [type]="showPassword() ? 'text' : 'password'"
+            [required]="!editing()"
+            minlength="6"
+            [(ngModel)]="form.password"
+            name="password"
+          />
+          <button
+            type="button"
+            class="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+            [attr.aria-label]="showPassword() ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'"
+            [title]="showPassword() ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'"
+            (click)="showPassword.set(!showPassword())"
+          >
+            @if (showPassword()) {
+              <svg lucideEyeOff [size]="18"></svg>
+            } @else {
+              <svg lucideEye [size]="18"></svg>
+            }
+          </button>
+        </div>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
