@@ -84,7 +84,6 @@ model PppoeAccount {
   phone            String?            @db.VarChar(30)
   address          String?            @db.Text
   latitude         Float?
-  longitude        Float?
   subscriptionType String             @default("POSTPAID") @map("subscription_type") @db.VarChar(10)
   billingDay       Int                @default(1) @map("billing_day") @db.UnsignedInt
   discount         BigInt             @default(0) @db.UnsignedBigInt
@@ -120,7 +119,6 @@ model PsbOrder {
   idCardPhoto       String?   @map("id_card_photo") @db.LongText
   address           String    @db.Text
   latitude          Float?
-  longitude         Float?
   pppoePackageId    BigInt    @map("pppoe_package_id") @db.UnsignedBigInt
   areaId            BigInt?   @map("area_id") @db.UnsignedBigInt
   salesUserId       BigInt    @map("sales_user_id") @db.UnsignedBigInt
@@ -392,7 +390,6 @@ model Nas {
   description     String?        @default("RADIUS Client") @db.VarChar(200)
   vpnClientId     BigInt?        @map("vpn_client_id") @db.UnsignedBigInt
   latitude        Float?
-  longitude       Float?
   isActive        Boolean        @default(true) @map("is_active")
   requireMa       String         @default("auto") @map("require_ma") @db.VarChar(4)
   limitProxyState String         @default("auto") @map("limit_proxy_state") @db.VarChar(4)

@@ -383,39 +383,21 @@
               </p>
             }
           </div>
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label class="label"
-                >Latitude
-                @if (!editing()) {
-                  *
-                }
-              </label>
-              <input
-                class="input"
-                type="number"
-                step="any"
-                [required]="!editing()"
-                [(ngModel)]="form.latitude"
-                name="latitude"
-              />
-            </div>
-            <div>
-              <label class="label"
-                >Longitude
-                @if (!editing()) {
-                  *
-                }
-              </label>
-              <input
-                class="input"
-                type="number"
-                step="any"
-                [required]="!editing()"
-                [(ngModel)]="form.longitude"
-                name="longitude"
-              />
-            </div>
+          <div>
+            <label class="label"
+              >Latitude
+              @if (!editing()) {
+                *
+              }
+            </label>
+            <input
+              class="input"
+              type="number"
+              step="any"
+              [required]="!editing()"
+              [(ngModel)]="form.latitude"
+              name="latitude"
+            />
           </div>
           <div>
             <label class="label"

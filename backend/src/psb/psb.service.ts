@@ -106,7 +106,6 @@ export class PsbService {
             phone: order.phone,
             address: order.address,
             latitude: order.latitude,
-            longitude: order.longitude,
             subscriptionType: 'POSTPAID',
             billingDay: 1,
             discount: 0n,
@@ -155,7 +154,7 @@ export class PsbService {
   }
 
   private customerData(dto: CreatePsbOrderDto) {
-    return { customerName: dto.customerName.trim(), phone: dto.phone.trim(), idCardNumber: dto.idCardNumber?.trim() || null, idCardPhoto: dto.idCardPhoto || null, address: dto.address.trim(), latitude: dto.latitude ?? null, longitude: dto.longitude ?? null, pppoePackageId: BigInt(dto.pppoePackageId), areaId: dto.areaId ? BigInt(dto.areaId) : null };
+    return { customerName: dto.customerName.trim(), phone: dto.phone.trim(), idCardNumber: dto.idCardNumber?.trim() || null, idCardPhoto: dto.idCardPhoto || null, address: dto.address.trim(), latitude: dto.latitude ?? null, pppoePackageId: BigInt(dto.pppoePackageId), areaId: dto.areaId ? BigInt(dto.areaId) : null };
   }
   private async validateCustomer(dto: CreatePsbOrderDto) {
     if (!await this.prisma.pppoePackage.findUnique({ where: { id: BigInt(dto.pppoePackageId) } })) throw new NotFoundException('Paket layanan tidak ditemukan.');

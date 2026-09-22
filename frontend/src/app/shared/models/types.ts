@@ -13,7 +13,7 @@ export type OdpOption = { id: string; namaTitik: string; alamat: string | null; 
 export type Invoice = { id: string; pppoeAccountId: string; invoiceNumber: string; amount: number; baseAmount: number; discount: number; invoiceType: 'PRORATE' | 'MONTHLY'; status: 'PENDING' | 'PAID' | 'CANCELLED'; dueDate: string; paidAt: string | null; notes: string | null };
 
 export type PppoePackage = { id: string; name: string; downloadMbps: number; uploadMbps: number; price: number; costPrice: number; addressPool: string | null; ipPool: IpPool | null; validityDays: number; isActive: boolean; accountsCount?: number; rateLimit?: string };
-export type PppoeAccount = { id: string; pppoePackageId: string; customerName: string; username: string; phone: string | null; address: string | null; expiresAt: string | null; isActive: boolean; notes: string | null; idCardNumber: string | null; idCardPhoto: string | null; latitude: number | null; longitude: number | null; subscriptionType: string; billingDay: number; discount: number; odp: string | null; routerNasId: number | null; routerNas: NasOption | null; uptime?: string | null; package: PppoePackage; areaId?: string | null; area?: { id: string; name: string } | null };
+export type PppoeAccount = { id: string; pppoePackageId: string; customerName: string; username: string; phone: string | null; address: string | null; expiresAt: string | null; isActive: boolean; notes: string | null; idCardNumber: string | null; idCardPhoto: string | null; latitude: number | null; subscriptionType: string; billingDay: number; discount: number; odp: string | null; routerNasId: number | null; routerNas: NasOption | null; uptime?: string | null; package: PppoePackage; areaId?: string | null; area?: { id: string; name: string } | null };
 
 export type RouterItem = {
   id: string;
@@ -31,7 +31,6 @@ export type RouterItem = {
   description?: string | null;
   vpnClientId?: string | null;
   latitude?: number | null;
-  longitude?: number | null;
   isActive: boolean;
   accountsCount?: number;
   vpnClient?: { id: string; name: string; vpnIp: string } | null;
@@ -187,7 +186,7 @@ export type FinanceSummary = {
 };
 
 export type PsbOrder = {
-  id: string; customerNumber: string; customerId: string; customerName: string; phone: string; address: string; idCardNumber?: string | null; idCardPhoto?: string | null; latitude?: number | null; longitude?: number | null;
+  id: string; customerNumber: string; customerId: string; customerName: string; phone: string; address: string; idCardNumber?: string | null; idCardPhoto?: string | null; latitude?: number | null;
   pppoePackageId: string; areaId?: string | null; status: 'PROCESS' | 'ACTIVATED' | 'COMPLETED'; username?: string | null; odp?: string | null; routerNasId?: number | null;
   installationPhoto?: string | null; createdAt: string; completedAt?: string | null;
   package: { id: string; name: string; price: number }; area?: { id: string; name: string } | null; sales?: { id: string; name: string };

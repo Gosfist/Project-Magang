@@ -33,7 +33,6 @@
           <th>Alamat</th>
           <th>Layanan</th>
           <th>Status</th>
-          <th>Sales</th>
           <th>Aksi</th>
         </tr>
       </thead>
@@ -56,7 +55,6 @@
                 >{{ statusLabel(item.status) }}</span
               >
             </td>
-            <td>{{ item.sales?.name || "-" }}</td>
             <td>
               <div class="flex gap-2">
                 @if (
@@ -94,13 +92,18 @@
                     Lihat
                   </button>
                 }
+                @if (auth.hasRole("sales") && item.status === "COMPLETED") {
+                  <span class="rounded-lg bg-green-100 px-3 py-2 text-xs font-semibold text-green-700">
+                    Selesai
+                  </span>
+                }
               </div>
             </td>
           </tr>
         }
         @if (!items().length) {
           <tr>
-            <td colspan="8" class="py-8 text-center text-slate-400">
+            <td colspan="7" class="py-8 text-center text-slate-400">
               Belum ada registrasi pasang baru.
             </td>
           </tr>
@@ -182,29 +185,16 @@
             </button>
           }
         </div>
-        <div class="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label class="label">Latitude *</label
-            ><input
-              class="input"
-              type="number"
-              step="any"
-              required
-              [(ngModel)]="form.latitude"
-              name="latitude"
-            />
-          </div>
-          <div>
-            <label class="label">Longitude *</label
-            ><input
-              class="input"
-              type="number"
-              step="any"
-              required
-              [(ngModel)]="form.longitude"
-              name="longitude"
-            />
-          </div>
+        <div>
+          <label class="label">Latitude *</label
+          ><input
+            class="input"
+            type="number"
+            step="any"
+            required
+            [(ngModel)]="form.latitude"
+            name="latitude"
+          />
         </div>
       } @else {
         <div>

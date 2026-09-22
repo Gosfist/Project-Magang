@@ -15,7 +15,6 @@ export class SaveRouterDto {
   @IsOptional() @IsString() @MaxLength(60) secret?: string;
   @IsOptional() @IsString() vpnClientId?: string;
   @IsOptional() @Type(() => Number) latitude?: number;
-  @IsOptional() @Type(() => Number) longitude?: number;
   @IsOptional() @IsString() @MaxLength(200) description?: string;
   @IsOptional() @IsBoolean() isActive?: boolean;
 }

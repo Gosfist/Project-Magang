@@ -22,7 +22,6 @@ export class SaveAccountDto {
   @IsOptional() @IsString() @MaxLength(30) phone?: string;
   @IsOptional() @IsString() @MaxLength(500) address?: string;
   @IsOptional() @Type(() => Number) @IsNumber() latitude?: number;
-  @IsOptional() @Type(() => Number) @IsNumber() longitude?: number;
   @IsOptional() @IsIn(['PREPAID', 'POSTPAID']) subscriptionType?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(31) billingDay?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) discount?: number;
