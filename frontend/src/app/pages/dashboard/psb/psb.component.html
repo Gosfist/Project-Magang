@@ -60,10 +60,21 @@
                 @if (
                   auth.hasRole("admin", "sales") && item.status === "PROCESS"
                 ) {
-                  <button class="btn-secondary" (click)="openForm(item)">
-                    Edit</button
-                  ><button class="btn-danger" (click)="remove(item)">
-                    Hapus
+                  <button
+                    class="btn-secondary"
+                    title="Edit registrasi"
+                    aria-label="Edit registrasi"
+                    (click)="openForm(item)"
+                  >
+                    <svg lucidePencil [size]="15"></svg>
+                  </button>
+                  <button
+                    class="btn-danger"
+                    title="Hapus registrasi"
+                    aria-label="Hapus registrasi"
+                    (click)="remove(item)"
+                  >
+                    <svg lucideTrash2 [size]="15"></svg>
                   </button>
                 }
                 @if (
@@ -77,8 +88,13 @@
                   auth.hasRole("admin", "teknisi") &&
                   item.status === "ACTIVATED"
                 ) {
-                  <button class="btn-primary" (click)="requestComplete(item)">
-                    Selesai
+                  <button
+                    class="btn-primary"
+                    title="Tandai selesai"
+                    aria-label="Tandai selesai"
+                    (click)="requestComplete(item)"
+                  >
+                    <svg lucideCheck [size]="16"></svg>
                   </button>
                 }
                 @if (
@@ -93,8 +109,12 @@
                   </button>
                 }
                 @if (auth.hasRole("sales") && item.status === "COMPLETED") {
-                  <span class="rounded-lg bg-green-100 px-3 py-2 text-xs font-semibold text-green-700">
-                    Selesai
+                  <span
+                    class="inline-flex rounded-lg bg-green-100 p-2 text-green-700"
+                    title="Selesai"
+                    aria-label="Selesai"
+                  >
+                    <svg lucideCheck [size]="16"></svg>
                   </span>
                 }
               </div>

@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { LucideCheck, LucidePencil, LucideTrash2 } from '@lucide/angular';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Area, NasOption, OdpOption, PageMeta, PppoePackage, PsbOrder } from '../../../shared/models/types';
@@ -8,7 +9,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 import { ToastComponent } from '../../../shared/components/toast/toast.component';
 
 @Component({
-  selector: 'app-psb', standalone: true, imports: [FormsModule, ModalComponent, PaginationComponent, ToastComponent],
+  selector: 'app-psb', standalone: true, imports: [FormsModule, LucideCheck, LucidePencil, LucideTrash2, ModalComponent, PaginationComponent, ToastComponent],
   templateUrl: './psb.component.html',
 })
 export class PsbComponent implements OnInit {
