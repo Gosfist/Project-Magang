@@ -103,7 +103,7 @@
     }
 
     <!-- Finance (Admin & Finance) -->
-    @if (auth.isAdmin()) {
+    @if (auth.isAdmin() || auth.isFinance()) {
       <button
         class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
         (click)="financeOpen.set(!financeOpen())"
@@ -129,15 +129,6 @@
           }
         </div>
       }
-    } @else if (auth.isFinance()) {
-      <a
-        routerLink="/dashboard/finance/tagihan"
-        routerLinkActive="bg-white/15 text-white"
-        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
-        (click)="mobile.set(false)"
-      >
-        <svg lucideDollarSign [size]="20"></svg> Tagihan
-      </a>
     } @else if (auth.isKolektor()) {
       <a
         routerLink="/dashboard/kolektor/tagihan"

@@ -36,27 +36,6 @@ export const TEMPLATE_LIST: TemplateConfig[] = [
     sampleData: { '{nama}': 'Ahmad Fauzi', '{nomor_pelanggan}': '000123', '{layanan}': 'Paket 20 Mbps', '{biaya_psb}': 'Rp 150.000', '{tanggal_mulai}': '1', '{tanggal_akhir}': '10' },
   },
   {
-    id: 'registration',
-    name: 'Add Pelanggan',
-    title: 'Template Registrasi Pelanggan Baru',
-    label: 'Pesan Registrasi Pelanggan Baru',
-    description: 'Pesan otomatis yang dikirim saat akun pelanggan baru berhasil didaftarkan di sistem.',
-    placeholders: [
-      { key: '{nama}', desc: 'Nama lengkap pelanggan' },
-      { key: '{nomor_pelanggan}', desc: 'Nomor pelanggan (6 digit)' },
-      { key: '{paket}', desc: 'Nama harga paket internet' },
-      { key: '{username}', desc: 'Username akun PPPoE' },
-      { key: '{password}', desc: 'Password akun PPPoE' },
-    ],
-    sampleData: {
-      '{nama}': 'Ahmad Fauzi',
-      '{nomor_pelanggan}': '000123',
-      '{paket}': 'Paket 20 Mbps',
-      '{username}': 'ahmad.fauzi',
-      '{password}': 'p@ssw0rd',
-    },
-  },
-  {
     id: 'isolation',
     name: 'Isolir',
     title: 'Template Pemberitahuan Isolir Pelanggan',
@@ -134,7 +113,7 @@ export class BotWaTemplateComponent implements OnInit {
   private readonly baseUrl = environment.botWaUrl;
 
   readonly templateList = TEMPLATE_LIST;
-  activeId = signal<string>('registration');
+  activeId = signal<string>('sales');
 
   loading = signal(false);
   saving = signal(false);
@@ -143,7 +122,6 @@ export class BotWaTemplateComponent implements OnInit {
   templatesData: Record<string, string> = {
     sales: '',
     psb: '',
-    registration: '',
     isolation: '',
     deposit_collector: '',
     deposit_accepted: '',

@@ -50,58 +50,20 @@ export class WhatsappNotifyService {
     customerName: string;
     customerNumber: bigint;
     phone?: string | null;
-    username: string;
-    password: string;
+    address?: string | null;
     package: { name: string };
   }): Promise<void> {
-    if (!account.phone || !account.phone.trim()) {
+    if (!account.phone?.trim()) {
       this.logger.debug('Notifikasi WA dilewati: nomor telepon pelanggan kosong.');
       return;
     }
-    try {
-      // Check if bot is disabled explicitly
-      const enabled = await this.prisma.appSetting.findUnique({ where: { key: 'wa_bot_enabled' } });
-      if (enabled && enabled.value === 'false') {
-        this.logger.debug('Notifikasi WA dilewati: bot WA dinonaktifkan.');
-        return;
-      }
-
-      // Get template
-      const templateRow = await this.prisma.appSetting.findUnique({ where: { key: 'wa_template_registration' } });
-      const template = templateRow?.value || this.defaultTemplate();
-
-      // Replace placeholders
-      const customerId = account.customerNumber.toString().padStart(6, '0');
-      const message = template
-        .replace(/\{nama\}/g, account.customerName)
-        .replace(/\{nomor_pelanggan\}/g, customerId)
-        .replace(/\{paket\}/g, account.package.name)
-        .replace(/\{username\}/g, account.username)
-        .replace(/\{password\}/g, account.password);
-
-      this.logger.log(`Mengirim notifikasi WA registrasi ke ${account.phone}...`);
-
-      // Send to bot
-      const response = await fetch(`${this.botUrl}/api/wa/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': this.apiKey,
-        },
-        body: JSON.stringify({ phone: account.phone, message }),
-        signal: AbortSignal.timeout(10000),
-      });
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        this.logger.warn(`Notifikasi WA registrasi gagal: HTTP ${response.status} - ${body.message || 'Unknown'}`);
-      } else {
-        this.logger.log(`Notifikasi WA registrasi berhasil dikirim ke ${account.phone}`);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Notifikasi WA registrasi error: ${message}`);
-    }
+    await this.notifySalesRegistration({
+      customerName: account.customerName,
+      customerNumber: account.customerNumber,
+      phone: account.phone,
+      address: account.address || '-',
+      packageName: account.package.name,
+    });
   }
 
   async notifyIsolation(account: {

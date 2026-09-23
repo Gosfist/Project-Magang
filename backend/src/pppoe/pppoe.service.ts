@@ -233,8 +233,7 @@ export class PppoeService {
           customerName: account.customerName,
           customerNumber: account.customerNumber,
           phone: account.phone,
-          username: account.username,
-          password: dto.password!,
+          address: account.address,
           package: { name: account.package.name },
         }).catch((err) => {
           this.logger.warn(`Notifikasi WA registrasi error: ${err?.message || err}`);
