@@ -50,7 +50,7 @@ export class PppoeController {
   @Get('accounts/:id/addons') addons(@Param('id') id: string) { return this.customers.addons(id); }
   @Post('accounts/:id/addons') createAddon(@Param('id') id: string, @Body() dto: CreateAddonDto) { return this.customers.createAddon(id, dto); }
   @Get('accounts/:id/promises') promises(@Param('id') id: string) { return this.customers.promises(id); }
-  @Post('accounts/:id/promises') createPromise(@Param('id') id: string, @Body() dto: CreatePromiseDto) { return this.customers.createPromise(id, dto); }
+  @Post('accounts/:id/promises') @Roles('admin', 'kolektor') createPromise(@Param('id') id: string, @Body() dto: CreatePromiseDto) { return this.customers.createPromise(id, dto); }
   @Post('accounts') createAccount(@Body() dto: SaveAccountDto) { return this.pppoe.createAccount(dto); }
   @Post('accounts/:id/disconnect') disconnectAccount(@Param('id') id: string) { return this.pppoe.disconnectAccount(id); }
   @Patch('accounts/:id') updateAccount(@Param('id') id: string, @Body() dto: SaveAccountDto) { return this.pppoe.updateAccount(id, dto); }

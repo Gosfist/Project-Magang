@@ -340,14 +340,14 @@
             <th>Pelanggan</th>
             <th>Kontak & Alamat</th>
             <th>Paket Internet</th>
-            <th>Status Tagihan (Penagihan)</th>
+            <th>Status Tagihan</th>
             <th>Aksi Kolektor</th>
           </tr>
         </thead>
         <tbody>
           @for (c of customers(); track c.id) {
             <tr
-              class="transition-colors hover:bg-slate-50"
+              class="transition-colors"
               [class.bg-red-50]="!c.isPaid"
             >
               <!-- Nama & No Pelanggan -->
@@ -426,18 +426,13 @@
                 } @else {
                   <!-- MERAH: HARUS DITAGIH -->
                   <div>
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-black text-red-700 border border-red-200">
-                      <svg lucideAlertCircle [size]="14"></svg> HARUS DITAGIH
-                    </span>
                     <div class="mt-1 flex items-baseline gap-1.5">
                       <span class="text-sm font-black text-red-600">
                         {{ formatCurrency(c.activeInvoice?.amount || c.unpaidAmount) }}
                       </span>
                     </div>
                     @if (c.activeInvoice?.dueDate) {
-                      <p class="text-[11px] text-red-500 font-medium">
-                        Tempo: {{ formatDate(c.activeInvoice!.dueDate) }}
-                      </p>
+                      <p class="text-[11px] text-red-500 font-medium">Tempo: {{ formatDate(c.activeInvoice!.dueDate) }}</p>
                     }
                   </div>
                 }
@@ -458,17 +453,9 @@
                       <span>Catat Setoran</span>
                     </button>
 
-                    <!-- Tombol WhatsApp Pengingat Tagihan -->
-                    @if (c.phone) {
-                      <button
-                        type="button"
-                        class="btn-secondary py-1.5 px-2 text-xs text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 cursor-pointer"
-                        (click)="sendWaReminder(c)"
-                        title="Kirim pesan tagihan via WhatsApp"
-                      >
-                        <svg lucideSend [size]="14"></svg>
-                      </button>
-                    }
+                    <button type="button" class="btn-secondary py-1.5 px-3 text-xs font-semibold" (click)="openPromise(c)">
+                      Janji Bayar
+                    </button>
                   } @else if (c.isPaid) {
                     <span class="text-xs font-semibold text-emerald-600 flex items-center gap-1">
                       <svg lucideCheckCircle2 [size]="14"></svg> Sudah Bayar
@@ -545,6 +532,17 @@
         </button>
       </div>
     </form>
+  </app-modal>
+
+  <app-modal [open]="promiseModalOpen()" title="Janji Bayar" (closeModal)="promiseModalOpen.set(false)">
+    @if (promiseTargetCustomer; as customer) {
+      <form (submit)="savePromise($event)" class="space-y-4">
+        <p class="text-sm text-slate-600">Simpan janji bayar untuk <strong>{{ customer.customerName }}</strong>. Akses dibuka sampai akhir tanggal janji bayar.</p>
+        <div><label class="label">Tanggal Janji Bayar *</label><input class="input" type="date" [(ngModel)]="promiseForm.promisedDate" name="promisedDate" required /></div>
+        <div><label class="label">Catatan (Opsional)</label><input class="input" [(ngModel)]="promiseForm.notes" name="promiseNotes" /></div>
+        <div class="flex justify-end gap-3"><button type="button" class="btn-secondary" (click)="promiseModalOpen.set(false)">Batal</button><button type="submit" class="btn-primary" [disabled]="submittingPromise()">{{ submittingPromise() ? 'Menyimpan...' : 'Simpan Janji' }}</button></div>
+      </form>
+    }
   </app-modal>
 
   <!-- ========================================== -->

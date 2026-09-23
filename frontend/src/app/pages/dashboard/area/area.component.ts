@@ -15,7 +15,6 @@ import {
   LucideAlertCircle,
   LucideClock,
   LucideDollarSign,
-  LucideSend,
 } from '@lucide/angular';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -51,7 +50,6 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
     LucideAlertCircle,
     LucideClock,
     LucideDollarSign,
-    LucideSend,
   ],
   templateUrl: './area.component.html',
   styleUrl: './area.component.css',
@@ -97,6 +95,10 @@ export class AreaComponent implements OnInit {
     notes: '',
   };
   submittingDeposit = signal(false);
+  promiseModalOpen = signal(false);
+  promiseTargetCustomer: AreaCustomer | null = null;
+  promiseForm = { promisedDate: new Date().toISOString().slice(0, 10), notes: '' };
+  submittingPromise = signal(false);
 
   ngOnInit() {
     if (this.auth.isKolektor()) {
@@ -397,6 +399,22 @@ export class AreaComponent implements OnInit {
       currency: 'IDR',
       maximumFractionDigits: 0,
     }).format(value);
+  }
+
+  openPromise(customer: AreaCustomer): void {
+    this.promiseTargetCustomer = customer;
+    this.promiseForm = { promisedDate: new Date().toISOString().slice(0, 10), notes: '' };
+    this.promiseModalOpen.set(true);
+  }
+
+  savePromise(event: Event): void {
+    event.preventDefault();
+    if (!this.promiseTargetCustomer || this.submittingPromise()) return;
+    this.submittingPromise.set(true);
+    this.api.post<{ message: string }>(`/pppoe/accounts/${this.promiseTargetCustomer.id}/promises`, this.promiseForm).subscribe({
+      next: result => { this.submittingPromise.set(false); this.promiseModalOpen.set(false); this.toast.set({ message: result.message, type: 'success' }); this.loadAreaCustomers(); },
+      error: err => { this.submittingPromise.set(false); this.toast.set({ message: err.message || 'Gagal menyimpan janji bayar.', type: 'error' }); },
+    });
   }
 
   formatDate(date: string): string {
