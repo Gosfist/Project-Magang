@@ -46,6 +46,27 @@
     </div>
   </form>
 
+  <form class="card space-y-4 border-amber-300 p-5 sm:p-6" (ngSubmit)="simulate()">
+    <div>
+      <h3 class="font-semibold text-amber-800">Simulasi Tagihan & Isolir</h3>
+      <p class="mt-1 text-sm text-slate-600">Jalankan pemeriksaan seolah-olah waktu yang dipilih, hanya untuk satu pelanggan. Jam server tidak berubah.</p>
+      <p class="mt-1 text-sm font-medium text-red-700">Dapat membuat invoice, mengirim WhatsApp, dan benar-benar mengisolir akun uji melalui FreeRADIUS/MikroTik. Gunakan pelanggan khusus testing.</p>
+    </div>
+    <div class="grid gap-4 md:grid-cols-2">
+      <div>
+        <label class="label">Nomor Pelanggan Uji</label>
+        <input class="input" type="text" inputmode="numeric" required [(ngModel)]="simulation.customerNumber" name="simulationCustomerNumber" placeholder="Contoh: 000123" />
+      </div>
+      <div>
+        <label class="label">Waktu Simulasi (zona waktu browser)</label>
+        <input class="input" type="datetime-local" required [(ngModel)]="simulation.simulatedAt" name="simulationAt" />
+      </div>
+    </div>
+    <div class="flex justify-end">
+      <button class="btn-secondary" [disabled]="simulating()">{{ simulating() ? 'Memproses...' : 'Jalankan Pemeriksaan' }}</button>
+    </div>
+  </form>
+
   @if (toast()) {
     <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
   }

@@ -33,26 +33,29 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
     if (this.timer) clearInterval(this.timer);
   }
 
-  async tick() {
-    if (this.running) return;
+  async tick(now = new Date(), onlyAccountId?: bigint): Promise<boolean> {
+    if (this.running) return false;
     this.running = true;
     try {
       const settings = await this.settings.billing();
-      const local = this.localNow(settings.billingTimezone);
+      const local = this.localNow(settings.billingTimezone, now);
       if (local.day >= settings.billingStartDay) {
-        await this.createMonthlyInvoices(settings, local.year, local.month);
-        await this.notifyPaymentReminders(settings, local.year, local.month);
+        await this.createMonthlyInvoices(settings, local.year, local.month, onlyAccountId);
+        await this.notifyPaymentReminders(settings, local.year, local.month, onlyAccountId);
       }
-      if (local.hour < settings.isolationCheckHour || local.day <= settings.billingEndDay) return;
-      await this.isolateOverdue(settings, this.utcDate(local.year, local.month, settings.billingEndDay));
+      if (local.hour < settings.isolationCheckHour || local.day <= settings.billingEndDay) return true;
+      await this.isolateOverdue(settings, this.utcDate(local.year, local.month, settings.billingEndDay), now, onlyAccountId);
+      return true;
     } catch (error) {
       this.logger.error(`Auto isolir gagal. ${error instanceof Error ? error.message : error}`);
+      if (onlyAccountId) throw error;
+      return false;
     } finally {
       this.running = false;
     }
   }
 
-  private async createMonthlyInvoices(settings: BillingSettings, year: number, month: number) {
+  private async createMonthlyInvoices(settings: BillingSettings, year: number, month: number, onlyAccountId?: bigint) {
     const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
     const dueDay = Math.min(settings.billingEndDay, daysInMonth);
     const dueDate = this.utcDate(year, month, dueDay);
@@ -60,6 +63,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
     const nextMonthStart = month === 12 ? this.utcDate(year + 1, 1, 1) : this.utcDate(year, month + 1, 1);
     const accounts = await this.prisma.pppoeAccount.findMany({
       where: {
+        ...(onlyAccountId ? { id: onlyAccountId } : {}),
         subscriptionType: 'POSTPAID',
         package: { isActive: true },
         createdAt: { lt: new Date(monthStart.getTime() - billingOffsets[settings.billingTimezone] * 3600000) },
@@ -105,14 +109,15 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async isolateOverdue(settings: BillingSettings, cutoffDate: Date) {
+  private async isolateOverdue(settings: BillingSettings, cutoffDate: Date, now = new Date(), onlyAccountId?: bigint) {
     const accounts = await this.prisma.pppoeAccount.findMany({
       where: {
+        ...(onlyAccountId ? { id: onlyAccountId } : {}),
         isActive: true,
         createdAt: { lt: new Date(Date.UTC(cutoffDate.getUTCFullYear(), cutoffDate.getUTCMonth(), 1) - billingOffsets[settings.billingTimezone] * 3600000) },
         package: { isActive: true },
         invoices: { some: { status: 'PENDING', dueDate: { lte: cutoffDate } } },
-        paymentPromises: { none: { status: 'ACTIVE', deadline: { gt: new Date() } } },
+        paymentPromises: { none: { status: 'ACTIVE', deadline: { gt: now } } },
       },
       include: { package: { include: { ipPool: true } }, invoices: { where: { status: 'PENDING', dueDate: { lte: cutoffDate } }, select: { id: true, amount: true, dueDate: true }, take: 10 } },
       take: 100,
@@ -147,11 +152,12 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async notifyPaymentReminders(settings: BillingSettings, year: number, month: number) {
+  private async notifyPaymentReminders(settings: BillingSettings, year: number, month: number, onlyAccountId?: bigint) {
     const monthStart = this.utcDate(year, month, 1);
     const nextMonthStart = month === 12 ? this.utcDate(year + 1, 1, 1) : this.utcDate(year, month + 1, 1);
     const invoices = await this.prisma.invoice.findMany({
       where: {
+        ...(onlyAccountId ? { pppoeAccountId: onlyAccountId } : {}),
         status: 'PENDING',
         reminderSentAt: null,
         dueDate: { gte: monthStart, lt: nextMonthStart },
@@ -184,8 +190,8 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private localNow(timezone: BillingSettings['billingTimezone']) {
-    const shifted = new Date(Date.now() + timezoneOffset[timezone] * 3600000);
+  private localNow(timezone: BillingSettings['billingTimezone'], now = new Date()) {
+    const shifted = new Date(now.getTime() + timezoneOffset[timezone] * 3600000);
     return {
       year: shifted.getUTCFullYear(),
       month: shifted.getUTCMonth() + 1,

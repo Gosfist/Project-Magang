@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Header, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, ConflictException, Controller, Delete, Get, Header, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ID_CARD_MAX_BYTES, readIdCardPhoto, storeIdCardPhoto } from './id-card-photo.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
@@ -9,12 +9,22 @@ import { SaveIpPoolDto } from './ip-pool.dto.js';
 import { PppoeService } from './pppoe.service.js';
 import { CustomerServicesService } from './customer-services.service.js';
 import { CreateAddonDto, CreatePromiseDto } from './customer-services.dto.js';
+import { BillingIsolationService } from './billing-isolation.service.js';
+import { BillingSimulationDto } from '../settings/settings.dto.js';
+import { SettingsService } from '../settings/settings.service.js';
 
 @Controller('pppoe')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 export class PppoeController {
-  constructor(private readonly pppoe: PppoeService, private readonly customers: CustomerServicesService) { }
+  constructor(private readonly pppoe: PppoeService, private readonly customers: CustomerServicesService, private readonly billingIsolation: BillingIsolationService, private readonly settings: SettingsService) { }
+
+  @Post('billing/simulate') async simulateBilling(@Body() dto: BillingSimulationDto) {
+    const account = await this.settings.simulationAccount(dto.customerNumber);
+    const completed = await this.billingIsolation.tick(new Date(dto.simulatedAt), account.id);
+    if (!completed) throw new ConflictException('Pemeriksaan penagihan sedang berjalan. Coba lagi sebentar.');
+    return { message: `Pemeriksaan simulasi selesai untuk ${account.customerName} (${account.customerNumber}). Periksa status invoice, WhatsApp, dan isolir.` };
+  }
 
   @Post('id-card-photo')
   @Roles()

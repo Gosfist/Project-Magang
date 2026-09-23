@@ -21,7 +21,9 @@ export class PengaturanComponent implements OnInit {
   private readonly api = inject(ApiService);
   loading = signal(false);
   saving = signal(false);
+  simulating = signal(false);
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
+  simulation = { customerNumber: '', simulatedAt: this.localDateTimeInput() };
   form: BillingSettings = {
     billingStartDay: 1,
     billingEndDay: 10,
@@ -65,5 +67,36 @@ export class PengaturanComponent implements OnInit {
         this.toast.set({ message: error.message, type: 'error' });
       },
     });
+  }
+
+  simulate(): void {
+    if (!this.simulation.customerNumber.trim() || !this.simulation.simulatedAt) {
+      this.toast.set({ message: 'Isi nomor pelanggan dan waktu simulasi.', type: 'error' });
+      return;
+    }
+    const simulatedAt = new Date(this.simulation.simulatedAt);
+    if (Number.isNaN(simulatedAt.getTime())) {
+      this.toast.set({ message: 'Waktu simulasi tidak valid.', type: 'error' });
+      return;
+    }
+    this.simulating.set(true);
+    this.api.post<{ message: string }>('/pppoe/billing/simulate', {
+      customerNumber: this.simulation.customerNumber.trim(),
+      simulatedAt: simulatedAt.toISOString(),
+    }).subscribe({
+      next: (result) => {
+        this.simulating.set(false);
+        this.toast.set({ message: result.message, type: 'success' });
+      },
+      error: (error) => {
+        this.simulating.set(false);
+        this.toast.set({ message: error.message, type: 'error' });
+      },
+    });
+  }
+
+  private localDateTimeInput(): string {
+    const date = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000);
+    return date.toISOString().slice(0, 16);
   }
 }

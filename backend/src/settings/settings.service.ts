@@ -41,6 +41,18 @@ export class SettingsService {
     return { installationFee: Math.max(0, Number(data.get('biaya_psb') || 0)) };
   }
 
+  async simulationAccount(customerNumber: string) {
+    let number: bigint;
+    try { number = BigInt(customerNumber.trim()); }
+    catch { throw new BadRequestException('Nomor pelanggan tidak valid.'); }
+    const account = await this.prisma.pppoeAccount.findUnique({
+      where: { customerNumber: number },
+      select: { id: true, customerNumber: true, customerName: true },
+    });
+    if (!account) throw new BadRequestException('Nomor pelanggan tidak ditemukan.');
+    return account;
+  }
+
   async updateBilling(dto: BillingSettingsDto) {
     const settings = this.normalize(dto);
     await this.prisma.$transaction([
