@@ -813,6 +813,29 @@
     }
   </app-modal>
 
+  <app-modal
+    [open]="!!deleteConfirm()"
+    title="Konfirmasi Hapus Akun"
+    (closeModal)="deleteConfirm.set(null)"
+  >
+    @if (deleteConfirm(); as item) {
+      <p class="text-slate-700">
+        Hapus akun pelanggan {{ item.customerName }} ({{ item.username }})?
+      </p>
+      <p class="mt-2 text-sm text-slate-500">
+        Data pelanggan, tagihan, dan riwayat pemasangan terkait akan ikut dihapus.
+      </p>
+      <div class="mt-6 flex justify-end gap-3">
+        <button type="button" class="btn-secondary" (click)="deleteConfirm.set(null)">
+          Batal
+        </button>
+        <button type="button" class="btn-danger" (click)="confirmRemove()">
+          Hapus
+        </button>
+      </div>
+    }
+  </app-modal>
+
   @if (toast()) {
     <app-toast
       [message]="toast()!.message"

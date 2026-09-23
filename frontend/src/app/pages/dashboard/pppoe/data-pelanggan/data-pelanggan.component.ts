@@ -479,6 +479,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   }
 
   disconnecting = signal<string | null>(null);
+  deleteConfirm = signal<PppoeAccount | null>(null);
 
   disconnect(item: PppoeAccount): void {
     if (this.disconnecting() || !confirm(`Putuskan sesi ${item.username}? Akun yang masih aktif dapat terhubung kembali.`)) return;
@@ -494,7 +495,13 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   }
 
   remove(item: PppoeAccount): void {
-    if (!confirm(`Hapus akun ${item.username}?`)) return;
+    this.deleteConfirm.set(item);
+  }
+
+  confirmRemove(): void {
+    const item = this.deleteConfirm();
+    if (!item) return;
+    this.deleteConfirm.set(null);
     this.api.delete<{ message: string; warnings?: string[] }>(`/pppoe/accounts/${item.id}`).subscribe({
       next: (r) => {
         this.toast.set({ message: r.message, type: r.warnings?.length ? 'error' : 'success' });
