@@ -37,6 +37,20 @@ if [[ "$MODE" != "all" && "$MODE" != "be" && "$MODE" != "fe" && "$MODE" != "bot"
 fi
 
 if [[ "$MODE" == "all" || "$MODE" == "be" ]]; then
+  UPLOADS_DIR="${UPLOADS_DIR:-$ROOT_DIR/uploads}"
+  BACKEND_USER="$(systemctl show -p User --value "$SERVICE_NAME" 2>/dev/null || true)"
+  BACKEND_USER="${BACKEND_USER:-$(id -un)}"
+  BACKEND_GROUP="$(id -gn "$BACKEND_USER")"
+
+  log "Siapkan folder upload untuk backend"
+  sudo install -d -o "$BACKEND_USER" -g "$BACKEND_GROUP" -m 0750 \
+    "$UPLOADS_DIR" \
+    "$UPLOADS_DIR/ktp" \
+    "$UPLOADS_DIR/profile" \
+    "$UPLOADS_DIR/instalasi" \
+    "$UPLOADS_DIR/bukti-setoran"
+  sudo chown -R "$BACKEND_USER:$BACKEND_GROUP" "$UPLOADS_DIR"
+
   log "Install dependency backend"
   install_node_modules "$BACKEND_DIR" "Backend"
 
@@ -109,4 +123,3 @@ if [[ "$MODE" == "all" || "$MODE" == "bot" ]]; then
 fi
 
 log "Selesai"
-

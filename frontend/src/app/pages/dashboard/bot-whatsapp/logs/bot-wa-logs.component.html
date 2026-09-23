@@ -77,7 +77,7 @@
           <button
             type="button"
             class="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs sm:text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50 inline-flex items-center gap-1.5"
-            (click)="clearLogs()"
+            (click)="requestClearLogs()"
             [disabled]="clearing() || loading()"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -186,7 +186,7 @@
                   <button
                     type="button"
                     class="btn-danger"
-                    (click)="deleteSingleLog(item.id, $event)"
+                    (click)="requestDeleteSingle(item, $event)"
                     title="Hapus Log"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -274,6 +274,26 @@
       </div>
     </div>
   }
+
+  <app-modal
+    [open]="pendingDelete() !== null"
+    [title]="pendingDelete() === 'all' ? 'Hapus Semua Log' : 'Hapus Log Notifikasi'"
+    (closeModal)="cancelDelete()"
+  >
+    <div class="space-y-5">
+      <p class="text-sm text-slate-700">
+        {{ pendingDelete() === 'all'
+          ? 'Seluruh riwayat log notifikasi WhatsApp akan dihapus. Tindakan ini tidak dapat dibatalkan.'
+          : 'Log notifikasi ini akan dihapus.' }}
+      </p>
+      <div class="flex justify-end gap-3">
+        <button type="button" class="btn-secondary" (click)="cancelDelete()" [disabled]="clearing()">Batal</button>
+        <button type="button" class="btn-danger" (click)="confirmDelete()" [disabled]="clearing()">
+          {{ clearing() ? 'Menghapus...' : 'Hapus' }}
+        </button>
+      </div>
+    </div>
+  </app-modal>
 
   @if (toast()) {
     <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>

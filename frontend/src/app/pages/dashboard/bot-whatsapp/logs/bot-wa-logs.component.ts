@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
+import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 
 export interface WaLogItem {
   id: number;
@@ -17,7 +18,7 @@ export interface WaLogItem {
 @Component({
   selector: 'app-bot-wa-logs',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, ToastComponent],
+  imports: [CommonModule, FormsModule, DatePipe, ToastComponent, ModalComponent],
   templateUrl: './bot-wa-logs.component.html',
 })
 export class BotWaLogsComponent implements OnInit {
@@ -29,6 +30,7 @@ export class BotWaLogsComponent implements OnInit {
   clearing = signal(false);
   searchQuery = signal('');
   selectedLog = signal<WaLogItem | null>(null);
+  pendingDelete = signal<WaLogItem | 'all' | null>(null);
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
   totalCount = computed(() => this.logs().length);
@@ -67,13 +69,34 @@ export class BotWaLogsComponent implements OnInit {
     });
   }
 
-  clearLogs(): void {
-    if (!confirm('Apakah Anda yakin ingin menghapus seluruh riwayat log notifikasi WhatsApp?')) return;
+  requestClearLogs(): void {
+    this.pendingDelete.set('all');
+  }
+
+  requestDeleteSingle(log: WaLogItem, event: MouseEvent): void {
+    event.stopPropagation();
+    this.pendingDelete.set(log);
+  }
+
+  cancelDelete(): void {
+    if (!this.clearing()) this.pendingDelete.set(null);
+  }
+
+  confirmDelete(): void {
+    const target = this.pendingDelete();
+    if (!target) return;
+
+    if (target !== 'all') {
+      this.deleteSingleLog(target.id);
+      return;
+    }
+
     this.clearing.set(true);
     this.http.delete<{ message: string }>(`${this.baseUrl}/logs`).subscribe({
       next: (res) => {
         this.logs.set([]);
         this.clearing.set(false);
+        this.pendingDelete.set(null);
         this.toast.set({ message: res.message || 'Semua log berhasil dibersihkan.', type: 'success' });
       },
       error: () => {
@@ -83,16 +106,18 @@ export class BotWaLogsComponent implements OnInit {
     });
   }
 
-  deleteSingleLog(id: number, event: MouseEvent): void {
-    event.stopPropagation();
-    if (!confirm('Hapus log pesan ini?')) return;
+  private deleteSingleLog(id: number): void {
+    this.clearing.set(true);
     this.http.delete<{ message: string }>(`${this.baseUrl}/logs/${id}`).subscribe({
       next: () => {
         this.logs.update((items) => items.filter((item) => item.id !== id));
         if (this.selectedLog()?.id === id) this.selectedLog.set(null);
+        this.clearing.set(false);
+        this.pendingDelete.set(null);
         this.toast.set({ message: 'Log berhasil dihapus.', type: 'success' });
       },
       error: () => {
+        this.clearing.set(false);
         this.toast.set({ message: 'Gagal menghapus log.', type: 'error' });
       },
     });
