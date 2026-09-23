@@ -54,7 +54,6 @@ export class FinanceDepositsComponent implements OnInit {
     amount: 0,
     depositDate: new Date().toISOString().slice(0, 10),
     notes: '',
-    receiptPhoto: '',
   };
   unpaidInvoices = signal<any[]>([]);
   loadingInvoices = signal(false);
@@ -99,22 +98,9 @@ export class FinanceDepositsComponent implements OnInit {
       amount: 0,
       depositDate: new Date().toISOString().slice(0, 10),
       notes: '',
-      receiptPhoto: '',
     };
     this.createModalOpen.set(true);
     this.loadUnpaidInvoices();
-  }
-
-  chooseReceipt(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      this.toast.set({ message: 'Foto bukti maksimal 5 MB.', type: 'error' });
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => this.depositForm.receiptPhoto = String(reader.result);
-    reader.readAsDataURL(file);
   }
 
   loadUnpaidInvoices() {
@@ -139,7 +125,7 @@ export class FinanceDepositsComponent implements OnInit {
 
   saveDeposit(event: Event) {
     event.preventDefault();
-    if (!this.depositForm.invoiceId || !this.depositForm.pppoeAccountId || !this.depositForm.receiptPhoto) return;
+    if (!this.depositForm.invoiceId || !this.depositForm.pppoeAccountId) return;
     this.saving.set(true);
     this.api.post('/finance/deposits', this.depositForm).subscribe({
       next: () => {

@@ -608,11 +608,10 @@
           type="number"
           [(ngModel)]="quickDepositForm.amount"
           name="amount"
-          required
-          min="1"
+          readonly
           class="input font-mono text-base font-bold text-slate-900"
         />
-        <p class="mt-1 text-xs text-slate-400">Nominal uang tunai/transfer yang diterima dari pelanggan.</p>
+        <p class="mt-1 text-xs text-slate-400">Nominal mengikuti invoice dan tidak dapat diubah.</p>
       </div>
 
       <div>

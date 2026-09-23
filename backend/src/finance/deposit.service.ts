@@ -4,7 +4,6 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { pageMeta, serialize } from '../common/serialize.js';
 import { WhatsappNotifyService } from '../pppoe/whatsapp-notify.service.js';
 import { CreateDepositDto, RejectDepositDto } from './deposit.dto.js';
-import { storeImage } from '../common/image-storage.js';
 
 @Injectable()
 export class DepositService {
@@ -209,7 +208,6 @@ export class DepositService {
       where: { invoiceId: invoice.id, status: { in: ['PENDING', 'ACCEPTED'] } },
     });
     if (existing) throw new BadRequestException('Sudah ada setoran untuk tagihan ini yang masih pending atau sudah diterima.');
-    const receiptPhoto = await storeImage(dto.receiptPhoto, 'bukti-setoran', String(invoice.id));
 
     const collector = await this.prisma.user.findUnique({
       where: { id: BigInt(collectorUserId) },
@@ -221,10 +219,9 @@ export class DepositService {
         pppoeAccountId: account.id,
         invoiceId: invoice.id,
         collectorUserId: BigInt(collectorUserId),
-        amount: BigInt(dto.amount),
+        amount: invoice.amount,
         depositDate: new Date(`${dto.depositDate}T00:00:00.000Z`),
         notes: dto.notes?.trim() || null,
-        receiptPhoto,
       },
     });
 
@@ -234,7 +231,7 @@ export class DepositService {
         customerName: account.customerName,
         customerNumber: account.customerNumber,
         phone: account.phone,
-        amount: dto.amount,
+        amount: Number(invoice.amount),
         depositDate: dto.depositDate,
         collectorName: collector?.name || 'Kolektor',
         areaName: account.area?.name || '-',

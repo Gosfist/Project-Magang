@@ -220,10 +220,10 @@
           type="number"
           [(ngModel)]="depositForm.amount"
           name="amount"
-          required
-          min="1"
+          readonly
           class="input"
         />
+        <p class="mt-1 text-xs text-slate-500">Nominal mengikuti invoice dan tidak dapat diubah.</p>
       </div>
 
       <div>
@@ -248,18 +248,12 @@
         />
       </div>
 
-      <div>
-        <label class="label">Foto Uang / Bukti Pembayaran *</label>
-        <input type="file" accept="image/jpeg,image/png,image/webp" required class="input" (change)="chooseReceipt($event)" />
-        @if (depositForm.receiptPhoto) { <img [src]="depositForm.receiptPhoto" alt="Bukti pembayaran" class="mt-2 max-h-48 rounded-lg border object-contain" /> }
-      </div>
-
       <div class="flex justify-end gap-3 pt-2">
         <button type="button" class="btn-secondary" (click)="createModalOpen.set(false)">Batal</button>
         <button
           type="submit"
           class="btn-primary"
-          [disabled]="saving() || !depositForm.invoiceId || depositForm.amount <= 0 || !depositForm.receiptPhoto"
+          [disabled]="saving() || !depositForm.invoiceId || depositForm.amount <= 0"
         >
           {{ saving() ? 'Menyimpan...' : 'Simpan Setoran' }}
         </button>
