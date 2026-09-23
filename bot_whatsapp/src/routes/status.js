@@ -33,7 +33,7 @@ router.post('/restart', async (req, res) => {
 
 router.post('/reset', async (req, res) => {
   await resetSession();
-  res.json({ message: 'Sesi WhatsApp direset. Silakan scan QR code baru.' });
+  res.json({ message: 'Sesi WhatsApp direset. QR baru sedang disiapkan.' });
 });
 
 router.post('/connect', async (req, res) => {

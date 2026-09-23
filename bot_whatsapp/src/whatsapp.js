@@ -7,7 +7,7 @@ import { rmSync, existsSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const AUTH_DIR = join(__dirname, '..', 'auth_info');
-const logger = pino({ level: 'silent' });
+const logger = pino({ level: process.env.WA_LOG_LEVEL || 'warn' });
 
 let sock = null;
 let qrCode = null;
@@ -17,6 +17,7 @@ let connectedAt = null;
 let botNumber = null;
 let reconnectTimer = null;
 let connectionToken = 0;
+let reconnectAttempts = 0;
 
 export function getStatus() {
   const uptimeSeconds = (status === 'connected' && connectedAt)
@@ -46,12 +47,15 @@ function stopReconnect() {
 
 function scheduleReconnect(token) {
   stopReconnect();
+  reconnectAttempts += 1;
+  const delay = Math.min(3000 * (2 ** Math.min(reconnectAttempts - 1, 5)), 60000);
+  statusMessage = `Koneksi terputus. Mencoba ulang dalam ${Math.ceil(delay / 1000)} detik (percobaan ${reconnectAttempts}).`;
   reconnectTimer = setTimeout(() => {
     reconnectTimer = null;
     if (token === connectionToken && status === 'disconnected') {
       void startConnection();
     }
-  }, 3000);
+  }, delay);
 }
 
 export async function startConnection() {
@@ -72,7 +76,6 @@ export async function startConnection() {
         creds: state.creds,
         keys: makeCacheableSignalKeyStore(state.keys, logger),
       },
-      printQRInTerminal: true,
       logger,
       browser: ['Unzanet Bot', 'Chrome', '1.0.0'],
     });
@@ -95,18 +98,21 @@ export async function startConnection() {
           : undefined;
         if (reason === DisconnectReason.loggedOut) {
           status = 'disconnected';
-          statusMessage = 'Sesi WhatsApp telah keluar. Silakan hubungkan ulang.';
+          statusMessage = `Sesi WhatsApp keluar (kode ${reason}). Reset sesi lalu scan QR baru.`;
           botNumber = null;
           clearAuth();
         } else {
           status = 'disconnected';
-          statusMessage = 'Koneksi terputus. Mencoba menghubungkan ulang...';
+          const disconnectMessage = lastDisconnect?.error?.message || 'Tidak ada detail dari WhatsApp.';
+          statusMessage = `Koneksi WhatsApp terputus (kode ${reason ?? 'tidak diketahui'}): ${disconnectMessage}`;
+          console.warn('[WA] Connection closed:', statusMessage);
           scheduleReconnect(token);
         }
       } else if (connection === 'open') {
         qrCode = null;
         status = 'connected';
         statusMessage = '';
+        reconnectAttempts = 0;
         if (!connectedAt) {
           connectedAt = Date.now();
         }
@@ -149,6 +155,7 @@ async function closeSocket(logout = false) {
   connectionToken += 1;
   const activeSocket = sock;
   sock = null;
+  reconnectAttempts = 0;
   if (!activeSocket) return;
   if (logout) {
     try { await activeSocket.logout(); } catch (_) {}

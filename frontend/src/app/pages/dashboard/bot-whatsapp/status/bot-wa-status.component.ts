@@ -104,6 +104,7 @@ export class BotWaStatusComponent implements OnInit, OnDestroy {
         this.toast.set({ message: res.message, type: 'success' });
         this.countdown.set(3);
         this.fetchStatus();
+        setTimeout(() => this.fetchStatus(), 1000);
       },
       error: () => {
         this.actionLoading.set(false);
@@ -120,6 +121,7 @@ export class BotWaStatusComponent implements OnInit, OnDestroy {
         this.toast.set({ message: res.message, type: 'success' });
         this.countdown.set(3);
         this.fetchStatus();
+        setTimeout(() => this.fetchStatus(), 1000);
       },
       error: () => {
         this.actionLoading.set(false);

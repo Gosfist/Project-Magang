@@ -82,6 +82,17 @@ if [[ "$MODE" == "all" || "$MODE" == "bot" ]]; then
   log "Install dependency bot WhatsApp"
   install_node_modules "$BOTWA_DIR" "Bot WhatsApp"
 
+  BOTWA_SERVICE_FILE="$BOTWA_DIR/unzanet-botwa.service"
+  if [[ -f "$BOTWA_SERVICE_FILE" ]]; then
+    SERVICE_WORKING_DIR="$(systemctl show -p WorkingDirectory --value "$BOTWA_SERVICE" 2>/dev/null || true)"
+    if [[ "$SERVICE_WORKING_DIR" != "$BOTWA_DIR" ]]; then
+      log "Alihkan service bot dari direktori lama ke direktori project ini"
+      sudo systemctl stop "$BOTWA_SERVICE" || true
+      sudo cp "$BOTWA_SERVICE_FILE" "/etc/systemd/system/$BOTWA_SERVICE.service"
+      sudo systemctl daemon-reload
+    fi
+  fi
+
   log "Sinkronisasi environment bot WhatsApp"
   if [[ ! -f "$BOTWA_DIR/.env" ]] && [[ -f "$BOTWA_DIR/.env.example" ]]; then
     cp "$BOTWA_DIR/.env.example" "$BOTWA_DIR/.env"
