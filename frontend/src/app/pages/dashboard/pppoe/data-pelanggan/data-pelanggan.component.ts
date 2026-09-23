@@ -219,13 +219,13 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
 
   private loadPhoto(): void {
     if (!this.form.idCardPhoto) return;
-    if (!/^id-cards\/[a-f0-9-]{36}\.(jpg|png|webp)$/.test(this.form.idCardPhoto)) {
+    if (!/^\/uploads\/ktp\/[a-f0-9-]{36}\.(jpg|png|webp)$/.test(this.form.idCardPhoto)) {
       this.photoError.set('Foto lama tidak dapat ditampilkan. Pilih gambar untuk menggantinya.');
       return;
     }
     const request = ++this.photoRequest;
     this.photoLoading.set(true);
-    this.api.getBlob(`/pppoe/id-card-photo/${encodeURIComponent(this.form.idCardPhoto.slice(9))}`).subscribe({
+    this.api.getBlob(`/pppoe/id-card-photo/${encodeURIComponent(this.form.idCardPhoto.slice('/uploads/ktp/'.length))}`).subscribe({
       next: blob => {
         if (request !== this.photoRequest) return;
         this.photoPreview.set(URL.createObjectURL(blob));

@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { pageMeta, serialize } from '../common/serialize.js';
 import { CreateUserDto, UpdateUserDto } from './users.dto.js';
+import { storeImage } from '../common/image-storage.js';
 
 @Injectable()
 export class UsersService {
@@ -83,10 +84,12 @@ export class UsersService {
   async create(dto: CreateUserDto) {
     try {
       const user = await this.prisma.user.create({
-        data: { ...dto, password: await hash(dto.password, 12) },
+        data: { ...dto, photo: null, password: await hash(dto.password, 12) },
         omit: { password: true },
       });
-      return serialize({ message: 'Petugas berhasil ditambahkan.', user });
+      const photo = await storeImage(dto.photo, 'profile', String(user.id));
+      const saved = photo ? await this.prisma.user.update({ where: { id: user.id }, data: { photo }, omit: { password: true } }) : user;
+      return serialize({ message: 'Petugas berhasil ditambahkan.', user: saved });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException('Email sudah digunakan.');
@@ -98,10 +101,11 @@ export class UsersService {
   async update(id: string, dto: UpdateUserDto) {
     await this.exists(id);
     const password = dto.password ? await hash(dto.password, 12) : undefined;
+    const photo = await storeImage(dto.photo, 'profile', id);
     try {
       const user = await this.prisma.user.update({
         where: { id: BigInt(id) },
-        data: { ...dto, password },
+        data: { ...dto, photo, password },
         omit: { password: true },
       });
       return serialize({ message: 'Data akun berhasil diperbarui.', user });

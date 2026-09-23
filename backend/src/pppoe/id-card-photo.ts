@@ -2,10 +2,11 @@ import { BadRequestException, NotFoundException, StreamableFile } from '@nestjs/
 import { randomUUID } from 'node:crypto';
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { uploadsDirectory } from '../common/image-storage.js';
 
 export const ID_CARD_MAX_BYTES = 5 * 1024 * 1024;
-const directory = () => join(process.cwd(), 'storage', 'id-cards');
-const referencePattern = /^id-cards\/[a-f0-9-]{36}\.(jpg|png|webp)$/;
+const directory = () => join(uploadsDirectory(), 'ktp');
+const referencePattern = /^\/uploads\/ktp\/[a-f0-9-]{36}\.(jpg|png|webp)$/;
 
 export function imageExtension(buffer: Buffer): string {
   if (buffer.length >= 3 && buffer.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]))) return 'jpg';
@@ -21,17 +22,17 @@ export async function storeIdCardPhoto(file?: { buffer: Buffer }) {
   const filename = `${randomUUID()}.${extension}`;
   await mkdir(directory(), { recursive: true });
   await writeFile(join(directory(), filename), file.buffer, { flag: 'wx', mode: 0o600 });
-  return { path: `id-cards/${filename}` };
+  return { path: `/uploads/ktp/${filename}` };
 }
 
 export async function validateIdCardPhoto(reference: string) {
   if (!referencePattern.test(reference)) throw new BadRequestException('Unggah foto KTP melalui pilihan gambar.');
-  try { await access(join(directory(), reference.slice('id-cards/'.length))); }
+  try { await access(join(directory(), reference.slice('/uploads/ktp/'.length))); }
   catch { throw new BadRequestException('Foto KTP tidak ditemukan. Unggah kembali gambar.'); }
 }
 
 export async function readIdCardPhoto(filename: string) {
-  if (!referencePattern.test(`id-cards/${filename}`)) throw new NotFoundException('Foto KTP tidak ditemukan.');
+  if (!referencePattern.test(`/uploads/ktp/${filename}`)) throw new NotFoundException('Foto KTP tidak ditemukan.');
   let buffer: Buffer;
   try { buffer = await readFile(join(directory(), filename)); }
   catch { throw new NotFoundException('Foto KTP tidak ditemukan.'); }

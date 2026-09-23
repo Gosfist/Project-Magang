@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { pageMeta, serialize } from '../common/serialize.js';
 import { WhatsappNotifyService } from '../pppoe/whatsapp-notify.service.js';
 import { CreateDepositDto, RejectDepositDto } from './deposit.dto.js';
+import { storeImage } from '../common/image-storage.js';
 
 @Injectable()
 export class DepositService {
@@ -189,7 +190,6 @@ export class DepositService {
   }
 
   async create(dto: CreateDepositDto, collectorUserId: string) {
-    if (dto.receiptPhoto.length > 8_000_000) throw new BadRequestException('Foto bukti pembayaran maksimal sekitar 5 MB.');
     // Validate account and invoice exist
     const account = await this.prisma.pppoeAccount.findUnique({
       where: { id: BigInt(dto.pppoeAccountId) },
@@ -209,6 +209,7 @@ export class DepositService {
       where: { invoiceId: invoice.id, status: { in: ['PENDING', 'ACCEPTED'] } },
     });
     if (existing) throw new BadRequestException('Sudah ada setoran untuk tagihan ini yang masih pending atau sudah diterima.');
+    const receiptPhoto = await storeImage(dto.receiptPhoto, 'bukti-setoran', String(invoice.id));
 
     const collector = await this.prisma.user.findUnique({
       where: { id: BigInt(collectorUserId) },
@@ -223,7 +224,7 @@ export class DepositService {
         amount: BigInt(dto.amount),
         depositDate: new Date(`${dto.depositDate}T00:00:00.000Z`),
         notes: dto.notes?.trim() || null,
-        receiptPhoto: dto.receiptPhoto,
+        receiptPhoto,
       },
     });
 

@@ -3,10 +3,11 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module.js';
+import { uploadsDirectory } from './common/image-storage.js';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.useStaticAssets('uploads', { prefix: '/uploads' });
+  app.useStaticAssets(uploadsDirectory(), { prefix: '/uploads' });
   const configuredOrigins = (process.env.FRONTEND_URL ?? 'http://localhost:3000')
     .split(',')
     .map((origin) => origin.trim())

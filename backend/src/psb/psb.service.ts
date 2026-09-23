@@ -8,6 +8,7 @@ import { WhatsappNotifyService } from '../pppoe/whatsapp-notify.service.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { firstBillingCycle } from '../pppoe/billing-cycle.js';
 import { ActivatePsbOrderDto, CreatePsbOrderDto, UpdatePsbOrderDto } from './psb.dto.js';
+import { storeImage } from '../common/image-storage.js';
 
 @Injectable()
 export class PsbService {
@@ -40,6 +41,7 @@ export class PsbService {
 
   async create(dto: CreatePsbOrderDto, salesUserId: string) {
     await this.validateCustomer(dto);
+    const customer = await this.customerData(dto);
     const order = await this.serializable(async tx => {
       const [accountMax, orderMax] = await Promise.all([
         tx.pppoeAccount.aggregate({ _max: { customerNumber: true } }),
@@ -47,7 +49,7 @@ export class PsbService {
       ]);
       const customerNumber = (accountMax._max.customerNumber ?? 0n) > (orderMax._max.customerNumber ?? 0n)
         ? (accountMax._max.customerNumber ?? 0n) + 1n : (orderMax._max.customerNumber ?? 0n) + 1n;
-      return tx.psbOrder.create({ data: { ...this.customerData(dto), customerNumber, salesUserId: BigInt(salesUserId) }, include: { package: true } });
+      return tx.psbOrder.create({ data: { ...customer, customerNumber, salesUserId: BigInt(salesUserId) }, include: { package: true } });
     });
     void this.wa.notifySalesRegistration({ customerName: order.customerName, customerNumber: order.customerNumber, phone: order.phone, address: order.address, packageName: order.package.name });
     return serialize({ message: 'Registrasi pelanggan berhasil dan masuk ke antrean teknisi.', order: { ...order, customerId: this.customerId(order.customerNumber), password: undefined } });
@@ -58,7 +60,7 @@ export class PsbService {
     this.assertSalesOwner(current, user);
     if (current.status !== 'PROCESS') throw new BadRequestException('Data yang sudah diaktivasi tidak dapat diedit oleh sales.');
     await this.validateCustomer(dto, current.id);
-    const order = await this.prisma.psbOrder.update({ where: { id: current.id }, data: this.customerData(dto) });
+    const order = await this.prisma.psbOrder.update({ where: { id: current.id }, data: await this.customerData(dto) });
     return serialize({ message: 'Registrasi pelanggan berhasil diperbarui.', order });
   }
 
@@ -72,7 +74,7 @@ export class PsbService {
 
   async activate(id: string, dto: ActivatePsbOrderDto, technicianId: string) {
     const order = await this.find(id, true);
-    if (dto.installationPhoto.length > 8_000_000) throw new BadRequestException('Foto instalasi maksimal sekitar 5 MB.');
+    const installationPhoto = await storeImage(dto.installationPhoto, 'instalasi', String(order.id));
     const odp = await this.prisma.mainCore.findFirst({ where: { id: BigInt(dto.odp), tipeTitik: { in: ['odc', 'odp'] } } });
     if (!odp) throw new BadRequestException('ODC / ODP tidak ditemukan.');
     if (order.status !== 'PROCESS') {
@@ -88,7 +90,7 @@ export class PsbService {
         await this.radius.sync(tx, account);
         return tx.psbOrder.update({
           where: { id: order.id },
-          data: { odp: dto.odp, routerNasId: dto.routerNasId ? Number(dto.routerNasId) : null, installationPhoto: dto.installationPhoto },
+          data: { odp: dto.odp, routerNasId: dto.routerNasId ? Number(dto.routerNasId) : null, installationPhoto },
         });
       });
       return serialize({ message: 'Data aktivasi berhasil diperbarui.', order: updated });
@@ -121,7 +123,7 @@ export class PsbService {
         await this.radius.sync(tx, account);
         const updated = await tx.psbOrder.update({
           where: { id: order.id },
-          data: { status: 'ACTIVATED', username: dto.username.trim(), password: this.secrets.encrypt(dto.password), odp: dto.odp, routerNasId: dto.routerNasId ? Number(dto.routerNasId) : null, installationPhoto: dto.installationPhoto, pppoeAccountId: account.id, activatedByUserId: BigInt(technicianId), activatedAt: new Date() },
+          data: { status: 'ACTIVATED', username: dto.username.trim(), password: this.secrets.encrypt(dto.password), odp: dto.odp, routerNasId: dto.routerNasId ? Number(dto.routerNasId) : null, installationPhoto, pppoeAccountId: account.id, activatedByUserId: BigInt(technicianId), activatedAt: new Date() },
         });
         return { account, updated };
       });
@@ -153,8 +155,9 @@ export class PsbService {
     return { message: 'Pemasangan selesai. Status Sales dan Teknisi telah diperbarui serta notifikasi pelanggan diproses.' };
   }
 
-  private customerData(dto: CreatePsbOrderDto) {
-    return { customerName: dto.customerName.trim(), phone: dto.phone.trim(), idCardNumber: dto.idCardNumber?.trim() || null, idCardPhoto: dto.idCardPhoto || null, address: dto.address.trim(), pppoePackageId: BigInt(dto.pppoePackageId), areaId: dto.areaId ? BigInt(dto.areaId) : null };
+  private async customerData(dto: CreatePsbOrderDto) {
+    const idCardNumber = dto.idCardNumber?.trim() || null;
+    return { customerName: dto.customerName.trim(), phone: dto.phone.trim(), idCardNumber, idCardPhoto: await storeImage(dto.idCardPhoto, 'ktp', idCardNumber || dto.phone), address: dto.address.trim(), pppoePackageId: BigInt(dto.pppoePackageId), areaId: dto.areaId ? BigInt(dto.areaId) : null };
   }
   private async validateCustomer(dto: CreatePsbOrderDto, excludeId?: bigint) {
     for (const field of ['phone', 'idCardNumber'] as const) {

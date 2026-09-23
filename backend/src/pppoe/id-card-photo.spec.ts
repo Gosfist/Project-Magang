@@ -30,10 +30,10 @@ describe('KTP upload', () => {
   });
   it('stores uploaded images privately and returns a valid reference', async () => {
     const response = await request(app.getHttpServer()).post('/pppoe/id-card-photo').attach('file', png, 'ktp.png').expect(201);
-    expect(response.body.path).toMatch(/^id-cards\/[a-f0-9-]+\.png$/);
+    expect(response.body.path).toMatch(/^\/uploads\/ktp\/[a-f0-9-]+\.png$/);
     await expect(validateIdCardPhoto(response.body.path)).resolves.toBeUndefined();
-    expect(await readFile(join(directory, 'storage', response.body.path))).toEqual(png);
-    const preview = await request(app.getHttpServer()).get(`/pppoe/id-card-photo/${response.body.path.slice(9)}`).expect(200);
+    expect(await readFile(join(directory, '..', 'uploads', 'ktp', response.body.path.slice('/uploads/ktp/'.length)))).toEqual(png);
+    const preview = await request(app.getHttpServer()).get(`/pppoe/id-card-photo/${response.body.path.slice('/uploads/ktp/'.length)}`).expect(200);
     expect(preview.headers['content-type']).toContain('image/png');
     expect(preview.headers['cache-control']).toBe('private, no-store');
     expect(preview.body).toEqual(png);
@@ -57,6 +57,6 @@ describe('KTP upload', () => {
     await request(app.getHttpServer()).get('/pppoe/id-card-photo/not-an-image').expect(404);
     await request(app.getHttpServer()).get('/pppoe/id-card-photo/00000000-0000-0000-0000-000000000000.png').expect(404);
     await expect(validateIdCardPhoto('../../.env')).rejects.toThrow('Unggah foto KTP');
-    await expect(validateIdCardPhoto('id-cards/00000000-0000-0000-0000-000000000000.png')).rejects.toThrow('tidak ditemukan');
+    await expect(validateIdCardPhoto('/uploads/ktp/00000000-0000-0000-0000-000000000000.png')).rejects.toThrow('tidak ditemukan');
   });
 });

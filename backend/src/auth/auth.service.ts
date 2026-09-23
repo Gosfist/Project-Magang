@@ -4,6 +4,7 @@ import { compare, hash } from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { LoginDto, UpdateProfileDto } from './auth.dto.js';
 import { serialize } from '../common/serialize.js';
+import { storeImage } from '../common/image-storage.js';
 
 @Injectable()
 export class AuthService {
@@ -32,12 +33,13 @@ export class AuthService {
 
   async updateProfile(id: string, dto: UpdateProfileDto) {
     const password = dto.password ? await hash(dto.password, 12) : undefined;
+    const photo = await storeImage(dto.photo, 'profile', id);
     const user = await this.prisma.user.update({
       where: { id: BigInt(id) },
       data: {
         name: dto.name,
         phone: dto.phone || null,
-        photo: dto.photo || null,
+        photo,
         ...(password ? { password } : {}),
       },
     });
