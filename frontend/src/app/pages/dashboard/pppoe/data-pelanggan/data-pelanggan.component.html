@@ -87,9 +87,6 @@
               <p class="font-medium text-slate-900">{{ item.customerName }}</p>
               <p class="text-xs text-slate-500 flex items-center gap-1.5 flex-wrap">
                 <span>{{ phoneDisplay(item.phone) }}</span>
-                @if (item.area?.name) {
-                  <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-600">📍 {{ item.area?.name }}</span>
-                }
               </p>
             </td>
             <td>{{ item.package.name }}</td>
