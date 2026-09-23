@@ -221,13 +221,12 @@ export class DepositService {
         collectorUserId: BigInt(collectorUserId),
         amount: invoice.amount,
         depositDate: new Date(`${dto.depositDate}T00:00:00.000Z`),
-        notes: dto.notes?.trim() || null,
       },
     });
 
-    // Send WA notification: deposit to collector
-    if (this.waNotify && account.phone) {
-      this.waNotify.notifyDepositToCollector({
+    // Wait for the bot response so the collector sees whether the customer was notified.
+    const whatsappNotified = this.waNotify && account.phone
+      ? await this.waNotify.notifyDepositToCollector({
         customerName: account.customerName,
         customerNumber: account.customerNumber,
         phone: account.phone,
@@ -235,12 +234,16 @@ export class DepositService {
         depositDate: dto.depositDate,
         collectorName: collector?.name || 'Kolektor',
         areaName: account.area?.name || '-',
-      }).catch((err) => {
-        this.logger.warn(`Notifikasi WA setoran error: ${err?.message || err}`);
-      });
-    }
+      })
+      : false;
 
-    return serialize({ message: 'Setoran berhasil dicatat. Menunggu konfirmasi dari tim keuangan.', deposit: { ...deposit, amount: Number(deposit.amount) } });
+    return serialize({
+      message: whatsappNotified
+        ? 'Setoran berhasil dicatat dan notifikasi WhatsApp sudah dikirim ke pelanggan.'
+        : 'Setoran berhasil dicatat, tetapi notifikasi WhatsApp belum terkirim. Periksa koneksi Bot WhatsApp.',
+      whatsappNotified,
+      deposit: { ...deposit, amount: Number(deposit.amount) },
+    });
   }
 
   async accept(id: string, acceptedByUserId: string) {

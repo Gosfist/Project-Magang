@@ -13,7 +13,6 @@ import {
   LucideUsers,
   LucideCheckCircle2,
   LucideAlertCircle,
-  LucideClock,
   LucideDollarSign,
 } from '@lucide/angular';
 import { ApiService } from '../../../core/services/api.service';
@@ -48,7 +47,6 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
     LucideUsers,
     LucideCheckCircle2,
     LucideAlertCircle,
-    LucideClock,
     LucideDollarSign,
   ],
   templateUrl: './area.component.html',
@@ -92,7 +90,6 @@ export class AreaComponent implements OnInit {
   quickDepositForm = {
     amount: 0,
     depositDate: new Date().toISOString().slice(0, 10),
-    notes: '',
   };
   submittingDeposit = signal(false);
   promiseModalOpen = signal(false);
@@ -336,7 +333,6 @@ export class AreaComponent implements OnInit {
     this.quickDepositForm = {
       amount: customer.activeInvoice.amount,
       depositDate: new Date().toISOString().slice(0, 10),
-      notes: '',
     };
     this.quickDepositModalOpen.set(true);
   }
@@ -356,16 +352,15 @@ export class AreaComponent implements OnInit {
       invoiceId: this.depositTargetCustomer.activeInvoice.id,
       amount: this.quickDepositForm.amount,
       depositDate: this.quickDepositForm.depositDate,
-      notes: this.quickDepositForm.notes.trim() || undefined,
     };
 
-    this.api.post('/finance/deposits', payload).subscribe({
-      next: () => {
+    this.api.post<{ message: string; whatsappNotified?: boolean }>('/finance/deposits', payload).subscribe({
+      next: (result) => {
         this.submittingDeposit.set(false);
         this.closeQuickDeposit();
         this.toast.set({
-          message: 'Setoran berhasil dicatat & notifikasi WhatsApp terkirim ke pelanggan!',
-          type: 'success',
+          message: result.message,
+          type: result.whatsappNotified === false ? 'error' : 'success',
         });
         this.loadAreaCustomers();
       },

@@ -216,7 +216,13 @@ export class AreaService {
             dueDate: true,
             paidAt: true,
             deposits: {
-              select: { id: true, status: true, amount: true, createdAt: true },
+              select: {
+                id: true,
+                status: true,
+                amount: true,
+                createdAt: true,
+                collector: { select: { name: true } },
+              },
               orderBy: { id: 'desc' },
               take: 1,
             },
@@ -233,7 +239,8 @@ export class AreaService {
       const unpaidAmount = unpaidInvoices.reduce((sum, inv) => sum + Number(inv.amount), 0);
 
       const activeInvoice = unpaidInvoices[0] || null;
-      const latestDeposit = activeInvoice?.deposits?.[0] || null;
+      const displayInvoice = activeInvoice || acc.invoices[0] || null;
+      const latestDeposit = displayInvoice?.deposits?.[0] || null;
       const hasPendingDeposit = latestDeposit?.status === 'PENDING';
 
       const now = new Date();
@@ -250,6 +257,12 @@ export class AreaService {
         }
       }
 
+      const collectionStatus = isPaid
+        ? 'SELESAI'
+        : hasPendingDeposit
+          ? 'PROSES'
+          : 'TAGIH';
+
       return {
         id: acc.id,
         customerNumber: acc.customerNumber,
@@ -261,6 +274,8 @@ export class AreaService {
         package: acc.package ? { ...acc.package, price: Number(acc.package.price) } : null,
         isPaid,
         billingStatus,
+        collectionStatus,
+        collectorName: latestDeposit?.collector?.name || null,
         unpaidAmount,
         unpaidCount: unpaidInvoices.length,
         activeInvoice: activeInvoice

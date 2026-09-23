@@ -113,6 +113,8 @@ export type AreaCustomer = {
   package?: { id: string; name: string; price: number } | null;
   isPaid: boolean;
   billingStatus: 'PAID' | 'UNPAID' | 'OVERDUE' | 'PENDING_VERIFICATION';
+  collectionStatus: 'TAGIH' | 'PROSES' | 'SELESAI';
+  collectorName?: string | null;
   unpaidAmount: number;
   unpaidCount: number;
   activeInvoice?: {

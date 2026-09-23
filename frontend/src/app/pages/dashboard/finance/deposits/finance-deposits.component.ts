@@ -53,7 +53,6 @@ export class FinanceDepositsComponent implements OnInit {
     invoiceId: '',
     amount: 0,
     depositDate: new Date().toISOString().slice(0, 10),
-    notes: '',
   };
   unpaidInvoices = signal<any[]>([]);
   loadingInvoices = signal(false);
@@ -97,7 +96,6 @@ export class FinanceDepositsComponent implements OnInit {
       invoiceId: '',
       amount: 0,
       depositDate: new Date().toISOString().slice(0, 10),
-      notes: '',
     };
     this.createModalOpen.set(true);
     this.loadUnpaidInvoices();
@@ -127,13 +125,13 @@ export class FinanceDepositsComponent implements OnInit {
     event.preventDefault();
     if (!this.depositForm.invoiceId || !this.depositForm.pppoeAccountId) return;
     this.saving.set(true);
-    this.api.post('/finance/deposits', this.depositForm).subscribe({
-      next: () => {
+    this.api.post<{ message: string; whatsappNotified?: boolean }>('/finance/deposits', this.depositForm).subscribe({
+      next: (result) => {
         this.saving.set(false);
         this.createModalOpen.set(false);
         this.toast.set({
-          message: 'Setoran berhasil dicatat dan menunggu verifikasi (ACC) Keuangan.',
-          type: 'success',
+          message: result.message,
+          type: result.whatsappNotified === false ? 'error' : 'success',
         });
         this.load();
       },

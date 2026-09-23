@@ -5,7 +5,6 @@ export class CreateDepositDto {
   @IsString() pppoeAccountId: string;
   @IsString() invoiceId: string;
   @IsDateString() depositDate: string;
-  @IsOptional() @IsString() @MaxLength(500) notes?: string;
 }
 
 export class RejectDepositDto {

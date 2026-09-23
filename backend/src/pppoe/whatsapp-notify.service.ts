@@ -196,10 +196,10 @@ export class WhatsappNotifyService {
     depositDate: string;
     collectorName: string;
     areaName: string;
-  }): Promise<void> {
+  }): Promise<boolean> {
     try {
       const enabled = await this.prisma.appSetting.findUnique({ where: { key: 'wa_bot_enabled' } });
-      if (enabled?.value === 'false') return;
+      if (enabled?.value === 'false') return false;
 
       const templateRow = await this.prisma.appSetting.findUnique({ where: { key: 'wa_template_deposit_collector' } });
       const template = templateRow?.value || this.defaultDepositCollectorTemplate();
@@ -229,12 +229,15 @@ export class WhatsappNotifyService {
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         this.logger.warn(`Notifikasi WA setoran kolektor gagal: ${response.status} - ${body.message || 'Unknown'}`);
+        return false;
       } else {
         this.logger.log(`Notifikasi WA setoran kolektor terkirim ke ${account.phone}`);
+        return true;
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.warn(`Notifikasi WA setoran kolektor error: ${message}`);
+      return false;
     }
   }
 
