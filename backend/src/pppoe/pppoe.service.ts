@@ -289,6 +289,9 @@ export class PppoeService {
   async removeAccount(id: string) {
     const current = await this.findAccount(id);
     await this.prisma.$transaction(async (tx) => {
+      // PsbOrder menyimpan data registrasi sales dan progres teknisi. Hapus
+      // relasi ini sebelum akun agar data pelanggan tidak tertinggal sebagai orphan.
+      await tx.psbOrder.deleteMany({ where: { pppoeAccountId: current.id } });
       await tx.radcheck.deleteMany({ where: { username: current.username } });
       await tx.radreply.deleteMany({ where: { username: current.username } });
       await this.closeOpenAccounting(tx, current.username);
