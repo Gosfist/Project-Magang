@@ -814,6 +814,27 @@
   </app-modal>
 
   <app-modal
+    [open]="!!disconnectConfirm()"
+    title="Putuskan Sesi PPPoE"
+    (closeModal)="disconnectConfirm.set(null)"
+  >
+    @if (disconnectConfirm(); as item) {
+      <p class="text-slate-700">
+        Putuskan sesi PPPoE pelanggan <strong>{{ item.customerName }}</strong> ({{ item.username }})?
+      </p>
+      <p class="mt-2 text-sm text-slate-500">
+        Jika akun masih aktif, modem pelanggan dapat tersambung kembali secara otomatis.
+      </p>
+      <div class="mt-6 flex justify-end gap-3">
+        <button type="button" class="btn-secondary" (click)="disconnectConfirm.set(null)">Batal</button>
+        <button type="button" class="btn-danger" [disabled]="disconnecting() !== null" (click)="confirmDisconnect()">
+          {{ disconnecting() ? 'Memutuskan...' : 'Putuskan Sesi' }}
+        </button>
+      </div>
+    }
+  </app-modal>
+
+  <app-modal
     [open]="!!deleteConfirm()"
     title="Konfirmasi Hapus Akun"
     (closeModal)="deleteConfirm.set(null)"

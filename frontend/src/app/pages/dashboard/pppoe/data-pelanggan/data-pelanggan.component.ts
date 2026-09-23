@@ -479,10 +479,18 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   }
 
   disconnecting = signal<string | null>(null);
+  disconnectConfirm = signal<PppoeAccount | null>(null);
   deleteConfirm = signal<PppoeAccount | null>(null);
 
   disconnect(item: PppoeAccount): void {
-    if (this.disconnecting() || !confirm(`Putuskan sesi ${item.username}? Akun yang masih aktif dapat terhubung kembali.`)) return;
+    if (this.disconnecting()) return;
+    this.disconnectConfirm.set(item);
+  }
+
+  confirmDisconnect(): void {
+    const item = this.disconnectConfirm();
+    if (!item || this.disconnecting()) return;
+    this.disconnectConfirm.set(null);
     this.disconnecting.set(String(item.id));
     this.api.post<{ message: string; warnings?: string[] }>(`/pppoe/accounts/${item.id}/disconnect`, {}).subscribe({
       next: (r) => {
