@@ -183,8 +183,8 @@ export const routes: Routes = [
       {
         path: 'finance/tagihan',
         loadComponent: () =>
-          import('./pages/dashboard/finance/deposits/finance-deposits.component').then(
-            (m) => m.FinanceDepositsComponent,
+          import('./pages/dashboard/finance/invoices/finance-invoices.component').then(
+            (m) => m.FinanceInvoicesComponent,
           ),
         canActivate: [roleGuard('admin', 'finance')],
       },

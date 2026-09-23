@@ -1,0 +1,41 @@
+<div class="space-y-4">
+  <div class="card p-4">
+    <div class="grid gap-3 sm:grid-cols-[1fr_200px]">
+      <div class="relative">
+        <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
+        <input class="input pl-10" placeholder="Cari nama pelanggan, nomor, atau username..." [(ngModel)]="search" (ngModelChange)="load()" />
+      </div>
+      <select class="input" [(ngModel)]="status" (ngModelChange)="load()">
+        <option value="">Semua status</option>
+        <option value="PENDING">Belum bayar</option>
+        <option value="PAID">Lunas</option>
+        <option value="OVERDUE">Lewat tempo</option>
+        <option value="ISOLATED">Diisolir</option>
+        <option value="NO_INVOICE">Tagihan belum terbit</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Pelanggan</th><th>Area</th><th>Kolektor</th><th>Paket</th><th>No. Tagihan</th><th>Jatuh Tempo</th><th>Jumlah</th><th>Status</th></tr></thead>
+      <tbody>
+        @for (row of rows(); track row.id) {
+          <tr>
+            <td><p class="font-semibold text-slate-900">{{ row.customerName }}</p><p class="text-xs text-slate-500 font-mono">#{{ row.customerNumber }} · {{ row.username }}</p></td>
+            <td>{{ row.area?.name || '-' }}</td>
+            <td>{{ collectorNames(row) }}</td>
+            <td>{{ row.packageName }}</td>
+            <td class="font-mono text-xs">{{ row.invoice?.invoiceNumber || '-' }}</td>
+            <td>{{ date(row.invoice?.dueDate) }}</td>
+            <td class="font-semibold whitespace-nowrap">{{ currency(row.invoice?.amount) }}</td>
+            <td><span class="rounded-full px-2.5 py-1 text-xs font-semibold" [class]="statusClass(row)">{{ statusLabel(row) }}</span></td>
+          </tr>
+        }
+        @if (loading()) { <tr><td colspan="8" class="py-8 text-center text-slate-400">Memuat tagihan...</td></tr> }
+        @else if (!rows().length) { <tr><td colspan="8" class="py-8 text-center text-slate-400">Belum ada data pelanggan/tagihan.</td></tr> }
+      </tbody>
+    </table>
+  </div>
+  @if (error()) { <p class="text-sm text-red-600">{{ error() }}</p> }
+</div>

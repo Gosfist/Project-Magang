@@ -41,6 +41,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
       const local = this.localNow(settings.billingTimezone);
       if (local.day >= settings.billingStartDay) {
         await this.createMonthlyInvoices(settings, local.year, local.month);
+        await this.notifyPaymentReminders(settings, local.year, local.month);
       }
       if (local.hour < settings.isolationCheckHour || local.day <= settings.billingEndDay) return;
       await this.isolateOverdue(settings, this.utcDate(local.year, local.month, settings.billingEndDay));
@@ -142,6 +143,43 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
         });
       } catch (error) {
         this.logger.error(`Auto isolir ${account.username} gagal. ${error instanceof Error ? error.message : error}`);
+      }
+    }
+  }
+
+  private async notifyPaymentReminders(settings: BillingSettings, year: number, month: number) {
+    const monthStart = this.utcDate(year, month, 1);
+    const nextMonthStart = month === 12 ? this.utcDate(year + 1, 1, 1) : this.utcDate(year, month + 1, 1);
+    const invoices = await this.prisma.invoice.findMany({
+      where: {
+        status: 'PENDING',
+        reminderSentAt: null,
+        dueDate: { gte: monthStart, lt: nextMonthStart },
+      },
+      include: {
+        account: { select: { customerName: true, customerNumber: true, phone: true, package: { select: { name: true } } } },
+      },
+      take: 500,
+    });
+
+    for (const invoice of invoices) {
+      const claimed = await this.prisma.invoice.updateMany({
+        where: { id: invoice.id, reminderSentAt: null, status: 'PENDING' },
+        data: { reminderSentAt: new Date() },
+      });
+      if (!claimed.count) continue;
+      try {
+        await this.waNotify.notifyPaymentReminder({
+          customerName: invoice.account.customerName,
+          customerNumber: invoice.account.customerNumber,
+          phone: invoice.account.phone,
+          packageName: invoice.account.package.name,
+          totalAmount: Number(invoice.amount),
+          dueDate: this.formatDate(invoice.dueDate) || '-',
+        });
+      } catch (error) {
+        await this.prisma.invoice.update({ where: { id: invoice.id }, data: { reminderSentAt: null } });
+        this.logger.warn(`Pengingat tagihan ${invoice.invoiceNumber} gagal: ${error instanceof Error ? error.message : error}`);
       }
     }
   }

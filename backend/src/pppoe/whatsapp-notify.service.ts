@@ -29,14 +29,21 @@ export class WhatsappNotifyService {
     return row?.value || fallback;
   }
 
-  private async send(phone: string, message: string) {
-    if (!phone?.trim()) return;
+  private async send(phone: string, message: string): Promise<boolean> {
+    if (!phone?.trim()) return false;
     try {
       const enabled = await this.prisma.appSetting.findUnique({ where: { key: 'wa_bot_enabled' } });
-      if (enabled?.value === 'false') return;
+      if (enabled?.value === 'false') return false;
       const response = await fetch(`${this.botUrl}/api/wa/send`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': this.apiKey }, body: JSON.stringify({ phone, message }), signal: AbortSignal.timeout(10000) });
-      if (!response.ok) this.logger.warn(`Notifikasi WA gagal: HTTP ${response.status}`);
-    } catch (error) { this.logger.warn(`Notifikasi WA gagal: ${error instanceof Error ? error.message : String(error)}`); }
+      if (!response.ok) {
+        this.logger.warn(`Notifikasi WA gagal: HTTP ${response.status}`);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      this.logger.warn(`Notifikasi WA gagal: ${error instanceof Error ? error.message : String(error)}`);
+      return false;
+    }
   }
 
   async notifyRegistration(account: {
@@ -151,6 +158,26 @@ export class WhatsappNotifyService {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.warn(`Notifikasi WA isolir error: ${message}`);
     }
+  }
+
+  async notifyPaymentReminder(account: {
+    customerName: string;
+    customerNumber: bigint;
+    phone?: string | null;
+    packageName: string;
+    totalAmount: number;
+    dueDate: string;
+  }): Promise<void> {
+    if (!account.phone?.trim()) return;
+    const template = await this.template('payment_reminder', 'Halo Bapak/Ibu {nama},\n\nTagihan layanan internet Anda sudah memasuki periode pembayaran.\n\nNo. Pelanggan: {nomor_pelanggan}\nPaket: {paket}\nTotal Tagihan: {total_tagihan}\nBatas Pembayaran: {jatuh_tempo}\n\nSilakan lakukan pembayaran sebelum jatuh tempo agar layanan tetap aktif.\n\n— PT Unzanet');
+    const amount = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(account.totalAmount);
+    const sent = await this.send(account.phone, template
+      .replace(/\{nama\}/g, account.customerName)
+      .replace(/\{nomor_pelanggan\}/g, account.customerNumber.toString().padStart(6, '0'))
+      .replace(/\{paket\}/g, account.packageName)
+      .replace(/\{total_tagihan\}/g, amount)
+      .replace(/\{jatuh_tempo\}/g, account.dueDate));
+    if (!sent) throw new Error('Bot WhatsApp tidak menerima pengingat tagihan.');
   }
 
   private defaultTemplate(): string {

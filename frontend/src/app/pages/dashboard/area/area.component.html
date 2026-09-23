@@ -399,7 +399,14 @@
 
               <!-- Status Tagihan: MERAH (Harus Ditagih) vs HIJAU (Lunas) -->
               <td>
-                @if (c.billingStatus === 'PAID') {
+                @if (!c.isActive) {
+                  <div>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-700">
+                      <svg lucideAlertCircle [size]="14"></svg> DIISOLIR
+                    </span>
+                    <p class="text-[11px] text-red-600 mt-1">{{ c.unpaidAmount ? 'Tagihan belum dilunasi' : 'Akun dinonaktifkan' }}</p>
+                  </div>
+                } @else if (c.billingStatus === 'PAID') {
                   <div>
                     <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
                       <svg lucideCheckCircle2 [size]="14"></svg> LUNAS

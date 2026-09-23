@@ -7,7 +7,7 @@ describe('postpaid scheduler activation grace period', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-09-23T03:00:00Z'));
     const findMany = vi.fn().mockResolvedValue([]);
-    const service = new BillingIsolationService({ pppoeAccount: { findMany } } as any,
+    const service = new BillingIsolationService({ pppoeAccount: { findMany }, invoice: { findMany: vi.fn().mockResolvedValue([]) } } as any,
       { billing: async () => ({ billingStartDay: 5, billingEndDay: 10, billingTimezone: 'WIB', isolationCheckHour: 0 }) } as any,
       {} as any, {} as any, {} as any);
     await service.tick();
@@ -21,7 +21,7 @@ describe('postpaid scheduler activation grace period', () => {
     vi.setSystemTime(new Date('2026-10-10T03:00:00Z'));
     const create = vi.fn();
     const findMany = vi.fn().mockResolvedValue([{ invoices: [{ id: 1n }] }]);
-    const service = new BillingIsolationService({ pppoeAccount: { findMany }, invoice: { create } } as any,
+    const service = new BillingIsolationService({ pppoeAccount: { findMany }, invoice: { create, findMany: vi.fn().mockResolvedValue([]) } } as any,
       { billing: async () => ({ billingStartDay: 5, billingEndDay: 10, billingTimezone: 'WIB', isolationCheckHour: 0 }) } as any,
       {} as any, {} as any, {} as any);
     await service.tick();

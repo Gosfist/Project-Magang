@@ -2,6 +2,7 @@ import { Component, DestroyRef, inject, OnDestroy, OnInit, output, signal } from
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LucideClock3, LucideMenu } from '@lucide/angular';
+import { ApiService } from '../../../core/services/api.service';
 
 @Component({
   selector: 'app-header',
@@ -14,7 +15,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
   readonly openSidebar = output<void>();
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly api = inject(ApiService);
   private timerId: ReturnType<typeof setInterval> | null = null;
+  private serverOffsetMs = 0;
+  private lastServerSyncAt = 0;
   dateTime = signal('');
   compactDate = signal('');
   time = signal('');
@@ -67,6 +71,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
     this.updateDateTime();
     this.timerId = setInterval(() => this.updateDateTime(), 1000);
+    this.syncServerTime();
   }
 
   ngOnDestroy(): void {
@@ -78,7 +83,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   private updateDateTime(): void {
-    const now = new Date();
+    if (Date.now() - this.lastServerSyncAt > 30_000) this.syncServerTime();
+    const now = new Date(Date.now() + this.serverOffsetMs);
     const date = new Intl.DateTimeFormat('id-ID', {
       timeZone: 'Asia/Jakarta',
       weekday: 'long',
@@ -104,5 +110,17 @@ export class HeaderComponent implements OnInit, OnDestroy {
       year: 'numeric',
     }).format(now));
     this.time.set(time);
+  }
+
+  private syncServerTime(): void {
+    this.lastServerSyncAt = Date.now();
+    this.api.get<{ now: string }>('/auth/time').subscribe({
+      next: ({ now }) => {
+        const serverTime = Date.parse(now);
+        if (!Number.isNaN(serverTime)) this.serverOffsetMs = serverTime - Date.now();
+        this.updateDateTime();
+      },
+      error: () => {},
+    });
   }
 }

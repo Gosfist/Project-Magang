@@ -31,6 +31,12 @@ export class DepositController {
     return this.deposits.unpaidInvoices(search.trim());
   }
 
+  @Get('invoices')
+  @Roles('admin', 'finance')
+  invoices(@Query('search') search = '', @Query('status') status = '') {
+    return this.deposits.invoiceOverview(search.trim(), status);
+  }
+
   @Post()
   @Roles('admin', 'finance', 'kolektor')
   create(@Body() dto: CreateDepositDto, @Req() req: AuthRequest) {

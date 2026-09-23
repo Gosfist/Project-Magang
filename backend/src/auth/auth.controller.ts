@@ -24,6 +24,12 @@ export class AuthController {
     return this.auth.me(request.user.id);
   }
 
+  @Get('time')
+  @UseGuards(JwtAuthGuard)
+  time() {
+    return { now: new Date().toISOString() };
+  }
+
   @Patch('profile')
   @UseGuards(JwtAuthGuard)
   updateProfile(@Req() request: AuthRequest, @Body() dto: UpdateProfileDto) {
