@@ -21,7 +21,7 @@ export const TEMPLATE_LIST: TemplateConfig[] = [
     description: 'Dikirim setelah Sales mendaftarkan calon pelanggan.',
     placeholders: [
       { key: '{nama}', desc: 'Nama pelanggan' }, { key: '{nomor_pelanggan}', desc: 'Nomor pelanggan' },
-      { key: '{nomor_wa}', desc: 'Nomor WhatsApp' }, { key: '{alamat}', desc: 'Alamat pelanggan' }, { key: '{layanan}', desc: 'Paket layanan' },
+      { key: '{nomor_wa}', desc: 'Nomor WhatsApp' }, { key: '{alamat}', desc: 'Alamat pelanggan' }, { key: '{layanan}', desc: 'Harga paket' },
     ],
     sampleData: { '{nama}': 'Ahmad Fauzi', '{nomor_pelanggan}': '000123', '{nomor_wa}': '081234567890', '{alamat}': 'Jl. Contoh No. 1', '{layanan}': 'Paket 20 Mbps' },
   },
@@ -30,7 +30,7 @@ export const TEMPLATE_LIST: TemplateConfig[] = [
     description: 'Dikirim ketika teknisi menyelesaikan pemasangan.',
     placeholders: [
       { key: '{nama}', desc: 'Nama pelanggan' }, { key: '{nomor_pelanggan}', desc: 'Nomor pelanggan' },
-      { key: '{layanan}', desc: 'Paket layanan' }, { key: '{biaya_psb}', desc: 'Biaya pasang baru' },
+      { key: '{layanan}', desc: 'Harga paket' }, { key: '{biaya_psb}', desc: 'Biaya pasang baru' },
       { key: '{tanggal_mulai}', desc: 'Awal pembayaran' }, { key: '{tanggal_akhir}', desc: 'Jatuh tempo' },
     ],
     sampleData: { '{nama}': 'Ahmad Fauzi', '{nomor_pelanggan}': '000123', '{layanan}': 'Paket 20 Mbps', '{biaya_psb}': 'Rp 150.000', '{tanggal_mulai}': '1', '{tanggal_akhir}': '10' },
@@ -44,7 +44,7 @@ export const TEMPLATE_LIST: TemplateConfig[] = [
     placeholders: [
       { key: '{nama}', desc: 'Nama lengkap pelanggan' },
       { key: '{nomor_pelanggan}', desc: 'Nomor pelanggan (6 digit)' },
-      { key: '{paket}', desc: 'Nama paket layanan internet' },
+      { key: '{paket}', desc: 'Nama harga paket internet' },
       { key: '{username}', desc: 'Username akun PPPoE' },
       { key: '{password}', desc: 'Password akun PPPoE' },
     ],
@@ -65,7 +65,7 @@ export const TEMPLATE_LIST: TemplateConfig[] = [
     placeholders: [
       { key: '{nama}', desc: 'Nama lengkap pelanggan' },
       { key: '{nomor_pelanggan}', desc: 'Nomor pelanggan (6 digit)' },
-      { key: '{paket}', desc: 'Nama paket layanan internet' },
+      { key: '{paket}', desc: 'Nama harga paket internet' },
       { key: '{total_tagihan}', desc: 'Total tagihan yang harus dibayar' },
       { key: '{jatuh_tempo}', desc: 'Batas tanggal pembayaran tagihan' },
     ],

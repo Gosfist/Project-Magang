@@ -96,10 +96,11 @@ export const routes: Routes = [
         ],
       },
       {
-        path: 'pppoe/paket-layanan',
+        path: 'pppoe/harga-paket',
         component: PaketLayananComponent,
         canActivate: [roleGuard('admin')],
       },
+      { path: 'pppoe/paket-layanan', redirectTo: 'pppoe/harga-paket', pathMatch: 'full' },
       {
         path: 'pppoe/data-pelanggan',
         component: DataPelangganComponent,

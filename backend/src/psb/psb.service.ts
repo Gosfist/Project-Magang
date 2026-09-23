@@ -157,7 +157,7 @@ export class PsbService {
     return { customerName: dto.customerName.trim(), phone: dto.phone.trim(), idCardNumber: dto.idCardNumber?.trim() || null, idCardPhoto: dto.idCardPhoto || null, address: dto.address.trim(), pppoePackageId: BigInt(dto.pppoePackageId), areaId: dto.areaId ? BigInt(dto.areaId) : null };
   }
   private async validateCustomer(dto: CreatePsbOrderDto) {
-    if (!await this.prisma.pppoePackage.findUnique({ where: { id: BigInt(dto.pppoePackageId) } })) throw new NotFoundException('Paket layanan tidak ditemukan.');
+    if (!await this.prisma.pppoePackage.findUnique({ where: { id: BigInt(dto.pppoePackageId) } })) throw new NotFoundException('Harga paket tidak ditemukan.');
     if (dto.areaId && !await this.prisma.area.findUnique({ where: { id: BigInt(dto.areaId) } })) throw new NotFoundException('Area tidak ditemukan.');
   }
   private async find(id: string, includePackage = false): Promise<any> {

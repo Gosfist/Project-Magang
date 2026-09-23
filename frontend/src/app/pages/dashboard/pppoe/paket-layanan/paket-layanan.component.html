@@ -2,10 +2,10 @@
   <div class="card flex gap-3 p-4">
     <div class="relative flex-1">
       <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
-      <input class="input pl-10" placeholder="Cari nama paket..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
+      <input class="input pl-10" placeholder="Cari harga paket..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
     </div>
     <button class="btn-primary" (click)="show()">
-      <svg lucidePlus [size]="18"></svg> Tambah Paket
+      <svg lucidePlus [size]="18"></svg> Tambah Harga Paket
     </button>
   </div>
 
@@ -13,7 +13,7 @@
     <table>
       <thead>
         <tr>
-          <th>Nama Paket & Harga</th><th>Kecepatan</th><th>IP Pool</th><th>Masa Aktif</th><th>Akun</th><th>Status</th><th>Aksi</th>
+          <th>Harga Paket</th><th>Kecepatan</th><th>IP Pool</th><th>Masa Aktif</th><th>Akun</th><th>Status</th><th>Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -45,7 +45,7 @@
           </tr>
         }
         @if (items().length === 0) {
-          <tr><td colspan="7" class="py-8 text-center text-slate-400">Paket PPPoE belum tersedia.</td></tr>
+          <tr><td colspan="7" class="py-8 text-center text-slate-400">Harga paket belum tersedia.</td></tr>
         }
       </tbody>
     </table>
@@ -53,7 +53,7 @@
 
   <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
 
-  <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Paket PPPoE'" (closeModal)="open.set(false)">
+  <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Harga Paket'" (closeModal)="open.set(false)">
     <form (ngSubmit)="save()" class="space-y-4">
       <div class="grid gap-4 sm:grid-cols-3">
         <div>

@@ -69,7 +69,7 @@ model PppoePackage {
   psbOrders    PsbOrder[]
 
   @@index([ipPoolId])
-  @@map("pppoe_packages")
+  @@map("harga_paket")
 }
 
 model PppoeAccount {
@@ -106,7 +106,7 @@ model PppoeAccount {
   @@index([pppoePackageId])
   @@index([routerNasId])
   @@index([areaId])
-  @@map("pppoe_accounts")
+  @@map("daftar_pelanggan")
 }
 
 model PsbOrder {

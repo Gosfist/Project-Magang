@@ -86,7 +86,7 @@ export class SidebarComponent implements OnInit {
   ];
   readonly pppoeLinks = [
     ['Data Pelanggan', '/dashboard/pppoe/data-pelanggan'],
-    ['Paket Layanan', '/dashboard/pppoe/paket-layanan'],
+    ['Harga Paket', '/dashboard/pppoe/harga-paket'],
     ['IP Pool', '/dashboard/pppoe/ip-pools'],
   ];
   readonly botWaLinks = [

@@ -50,7 +50,7 @@ export class PppoeService {
 
   private async assertPoolUnused(name: string) {
     if (await this.prisma.pppoePackage.count({ where: { OR: [{ addressPool: name }, { ipPool: { name } }] } })) {
-      throw new BadRequestException('IP Pool masih digunakan paket PPPoE. Pindahkan paket sebelum mengganti nama atau menghapus pool.');
+      throw new BadRequestException('IP Pool masih digunakan harga paket. Pindahkan harga paket sebelum mengganti nama atau menghapus pool.');
     }
   }
 
@@ -116,7 +116,7 @@ export class PppoeService {
         },
         include: { ipPool: true }
       });
-      return serialize({ message: 'Paket PPPoE berhasil ditambahkan.', package: { ...item, price: Number(item.price), costPrice: Number(item.costPrice) } });
+      return serialize({ message: 'Harga paket berhasil ditambahkan.', package: { ...item, price: Number(item.price), costPrice: Number(item.costPrice) } });
     } catch (error) { this.unique(error, 'Nama paket sudah digunakan.'); }
   }
 
@@ -141,7 +141,7 @@ export class PppoeService {
         for (const account of accounts) await this.radius.sync(tx, account);
         return updated;
       });
-      return serialize({ message: 'Paket PPPoE berhasil diperbarui dan disinkronkan ke RADIUS.', package: { ...item, price: Number(item.price), costPrice: Number(item.costPrice) } });
+      return serialize({ message: 'Harga paket berhasil diperbarui dan disinkronkan ke RADIUS.', package: { ...item, price: Number(item.price), costPrice: Number(item.costPrice) } });
     } catch (error) { this.unique(error, 'Nama paket sudah digunakan.'); }
   }
 
@@ -158,7 +158,7 @@ export class PppoeService {
       const accounts = await this.prisma.pppoeAccount.findMany({ where: { pppoePackageId: updated.id } });
       for (const account of accounts) warnings.push(...(await this.network.disconnect(account.username, account.routerNasId)).warnings);
     }
-    const message = `Paket PPPoE berhasil ${updated.isActive ? 'diaktifkan' : 'dinonaktifkan'}.`;
+    const message = `Harga paket berhasil ${updated.isActive ? 'diaktifkan' : 'dinonaktifkan'}.`;
     return { message: warnings.length ? `${message} Perhatian: ${warnings.join(' ')}` : message, warnings, isActive: updated.isActive };
   }
 
@@ -166,7 +166,7 @@ export class PppoeService {
     const item = await this.findPackage(id);
     if (await this.prisma.pppoeAccount.count({ where: { pppoePackageId: item.id } })) throw new BadRequestException('Paket masih digunakan akun PPPoE dan tidak dapat dihapus.');
     await this.prisma.pppoePackage.delete({ where: { id: item.id } });
-    return { message: 'Paket PPPoE berhasil dihapus.' };
+    return { message: 'Harga paket berhasil dihapus.' };
   }
 
   async accounts(search = '', page = 1, status = '', session = '') {
@@ -400,7 +400,7 @@ export class PppoeService {
 
   private async findPackage(id: string) {
     const item = await this.prisma.pppoePackage.findUnique({ where: { id: BigInt(id) } });
-    if (!item) throw new NotFoundException('Paket PPPoE tidak ditemukan.');
+    if (!item) throw new NotFoundException('Harga paket tidak ditemukan.');
     return item;
   }
   private async findAccount(id: string) {
