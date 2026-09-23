@@ -74,9 +74,10 @@ export class PsbService {
 
   async activate(id: string, dto: ActivatePsbOrderDto, technicianId: string) {
     const order = await this.find(id, true);
-    const installationPhoto = await storeImage(dto.installationPhoto, 'instalasi', String(order.id));
-    const odp = await this.prisma.mainCore.findFirst({ where: { id: BigInt(dto.odp), tipeTitik: { in: ['odc', 'odp'] } } });
+    const odp = await this.prisma.mainCore.findFirst({ where: { id: BigInt(dto.odp), tipeTitik: { in: ['odc', 'odp'] }, deletedAt: null } });
     if (!odp) throw new BadRequestException('ODC / ODP tidak ditemukan.');
+    const routerNasId = await this.routerForLocation(odp.id);
+    const installationPhoto = await storeImage(dto.installationPhoto, 'instalasi', String(order.id));
     if (order.status !== 'PROCESS') {
       if (!order.pppoeAccountId || !['ACTIVATED', 'COMPLETED'].includes(order.status)) {
         throw new BadRequestException('Pesanan ini tidak dapat diedit.');
@@ -84,13 +85,13 @@ export class PsbService {
       const updated = await this.prisma.$transaction(async tx => {
         const account = await tx.pppoeAccount.update({
           where: { id: order.pppoeAccountId! },
-          data: { odp: dto.odp, routerNasId: dto.routerNasId ? Number(dto.routerNasId) : null },
+          data: { odp: dto.odp, routerNasId },
           include: { package: { include: { ipPool: true } } },
         });
         await this.radius.sync(tx, account);
         return tx.psbOrder.update({
           where: { id: order.id },
-          data: { odp: dto.odp, routerNasId: dto.routerNasId ? Number(dto.routerNasId) : null, installationPhoto },
+          data: { odp: dto.odp, routerNasId, installationPhoto },
         });
       });
       return serialize({ message: 'Data aktivasi berhasil diperbarui.', order: updated });
@@ -112,7 +113,7 @@ export class PsbService {
             billingDay: 1,
             discount: 0n,
             odp: dto.odp,
-            routerNasId: dto.routerNasId ? Number(dto.routerNasId) : null,
+            routerNasId,
             areaId: order.areaId,
             isActive: true,
             createdAt: new Date(),
@@ -123,7 +124,7 @@ export class PsbService {
         await this.radius.sync(tx, account);
         const updated = await tx.psbOrder.update({
           where: { id: order.id },
-          data: { status: 'ACTIVATED', username: dto.username.trim(), password: this.secrets.encrypt(dto.password), odp: dto.odp, routerNasId: dto.routerNasId ? Number(dto.routerNasId) : null, installationPhoto, pppoeAccountId: account.id, activatedByUserId: BigInt(technicianId), activatedAt: new Date() },
+          data: { status: 'ACTIVATED', username: dto.username.trim(), password: this.secrets.encrypt(dto.password), odp: dto.odp, routerNasId, installationPhoto, pppoeAccountId: account.id, activatedByUserId: BigInt(technicianId), activatedAt: new Date() },
         });
         return { account, updated };
       });
@@ -153,6 +154,24 @@ export class PsbService {
     });
     void this.wa.notifyPsbCompleted({ customerName: order.customerName, customerNumber: order.customerNumber, phone: order.phone, packageName: order.package.name, installationFee: psb.installationFee, billingStartDay: billing.billingStartDay, billingEndDay: billing.billingEndDay });
     return { message: 'Pemasangan selesai. Status Sales dan Teknisi telah diperbarui serta notifikasi pelanggan diproses.' };
+  }
+
+  private async routerForLocation(locationId: bigint): Promise<number> {
+    const nodes = await this.prisma.mainCore.findMany({ where: { deletedAt: null }, select: { id: true, parentId: true, tipeTitik: true, routerNasId: true } });
+    const byId = new Map(nodes.map(node => [node.id.toString(), node]));
+    const visited = new Set<string>();
+    let current = byId.get(locationId.toString());
+    while (current && !visited.has(current.id.toString())) {
+      visited.add(current.id.toString());
+      if (current.tipeTitik === 'server') {
+        if (!current.routerNasId) throw new BadRequestException('Jalur ODC/ODP belum terhubung ke Server yang memiliki Router MikroTik.');
+        const router = await this.prisma.nas.findFirst({ where: { id: current.routerNasId, isActive: true }, select: { id: true } });
+        if (!router) throw new BadRequestException('Router MikroTik pada Server tidak aktif atau tidak ditemukan.');
+        return router.id;
+      }
+      current = current.parentId ? byId.get(current.parentId.toString()) : undefined;
+    }
+    throw new BadRequestException('Jalur ODC/ODP belum tersambung sampai ke Server.');
   }
 
   private async customerData(dto: CreatePsbOrderDto) {

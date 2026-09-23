@@ -32,6 +32,7 @@ model MainCore {
   id            BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
   parentId      BigInt?    @map("parent_id") @db.UnsignedBigInt
   parentPortOut Int?       @map("parent_port_out") @db.UnsignedInt
+  routerNasId   Int?       @map("router_nas_id") @db.UnsignedInt
   namaTitik     String     @unique @map("nama_titik")
   tipeTitik     String     @map("tipe_titik")
   redamanIn     Decimal?   @map("redaman_in") @db.Decimal(5, 2)
@@ -44,9 +45,11 @@ model MainCore {
   deletedAt     DateTime?  @map("deleted_at")
   parent        MainCore?  @relation("MainCoreTree", fields: [parentId], references: [id])
   children      MainCore[] @relation("MainCoreTree")
+  routerNas     Nas?       @relation("MainCoreRouter", fields: [routerNasId], references: [id], onDelete: SetNull)
 
   @@index([parentId])
   @@index([parentPortOut])
+  @@index([routerNasId])
   @@index([tipeTitik])
   @@map("main_core")
 }
@@ -395,6 +398,7 @@ model Nas {
   updatedAt       DateTime?      @default(now()) @updatedAt @map("updated_at")
   accounts        PppoeAccount[]
   psbOrders       PsbOrder[]
+  mainCoreServers MainCore[]       @relation("MainCoreRouter")
   vpnClient       VpnClient?     @relation(fields: [vpnClientId], references: [id], onDelete: SetNull)
 
   @@index([nasname])

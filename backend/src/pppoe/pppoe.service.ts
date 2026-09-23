@@ -78,12 +78,29 @@ export class PppoeService {
   }
 
   async nasOptions() {
-    const data = await this.prisma.nas.findMany({ select: { id: true, nasname: true, shortname: true, description: true }, orderBy: { nasname: 'asc' } });
+    const data = await this.prisma.nas.findMany({ where: { isActive: true }, select: { id: true, nasname: true, shortname: true, description: true }, orderBy: { nasname: 'asc' } });
     return serialize({ data });
   }
 
   async odpOptions() {
-    const data = await this.prisma.mainCore.findMany({ where: { tipeTitik: { in: ['odc', 'odp'] } }, select: { id: true, namaTitik: true, alamat: true, tipeTitik: true }, orderBy: { namaTitik: 'asc' } });
+    const nodes = await this.prisma.mainCore.findMany({ where: { tipeTitik: { in: ['server', 'rasio', 'odc', 'odp'] }, deletedAt: null }, select: { id: true, parentId: true, routerNasId: true, namaTitik: true, alamat: true, tipeTitik: true }, orderBy: { namaTitik: 'asc' } });
+    const byId = new Map(nodes.map(node => [node.id.toString(), node]));
+    const routers = await this.prisma.nas.findMany({ where: { isActive: true }, select: { id: true, nasname: true, shortname: true } });
+    const routerById = new Map(routers.map(router => [router.id, router.shortname || router.nasname]));
+    const data = nodes.filter(node => node.tipeTitik === 'odc' || node.tipeTitik === 'odp').map(node => {
+      let current: typeof node | undefined = node;
+      const visited = new Set<string>();
+      let routerNasId: number | null = null;
+      while (current && !visited.has(current.id.toString())) {
+        visited.add(current.id.toString());
+        if (current.tipeTitik === 'server') {
+          routerNasId = current.routerNasId && routerById.has(current.routerNasId) ? current.routerNasId : null;
+          break;
+        }
+        current = current.parentId ? byId.get(current.parentId.toString()) : undefined;
+      }
+      return { id: node.id, namaTitik: node.namaTitik, alamat: node.alamat, tipeTitik: node.tipeTitik, routerNasId, routerName: routerNasId ? routerById.get(routerNasId) : null };
+    });
     return serialize({ data });
   }
 

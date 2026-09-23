@@ -5,7 +5,6 @@ import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import {
   Area,
-  NasOption,
   OdpOption,
   PageMeta,
   PppoePackage,
@@ -36,7 +35,6 @@ export class PsbComponent implements OnInit {
   packages = signal<PppoePackage[]>([]);
   areas = signal<Area[]>([]);
   odps = signal<OdpOption[]>([]);
-  routers = signal<NasOption[]>([]);
   meta = signal<PageMeta>({
     currentPage: 1,
     lastPage: 1,
@@ -67,7 +65,6 @@ export class PsbComponent implements OnInit {
     username: '',
     password: '',
     odp: '',
-    routerNasId: '',
     installationPhoto: '',
   };
   saving = signal(false);
@@ -103,9 +100,6 @@ export class PsbComponent implements OnInit {
       this.api
         .get<{ data: OdpOption[] }>('/pppoe/odp/options')
         .subscribe((r) => this.odps.set(r.data));
-      this.api
-        .get<{ data: NasOption[] }>('/pppoe/nas/options')
-        .subscribe((r) => this.routers.set(r.data));
     }
   }
   openForm(item?: PsbOrder) {
@@ -181,7 +175,6 @@ export class PsbComponent implements OnInit {
       username: item.username || item.customerId,
       password: item.customerId,
       odp: item.odp || '',
-      routerNasId: item.routerNasId?.toString() || '',
       installationPhoto: item.installationPhoto || '',
     };
     const selectedOdp = this.odps().find((o) => o.id === this.activation.odp);
@@ -193,7 +186,7 @@ export class PsbComponent implements OnInit {
   filteredOdps() {
     const query = this.odpSearch.trim().toLocaleLowerCase();
     return this.odps().filter((item) =>
-      `${item.namaTitik} ${item.tipeTitik} ${item.alamat || ''}`
+      `${item.namaTitik} ${item.tipeTitik} ${item.alamat || ''} ${item.routerName || ''}`
         .toLocaleLowerCase()
         .includes(query),
     );
@@ -202,6 +195,9 @@ export class PsbComponent implements OnInit {
     this.activation.odp = item.id;
     this.odpSearch = `${item.namaTitik} (${item.tipeTitik.toUpperCase()})`;
     this.odpPickerOpen = false;
+  }
+  selectedRouterName(): string {
+    return this.odps().find(item => item.id === this.activation.odp)?.routerName || 'belum disetel';
   }
   choosePhoto(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];

@@ -5,9 +5,9 @@ import { ApiService } from '../../../../core/services/api.service';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
-import { MainCoreNode, PageMeta } from '../../../../shared/models/types';
+import { MainCoreNode, NasOption, PageMeta } from '../../../../shared/models/types';
 
-const emptyServerForm = { namaTitik: '', redamanIn: '' };
+const emptyServerForm = { namaTitik: '', redamanIn: '', routerNasId: '' };
 
 @Component({
   selector: 'app-server',
@@ -28,6 +28,7 @@ export class ServerComponent implements OnInit {
   private api = inject(ApiService);
 
   items = signal<MainCoreNode[]>([]);
+  routers = signal<NasOption[]>([]);
   meta = signal<PageMeta>({ currentPage: 1, lastPage: 1, perPage: 5, total: 0 });
   page = signal(1);
   search = '';
@@ -38,6 +39,10 @@ export class ServerComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+    this.api.get<{ data: NasOption[] }>('/pppoe/nas/options').subscribe({
+      next: (response) => this.routers.set(response.data),
+      error: (error) => this.toast.set({ message: error.message, type: 'error' }),
+    });
   }
 
   load(): void {
@@ -61,7 +66,7 @@ export class ServerComponent implements OnInit {
   show(node?: MainCoreNode): void {
     this.editing.set(node ?? null);
     this.form = node
-      ? { namaTitik: node.namaTitik, redamanIn: String(node.redamanIn ?? '') }
+      ? { namaTitik: node.namaTitik, redamanIn: String(node.redamanIn ?? ''), routerNasId: String(node.routerNasId ?? '') }
       : { ...emptyServerForm };
     this.open.set(true);
   }
@@ -71,6 +76,7 @@ export class ServerComponent implements OnInit {
     const body = {
       namaTitik: this.form.namaTitik,
       redamanIn: this.form.redamanIn === '' ? undefined : Number(this.form.redamanIn),
+      routerNasId: this.form.routerNasId,
     };
     const request = editing
       ? this.api.patch<{ message: string }>(`/main-core/server/${editing.id}`, body)

@@ -20,6 +20,7 @@
       <thead>
         <tr>
           <th>Nama Core</th>
+          <th>Router MikroTik</th>
           <th>Redaman</th>
           <th>Tanggal</th>
           <th>Aksi</th>
@@ -29,6 +30,7 @@
         @for (node of items(); track node.id) {
           <tr>
             <td class="font-medium text-slate-900">{{ node.namaTitik }}</td>
+            <td>{{ node.routerNas?.shortname || node.routerNas?.nasname || '—' }}</td>
             <td>{{ node.redamanIn === null ? '—' : node.redamanIn + ' dBm' }}</td>
             <td>{{ node.tanggal ? formatDate(node.tanggal) : '—' }}</td>
             <td>
@@ -44,7 +46,7 @@
           </tr>
         }
         @if (items().length === 0) {
-          <tr><td colspan="4" class="py-8 text-center text-slate-400">Data Server belum tersedia.</td></tr>
+          <tr><td colspan="5" class="py-8 text-center text-slate-400">Data Server belum tersedia.</td></tr>
         }
       </tbody>
     </table>
@@ -61,6 +63,15 @@
       <div>
         <label class="label">Nama Core *</label>
         <input class="input" required [(ngModel)]="form.namaTitik" name="namaTitik" />
+      </div>
+      <div>
+        <label class="label">Router MikroTik / NAS *</label>
+        <select class="input" required [(ngModel)]="form.routerNasId" name="routerNasId">
+          <option value="">Pilih Router</option>
+          @for (router of routers(); track router.id) {
+            <option [value]="router.id">{{ router.shortname || router.nasname }}</option>
+          }
+        </select>
       </div>
       <div>
         <label class="label">Redaman In (dBm)</label>

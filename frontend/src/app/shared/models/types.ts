@@ -4,12 +4,13 @@ export type MainCoreNode = {
   id: string; parentId: string | null; parentPortOut: number | null; namaTitik: string;
   tipeTitik: 'server' | 'rasio' | 'odc' | 'odp'; redamanIn: number | null; jarakKabel: number | null;
   alamat: string | null; spesifikasi: Record<string, unknown> | null; tanggal: string | null;
+  routerNasId?: number | null; routerNas?: Pick<NasOption, 'id' | 'nasname' | 'shortname'> | null;
   jenisSplitter: string | null; jumlahOutput: number | null; rasioRedaman: string | null;
   rasioRedamanPorts: Record<string, string>; parent?: MainCoreNode | null;
 };
 export type IpPool = { totalIps: number | null; usedIps: number | null; freeIps: number | null; routerNasId: number; routerName: string; ranges: string; id: string; name: string; networkStart: string; networkEnd: string };
 export type NasOption = { id: string; nasname: string; shortname: string | null; description: string };
-export type OdpOption = { id: string; namaTitik: string; alamat: string | null; tipeTitik: 'odc' | 'odp' };
+export type OdpOption = { id: string; namaTitik: string; alamat: string | null; tipeTitik: 'odc' | 'odp'; routerNasId: number | null; routerName: string | null };
 export type Invoice = { id: string; pppoeAccountId: string; invoiceNumber: string; amount: number; baseAmount: number; discount: number; invoiceType: 'PRORATE' | 'MONTHLY'; status: 'PENDING' | 'PAID' | 'CANCELLED'; dueDate: string; paidAt: string | null; notes: string | null };
 
 export type PppoePackage = { id: string; name: string; downloadMbps: number; uploadMbps: number; price: number; costPrice: number; addressPool: string | null; ipPool: IpPool | null; validityDays: number; isActive: boolean; accountsCount?: number; rateLimit?: string };

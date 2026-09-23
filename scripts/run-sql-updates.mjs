@@ -29,6 +29,8 @@ const features = new Map([
   ['20260917_bot_wa_logs.sql', 'Log notifikasi Bot WhatsApp'],
   ['20260918_finance_and_areas.sql', 'Modul Keuangan dan Manajemen Area'],
   ['20260922_user_photo.sql', 'Foto profil petugas'],
+  ['20260924_main_core_router_nas.sql', 'Hubungkan Server Main Core ke router MikroTik'],
+  ['20260924_main_core_router_nas.sql', 'Hubungkan Server Main Core ke router MikroTik'],
 ]);
 
 function checksum(content) {
@@ -99,6 +101,10 @@ async function looksAlreadyApplied(filename) {
       return (await tableExists('finance_transactions')) && (await tableExists('areas')) && (await tableExists('collector_deposits'));
     case '20260922_user_photo.sql':
       return columnExists('users', 'photo');
+    case '20260924_main_core_router_nas.sql':
+      return columnExists('main_core', 'router_nas_id');
+    case '20260924_main_core_router_nas.sql':
+      return columnExists('main_core', 'router_nas_id');
     default:
       return false;
   }

@@ -31,7 +31,7 @@ export class MainCoreService {
     const [nodes, total] = await this.prisma.$transaction([
       this.prisma.mainCore.findMany({
         where,
-        include: { parent: true },
+        include: { parent: true, routerNas: { select: { id: true, nasname: true, shortname: true } } },
         orderBy: { namaTitik: 'asc' },
         skip: (page - 1) * perPage,
         take: perPage,
@@ -179,6 +179,14 @@ export class MainCoreService {
       if (!dto.alamat?.trim()) throw new BadRequestException('Alamat wajib diisi.');
     }
 
+    let routerNasId: number | null = null;
+    if (type === 'server') {
+      if (!dto.routerNasId || !/^\d+$/.test(dto.routerNasId)) throw new BadRequestException('Router MikroTik wajib dipilih untuk Server ini.');
+      const router = await this.prisma.nas.findFirst({ where: { id: Number(dto.routerNasId), isActive: true }, select: { id: true } });
+      if (!router) throw new BadRequestException('Router MikroTik tidak ditemukan atau tidak aktif.');
+      routerNasId = router.id;
+    }
+
     let spesifikasi = dto.spesifikasi ?? null;
     if (type === 'rasio') {
       const raw = (dto.spesifikasi?.rasio_redaman_ports ?? {}) as Record<string, string>;
@@ -202,6 +210,7 @@ export class MainCoreService {
     return {
       parentId: type === 'server' ? null : BigInt(dto.parentId!),
       parentPortOut: type === 'server' ? null : parentPortOut,
+      routerNasId,
       namaTitik: dto.namaTitik.trim(), tipeTitik: type,
       redamanIn, jarakKabel: type === 'server' ? null : dto.jarakKabel ?? null,
       alamat: type === 'server' ? null : dto.alamat?.trim(),

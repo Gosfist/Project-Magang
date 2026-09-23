@@ -7,6 +7,8 @@ import { uploadsDirectory } from './common/image-storage.js';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.useBodyParser('json', { limit: '8mb' });
+  app.useBodyParser('urlencoded', { limit: '8mb', extended: true });
   app.useStaticAssets(uploadsDirectory(), { prefix: '/uploads' });
   const configuredOrigins = (process.env.FRONTEND_URL ?? 'http://localhost:3000')
     .split(',')
