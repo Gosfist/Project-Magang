@@ -24,6 +24,7 @@ describe('PPPoE billing and account deactivation', () => {
     };
     let committed = false;
     const prisma = {
+      appSetting: { findMany: vi.fn().mockResolvedValue([]) },
       mainCore: { findFirst: vi.fn().mockResolvedValue({ id: 4n }) },
       pppoePackage: { findUnique: vi.fn().mockResolvedValue(pkg) },
       pppoeAccount: { findUnique: vi.fn().mockResolvedValue(current) },
@@ -77,10 +78,10 @@ describe('PPPoE billing and account deactivation', () => {
     await service.createAccount({ ...dto, firstInvoice: 'none' });
     expect(invoice.create).not.toHaveBeenCalled();
   });
-  it('charges full postpaid when full is selected', async () => {
+  it('keeps initial postpaid prorated even for a stale full payload', async () => {
     const { service, dto, invoice } = setup();
     await service.createAccount({ ...dto, subscriptionType: 'POSTPAID', firstInvoice: 'full' });
-    expect(invoice.create).toHaveBeenCalledWith({ data: expect.objectContaining({ amount: 290000n, invoiceType: 'MONTHLY' }) });
+    expect(invoice.create).toHaveBeenCalledWith({ data: expect.objectContaining({ amount: 145000n, invoiceType: 'PRORATE', dueDate: new Date('2026-10-10T00:00:00Z') }) });
   });
   it('disconnects after committing deactivation and allows retrying an inactive account', async () => {
     const { service, dto, network, radius } = setup();

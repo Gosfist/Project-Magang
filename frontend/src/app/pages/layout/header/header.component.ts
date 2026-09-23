@@ -36,6 +36,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard/pppoe/harga-paket': 'Harga Paket',
     '/dashboard/pppoe/paket-layanan': 'Harga Paket',
     '/dashboard/pppoe/data-pelanggan': 'Data Pelanggan',
+    '/dashboard/teknisi/data-pelanggan': 'Data Pelanggan',
     '/dashboard/pppoe/ip-pools': 'IP Pool',
     '/dashboard/router/routers': 'Router / NAS',
     '/dashboard/router/vpn-server': 'Server VPN',

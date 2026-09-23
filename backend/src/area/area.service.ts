@@ -3,6 +3,8 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { pageMeta, serialize } from '../common/serialize.js';
 import { AssignCollectorDto, SaveAreaDto } from './area.dto.js';
+import { SettingsService } from '../settings/settings.service.js';
+import { localBillingDate } from '../pppoe/billing-cycle.js';
 
 @Injectable()
 export class AreaService {
@@ -175,6 +177,9 @@ export class AreaService {
   }
 
   async getAreaCustomers(areaId: string, search = '', status = 'ALL', user?: { id: string; role: string }) {
+    const billing = await new SettingsService(this.prisma).billing();
+    const local = localBillingDate(new Date(), billing.billingTimezone);
+    const visibleBefore = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth() + (local.getUTCDate() >= billing.billingStartDay ? 1 : 0), 1));
     const area = await this.findArea(areaId);
     if (user?.role === 'kolektor' && !await this.prisma.areaCollector.findFirst({ where: { areaId: BigInt(areaId), userId: BigInt(user.id) } })) {
       throw new BadRequestException('Area ini bukan tugas kolektor Anda. Gunakan menu Titipan untuk pelanggan di luar area.');
@@ -223,7 +228,7 @@ export class AreaService {
     });
 
     const mapped = accounts.map((acc) => {
-      const unpaidInvoices = acc.invoices.filter((inv) => ['PENDING', 'OVERDUE'].includes(inv.status));
+      const unpaidInvoices = acc.invoices.filter((inv) => ['PENDING', 'OVERDUE'].includes(inv.status) && inv.dueDate < visibleBefore);
       const isPaid = unpaidInvoices.length === 0;
       const unpaidAmount = unpaidInvoices.reduce((sum, inv) => sum + Number(inv.amount), 0);
 

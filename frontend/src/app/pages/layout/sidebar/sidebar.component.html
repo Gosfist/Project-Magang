@@ -46,6 +46,13 @@
         (click)="mobile.set(false)"
         ><svg lucideNetwork [size]="20"></svg> Pasang Baru</a
       >
+      <a
+        routerLink="/dashboard/teknisi/data-pelanggan"
+        routerLinkActive="bg-white/15 text-white"
+        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+        (click)="mobile.set(false)"
+        ><svg lucideUsers [size]="20"></svg> Data Pelanggan</a
+      >
     }
     @if (auth.isTeknisi()) {
       <button

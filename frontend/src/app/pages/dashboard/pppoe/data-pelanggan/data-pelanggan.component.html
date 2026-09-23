@@ -60,9 +60,11 @@
     <button class="btn-secondary" [disabled]="refreshing() || (!statusFilter && !sessionFilter)" (click)="resetFilters()">
       Riset Filter
     </button>
-    <button class="btn-primary" (click)="show()">
-      <svg lucidePlus [size]="18"></svg> Tambah Pelanggan
-    </button>
+    @if (!readOnly()) {
+      <button class="btn-primary" (click)="show()">
+        <svg lucidePlus [size]="18"></svg> Tambah Pelanggan
+      </button>
+    }
   </div>
 
   <div class="table-wrap">
@@ -76,7 +78,7 @@
           <th>Uptime</th>
           <th>Status</th>
           <th>Sesi</th>
-          <th>Aksi</th>
+          @if (!readOnly()) { <th>Aksi</th> }
         </tr>
       </thead>
       <tbody>
@@ -131,8 +133,9 @@
                 }}</span
               >
             </td>
-            <td>
-              <div class="flex gap-2">
+            @if (!readOnly()) {
+              <td>
+                <div class="flex gap-2">
                 <button
                   class="btn-secondary"
                   title="Putus Sesi"
@@ -158,13 +161,14 @@
                 >
                   <svg lucideTrash2 [size]="15"></svg>
                 </button>
-              </div>
-            </td>
+                </div>
+              </td>
+            }
           </tr>
         }
         @if (items().length === 0) {
           <tr>
-            <td colspan="8" class="py-8 text-center text-slate-400">
+            <td [attr.colspan]="readOnly() ? 7 : 8" class="py-8 text-center text-slate-400">
               {{
                 refreshing()
                   ? "Memuat data pelanggan..."

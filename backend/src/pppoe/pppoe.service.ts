@@ -9,6 +9,8 @@ import { SecretService } from './secret.service.js';
 import { PppoeNetworkService } from './pppoe-network.service.js';
 import { validateIdCardPhoto } from './id-card-photo.js';
 import { WhatsappNotifyService } from './whatsapp-notify.service.js';
+import { SettingsService } from '../settings/settings.service.js';
+import { firstBillingCycle } from './billing-cycle.js';
 
 @Injectable()
 export class PppoeService {
@@ -341,27 +343,15 @@ export class PppoeService {
 
   private async createFirstInvoice(tx: Prisma.TransactionClient, account: Prisma.PppoeAccountGetPayload<{}>, packageData: Prisma.PppoePackageGetPayload<{}>, discount: number, firstInvoice: string) {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const currentDay = now.getDate();
-    const bd = Math.min(Math.max(account.billingDay || 1, 1), 28);
-
-    let nextBilling: Date;
-    if (currentDay < bd) {
-      nextBilling = new Date(year, month, bd);
-    } else {
-      nextBilling = new Date(year, month + 1, bd);
-    }
-
     const msPerDay = 1000 * 60 * 60 * 24;
-    const daysActive = Math.max(1, Math.ceil((nextBilling.getTime() - now.getTime()) / msPerDay));
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
     const baseAmount = Math.max(0, Number(packageData.price) - discount);
-    const prorate = firstInvoice === 'prorate' && account.subscriptionType !== 'PREPAID';
-    const invoiceAmount = prorate ? Math.ceil((daysActive / daysInMonth) * baseAmount) : baseAmount;
+    const prorate = account.subscriptionType !== 'PREPAID';
+    const billing = prorate ? await new SettingsService(this.prisma).billing() : null;
+    const first = billing ? firstBillingCycle(account.createdAt ?? now, baseAmount, billing.billingEndDay, billing.billingTimezone) : null;
+    const invoiceAmount = first ? first.amount : baseAmount;
     const dueDate = account.subscriptionType === 'PREPAID'
       ? account.expiresAt ?? new Date(now.getTime() + packageData.validityDays * msPerDay)
-      : nextBilling;
+      : first!.dueDate;
 
     const invoiceNumber = this.generateInvoiceNumber();
 

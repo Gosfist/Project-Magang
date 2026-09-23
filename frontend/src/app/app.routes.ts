@@ -107,6 +107,11 @@ export const routes: Routes = [
         canActivate: [roleGuard('admin')],
       },
       {
+        path: 'teknisi/data-pelanggan',
+        component: DataPelangganComponent,
+        canActivate: [roleGuard('teknisi')],
+      },
+      {
         path: 'pppoe/ip-pools',
         loadComponent: () =>
           import('./pages/dashboard/pppoe/ip-pools/ip-pools.component').then(

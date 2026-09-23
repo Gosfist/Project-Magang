@@ -5,6 +5,7 @@ import { SettingsService, BillingSettings } from '../settings/settings.service.j
 import { RadiusService } from './radius.service.js';
 import { PppoeNetworkService } from './pppoe-network.service.js';
 import { WhatsappNotifyService } from './whatsapp-notify.service.js';
+import { firstBillingCycle, billingOffsets } from './billing-cycle.js';
 
 const timezoneOffset: Record<BillingSettings['billingTimezone'], number> = { WIB: 7, WITA: 8, WIT: 9 };
 
@@ -60,11 +61,12 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
       where: {
         subscriptionType: 'POSTPAID',
         package: { isActive: true },
-        createdAt: { lt: nextMonthStart },
+        createdAt: { lt: new Date(monthStart.getTime() - billingOffsets[settings.billingTimezone] * 3600000) },
       },
       select: {
         id: true,
         customerNumber: true,
+        createdAt: true,
         package: { select: { price: true } },
         discount: true,
         invoices: {
@@ -78,7 +80,10 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
 
     for (const account of accounts) {
       if (account.invoices.length) continue;
-      const amount = Math.max(0, Number(account.package.price) - Number(account.discount));
+      const price = Math.max(0, Number(account.package.price) - Number(account.discount));
+      const first = account.createdAt ? firstBillingCycle(account.createdAt, price, settings.billingEndDay, settings.billingTimezone) : null;
+      const prorate = first?.dueDate.getTime() === dueDate.getTime();
+      const amount = prorate ? first!.amount : price;
       await this.prisma.invoice.create({
         data: {
           pppoeAccountId: account.id,
@@ -86,7 +91,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
           amount: BigInt(amount),
           baseAmount: BigInt(Number(account.package.price)),
           discount: account.discount,
-          invoiceType: 'MONTHLY',
+          invoiceType: prorate ? 'PRORATE' : 'MONTHLY',
           status: 'PENDING',
           dueDate,
           notes: `Tagihan bulanan ${String(month).padStart(2, '0')}/${year}`,
@@ -103,6 +108,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
     const accounts = await this.prisma.pppoeAccount.findMany({
       where: {
         isActive: true,
+        createdAt: { lt: new Date(Date.UTC(cutoffDate.getUTCFullYear(), cutoffDate.getUTCMonth(), 1) - billingOffsets[settings.billingTimezone] * 3600000) },
         package: { isActive: true },
         invoices: { some: { status: 'PENDING', dueDate: { lte: cutoffDate } } },
         paymentPromises: { none: { status: 'ACTIVE', deadline: { gt: new Date() } } },

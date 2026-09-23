@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideCamera, LucideEye, LucideEyeOff, LucidePencil, LucidePlus, LucideSearch, LucideTrash2, LucideUnplug, LucideX } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
@@ -8,6 +8,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
 import type { Subscription } from 'rxjs';
 import { CustomerServicesComponent } from './customer-services.component';
+import { AuthService } from '../../../../core/services/auth.service';
 
 type AccountListItem = PppoeAccount & { customerId?: string; customerNumber?: string; createdAt: string | null; online: boolean | null; serviceStatus?: 'Aktif' | 'Isolir' };
 
@@ -35,7 +36,9 @@ type AccountListItem = PppoeAccount & { customerId?: string; customerNumber?: st
 })
 export class DataPelangganComponent implements OnInit, OnDestroy {
   private api = inject(ApiService);
+  private auth = inject(AuthService);
   private changeDetector = inject(ChangeDetectorRef);
+  readonly readOnly = computed(() => this.auth.isTeknisi());
   editTab = signal<string>('customer');
   readonly editTabs = [
     { id: 'customer', label: 'Data Pelanggan' }, { id: 'account', label: 'Akun PPPoE' },
@@ -213,6 +216,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.load();
+    if (this.readOnly()) return;
     this.api.get<{ data: PppoePackage[] }>('/pppoe/packages/options').subscribe({
       next: (r) => this.packages.set(r.data),
     });
