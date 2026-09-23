@@ -232,7 +232,7 @@ export class PppoeService {
   async updateAccount(id: string, dto: SaveAccountDto) {
     const current = await this.findAccount(id);
     const passwordChanged = dto.password ? dto.password !== this.secrets.decrypt(current.password) : false;
-    await this.validateAccountForm(dto, false);
+    await this.validateAccountForm(dto, false, current.id);
     if (dto.idCardPhoto && dto.idCardPhoto !== current.idCardPhoto) await validateIdCardPhoto(dto.idCardPhoto);
     await this.findPackage(dto.pppoePackageId);
     try {
@@ -309,7 +309,16 @@ export class PppoeService {
     return { ...result, message: this.networkMessage('Pemeriksaan dan pemutusan sesi selesai.', result.warnings) };
   }
 
-  private async validateAccountForm(dto: SaveAccountDto, creating: boolean) {
+  private async validateAccountForm(dto: SaveAccountDto, creating: boolean, accountId?: bigint) {
+    for (const field of ['phone', 'idCardNumber'] as const) {
+      const value = dto[field]?.trim();
+      if (!value) continue;
+      const order = await this.prisma.psbOrder.findFirst({
+        where: { [field]: value, ...(accountId ? { OR: [{ pppoeAccountId: null }, { pppoeAccountId: { not: accountId } }] } : {}) },
+        select: { id: true },
+      });
+      if (order) throw new ConflictException(`${field === 'phone' ? 'Nomor telepon' : 'Nomor KTP'} sudah digunakan pada registrasi pelanggan lain.`);
+    }
     if (creating) {
       const fields = [dto.customerName, dto.phone, dto.idCardNumber, dto.idCardPhoto, dto.address];
       if (fields.some(value => !value?.trim())) {
@@ -399,6 +408,11 @@ export class PppoeService {
     return item;
   }
   private unique(error: unknown, message: string): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      const target = String(error.meta?.target ?? '');
+      if (/id_card_number|idCardNumber/.test(target)) throw new ConflictException('Nomor KTP sudah digunakan pelanggan lain.');
+      if (/phone/.test(target)) throw new ConflictException('Nomor telepon sudah digunakan pelanggan lain.');
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') throw new ConflictException(message);
     throw error;
   }

@@ -30,5 +30,5 @@ export class SaveAccountDto {
   @IsOptional() @IsDateString() expiresAt?: string;
   @IsOptional() @IsBoolean() isActive?: boolean;
   @IsOptional() @IsString() @MaxLength(1000) notes?: string;
-  @IsOptional() @IsString() areaId?: string;
+  @IsString() @Matches(/^[1-9]\d*$/, { message: 'Area wajib dipilih.' }) areaId: string;
 }

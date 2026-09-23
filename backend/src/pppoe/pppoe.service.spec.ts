@@ -24,6 +24,7 @@ describe('PPPoE billing and account deactivation', () => {
     };
     let committed = false;
     const prisma = {
+      psbOrder: { findFirst: vi.fn().mockResolvedValue(null) },
       appSetting: { findMany: vi.fn().mockResolvedValue([]) },
       mainCore: { findFirst: vi.fn().mockResolvedValue({ id: 4n }) },
       pppoePackage: { findUnique: vi.fn().mockResolvedValue(pkg) },

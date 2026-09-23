@@ -7,7 +7,7 @@ export class CreatePsbOrderDto {
   @IsOptional() @IsString() idCardPhoto?: string;
   @IsString() @Matches(/\S/, { message: 'Alamat wajib diisi.' }) @MaxLength(1000) address: string;
   @IsString() pppoePackageId: string;
-  @IsOptional() @IsString() areaId?: string;
+  @IsString() @Matches(/^[1-9]\d*$/, { message: 'Area wajib dipilih.' }) areaId: string;
 }
 
 export class UpdatePsbOrderDto extends CreatePsbOrderDto {}

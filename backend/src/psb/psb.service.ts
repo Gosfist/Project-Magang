@@ -57,7 +57,7 @@ export class PsbService {
     const current = await this.find(id);
     this.assertSalesOwner(current, user);
     if (current.status !== 'PROCESS') throw new BadRequestException('Data yang sudah diaktivasi tidak dapat diedit oleh sales.');
-    await this.validateCustomer(dto);
+    await this.validateCustomer(dto, current.id);
     const order = await this.prisma.psbOrder.update({ where: { id: current.id }, data: this.customerData(dto) });
     return serialize({ message: 'Registrasi pelanggan berhasil diperbarui.', order });
   }
@@ -127,7 +127,10 @@ export class PsbService {
       });
       return serialize({ message: 'Akun PPPoE dan bukti instalasi berhasil disimpan.', order: result.updated, credentials: { username: dto.username, password: dto.password } });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') throw new ConflictException('Username PPPoE sudah digunakan.');
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        const target = String(error.meta?.target ?? '');
+        throw new ConflictException(/phone/.test(target) ? 'Nomor telepon sudah digunakan pelanggan lain.' : /id_card_number|idCardNumber/.test(target) ? 'Nomor KTP sudah digunakan pelanggan lain.' : 'Username PPPoE sudah digunakan.');
+      }
       throw error;
     }
   }
@@ -153,7 +156,14 @@ export class PsbService {
   private customerData(dto: CreatePsbOrderDto) {
     return { customerName: dto.customerName.trim(), phone: dto.phone.trim(), idCardNumber: dto.idCardNumber?.trim() || null, idCardPhoto: dto.idCardPhoto || null, address: dto.address.trim(), pppoePackageId: BigInt(dto.pppoePackageId), areaId: dto.areaId ? BigInt(dto.areaId) : null };
   }
-  private async validateCustomer(dto: CreatePsbOrderDto) {
+  private async validateCustomer(dto: CreatePsbOrderDto, excludeId?: bigint) {
+    for (const field of ['phone', 'idCardNumber'] as const) {
+      const value = dto[field]?.trim();
+      if (!value) continue;
+      const existingOrder = await this.prisma.psbOrder.findFirst({ where: { [field]: value, ...(excludeId ? { id: { not: excludeId } } : {}) }, select: { id: true } });
+      const existingAccount = await this.prisma.pppoeAccount.findFirst({ where: { [field]: value }, select: { id: true } });
+      if (existingOrder || existingAccount) throw new ConflictException(`${field === 'phone' ? 'Nomor telepon' : 'Nomor KTP'} sudah digunakan pelanggan lain.`);
+    }
     if (!await this.prisma.pppoePackage.findUnique({ where: { id: BigInt(dto.pppoePackageId) } })) throw new NotFoundException('Harga paket tidak ditemukan.');
     if (dto.areaId && !await this.prisma.area.findUnique({ where: { id: BigInt(dto.areaId) } })) throw new NotFoundException('Area tidak ditemukan.');
   }
@@ -169,7 +179,13 @@ export class PsbService {
   private async serializable<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
     for (let i = 0; i < 4; i++) {
       try { return await this.prisma.$transaction(fn, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }); }
-      catch (error) { if (!(error instanceof Prisma.PrismaClientKnownRequestError) || !['P2034', 'P2002'].includes(error.code) || i === 3) throw error; }
+      catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+          const target = String(error.meta?.target ?? '');
+          if (/phone|id_card_number|idCardNumber/.test(target)) throw new ConflictException(/phone/.test(target) ? 'Nomor telepon sudah digunakan pelanggan lain.' : 'Nomor KTP sudah digunakan pelanggan lain.');
+        }
+        if (!(error instanceof Prisma.PrismaClientKnownRequestError) || !['P2034', 'P2002'].includes(error.code) || i === 3) throw error;
+      }
     }
     throw new ConflictException('Nomor pelanggan belum dapat dibuat.');
   }

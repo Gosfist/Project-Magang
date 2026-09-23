@@ -71,6 +71,9 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
 
   items = signal<AccountListItem[]>([]);
   refreshing = signal(false);
+  private readonly uptimeClock = signal(Date.now());
+  private uptimeFetchedAt = Date.now();
+  private uptimeTimer?: ReturnType<typeof setInterval>;
   private listRequest?: Subscription;
 
   phoneDisplay(phone: string | null): string {
@@ -85,7 +88,34 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   }
 
   uptimeDisplay(value?: string | null): string {
-    return value?.trim() || '—';
+    this.uptimeClock();
+    const seconds = this.uptimeSeconds(value);
+    if (seconds == null) return '—';
+    return this.formatUptime(seconds + Math.floor((Date.now() - this.uptimeFetchedAt) / 1000));
+  }
+
+  private uptimeSeconds(value?: string | null): number | null {
+    if (!value?.trim()) return null;
+    const units: Record<string, number> = { w: 604800, d: 86400, h: 3600, m: 60, s: 1 };
+    let total = 0;
+    let found = false;
+    for (const match of value.matchAll(/(\d+)([wdhms])/g)) {
+      total += Number(match[1]) * units[match[2]];
+      found = true;
+    }
+    return found ? total : null;
+  }
+
+  private formatUptime(total: number): string {
+    const units: Array<[string, number]> = [['w', 604800], ['d', 86400], ['h', 3600], ['m', 60], ['s', 1]];
+    let remaining = Math.max(0, total);
+    let result = '';
+    for (const [label, size] of units) {
+      const value = Math.floor(remaining / size);
+      remaining %= size;
+      if (value || result || label === 's') result += `${value}${label}`;
+    }
+    return result;
   }
 
   filterStatusLabel(): string {
@@ -175,7 +205,11 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     this.photoRequest++;
   }
 
-  ngOnDestroy(): void { this.clearPreview(); this.listRequest?.unsubscribe(); }
+  ngOnDestroy(): void {
+    this.clearPreview();
+    this.listRequest?.unsubscribe();
+    if (this.uptimeTimer) clearInterval(this.uptimeTimer);
+  }
 
   removePhoto(): void {
     if (this.uploading() || this.saving()) return;
@@ -215,6 +249,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
   ngOnInit(): void {
+    this.uptimeTimer = setInterval(() => this.uptimeClock.set(Date.now()), 1000);
     this.load();
     if (this.readOnly()) return;
     this.api.get<{ data: PppoePackage[] }>('/pppoe/packages/options').subscribe({
@@ -235,6 +270,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (r) => {
           this.refreshing.set(false);
+          this.uptimeFetchedAt = Date.now();
           this.items.set(r.data.map(item => ({
             ...item,
             // Respons API lama hanya memiliki ID basis data; migrasi mempertahankan
@@ -297,7 +333,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   }
 
   customerValid(): boolean {
-    return ['customerName', 'phone', 'idCardNumber', 'idCardPhoto', 'address'].every(key => String(this.form[key] ?? '').trim());
+    return ['customerName', 'phone', 'idCardNumber', 'idCardPhoto', 'address', 'areaId'].every(key => String(this.form[key] ?? '').trim());
   }
 
   paymentValid(): boolean {
