@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import QRCode from 'qrcode';
-import { getStatus, getQR, logout, restart, startConnection } from '../whatsapp.js';
+import { getStatus, getQR, logout, restart, resetSession, startConnection } from '../whatsapp.js';
 
 const router = Router();
 
@@ -29,6 +29,11 @@ router.post('/logout', async (req, res) => {
 router.post('/restart', async (req, res) => {
   await restart();
   res.json({ message: 'WhatsApp sedang dihubungkan ulang.' });
+});
+
+router.post('/reset', async (req, res) => {
+  await resetSession();
+  res.json({ message: 'Sesi WhatsApp direset. Silakan scan QR code baru.' });
 });
 
 router.post('/connect', async (req, res) => {

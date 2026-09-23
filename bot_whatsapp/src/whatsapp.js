@@ -15,6 +15,8 @@ let status = 'disconnected'; // disconnected | connecting | qr_ready | connected
 let statusMessage = '';
 let connectedAt = null;
 let botNumber = null;
+let reconnectTimer = null;
+let connectionToken = 0;
 
 export function getStatus() {
   const uptimeSeconds = (status === 'connected' && connectedAt)
@@ -35,8 +37,27 @@ export function getQR() {
   return qrCode;
 }
 
+function stopReconnect() {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+}
+
+function scheduleReconnect(token) {
+  stopReconnect();
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    if (token === connectionToken && status === 'disconnected') {
+      void startConnection();
+    }
+  }, 3000);
+}
+
 export async function startConnection() {
   if (status === 'connected' || status === 'connecting') return;
+  stopReconnect();
+  const token = ++connectionToken;
   status = 'connecting';
   statusMessage = 'Menghubungkan ke WhatsApp...';
   qrCode = null;
@@ -55,8 +76,10 @@ export async function startConnection() {
       logger,
       browser: ['Unzanet Bot', 'Chrome', '1.0.0'],
     });
+    const activeSocket = sock;
 
     sock.ev.on('connection.update', (update) => {
+      if (token !== connectionToken || activeSocket !== sock) return;
       const { connection, lastDisconnect, qr } = update;
       if (qr) {
         qrCode = qr;
@@ -64,9 +87,12 @@ export async function startConnection() {
         statusMessage = '';
       }
       if (connection === 'close') {
+        sock = null;
         qrCode = null;
         connectedAt = null;
-        const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
+        const reason = lastDisconnect?.error
+          ? new Boom(lastDisconnect.error).output?.statusCode
+          : undefined;
         if (reason === DisconnectReason.loggedOut) {
           status = 'disconnected';
           statusMessage = 'Sesi WhatsApp telah keluar. Silakan hubungkan ulang.';
@@ -75,7 +101,7 @@ export async function startConnection() {
         } else {
           status = 'disconnected';
           statusMessage = 'Koneksi terputus. Mencoba menghubungkan ulang...';
-          setTimeout(() => startConnection(), 3000);
+          scheduleReconnect(token);
         }
       } else if (connection === 'open') {
         qrCode = null;
@@ -92,11 +118,15 @@ export async function startConnection() {
       }
     });
 
-    sock.ev.on('creds.update', saveCreds);
+    sock.ev.on('creds.update', () => {
+      if (token === connectionToken) void saveCreds();
+    });
   } catch (err) {
+    if (token !== connectionToken) return;
     status = 'disconnected';
     statusMessage = `Gagal menghubungkan: ${err.message}`;
     console.error('[WA] Connection error:', err.message);
+    scheduleReconnect(token);
   }
 }
 
@@ -114,12 +144,20 @@ export async function sendMessage(phone, text) {
   return { success: true, jid };
 }
 
-export async function logout() {
-  if (sock) {
-    try { await sock.logout(); } catch (_) {}
-    try { sock.end(); } catch (_) {}
-    sock = null;
+async function closeSocket(logout = false) {
+  stopReconnect();
+  connectionToken += 1;
+  const activeSocket = sock;
+  sock = null;
+  if (!activeSocket) return;
+  if (logout) {
+    try { await activeSocket.logout(); } catch (_) {}
   }
+  try { activeSocket.end(); } catch (_) {}
+}
+
+export async function logout() {
+  await closeSocket(true);
   qrCode = null;
   connectedAt = null;
   botNumber = null;
@@ -129,10 +167,18 @@ export async function logout() {
 }
 
 export async function restart() {
-  if (sock) {
-    try { sock.end(); } catch (_) {}
-    sock = null;
-  }
+  await closeSocket();
+  qrCode = null;
+  connectedAt = null;
+  botNumber = null;
+  status = 'disconnected';
+  statusMessage = '';
+  await startConnection();
+}
+
+export async function resetSession() {
+  await closeSocket();
+  clearAuth();
   qrCode = null;
   connectedAt = null;
   botNumber = null;

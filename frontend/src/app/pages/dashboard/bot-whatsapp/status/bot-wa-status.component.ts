@@ -128,6 +128,22 @@ export class BotWaStatusComponent implements OnInit, OnDestroy {
     });
   }
 
+  resetSession(): void {
+    this.actionLoading.set(true);
+    this.http.post<{ message: string }>(`${this.baseUrl}/reset`, {}).subscribe({
+      next: (res) => {
+        this.actionLoading.set(false);
+        this.toast.set({ message: res.message, type: 'success' });
+        this.countdown.set(3);
+        this.fetchStatus();
+      },
+      error: (err) => {
+        this.actionLoading.set(false);
+        this.toast.set({ message: err?.error?.message || 'Gagal mereset sesi WhatsApp.', type: 'error' });
+      },
+    });
+  }
+
   disconnect(): void {
     this.actionLoading.set(true);
     this.http.post<{ message: string }>(`${this.baseUrl}/logout`, {}).subscribe({

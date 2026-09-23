@@ -104,6 +104,11 @@ if [[ "$MODE" == "all" || "$MODE" == "bot" ]]; then
     sudo systemctl daemon-reload
     sudo systemctl enable "$BOTWA_SERVICE" || true
   fi
+  BOTWA_USER="$(systemctl show -p User --value "$BOTWA_SERVICE" 2>/dev/null || true)"
+  BOTWA_USER="${BOTWA_USER:-$(id -un)}"
+  BOTWA_GROUP="$(id -gn "$BOTWA_USER")"
+  sudo install -d -o "$BOTWA_USER" -g "$BOTWA_GROUP" -m 0750 "$BOTWA_DIR/auth_info"
+  sudo chown -R "$BOTWA_USER:$BOTWA_GROUP" "$BOTWA_DIR/auth_info"
   sudo systemctl daemon-reload
   sudo systemctl restart "$BOTWA_SERVICE" || true
 fi

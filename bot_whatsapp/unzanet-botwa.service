@@ -4,9 +4,9 @@ After=network.target mysql.service
 
 [Service]
 Type=simple
-User=www-data
-WorkingDirectory=/var/www/unzanet/bot_whatsapp
-ExecStart=/usr/bin/node src/index.js
+User=user
+WorkingDirectory=/var/www/Project-Magang/bot_whatsapp
+ExecStart=/usr/bin/node /var/www/Project-Magang/bot_whatsapp/src/index.js
 Restart=always
 RestartSec=5
 Environment=NODE_ENV=production

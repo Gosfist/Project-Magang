@@ -13,9 +13,14 @@
           <p class="text-sm text-slate-500">Bot WhatsApp belum terhubung ke sistem.</p>
         </div>
       </div>
-      <button class="btn-primary whitespace-nowrap" (click)="connect()" [disabled]="actionLoading()">
-        {{ actionLoading() ? 'Menghubungkan...' : 'Hubungkan WhatsApp' }}
-      </button>
+      <div class="flex flex-wrap justify-center gap-2">
+        <button class="btn-secondary whitespace-nowrap" (click)="resetSession()" [disabled]="actionLoading()">
+          Reset Sesi & QR Baru
+        </button>
+        <button class="btn-primary whitespace-nowrap" (click)="connect()" [disabled]="actionLoading()">
+          {{ actionLoading() ? 'Menghubungkan...' : 'Hubungkan WhatsApp' }}
+        </button>
+      </div>
     </div>
   }
 
