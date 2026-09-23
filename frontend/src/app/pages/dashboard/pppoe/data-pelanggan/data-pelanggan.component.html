@@ -803,12 +803,31 @@
         [attr.aria-labelledby]="'edit-' + editTab() + '-tab'"
         class="mt-3"
       >
-        <app-customer-services
-          [accountId]="editing()!.id"
-          [tab]="editTab()"
-          (changed)="customerServiceChanged($event)"
-          (busyChanged)="saving.set($event)"
-        ></app-customer-services>
+        @if (editTab() === 'installation') {
+          <section class="space-y-3" aria-label="Foto instalasi pelanggan">
+            <h3 class="text-sm font-semibold text-slate-800">Foto Instalasi Teknisi</h3>
+            @if (installationLoading()) {
+              <p class="text-sm text-slate-500" role="status">Memuat foto instalasi...</p>
+            } @else if (installationPreview()) {
+              <img
+                [src]="installationPreview()"
+                alt="Foto instalasi pelanggan"
+                class="mx-auto max-h-[65vh] w-auto max-w-full rounded-lg border border-slate-200 object-contain"
+              />
+            } @else {
+              <p class="rounded-lg bg-slate-50 p-4 text-sm text-slate-600" role="status">
+                {{ installationError() || 'Belum ada foto instalasi tersimpan.' }}
+              </p>
+            }
+          </section>
+        } @else {
+          <app-customer-services
+            [accountId]="editing()!.id"
+            [tab]="editTab()"
+            (changed)="customerServiceChanged($event)"
+            (busyChanged)="saving.set($event)"
+          ></app-customer-services>
+        }
       </div>
     }
   </app-modal>

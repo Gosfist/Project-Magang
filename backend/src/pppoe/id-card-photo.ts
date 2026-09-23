@@ -6,7 +6,7 @@ import { uploadsDirectory } from '../common/image-storage.js';
 
 export const ID_CARD_MAX_BYTES = 5 * 1024 * 1024;
 const directory = () => join(uploadsDirectory(), 'ktp');
-const referencePattern = /^\/uploads\/ktp\/[a-f0-9-]{36}\.(jpg|png|webp)$/;
+const referencePattern = /^\/uploads\/ktp\/[A-Za-z0-9_-]{1,80}\.(jpg|png|webp)$/;
 
 export function imageExtension(buffer: Buffer): string {
   if (buffer.length >= 3 && buffer.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]))) return 'jpg';

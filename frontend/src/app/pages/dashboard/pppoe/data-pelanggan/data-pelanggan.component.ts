@@ -10,7 +10,7 @@ import type { Subscription } from 'rxjs';
 import { CustomerServicesComponent } from './customer-services.component';
 import { AuthService } from '../../../../core/services/auth.service';
 
-type AccountListItem = PppoeAccount & { customerId?: string; customerNumber?: string; createdAt: string | null; online: boolean | null; serviceStatus?: 'Aktif' | 'Isolir' };
+type AccountListItem = PppoeAccount & { customerId?: string; customerNumber?: string; createdAt: string | null; online: boolean | null; serviceStatus?: 'Aktif' | 'Isolir'; psbOrder?: { installationPhoto: string | null } | null };
 
 @Component({
   selector: 'app-pppoe-data-pelanggan',
@@ -45,6 +45,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     // ID tab mengikuti rute API; label ditampilkan dalam bahasa Indonesia.
     { id: 'auth-logs', label: 'Log Autentikasi' }, { id: 'invoices', label: 'Tagihan' },
     { id: 'addons', label: 'Biaya Tambahan' }, { id: 'promises', label: 'Janji Bayar' },
+    { id: 'installation', label: 'Foto Instalasi' },
   ];
   statusFilterOpen = signal(false);
   sessionFilterOpen = signal(false);
@@ -196,13 +197,22 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   photoLoading = signal(false);
   photoError = signal('');
   private photoRequest = 0;
+  installationPreview = signal('');
+  installationLoading = signal(false);
+  installationError = signal('');
+  private installationRequest = 0;
 
   private clearPreview(): void {
     if (this.photoPreview()) URL.revokeObjectURL(this.photoPreview());
     this.photoPreview.set('');
     this.photoLoading.set(false);
     this.photoError.set('');
+    if (this.installationPreview()) URL.revokeObjectURL(this.installationPreview());
+    this.installationPreview.set('');
+    this.installationLoading.set(false);
+    this.installationError.set('');
     this.photoRequest++;
+    this.installationRequest++;
   }
 
   ngOnDestroy(): void {
@@ -219,7 +229,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
 
   private loadPhoto(): void {
     if (!this.form.idCardPhoto) return;
-    if (!/^\/uploads\/ktp\/[a-f0-9-]{36}\.(jpg|png|webp)$/.test(this.form.idCardPhoto)) {
+    if (!/^\/uploads\/ktp\/[A-Za-z0-9_-]{1,80}\.(jpg|png|webp)$/.test(this.form.idCardPhoto)) {
       this.photoError.set('Foto lama tidak dapat ditampilkan. Pilih gambar untuk menggantinya.');
       return;
     }
@@ -235,6 +245,31 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
         if (request !== this.photoRequest) return;
         this.photoLoading.set(false);
         this.photoError.set('Preview foto tidak tersedia. Coba buka ulang atau pilih gambar lain.');
+      },
+    });
+  }
+
+  private loadInstallationPhoto(accountId: string, reference?: string | null): void {
+    if (!reference) {
+      this.installationError.set('Belum ada foto instalasi tersimpan untuk pelanggan ini.');
+      return;
+    }
+    if (!/^\/uploads\/instalasi\/\d+\.(jpg|png|webp)$/.test(reference)) {
+      this.installationError.set('Referensi foto instalasi tidak valid.');
+      return;
+    }
+    const request = ++this.installationRequest;
+    this.installationLoading.set(true);
+    this.api.getBlob(`/pppoe/accounts/${encodeURIComponent(accountId)}/installation-photo`).subscribe({
+      next: blob => {
+        if (request !== this.installationRequest) return;
+        this.installationPreview.set(URL.createObjectURL(blob));
+        this.installationLoading.set(false);
+      },
+      error: () => {
+        if (request !== this.installationRequest) return;
+        this.installationLoading.set(false);
+        this.installationError.set('Foto instalasi tidak dapat dimuat. Periksa file unggahan teknisi.');
       },
     });
   }
@@ -330,6 +365,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     this.calculateProrate();
     this.open.set(true);
     this.loadPhoto();
+    if (item) this.loadInstallationPhoto(item.id, (item as AccountListItem).psbOrder?.installationPhoto);
   }
 
   customerValid(): boolean {

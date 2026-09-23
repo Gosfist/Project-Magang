@@ -8,6 +8,7 @@ import { RadiusService } from './radius.service.js';
 import { SecretService } from './secret.service.js';
 import { PppoeNetworkService } from './pppoe-network.service.js';
 import { validateIdCardPhoto } from './id-card-photo.js';
+import { readInstallationPhoto } from './installation-photo.js';
 import { WhatsappNotifyService } from './whatsapp-notify.service.js';
 import { SettingsService } from '../settings/settings.service.js';
 import { firstBillingCycle } from './billing-cycle.js';
@@ -197,7 +198,7 @@ export class PppoeService {
     ] };
     if (status) where.AND = [status === 'active' ? active : { NOT: active }];
     const [items, count] = await this.prisma.$transaction([
-      this.prisma.pppoeAccount.findMany({ where, include: { paymentPromises: { where: { status: 'ACTIVE' }, select: { deadline: true }, take: 1 }, package: { include: { ipPool: true } }, routerNas: { select: { id: true, nasname: true, shortname: true, description: true } }, area: { select: { id: true, name: true } } }, omit: { password: true }, orderBy: { customerNumber: 'asc' }, ...(session ? {} : { skip: (page - 1) * 5, take: 5 }) }),
+      this.prisma.pppoeAccount.findMany({ where, include: { paymentPromises: { where: { status: 'ACTIVE' }, select: { deadline: true }, take: 1 }, psbOrder: { select: { installationPhoto: true } }, package: { include: { ipPool: true } }, routerNas: { select: { id: true, nasname: true, shortname: true, description: true } }, area: { select: { id: true, name: true } } }, omit: { password: true }, orderBy: { customerNumber: 'asc' }, ...(session ? {} : { skip: (page - 1) * 5, take: 5 }) }),
       this.prisma.pppoeAccount.count({ where }),
     ]);
     const presence = await this.network.accountPresence(items);
@@ -208,6 +209,15 @@ export class PppoeService {
       uptime: presence.uptimes?.get(item.username) ?? null,
       serviceStatus: item.isActive && item.package.isActive && (item.paymentPromises.length ? item.paymentPromises[0].deadline.getTime() > Date.now() : !item.expiresAt || item.expiresAt.getTime() + 86400000 > Date.now()) ? 'Aktif' : 'Isolir',
       discount: Number(item.discount), package: { ...item.package, price: Number(item.package.price), costPrice: Number(item.package.costPrice) } })), meta: pageMeta(page, 5, total), warnings: presence.warnings });
+  }
+
+  async installationPhoto(id: string) {
+    const account = await this.prisma.pppoeAccount.findUnique({
+      where: { id: BigInt(id) },
+      select: { psbOrder: { select: { installationPhoto: true } } },
+    });
+    if (!account) throw new NotFoundException('Pelanggan tidak ditemukan.');
+    return readInstallationPhoto(account.psbOrder?.installationPhoto);
   }
 
   async createAccount(dto: SaveAccountDto) {
