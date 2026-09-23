@@ -27,10 +27,10 @@ router.post('/ping', async (req, res) => {
 
   try {
     const result = await sendMessage(phone, testMessage);
-    await insertWaLog({ recipient: phone, message: testMessage, status: 'success' });
+    await insertWaLog({ target: phone, text: testMessage, status: 'berhasil' });
     res.json({ message: `Pesan Ping berhasil dikirim ke ${phone}.`, ...result });
   } catch (err) {
-    await insertWaLog({ recipient: phone, message: testMessage, status: 'failed', errorMessage: err.message });
+    await insertWaLog({ target: phone, text: testMessage, status: 'gagal', errorMessage: err.message });
     res.status(500).json({ message: err.message || 'Gagal mengirim pesan Ping.' });
   }
 });
@@ -43,10 +43,10 @@ router.post('/send', apiKeyAuth, async (req, res) => {
   }
   try {
     const result = await sendMessage(phone, message);
-    await insertWaLog({ recipient: phone, message, status: 'success' });
+    await insertWaLog({ target: phone, text: message, status: 'berhasil' });
     res.json({ message: 'Pesan berhasil dikirim.', ...result });
   } catch (err) {
-    await insertWaLog({ recipient: phone, message, status: 'failed', errorMessage: err.message });
+    await insertWaLog({ target: phone, text: message, status: 'gagal', errorMessage: err.message });
     res.status(500).json({ message: err.message || 'Gagal mengirim pesan.' });
   }
 });

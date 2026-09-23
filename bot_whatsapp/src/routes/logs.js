@@ -11,8 +11,8 @@ router.get('/logs', async (req, res) => {
     res.json({
       logs: logs.map((l) => ({
         id: Number(l.id),
-        recipient: l.recipient,
-        message: l.message,
+        target: l.target,
+        text: l.text,
         status: l.status,
         errorMessage: l.error_message,
         createdAt: l.created_at,

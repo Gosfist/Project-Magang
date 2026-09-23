@@ -36,9 +36,9 @@ export class SettingsService {
   }
 
   async psb(): Promise<PsbSettings> {
-    const rows = await this.prisma.appSetting.findMany({ where: { key: 'psb_fee' } });
+    const rows = await this.prisma.appSetting.findMany({ where: { key: 'biaya_psb' } });
     const data = new Map(rows.map(row => [row.key, row.value]));
-    return { installationFee: Math.max(0, Number(data.get('psb_fee') || 0)) };
+    return { installationFee: Math.max(0, Number(data.get('biaya_psb') || 0)) };
   }
 
   async updateBilling(dto: BillingSettingsDto) {
@@ -48,7 +48,7 @@ export class SettingsService {
       this.upsert('billing_end_day', String(settings.billingEndDay)),
       this.upsert('billing_timezone', settings.billingTimezone),
       this.upsert('isolation_check_hour', String(settings.isolationCheckHour)),
-      this.upsert('psb_fee', String(dto.psbFee)),
+      this.upsert('biaya_psb', String(dto.psbFee)),
     ]);
     return { message: 'Pengaturan penagihan berhasil disimpan.', data: { ...settings, psbFee: dto.psbFee } };
   }

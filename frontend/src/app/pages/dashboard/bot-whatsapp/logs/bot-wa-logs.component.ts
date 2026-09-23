@@ -7,9 +7,9 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
 
 export interface WaLogItem {
   id: number;
-  recipient: string;
-  message: string;
-  status: 'success' | 'failed' | string;
+  target: string;
+  text: string;
+  status: 'berhasil' | 'gagal' | string;
   errorMessage?: string | null;
   createdAt: string;
 }
@@ -32,16 +32,16 @@ export class BotWaLogsComponent implements OnInit {
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
   totalCount = computed(() => this.logs().length);
-  successCount = computed(() => this.logs().filter((l) => l.status === 'success').length);
-  failedCount = computed(() => this.logs().filter((l) => l.status === 'failed').length);
+  successCount = computed(() => this.logs().filter((l) => l.status === 'berhasil').length);
+  failedCount = computed(() => this.logs().filter((l) => l.status === 'gagal').length);
 
   filteredLogs = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();
     if (!q) return this.logs();
     return this.logs().filter(
       (log) =>
-        log.recipient.toLowerCase().includes(q) ||
-        log.message.toLowerCase().includes(q) ||
+        log.target.toLowerCase().includes(q) ||
+        log.text.toLowerCase().includes(q) ||
         (log.errorMessage && log.errorMessage.toLowerCase().includes(q))
     );
   });

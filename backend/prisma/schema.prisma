@@ -222,7 +222,7 @@ model AppSetting {
   value     String   @db.Text
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
-  @@map("app_settings")
+  @@map("website_settings")
 }
 
 model Radcheck {
@@ -520,8 +520,8 @@ model RouterStatYearly {
 
 model Area {
   id          BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
-  name        String          @unique @db.VarChar(150)
-  description String?         @db.Text
+  name        String          @unique @map("nama_area") @db.VarChar(150)
+  description String?         @map("deskripsi") @db.Text
   createdAt   DateTime        @default(now()) @map("created_at")
   updatedAt   DateTime        @updatedAt @map("updated_at")
   collectors  AreaCollector[]
@@ -535,7 +535,6 @@ model AreaCollector {
   id        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
   areaId    BigInt   @map("area_id") @db.UnsignedBigInt
   userId    BigInt   @map("user_id") @db.UnsignedBigInt
-  isDefault Boolean  @default(false) @map("is_default")
   createdAt DateTime @default(now()) @map("created_at")
   area      Area     @relation(fields: [areaId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

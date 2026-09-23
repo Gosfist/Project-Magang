@@ -66,14 +66,14 @@ export function getPool() {
 
 export async function getSetting(key) {
   const p = getPool();
-  const [rows] = await p.execute('SELECT `value` FROM `app_settings` WHERE `key` = ?', [key]);
+  const [rows] = await p.execute('SELECT `value` FROM `website_settings` WHERE `key` = ?', [key]);
   return rows.length ? rows[0].value : null;
 }
 
 export async function setSetting(key, value) {
   const p = getPool();
   await p.execute(
-    'INSERT INTO `app_settings` (`key`, `value`, `updated_at`) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `updated_at` = NOW()',
+    'INSERT INTO `website_settings` (`key`, `value`, `updated_at`) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `updated_at` = NOW()',
     [key, value]
   );
 }
@@ -82,7 +82,7 @@ export async function getSettings(keys) {
   if (!keys.length) return new Map();
   const p = getPool();
   const placeholders = keys.map(() => '?').join(',');
-  const [rows] = await p.execute(`SELECT \`key\`, \`value\` FROM \`app_settings\` WHERE \`key\` IN (${placeholders})`, keys);
+  const [rows] = await p.execute(`SELECT \`key\`, \`value\` FROM \`website_settings\` WHERE \`key\` IN (${placeholders})`, keys);
   return new Map(rows.map((r) => [r.key, r.value]));
 }
 
@@ -92,13 +92,13 @@ export async function ensureLogsTable() {
     await p.execute(`
       CREATE TABLE IF NOT EXISTS \`bot_wa_logs\` (
         \`id\` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        \`recipient\` VARCHAR(50) NOT NULL,
-        \`message\` TEXT NOT NULL,
-        \`status\` VARCHAR(20) NOT NULL DEFAULT 'success',
+        \`target\` VARCHAR(50) NOT NULL,
+        \`text\` TEXT NOT NULL,
+        \`status\` VARCHAR(20) NOT NULL DEFAULT 'berhasil',
         \`error_message\` TEXT NULL,
         \`created_at\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         INDEX \`idx_bot_wa_logs_created_at\` (\`created_at\`),
-        INDEX \`idx_bot_wa_logs_recipient\` (\`recipient\`)
+        INDEX \`idx_bot_wa_logs_target\` (\`target\`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
   } catch (err) {
@@ -106,13 +106,13 @@ export async function ensureLogsTable() {
   }
 }
 
-export async function insertWaLog({ recipient, message, status = 'success', errorMessage = null }) {
+export async function insertWaLog({ target, text, status = 'berhasil', errorMessage = null }) {
   try {
     await ensureLogsTable();
     const p = getPool();
     await p.execute(
-      'INSERT INTO `bot_wa_logs` (`recipient`, `message`, `status`, `error_message`, `created_at`) VALUES (?, ?, ?, ?, NOW())',
-      [recipient, message, status, errorMessage]
+      'INSERT INTO `bot_wa_logs` (`target`, `text`, `status`, `error_message`, `created_at`) VALUES (?, ?, ?, ?, NOW())',
+      [target, text, status, errorMessage]
     );
   } catch (err) {
     console.error('[DB] Failed to insert WA log:', err.message);
@@ -124,10 +124,10 @@ export async function getWaLogs({ limit = 100, search = '' } = {}) {
     await ensureLogsTable();
     const p = getPool();
     const safeLimit = Math.max(1, Math.min(500, parseInt(limit, 10) || 100));
-    let sql = 'SELECT `id`, `recipient`, `message`, `status`, `error_message`, `created_at` FROM `bot_wa_logs`';
+    let sql = 'SELECT `id`, `target`, `text`, `status`, `error_message`, `created_at` FROM `bot_wa_logs`';
     const params = [];
     if (search && search.trim()) {
-      sql += ' WHERE `recipient` LIKE ? OR `message` LIKE ?';
+      sql += ' WHERE `target` LIKE ? OR `text` LIKE ?';
       params.push(`%${search.trim()}%`, `%${search.trim()}%`);
     }
     sql += ` ORDER BY \`created_at\` DESC LIMIT ${safeLimit}`;
