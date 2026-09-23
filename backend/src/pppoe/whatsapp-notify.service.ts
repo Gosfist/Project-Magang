@@ -18,15 +18,9 @@ export class WhatsappNotifyService {
     return this.send(account.phone, template.replace(/\{nama\}/g, account.customerName).replace(/\{nomor_pelanggan\}/g, account.customerNumber.toString().padStart(6, '0')).replace(/\{nomor_wa\}/g, account.phone).replace(/\{alamat\}/g, account.address).replace(/\{layanan\}/g, account.packageName));
   }
 
-  async notifyPsbCompleted(account: { customerName: string; customerNumber: bigint; phone: string; packageName: string; installationFee: number; billingStartDay: number; billingEndDay: number; prorateAmount?: number; firstDueDate?: Date }) {
+  async notifyPsbCompleted(account: { customerName: string; customerNumber: bigint; phone: string; packageName: string; installationFee: number; billingStartDay: number; billingEndDay: number }) {
     const template = await this.template('psb', `Halo Bapak/Ibu {nama},\n\nInternet Anda telah aktif.\n\nNo. Pelanggan: {nomor_pelanggan}\nLayanan: {layanan}\nBiaya PSB: {biaya_psb}\nPembayaran berikutnya tanggal {tanggal_mulai}-{tanggal_akhir} setiap bulan. Jika melewati jatuh tempo, layanan dapat diisolir.\n\n— PT Unzanet`);
-    const currency = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
-    const fee = currency.format(account.installationFee);
-    if (account.firstDueDate && account.prorateAmount !== undefined) {
-      const month = new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(account.firstDueDate);
-      const details = `\n\nTagihan layanan pertama (prorata): ${currency.format(account.prorateAmount)}.\nTotal termasuk biaya PSB: ${currency.format(account.prorateAmount + account.installationFee)}.\nPembayaran pertama: ${account.billingStartDay}-${account.firstDueDate.getUTCDate()} ${month}. Isolir hanya berlaku setelah batas pembayaran tersebut jika belum lunas.`;
-      return this.send(account.phone, template.replace(/\{nama\}/g, account.customerName).replace(/\{nomor_pelanggan\}/g, account.customerNumber.toString().padStart(6, '0')).replace(/\{layanan\}/g, account.packageName).replace(/\{biaya_psb\}/g, fee).replace(/\{tanggal_mulai\}/g, String(account.billingStartDay)).replace(/\{tanggal_akhir\}/g, String(account.billingEndDay)) + details);
-    }
+    const fee = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(account.installationFee);
     return this.send(account.phone, template.replace(/\{nama\}/g, account.customerName).replace(/\{nomor_pelanggan\}/g, account.customerNumber.toString().padStart(6, '0')).replace(/\{layanan\}/g, account.packageName).replace(/\{biaya_psb\}/g, fee).replace(/\{tanggal_mulai\}/g, String(account.billingStartDay)).replace(/\{tanggal_akhir\}/g, String(account.billingEndDay)));
   }
 

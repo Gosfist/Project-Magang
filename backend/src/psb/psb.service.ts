@@ -149,7 +149,7 @@ export class PsbService {
       await tx.psbOrder.update({ where: { id: order.id }, data: { status: 'COMPLETED', completedByUserId: BigInt(technicianId), completedAt: now } });
       await tx.invoice.create({ data: { pppoeAccountId: order.pppoeAccountId!, invoiceNumber: `PSB-${this.customerId(order.customerNumber)}-${Date.now().toString(36).toUpperCase()}`, amount: BigInt(total), baseAmount: BigInt(total), discount: 0n, invoiceType: 'PRORATE', status: 'PENDING', dueDate: nextMonth, notes: `Aktivasi pasang baru (layanan prorata Rp${serviceAmount.toLocaleString('id-ID')} + biaya PSB Rp${psb.installationFee.toLocaleString('id-ID')})`, createdAt: now, updatedAt: now } });
     });
-    void this.wa.notifyPsbCompleted({ customerName: order.customerName, customerNumber: order.customerNumber, phone: order.phone, packageName: order.package.name, installationFee: psb.installationFee, billingStartDay: billing.billingStartDay, billingEndDay: billing.billingEndDay, prorateAmount: serviceAmount, firstDueDate: nextMonth });
+    void this.wa.notifyPsbCompleted({ customerName: order.customerName, customerNumber: order.customerNumber, phone: order.phone, packageName: order.package.name, installationFee: psb.installationFee, billingStartDay: billing.billingStartDay, billingEndDay: billing.billingEndDay });
     return { message: 'Pemasangan selesai. Status Sales dan Teknisi telah diperbarui serta notifikasi pelanggan diproses.' };
   }
 
