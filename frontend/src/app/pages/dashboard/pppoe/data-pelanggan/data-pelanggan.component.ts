@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, computed, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideCamera, LucideEye, LucideEyeOff, LucidePencil, LucidePlus, LucideSearch, LucideTrash2, LucideUnplug, LucideX } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
@@ -75,6 +75,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   private readonly uptimeClock = signal(Date.now());
   private uptimeFetchedAt = Date.now();
   private uptimeTimer?: ReturnType<typeof setInterval>;
+  private refreshTimer?: ReturnType<typeof setInterval>;
   private listRequest?: Subscription;
 
   phoneDisplay(phone: string | null): string {
@@ -219,6 +220,13 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     this.clearPreview();
     this.listRequest?.unsubscribe();
     if (this.uptimeTimer) clearInterval(this.uptimeTimer);
+    if (this.refreshTimer) clearInterval(this.refreshTimer);
+  }
+
+  @HostListener('document:visibilitychange')
+  refreshVisibleAccounts(): void {
+    if (document.hidden || (this.listRequest && !this.listRequest.closed)) return;
+    this.load(true);
   }
 
   removePhoto(): void {
@@ -286,6 +294,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.uptimeTimer = setInterval(() => this.uptimeClock.set(Date.now()), 1000);
     this.load();
+    this.refreshTimer = setInterval(() => this.refreshVisibleAccounts(), 5000);
     if (this.readOnly()) return;
     this.api.get<{ data: PppoePackage[] }>('/pppoe/packages/options').subscribe({
       next: (r) => this.packages.set(r.data),
@@ -295,9 +304,9 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     this.api.get<{ data: any[] }>('/areas/options').subscribe({ next: (r) => this.areaOptions.set(r.data) });
   }
 
-  load(): void {
+  load(silent = false): void {
     this.listRequest?.unsubscribe();
-    this.refreshing.set(true);
+    this.refreshing.set(!silent);
     this.listRequest = this.api
       .get<{ data: AccountListItem[]; meta: PageMeta }>(
         `/pppoe/accounts?search=${encodeURIComponent(this.search)}&page=${this.page()}&status=${this.statusFilter}&session=${this.sessionFilter}`
@@ -320,7 +329,10 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
             if (current) this.form.isActive = current.isActive;
           }
         },
-        error: (e) => { this.refreshing.set(false); this.toast.set({ message: e.message, type: 'error' }); },
+        error: (e) => {
+          this.refreshing.set(false);
+          if (!silent) this.toast.set({ message: e.message, type: 'error' });
+        },
       });
   }
 
