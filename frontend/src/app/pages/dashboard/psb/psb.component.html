@@ -227,7 +227,7 @@
       </div>
       @if (auth.isSales()) {
         <div>
-          <label class="label">Area & Kolektor *</label
+          <label class="label">Area*</label
           ><select class="input" required [(ngModel)]="form.areaId" name="area">
             <option value="">Pilih Area</option>
             @for (a of areas(); track a.id) {
@@ -369,8 +369,18 @@
                     [disabled]="!o.routerNasId"
                     (click)="selectOdp(o)"
                   >
-                    <span>{{ o.namaTitik }} <span class="text-slate-400">({{ o.tipeTitik.toUpperCase() }})</span></span>
-                    <span class="shrink-0 text-xs" [class.text-slate-500]="o.routerNasId" [class.text-red-600]="!o.routerNasId">{{ o.routerName || 'Router belum disetel' }}</span>
+                    <span
+                      >{{ o.namaTitik }}
+                      <span class="text-slate-400"
+                        >({{ o.tipeTitik.toUpperCase() }})</span
+                      ></span
+                    >
+                    <span
+                      class="shrink-0 text-xs"
+                      [class.text-slate-500]="o.routerNasId"
+                      [class.text-red-600]="!o.routerNasId"
+                      >{{ o.routerName || "Router belum disetel" }}</span
+                    >
                   </button>
                 }
                 @if (!filteredOdps().length) {
@@ -386,7 +396,10 @@
           <button
             class="btn-primary"
             [disabled]="
-              !activation.username || !activation.password || !activation.odp || selectedRouterName() === 'belum disetel'
+              !activation.username ||
+              !activation.password ||
+              !activation.odp ||
+              selectedRouterName() === 'belum disetel'
             "
             (click)="activationStep.set(2)"
           >

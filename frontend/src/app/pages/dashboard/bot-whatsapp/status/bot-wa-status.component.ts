@@ -162,10 +162,22 @@ export class BotWaStatusComponent implements OnInit, OnDestroy {
     });
   }
 
+  onTargetPhoneInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const phone = input.value.replace(/[^0-9]/g, '');
+    input.value = phone;
+    this.targetPhone.set(phone);
+  }
+
   sendPing(): void {
     const phone = this.targetPhone().trim();
     if (!phone) {
       this.toast.set({ message: 'Nomor target harus diisi.', type: 'error' });
+      return;
+    }
+
+    if (!/^[0-9]+$/.test(phone)) {
+      this.toast.set({ message: 'Nomor target hanya boleh berisi angka.', type: 'error' });
       return;
     }
 

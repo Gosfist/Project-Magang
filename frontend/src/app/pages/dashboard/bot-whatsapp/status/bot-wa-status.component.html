@@ -107,8 +107,10 @@
         <div class="relative flex-1">
           <input
             type="tel"
-            [ngModel]="targetPhone()"
-            (ngModelChange)="targetPhone.set($event)"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            [value]="targetPhone()"
+            (input)="onTargetPhoneInput($event)"
             name="targetPhone"
             placeholder="Nomor Target (contoh: 081234567890)"
             class="input w-full"
