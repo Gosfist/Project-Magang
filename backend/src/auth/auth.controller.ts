@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Header, HttpCode, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { LoginDto, UpdateProfileDto } from './auth.dto.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
@@ -34,5 +34,12 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   updateProfile(@Req() request: AuthRequest, @Body() dto: UpdateProfileDto) {
     return this.auth.updateProfile(request.user.id, dto);
+  }
+
+  @Get('profile/photo')
+  @Header('Cache-Control', 'private, no-store')
+  @UseGuards(JwtAuthGuard)
+  profilePhoto(@Req() request: AuthRequest) {
+    return this.auth.profilePhoto(request.user.id);
   }
 }

@@ -362,9 +362,10 @@
       <span
         class="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white font-bold text-slate-950"
       >
-        @if (auth.user()!.photo) {
+        @if (auth.profilePhotoUrl()) {
           <img
-            [src]="auth.user()!.photo"
+            [src]="auth.profilePhotoUrl()"
+            (error)="auth.profilePhotoFailed()"
             alt="Foto profil"
             class="h-full w-full object-cover object-top"
           />
@@ -420,9 +421,10 @@
             (click)="profilePhotoInput.click()"
           >
             <span class="profile-photo">
-              @if (profileForm.photo) {
+              @if (profilePhotoPreview()) {
                 <img
-                  [src]="profileForm.photo"
+                  [src]="profilePhotoPreview()"
+                  (error)="profilePhotoPreviewFailed()"
                   alt="Foto profil"
                   class="h-full w-full object-cover"
                 />
@@ -441,6 +443,9 @@
         />
 
         <div class="account-settings-fields">
+          @if (auth.profilePhotoError() && profileForm.photo && !profileForm.photo.startsWith('data:image/')) {
+            <p class="text-sm text-red-600">Foto profil gagal dimuat. Coba buka kembali pengaturan akun.</p>
+          }
           <div>
             <label class="label">Nama</label>
             <input

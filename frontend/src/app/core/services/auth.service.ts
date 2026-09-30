@@ -10,6 +10,9 @@ export class AuthService {
   private router = inject(Router);
 
   user = signal<User | null>(null);
+  profilePhotoUrl = signal('');
+  profilePhotoError = signal(false);
+  private photoRequest = 0;
   loading = signal<boolean>(true);
   isAdmin = computed(() => this.user()?.role === 'admin');
   isFinance = computed(() => this.user()?.role === 'finance');
@@ -30,6 +33,7 @@ export class AuthService {
     try {
       const result = await firstValueFrom(this.api.get<{ user: User }>('/auth/me'));
       this.user.set(result.user);
+      void this.loadProfilePhoto();
     } catch {
       localStorage.removeItem('unzanet_token');
     } finally {
@@ -43,18 +47,52 @@ export class AuthService {
     );
     localStorage.setItem('unzanet_token', result.accessToken);
     this.user.set(result.user);
+    void this.loadProfilePhoto();
     this.router.navigate(['/dashboard']);
   }
 
   async updateProfile(form: { name: string; phone?: string | null; photo?: string | null; password?: string }): Promise<string> {
     const result = await firstValueFrom(this.api.patch<{ message: string; user: User }>('/auth/profile', form));
     this.user.set(result.user);
+    void this.loadProfilePhoto();
     return result.message;
+  }
+
+  private clearProfilePhoto(): void {
+    const previous = this.profilePhotoUrl();
+    if (previous.startsWith('blob:')) URL.revokeObjectURL(previous);
+    this.profilePhotoUrl.set('');
+  }
+
+  profilePhotoFailed(): void {
+    this.clearProfilePhoto();
+    this.profilePhotoError.set(true);
+  }
+
+  async loadProfilePhoto(): Promise<void> {
+    const request = ++this.photoRequest;
+    this.clearProfilePhoto();
+    this.profilePhotoError.set(false);
+    const reference = this.user()?.photo;
+    if (!reference) return;
+    if (/^data:image\/(jpeg|png|webp);base64,/.test(reference)) {
+      this.profilePhotoUrl.set(reference);
+      return;
+    }
+    try {
+      const blob = await firstValueFrom(this.api.getBlob('/auth/profile/photo'));
+      if (request === this.photoRequest) this.profilePhotoUrl.set(URL.createObjectURL(blob));
+    } catch {
+      if (request === this.photoRequest) this.profilePhotoError.set(true);
+    }
   }
 
   async logout(): Promise<void> {
     try { await firstValueFrom(this.api.post('/auth/logout', {})); } catch { /* Pengguna tetap dapat keluar secara lokal saat koneksi terputus. */ }
     localStorage.removeItem('unzanet_token');
+    ++this.photoRequest;
+    this.clearProfilePhoto();
+    this.profilePhotoError.set(false);
     this.user.set(null);
     this.router.navigate(['/login']);
   }

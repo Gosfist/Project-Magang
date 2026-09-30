@@ -166,7 +166,8 @@ model IpPool {
 
 model Invoice {
   id             BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
-  pppoeAccountId BigInt             @map("pppoe_account_id") @db.UnsignedBigInt
+  pppoeAccountId BigInt?            @map("pppoe_account_id") @db.UnsignedBigInt
+  customerSnapshot Json?           @map("customer_snapshot")
   invoiceNumber  String             @unique @map("invoice_number") @db.VarChar(50)
   amount         BigInt             @default(0) @db.UnsignedBigInt
   baseAmount     BigInt             @default(0) @map("base_amount") @db.UnsignedBigInt
@@ -179,7 +180,7 @@ model Invoice {
   notes          String?            @db.Text
   createdAt      DateTime?          @map("created_at")
   updatedAt      DateTime?          @map("updated_at")
-  account        PppoeAccount       @relation(fields: [pppoeAccountId], references: [id], onDelete: Cascade)
+  account        PppoeAccount?      @relation(fields: [pppoeAccountId], references: [id], onDelete: SetNull)
   deposits       CollectorDeposit[]
 
   @@index([pppoeAccountId])
@@ -433,7 +434,10 @@ model ActivityLog {
   action      String   @db.VarChar(40)
   description String   @db.VarChar(500)
   status      String   @db.VarChar(20)
+  entityType  String?  @map("entity_type") @db.VarChar(30)
+  entityId    String?  @map("entity_id") @db.VarChar(30)
 
+  @@index([entityType, entityId])
   @@index([createdAt])
   @@map("activity_logs")
 }
@@ -552,7 +556,8 @@ model AreaCollector {
 
 model CollectorDeposit {
   id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
-  pppoeAccountId   BigInt    @map("pppoe_account_id") @db.UnsignedBigInt
+  pppoeAccountId   BigInt?   @map("pppoe_account_id") @db.UnsignedBigInt
+  customerSnapshot Json?    @map("customer_snapshot")
   invoiceId        BigInt    @map("invoice_id") @db.UnsignedBigInt
   collectorUserId  BigInt    @map("collector_user_id") @db.UnsignedBigInt
   amount           BigInt    @db.UnsignedBigInt
@@ -565,7 +570,7 @@ model CollectorDeposit {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  account    PppoeAccount @relation(fields: [pppoeAccountId], references: [id], onDelete: Cascade)
+  account    PppoeAccount? @relation(fields: [pppoeAccountId], references: [id], onDelete: SetNull)
   invoice    Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   collector  User         @relation("CollectorDeposits", fields: [collectorUserId], references: [id])
   acceptedBy User?        @relation("AcceptedDeposits", fields: [acceptedByUserId], references: [id])

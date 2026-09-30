@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { mkdir, writeFile, unlink, realpath } from 'node:fs/promises';
+import { dirname, join, resolve, relative, isAbsolute } from 'node:path';
 
 const maxBytes = 5 * 1024 * 1024;
 const uploadsRoot = () => resolve(process.env.UPLOADS_DIR || join(process.cwd(), '..', 'uploads'));
@@ -27,3 +27,18 @@ export async function storeImage(value: string | null | undefined, category: 'kt
 }
 
 export function uploadsDirectory() { return uploadsRoot(); }
+
+export async function removeCustomerImage(reference: string): Promise<void> {
+  const match = /^\/uploads\/(ktp|instalasi)\/([A-Za-z0-9_-]+\.(?:jpg|png|webp))$/.exec(reference);
+  if (!match) throw new Error('Referensi foto pelanggan tidak valid.');
+  const target = join(uploadsRoot(), match[1], match[2]);
+  try {
+    const root = await realpath(uploadsRoot());
+    const parent = await realpath(dirname(target));
+    const within = relative(root, parent);
+    if (within.startsWith('..') || isAbsolute(within)) throw new Error('Lokasi foto berada di luar folder upload.');
+    await unlink(target);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
+}

@@ -161,6 +161,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
         ...(onlyAccountId ? { pppoeAccountId: onlyAccountId } : {}),
         status: 'PENDING',
         reminderSentAt: null,
+        account: { isNot: null },
         dueDate: { gte: monthStart, lt: nextMonthStart },
       },
       include: {
@@ -170,6 +171,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
     });
 
     for (const invoice of invoices) {
+      if (!invoice.account) continue;
       const claimed = await this.prisma.invoice.updateMany({
         where: { id: invoice.id, reminderSentAt: null, status: 'PENDING' },
         data: { reminderSentAt: new Date() },

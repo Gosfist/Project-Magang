@@ -10,6 +10,7 @@ import { PppoeNetworkService } from './pppoe-network.service.js';
 import { validateIdCardPhoto } from './id-card-photo.js';
 import { readInstallationPhoto } from './installation-photo.js';
 import { WhatsappNotifyService } from './whatsapp-notify.service.js';
+import { removeCustomerImage } from '../common/image-storage.js';
 
 @Injectable()
 export class PppoeService {
@@ -314,17 +315,81 @@ export class PppoeService {
 
   async removeAccount(id: string) {
     const current = await this.findAccount(id);
+    const photos = new Set<string>();
+    if (current.idCardPhoto) photos.add(current.idCardPhoto);
     await this.prisma.$transaction(async (tx) => {
-      // PsbOrder menyimpan data registrasi sales dan progres teknisi. Hapus
-      // relasi ini sebelum akun agar data pelanggan tidak tertinggal sebagai orphan.
+      const orders = await tx.psbOrder.findMany({ where: { pppoeAccountId: current.id } });
+      const snapshot = {
+        id: current.id.toString(), customerNumber: current.customerNumber.toString(),
+        customerName: current.customerName, username: current.username, deleted: true,
+      };
+      for (const order of orders) {
+        if (order.idCardPhoto) photos.add(order.idCardPhoto);
+        if (order.installationPhoto) photos.add(order.installationPhoto);
+        for (const extension of ['jpg', 'png', 'webp']) photos.add(`/uploads/instalasi/${order.id}.${extension}`);
+        if (order.installationFeePaid !== null && order.completedAt) {
+          await tx.invoice.create({ data: {
+            pppoeAccountId: current.id, invoiceNumber: `ARCHIVE-PSB-${order.id}`,
+            amount: order.installationFeePaid, baseAmount: order.installationFeePaid,
+            invoiceType: 'PSB', status: 'PAID', paidAt: order.completedAt, dueDate: order.completedAt,
+            notes: `PSB diterima teknisi ID ${order.completedByUserId ?? '-'}`,
+            createdAt: order.completedAt, updatedAt: new Date(),
+          } });
+        }
+      }
+      // Retain money already paid and every deposit (including pending review).
+      await tx.invoice.deleteMany({ where: {
+        pppoeAccountId: current.id, status: { not: 'PAID' }, paidAt: null, deposits: { none: {} },
+      } });
+      await tx.invoice.updateMany({ where: { pppoeAccountId: current.id }, data: { customerSnapshot: snapshot, pppoeAccountId: null } });
+      await tx.collectorDeposit.updateMany({ where: { pppoeAccountId: current.id }, data: { customerSnapshot: snapshot, pppoeAccountId: null } });
+      await tx.customerAddon.deleteMany({ where: { pppoeAccountId: current.id } });
+      await tx.paymentPromise.deleteMany({ where: { pppoeAccountId: current.id } });
+      await tx.activityLog.deleteMany({ where: { OR: [
+        { entityType: 'PPPOE_ACCOUNT', entityId: current.id.toString() },
+        { entityType: 'PSB_ORDER', entityId: { in: orders.map(order => order.id.toString()) } },
+      ] } });
+      const routes = [`/api/pppoe/accounts/${current.id}`, ...orders.map(order => `/api/psb/${order.id}`)];
+      await tx.monitoringError.deleteMany({ where: { OR: routes.flatMap(route => [
+        { route }, { route: { startsWith: `${route}/` } }, { route: { startsWith: `${route}?` } },
+      ]) } });
+      const phone = current.phone?.replace(/\D/g, '');
+      if (phone) {
+        const normalized = phone.startsWith('0') ? `62${phone.slice(1)}` : phone;
+        const targets = [...new Set([current.phone!, phone, normalized, `+${normalized}`, ...(normalized.startsWith('62') ? [`0${normalized.slice(2)}`] : [])])];
+        const sharedContacts = await tx.pppoeAccount.count({ where: { id: { not: current.id }, phone: { in: targets } } })
+          + await tx.psbOrder.count({ where: { phone: { in: targets }, OR: [{ pppoeAccountId: null }, { pppoeAccountId: { not: current.id } }] } });
+        if (!sharedContacts) {
+          const tables = await tx.$queryRaw<{ count: bigint }[]>`SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'bot_wa_logs'`;
+          if (Number(tables[0]?.count)) await tx.$executeRaw(Prisma.sql`DELETE FROM bot_wa_logs WHERE target IN (${Prisma.join(targets)})`);
+        }
+      }
       await tx.psbOrder.deleteMany({ where: { pppoeAccountId: current.id } });
       await tx.radcheck.deleteMany({ where: { username: current.username } });
       await tx.radreply.deleteMany({ where: { username: current.username } });
-      await this.closeOpenAccounting(tx, current.username);
+      await tx.radusergroup.deleteMany({ where: { username: current.username } });
+      await tx.radpostauth.deleteMany({ where: { username: current.username } });
+      await tx.radacct.deleteMany({ where: { username: current.username } });
       await tx.pppoeAccount.delete({ where: { id: current.id } });
     });
-    const result = await this.network.disconnect(current.username, current.routerNasId);
-    return { message: this.networkMessage('Akun PPPoE dan data RADIUS berhasil dihapus.', result.warnings), warnings: result.warnings };
+    const warnings: string[] = [];
+    try {
+      const result = await this.network.disconnect(current.username, current.routerNasId);
+      warnings.push(...result.warnings);
+    } catch (error) {
+      warnings.push(`Sesi router belum diputus: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    for (const photo of photos) {
+      if (photo.startsWith('data:')) continue;
+      try {
+        const references = await this.prisma.pppoeAccount.count({ where: { idCardPhoto: photo } })
+          + await this.prisma.psbOrder.count({ where: { OR: [{ idCardPhoto: photo }, { installationPhoto: photo }] } });
+        if (!references) await removeCustomerImage(photo);
+      } catch (error) {
+        warnings.push(`Foto ${photo} belum dihapus: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+    return { message: this.networkMessage('Data pelanggan, PSB, log RADIUS, dan foto terkait dihapus. Riwayat pembayaran dipertahankan.', warnings), warnings };
   }
 
   async disconnectAccount(id: string) {

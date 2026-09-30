@@ -124,6 +124,21 @@ export class SidebarComponent implements OnInit {
     };
     this.changePassword.set(false);
     this.profileOpen.set(true);
+    if (this.auth.profilePhotoError()) void this.auth.loadProfilePhoto();
+  }
+
+  profilePhotoPreview(): string {
+    if (!this.profileForm.photo) return '';
+    return this.profileForm.photo.startsWith('data:image/') ? this.profileForm.photo : this.auth.profilePhotoUrl();
+  }
+
+  profilePhotoPreviewFailed(): void {
+    if (this.profileForm.photo.startsWith('data:image/')) {
+      this.profileForm = { ...this.profileForm, photo: this.auth.user()?.photo ?? '' };
+      this.toast.set({ message: 'Foto tidak dapat dibaca. Pilih gambar lain.', type: 'error' });
+    } else {
+      this.auth.profilePhotoFailed();
+    }
   }
 
   chooseProfilePhoto(event: Event): void {

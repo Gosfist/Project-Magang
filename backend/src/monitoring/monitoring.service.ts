@@ -51,10 +51,11 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
     } finally { this.cleanupPending = false; }
   }
 
-  async activity(request: { method: string; body?: { namaTitik?: string; name?: string; customerName?: string }; params?: { id?: string; type?: string }; route?: { path?: string }; user?: { id: string; role: string } }, status: number, result?: { node?: { namaTitik?: string }; user?: { name?: string; role?: string } }) {
+  async activity(request: { method: string; body?: { namaTitik?: string; name?: string; customerName?: string }; params?: { id?: string; type?: string }; route?: { path?: string }; user?: { id: string; role: string } }, status: number, result?: { node?: { namaTitik?: string }; user?: { name?: string; role?: string }; account?: { id?: string | bigint }; order?: { id?: string | bigint } }) {
     if (request.method === 'GET') return;
     const route = String(request.route?.path ?? '');
     if (route.includes('monitoring')) return;
+    if (request.method === 'DELETE' && status < 400 && route.includes('/pppoe/accounts/')) return;
     try {
       const actor = request.user?.id ? await this.prisma.user.findUnique({ where: { id: BigInt(request.user.id) }, select: { name: true, role: true } }) : null;
       const module = route.includes('/auth') ? 'AUTH' : route.includes('/main-core') ? 'MAIN CORE' : route.includes('/pppoe') ? 'PPPOE' : route.includes('/users') ? 'PETUGAS' : 'LAINNYA';
@@ -67,6 +68,8 @@ export class MonitoringService implements OnModuleInit, OnModuleDestroy {
         target = node?.namaTitik ?? 'Core tidak ditemukan';
       }
       await this.prisma.activityLog.create({ data: {
+        entityType: route.includes('/pppoe/accounts') ? 'PPPOE_ACCOUNT' : route.includes('/psb') ? 'PSB_ORDER' : null,
+        entityId: String(request.params?.id ?? result?.account?.id ?? result?.order?.id ?? '') || null,
         userName: name, role, module, action,
         description: (module === 'MAIN CORE' ? `${status < 400 ? 'Berhasil' : 'Gagal'} : ${target}` : `${action} ${request.params?.type ?? module} ${status < 400 ? 'berhasil' : 'gagal'}${target ? ': ' + String(target) : ''}`).slice(0, 500),
         status: status < 400 ? 'SUCCESS' : 'FAILED',

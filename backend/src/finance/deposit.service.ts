@@ -37,12 +37,14 @@ export class DepositService {
       if (endDate) where.depositDate.lte = new Date(`${endDate}T23:59:59.999Z`);
     }
     if (search) {
-      where.account = {
-        OR: [
+      where.OR = [
+        { account: { OR: [
           { customerName: { contains: search } },
           { username: { contains: search } },
-        ],
-      };
+        ] } },
+        { customerSnapshot: { path: '$.customerName', string_contains: search } },
+        { customerSnapshot: { path: '$.username', string_contains: search } },
+      ];
     }
 
     const [data, total] = await this.prisma.$transaction([
@@ -71,6 +73,7 @@ export class DepositService {
     return serialize({
       data: data.map((d) => ({
         ...d,
+        account: d.account ?? d.customerSnapshot,
         amount: Number(d.amount),
         invoice: d.invoice ? { ...d.invoice, amount: Number(d.invoice.amount) } : null,
       })),
@@ -80,6 +83,7 @@ export class DepositService {
 
   async unpaidInvoices(search = '') {
     const where: Prisma.InvoiceWhereInput = {
+      pppoeAccountId: { not: null },
       status: { in: ['PENDING', 'OVERDUE'] },
       deposits: {
         none: {
@@ -270,7 +274,7 @@ export class DepositService {
           type: 'INCOME',
           category: 'SETORAN_KOLEKTOR',
           amount: deposit.amount,
-          description: `Setoran dari kolektor ${deposit.collector.name} untuk pelanggan ${deposit.account.customerName}`,
+          description: `Setoran dari kolektor ${deposit.collector.name} untuk pelanggan ${deposit.account?.customerName ?? this.archivedCustomerName(deposit.customerSnapshot)}`,
           referenceType: 'DEPOSIT',
           referenceId: deposit.id,
           createdByUserId: BigInt(acceptedByUserId),
@@ -281,13 +285,13 @@ export class DepositService {
 
     // Reconcile account (activate if all invoices paid)
     try {
-      await this.reconcileAfterPayment(deposit.pppoeAccountId);
+      if (deposit.pppoeAccountId !== null) await this.reconcileAfterPayment(deposit.pppoeAccountId);
     } catch (err) {
       this.logger.error(`Reconcile error after deposit accept: ${err}`);
     }
 
     // Send WA notification: deposit accepted by company
-    const account = await this.prisma.pppoeAccount.findUnique({
+    const account = deposit.pppoeAccountId === null ? null : await this.prisma.pppoeAccount.findUnique({
       where: { id: deposit.pppoeAccountId },
       select: { customerName: true, customerNumber: true, phone: true },
     });
@@ -356,5 +360,10 @@ export class DepositService {
     });
     if (!deposit) throw new NotFoundException('Setoran tidak ditemukan.');
     return deposit;
+  }
+
+  private archivedCustomerName(snapshot: Prisma.JsonValue): string {
+    return snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot) && typeof snapshot.customerName === 'string'
+      ? snapshot.customerName : 'Pelanggan dihapus';
   }
 }

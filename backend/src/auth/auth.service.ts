@@ -1,10 +1,12 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, StreamableFile, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { LoginDto, UpdateProfileDto } from './auth.dto.js';
 import { serialize } from '../common/serialize.js';
-import { storeImage } from '../common/image-storage.js';
+import { storeImage, uploadsDirectory } from '../common/image-storage.js';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 @Injectable()
 export class AuthService {
@@ -45,5 +47,19 @@ export class AuthService {
     });
     const { password: _password, ...safeUser } = user;
     return serialize({ message: 'Pengaturan akun berhasil disimpan.', user: safeUser });
+  }
+
+  async profilePhoto(id: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: BigInt(id) }, select: { photo: true, status: true } });
+    if (!user || user.status !== 'active') throw new UnauthorizedException();
+    const match = /^\/uploads\/profile\/([A-Za-z0-9_-]+\.(jpg|png|webp))$/.exec(user.photo ?? '');
+    if (!match) throw new NotFoundException('Foto profil belum tersedia.');
+    let buffer: Buffer;
+    try { buffer = await readFile(join(uploadsDirectory(), 'profile', match[1])); }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new NotFoundException('File foto profil tidak ditemukan.');
+      throw error;
+    }
+    return new StreamableFile(buffer, { type: match[2] === 'jpg' ? 'image/jpeg' : `image/${match[2]}`, disposition: 'inline' });
   }
 }
