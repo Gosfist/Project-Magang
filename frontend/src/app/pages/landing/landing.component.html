@@ -10,6 +10,15 @@
         <img src="logo.png" alt="Logo PT UNZANET" class="h-11 w-auto" />
         <span class="font-extrabold tracking-wide">PT UNZANET</span>
       </a>
+      <div class="hidden items-center gap-1 md:flex">
+        @for (item of navLinks; track item[1]) {
+          <a
+            [href]="'#' + item[1]"
+            class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700"
+            >{{ item[0] }}</a
+          >
+        }
+      </div>
     </div>
   </nav>
 
