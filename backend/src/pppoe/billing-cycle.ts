@@ -11,6 +11,7 @@ export function firstBillingCycle(activatedAt: Date, price: number, endDay: numb
   const days = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
   const nextDays = new Date(Date.UTC(year, month + 2, 0)).getUTCDate();
   return {
+    invoiceType: local.getUTCDate() === 1 ? 'MONTHLY' : 'PRORATE',
     amount: Math.round(price * (days - local.getUTCDate() + 1) / days),
     dueDate: new Date(Date.UTC(year, month + 1, Math.min(endDay, nextDays))),
   };

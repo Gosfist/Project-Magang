@@ -607,15 +607,15 @@
         ) {
           <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
             <p class="text-sm font-semibold text-emerald-800">
-              Estimasi Tagihan Pertama (Prorate)
+              Estimasi Tagihan Pertama
             </p>
             <p class="mt-1 text-2xl font-bold text-emerald-700">
               Rp {{ prorateEstimate()!.amount.toLocaleString("id-ID") }}
             </p>
             <p class="mt-1 text-xs text-emerald-600">
               {{ prorateEstimate()!.daysActive }} hari aktif dari
-              {{ prorateEstimate()!.daysInMonth }} hari (s/d tanggal
-              {{ prorateEstimate()!.nextBilling.getDate() }})
+              {{ prorateEstimate()!.daysInMonth }} hari.
+              Ditagih {{ prorateEstimate()!.nextBilling.toLocaleDateString('id-ID', { month: 'long', year: 'numeric', timeZone: 'UTC' }) }}.
             </p>
           </div>
         }

@@ -134,6 +134,7 @@ model PsbOrder {
   completedByUserId BigInt?   @map("completed_by_user_id") @db.UnsignedBigInt
   activatedAt       DateTime? @map("activated_at")
   completedAt       DateTime? @map("completed_at")
+  installationFeePaid BigInt? @map("installation_fee_paid") @db.UnsignedBigInt
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 

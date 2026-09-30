@@ -69,6 +69,9 @@ export class PsbComponent implements OnInit {
   };
   saving = signal(false);
   completeConfirm = signal<PsbOrder | null>(null);
+  completionFee = signal<number | null>(null);
+  completionLoading = signal(false);
+  completing = signal(false);
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
   ngOnInit() {
@@ -236,18 +239,44 @@ export class PsbComponent implements OnInit {
       });
   }
   requestComplete(item: PsbOrder) {
+    this.completionFee.set(null);
+    this.completionLoading.set(true);
     this.completeConfirm.set(item);
+    this.api.get<{ installationFee: number }>('/psb/' + item.id + '/completion-summary').subscribe({
+      next: (r) => {
+        if (this.completeConfirm() !== item) return;
+        this.completionFee.set(r.installationFee);
+        this.completionLoading.set(false);
+      },
+      error: (e) => {
+        if (this.completeConfirm() !== item) return;
+        this.completionLoading.set(false);
+        this.completeConfirm.set(null);
+        this.error(e);
+      },
+    });
+  }
+  closeComplete() {
+    if (!this.completing()) this.completeConfirm.set(null);
+  }
+  formattedCompletionFee(): string {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(this.completionFee() ?? 0);
   }
   complete() {
     const item = this.completeConfirm();
-    if (!item) return;
-    this.completeConfirm.set(null);
-    this.api.post<any>('/psb/' + item.id + '/complete', {}).subscribe({
+    if (!item || this.completionFee() === null || this.completionLoading() || this.completing()) return;
+    this.completing.set(true);
+    this.api.post<any>('/psb/' + item.id + '/complete', { installationFeePaid: this.completionFee() }).subscribe({
       next: (r) => {
+        this.completing.set(false);
+        this.completeConfirm.set(null);
         this.toast.set({ message: r.message, type: 'success' });
         this.load();
       },
-      error: (e) => this.error(e),
+      error: (e) => {
+        this.completing.set(false);
+        this.error(e);
+      },
     });
   }
   statusLabel(value: string) {

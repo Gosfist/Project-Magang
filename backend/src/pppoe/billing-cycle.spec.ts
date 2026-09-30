@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { firstBillingCycle } from './billing-cycle.js';
 
 describe('first postpaid bill', () => {
+  it.each([
+    ['2026-09-30T17:00:00Z', 110000, 'MONTHLY'],
+    ['2026-10-01T17:00:00Z', 106452, 'PRORATE'],
+  ])('bills October activation %s in November', (activation, amount, invoiceType) => {
+    expect(firstBillingCycle(new Date(activation), 110000, 10, 'WIB')).toEqual({
+      amount, invoiceType, dueDate: new Date('2026-11-10T00:00:00Z'),
+    });
+  });
   it('charges September 23-30 in October, not September', () => {
     const cycle = firstBillingCycle(new Date('2026-09-23T02:00:00Z'), 110000, 10, 'WIB');
     expect(cycle.amount).toBe(29333);

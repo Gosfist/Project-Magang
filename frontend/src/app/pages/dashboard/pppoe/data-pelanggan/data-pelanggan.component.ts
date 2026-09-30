@@ -282,6 +282,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     });
   }
   prorateEstimate = signal<{amount: number, daysActive: number, daysInMonth: number, nextBilling: Date} | null>(null);
+  private billingTimezone: 'WIB' | 'WITA' | 'WIT' = 'WIB';
 
   form: any = {
     customerName: '', phone: '', idCardNumber: '', idCardPhoto: '', address: '',
@@ -296,6 +297,9 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     this.load();
     this.refreshTimer = setInterval(() => this.refreshVisibleAccounts(), 5000);
     if (this.readOnly()) return;
+    this.api.get<{ billingTimezone: 'WIB' | 'WITA' | 'WIT' }>('/settings/billing').subscribe({
+      next: (settings) => { this.billingTimezone = settings.billingTimezone; this.calculateProrate(); },
+    });
     this.api.get<{ data: PppoePackage[] }>('/pppoe/packages/options').subscribe({
       next: (r) => this.packages.set(r.data),
     });
@@ -452,20 +456,16 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   calculateProrate(): void {
     const pkg = this.packages().find(p => String(p.id) === String(this.form.pppoePackageId));
     if (!pkg || this.form.subscriptionType !== 'POSTPAID') { this.prorateEstimate.set(null); return; }
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const currentDay = now.getDate();
-    const bd = Math.min(Math.max(parseInt(this.form.billingDay) || 1, 1), 28);
-    let nextBilling: Date;
-    if (currentDay < bd) { nextBilling = new Date(year, month, bd); }
-    else { nextBilling = new Date(year, month + 1, bd); }
-    const msPerDay = 86400000;
-    const daysActive = Math.max(1, Math.ceil((nextBilling.getTime() - now.getTime()) / msPerDay));
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const offset = { WIB: 7, WITA: 8, WIT: 9 }[this.billingTimezone];
+    const now = new Date(Date.now() + offset * 3600000);
+    const year = now.getUTCFullYear();
+    const month = now.getUTCMonth();
+    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+    const daysActive = daysInMonth - now.getUTCDate() + 1;
+    const nextBilling = new Date(Date.UTC(year, month + 1, 1));
     const discount = parseInt(this.form.discount) || 0;
     const baseAmount = Math.max(0, pkg.price - discount);
-    const amount = Math.ceil((daysActive / daysInMonth) * baseAmount);
+    const amount = Math.round(baseAmount * daysActive / daysInMonth);
     this.prorateEstimate.set({ amount, daysActive, daysInMonth, nextBilling });
   }
 

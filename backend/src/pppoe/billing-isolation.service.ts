@@ -75,7 +75,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
         package: { select: { price: true } },
         discount: true,
         invoices: {
-          where: { invoiceType: { in: ['PRORATE', 'MONTHLY'] }, dueDate: { gte: monthStart, lt: nextMonthStart } },
+          where: { status: { not: 'CANCELLED' }, invoiceType: { in: ['PRORATE', 'MONTHLY'] }, dueDate: { gte: monthStart, lt: nextMonthStart } },
           select: { id: true },
           take: 1,
         },
@@ -87,6 +87,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
       if (account.invoices.length) continue;
       const price = Math.max(0, Number(account.package.price) - Number(account.discount));
       const first = account.createdAt ? firstBillingCycle(account.createdAt, price, settings.billingEndDay, settings.billingTimezone) : null;
+      if (first && first.dueDate > dueDate) continue;
       const prorate = first?.dueDate.getTime() === dueDate.getTime();
       const amount = prorate ? first!.amount : price;
       await this.prisma.invoice.create({
@@ -96,7 +97,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
           amount: BigInt(amount),
           baseAmount: BigInt(Number(account.package.price)),
           discount: account.discount,
-          invoiceType: prorate ? 'PRORATE' : 'MONTHLY',
+          invoiceType: prorate ? first!.invoiceType : 'MONTHLY',
           status: 'PENDING',
           dueDate,
           notes: `Tagihan bulanan ${String(month).padStart(2, '0')}/${year}`,

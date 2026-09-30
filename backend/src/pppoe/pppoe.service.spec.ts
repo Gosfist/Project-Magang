@@ -69,20 +69,20 @@ describe('PPPoE billing and account deactivation', () => {
     expect(prisma.$transaction).toHaveBeenLastCalledWith(expect.any(Function), { isolationLevel: 'Serializable' });
     expect(tx.pppoeAccount.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ customerNumber: 3n }) }));
   });
-  it('prorates postpaid only', async () => {
+  it('defers postpaid invoices to the next-month scheduler', async () => {
     const { service, dto, invoice } = setup();
     await service.createAccount({ ...dto, subscriptionType: 'POSTPAID' });
-    expect(invoice.create).toHaveBeenCalledWith({ data: expect.objectContaining({ amount: 145000n, invoiceType: 'PRORATE' }) });
+    expect(invoice.create).not.toHaveBeenCalled();
   });
   it('does not create a first invoice when none is requested', async () => {
     const { service, dto, invoice } = setup();
     await service.createAccount({ ...dto, firstInvoice: 'none' });
     expect(invoice.create).not.toHaveBeenCalled();
   });
-  it('keeps initial postpaid prorated even for a stale full payload', async () => {
+  it('does not invoice postpaid immediately even for a stale full payload', async () => {
     const { service, dto, invoice } = setup();
     await service.createAccount({ ...dto, subscriptionType: 'POSTPAID', firstInvoice: 'full' });
-    expect(invoice.create).toHaveBeenCalledWith({ data: expect.objectContaining({ amount: 145000n, invoiceType: 'PRORATE', dueDate: new Date('2026-10-10T00:00:00Z') }) });
+    expect(invoice.create).not.toHaveBeenCalled();
   });
   it('disconnects after committing deactivation and allows retrying an inactive account', async () => {
     const { service, dto, network, radius } = setup();

@@ -1,4 +1,8 @@
-import { IsIn, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsIn, IsInt, Min, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+
+export class CompletePsbOrderDto {
+  @IsInt() @Min(0) installationFeePaid: number;
+}
 
 export class CreatePsbOrderDto {
   @IsString() @Matches(/\S/, { message: 'Nama pelanggan wajib diisi.' }) @MaxLength(150) customerName: string;

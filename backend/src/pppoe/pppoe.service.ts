@@ -10,8 +10,6 @@ import { PppoeNetworkService } from './pppoe-network.service.js';
 import { validateIdCardPhoto } from './id-card-photo.js';
 import { readInstallationPhoto } from './installation-photo.js';
 import { WhatsappNotifyService } from './whatsapp-notify.service.js';
-import { SettingsService } from '../settings/settings.service.js';
-import { firstBillingCycle } from './billing-cycle.js';
 
 @Injectable()
 export class PppoeService {
@@ -377,16 +375,12 @@ export class PppoeService {
   }
 
   private async createFirstInvoice(tx: Prisma.TransactionClient, account: Prisma.PppoeAccountGetPayload<{}>, packageData: Prisma.PppoePackageGetPayload<{}>, discount: number, firstInvoice: string) {
+    // Pascabayar diterbitkan scheduler pada bulan setelah mulai berlangganan.
+    if (account.subscriptionType !== 'PREPAID') return;
     const now = new Date();
     const msPerDay = 1000 * 60 * 60 * 24;
     const baseAmount = Math.max(0, Number(packageData.price) - discount);
-    const prorate = account.subscriptionType !== 'PREPAID';
-    const billing = prorate ? await new SettingsService(this.prisma).billing() : null;
-    const first = billing ? firstBillingCycle(account.createdAt ?? now, baseAmount, billing.billingEndDay, billing.billingTimezone) : null;
-    const invoiceAmount = first ? first.amount : baseAmount;
-    const dueDate = account.subscriptionType === 'PREPAID'
-      ? account.expiresAt ?? new Date(now.getTime() + packageData.validityDays * msPerDay)
-      : first!.dueDate;
+    const dueDate = account.expiresAt ?? new Date(now.getTime() + packageData.validityDays * msPerDay);
 
     const invoiceNumber = this.generateInvoiceNumber();
 
@@ -394,10 +388,10 @@ export class PppoeService {
       data: {
         pppoeAccountId: account.id,
         invoiceNumber,
-        amount: BigInt(invoiceAmount),
+        amount: BigInt(baseAmount),
         baseAmount: BigInt(baseAmount),
         discount: BigInt(discount),
-        invoiceType: prorate ? 'PRORATE' : 'MONTHLY',
+        invoiceType: 'MONTHLY',
         status: 'PENDING',
         dueDate,
         createdAt: now,

@@ -6,8 +6,7 @@ import { RadiusService } from '../pppoe/radius.service.js';
 import { SecretService } from '../pppoe/secret.service.js';
 import { WhatsappNotifyService } from '../pppoe/whatsapp-notify.service.js';
 import { SettingsService } from '../settings/settings.service.js';
-import { firstBillingCycle } from '../pppoe/billing-cycle.js';
-import { ActivatePsbOrderDto, CreatePsbOrderDto, UpdatePsbOrderDto } from './psb.dto.js';
+import { ActivatePsbOrderDto, CompletePsbOrderDto, CreatePsbOrderDto, UpdatePsbOrderDto } from './psb.dto.js';
 import { storeImage } from '../common/image-storage.js';
 
 @Injectable()
@@ -138,22 +137,26 @@ export class PsbService {
     }
   }
 
-  async complete(id: string, technicianId: string) {
+  async completionSummary(id: string) {
+    const order = await this.find(id);
+    if (order.status !== 'ACTIVATED' || !order.pppoeAccountId) throw new BadRequestException('Aktivasi PPPoE dan foto instalasi harus disimpan lebih dahulu.');
+    return this.settings.psb();
+  }
+
+  async complete(id: string, technicianId: string, dto: CompletePsbOrderDto) {
     const order = await this.find(id, true);
     if (order.status !== 'ACTIVATED' || !order.pppoeAccountId) throw new BadRequestException('Aktivasi PPPoE dan foto instalasi harus disimpan lebih dahulu.');
     const billing = await this.settings.billing();
     const psb = await this.settings.psb();
+    if (dto.installationFeePaid !== psb.installationFee) throw new ConflictException('Biaya PSB berubah. Buka kembali konfirmasi pemasangan dan periksa nominal pembayaran.');
     const now = new Date();
-    const first = firstBillingCycle(order.activatedAt ?? now, Number(order.package.price), billing.billingEndDay, billing.billingTimezone);
-    const nextMonth = first.dueDate;
-    const serviceAmount = first.amount;
-    const total = serviceAmount + psb.installationFee;
-    await this.prisma.$transaction(async tx => {
-      await tx.psbOrder.update({ where: { id: order.id }, data: { status: 'COMPLETED', completedByUserId: BigInt(technicianId), completedAt: now } });
-      await tx.invoice.create({ data: { pppoeAccountId: order.pppoeAccountId!, invoiceNumber: `PSB-${this.customerId(order.customerNumber)}-${Date.now().toString(36).toUpperCase()}`, amount: BigInt(total), baseAmount: BigInt(total), discount: 0n, invoiceType: 'PRORATE', status: 'PENDING', dueDate: nextMonth, notes: `Aktivasi pasang baru (layanan prorata Rp${serviceAmount.toLocaleString('id-ID')} + biaya PSB Rp${psb.installationFee.toLocaleString('id-ID')})`, createdAt: now, updatedAt: now } });
+    const updated = await this.prisma.psbOrder.updateMany({
+      where: { id: order.id, status: 'ACTIVATED' },
+      data: { status: 'COMPLETED', completedByUserId: BigInt(technicianId), completedAt: now, installationFeePaid: BigInt(psb.installationFee) },
     });
+    if (!updated.count) throw new ConflictException('Pemasangan sudah diselesaikan. Muat ulang daftar pelanggan.');
     void this.wa.notifyPsbCompleted({ customerName: order.customerName, customerNumber: order.customerNumber, phone: order.phone, packageName: order.package.name, installationFee: psb.installationFee, billingStartDay: billing.billingStartDay, billingEndDay: billing.billingEndDay });
-    return { message: 'Pemasangan selesai. Status Sales dan Teknisi telah diperbarui serta notifikasi pelanggan diproses.' };
+    return { message: 'Pemasangan selesai dan pembayaran PSB ke teknisi tercatat. Notifikasi pelanggan diproses. Tagihan layanan dimulai bulan berikutnya.' };
   }
 
   private async routerForLocation(locationId: bigint): Promise<number> {
