@@ -177,11 +177,15 @@ export class PsbComponent implements OnInit {
       odp: item.odp || '',
       installationPhoto: item.installationPhoto || '',
     };
-    const selectedOdp = this.odps().find((o) => o.id === this.activation.odp);
-    this.odpSearch = selectedOdp
-      ? selectedOdp.namaTitik + ' (' + selectedOdp.tipeTitik.toUpperCase() + ')'
-      : '';
     this.activationOpen.set(true);
+  }
+  toggleOdpPicker() {
+    this.odpPickerOpen = !this.odpPickerOpen;
+    if (this.odpPickerOpen) this.odpSearch = '';
+  }
+  selectedOdpLabel(): string {
+    const item = this.odps().find((o) => o.id === this.activation.odp);
+    return item ? `${item.namaTitik} (${item.tipeTitik.toUpperCase()})` : 'Pilih ODC / ODP';
   }
   filteredOdps() {
     const query = this.odpSearch.trim().toLocaleLowerCase();
@@ -193,7 +197,7 @@ export class PsbComponent implements OnInit {
   }
   selectOdp(item: OdpOption) {
     this.activation.odp = item.id;
-    this.odpSearch = `${item.namaTitik} (${item.tipeTitik.toUpperCase()})`;
+    this.odpSearch = '';
     this.odpPickerOpen = false;
   }
   selectedRouterName(): string {

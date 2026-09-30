@@ -343,11 +343,11 @@
             type="button"
             class="input flex w-full items-center justify-between text-left"
             [disabled]="activationViewOnly"
-            (click)="odpPickerOpen = !odpPickerOpen"
+            (click)="toggleOdpPicker()"
           >
             <span
               [class]="activation.odp ? 'text-slate-900' : 'text-slate-500'"
-              >{{ odpSearch || "Pilih ODC / ODP" }}</span
+              >{{ selectedOdpLabel() }}</span
             ><span>⌄</span>
           </button>
           @if (odpPickerOpen) {
