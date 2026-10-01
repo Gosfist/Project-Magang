@@ -17,19 +17,19 @@ describe('customer photo deletion', () => {
     }
     root = undefined;
   });
-  it('deletes the referenced installation photo without touching payment evidence', async () => {
+  it('deletes the referenced installation photo without touching other customer photos', async () => {
     root = await mkdtemp(join(tmpdir(), 'unzanet-photo-test-'));
     process.env.UPLOADS_DIR = root;
     await mkdir(join(root, 'instalasi'));
-    await mkdir(join(root, 'bukti-setoran'));
+    await mkdir(join(root, 'ktp'));
     await writeFile(join(root, 'instalasi', '1.jpg'), 'test');
-    await writeFile(join(root, 'bukti-setoran', '1.jpg'), 'receipt');
+    await writeFile(join(root, 'ktp', '1.jpg'), 'ktp');
     await removeCustomerImage('/uploads/instalasi/1.jpg');
     await expect(access(join(root, 'instalasi', '1.jpg'))).rejects.toThrow();
-    await expect(access(join(root, 'bukti-setoran', '1.jpg'))).resolves.toBeUndefined();
+    await expect(access(join(root, 'ktp', '1.jpg'))).resolves.toBeUndefined();
     await expect(removeCustomerImage('/uploads/instalasi/1.jpg')).resolves.toBeUndefined();
   });
-  it.each(['/uploads/ktp/../../secret.jpg', '/uploads/bukti-setoran/1.jpg', '/uploads/profile/1.jpg', 'C:/secret.jpg'])('rejects invalid or unrelated path %s', async path => {
+  it.each(['/uploads/ktp/../../secret.jpg', '/uploads/profile/1.jpg', 'C:/secret.jpg'])('rejects invalid or unrelated path %s', async path => {
     await expect(removeCustomerImage(path)).rejects.toThrow('Referensi foto');
   });
 });

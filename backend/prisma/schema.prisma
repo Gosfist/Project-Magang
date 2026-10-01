@@ -566,7 +566,6 @@ model CollectorDeposit {
   acceptedByUserId BigInt?   @map("accepted_by_user_id") @db.UnsignedBigInt
   acceptedAt       DateTime? @map("accepted_at")
   notes            String?   @db.Text
-  receiptPhoto     String?   @map("receipt_photo") @db.LongText
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 

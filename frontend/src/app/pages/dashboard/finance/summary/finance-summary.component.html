@@ -5,7 +5,7 @@
       <!-- Title / info -->
       <div class="flex items-center gap-2">
         <div>
-          <h2 class="text-sm font-bold text-slate-900">Ringkasan Keuangan</h2>
+          <h2 class="text-sm font-bold text-slate-900">Ringkasan Finance</h2>
           <p class="text-xs text-slate-500">Laporan pemasukan, pengeluaran, dan saldo kas</p>
         </div>
       </div>
@@ -33,7 +33,7 @@
 
   @if (loading()) {
     <div class="card p-12 text-center text-slate-400">
-      Memuat ringkasan keuangan...
+      Memuat ringkasan finance...
     </div>
   } @else if (summary()) {
     <!-- Monthly Metrics Grid -->
@@ -137,7 +137,7 @@
 
     <!-- Quick Links Card -->
     <div class="card p-5">
-      <h3 class="text-sm font-bold text-slate-900 mb-3">Tautan Cepat Fitur Keuangan</h3>
+      <h3 class="text-sm font-bold text-slate-900 mb-3">Tautan Cepat Fitur Finance</h3>
       <div class="grid gap-3 sm:grid-cols-2">
         <a
           routerLink="/dashboard/finance/transaksi"

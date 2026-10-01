@@ -213,10 +213,67 @@ export class FinanceDepositsService {
 
     await this.prisma.collectorDeposit.update({
       where: { id: deposit.id },
-      data: { status: 'REJECTED', notes: dto.reason ? `Ditolak: ${dto.reason}` : 'Ditolak oleh bagian keuangan.' },
+      data: { status: 'REJECTED', notes: dto.reason ? `Ditolak: ${dto.reason}` : 'Ditolak oleh bagian finance.' },
     });
 
     return { message: 'Setoran ditolak.' };
+  }
+
+  async cancelAccept(id: string) {
+    const deposit = await this.findDeposit(id);
+    if (deposit.status !== 'ACCEPTED') throw new BadRequestException('Hanya setoran yang sudah di-ACC yang dapat dibatalkan.');
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.financeTransaction.deleteMany({
+        where: { referenceType: 'DEPOSIT', referenceId: deposit.id },
+      });
+
+      await tx.invoice.update({
+        where: { id: deposit.invoiceId },
+        data: {
+          status: this.unpaidStatus(deposit.invoice?.dueDate),
+          paidAt: null,
+          updatedAt: new Date(),
+        },
+      });
+
+      await tx.collectorDeposit.update({
+        where: { id: deposit.id },
+        data: {
+          status: 'PENDING',
+          acceptedByUserId: null,
+          acceptedAt: null,
+          notes: null,
+        },
+      });
+    });
+
+    return { message: 'ACC setoran dibatalkan. Status kembali menunggu ACC.' };
+  }
+
+  async remove(id: string) {
+    const deposit = await this.findDeposit(id);
+
+    await this.prisma.$transaction(async (tx) => {
+      if (deposit.status === 'ACCEPTED') {
+        await tx.financeTransaction.deleteMany({
+          where: { referenceType: 'DEPOSIT', referenceId: deposit.id },
+        });
+
+        await tx.invoice.update({
+          where: { id: deposit.invoiceId },
+          data: {
+            status: this.unpaidStatus(deposit.invoice?.dueDate),
+            paidAt: null,
+            updatedAt: new Date(),
+          },
+        });
+      }
+
+      await tx.collectorDeposit.delete({ where: { id: deposit.id } });
+    });
+
+    return { message: 'Setoran berhasil dihapus.' };
   }
 
   private async reconcileAfterPayment(accountId: bigint) {
@@ -244,6 +301,7 @@ export class FinanceDepositsService {
       where: { id: BigInt(id) },
       include: {
         account: { select: { id: true, customerName: true, customerNumber: true, phone: true } },
+        invoice: { select: { id: true, dueDate: true } },
         collector: { select: { id: true, name: true } },
       },
     });
@@ -254,5 +312,10 @@ export class FinanceDepositsService {
   private archivedCustomerName(snapshot: Prisma.JsonValue): string {
     return snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot) && typeof snapshot.customerName === 'string'
       ? snapshot.customerName : 'Pelanggan dihapus';
+  }
+
+  private unpaidStatus(dueDate?: Date | null): 'PENDING' | 'OVERDUE' {
+    if (!dueDate) return 'PENDING';
+    return dueDate.getTime() < Date.now() ? 'OVERDUE' : 'PENDING';
   }
 }

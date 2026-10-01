@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS `collector_deposits` (
   CONSTRAINT `fk_collector_deposits_accepted_by` FOREIGN KEY (`accepted_by_user_id`) REFERENCES `users`(`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- 5. Tabel finance_transactions (Transaksi Keuangan)
+-- 5. Tabel finance_transactions (Transaksi Finance)
 CREATE TABLE IF NOT EXISTS `finance_transactions` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `type` VARCHAR(15) NOT NULL,

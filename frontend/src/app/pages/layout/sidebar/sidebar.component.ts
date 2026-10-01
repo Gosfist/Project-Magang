@@ -239,7 +239,7 @@ export class SidebarComponent implements OnInit {
       case 'teknisi':
         return 'Teknisi';
       case 'finance':
-        return 'Keuangan';
+        return 'Finance';
       case 'sales':
         return 'Sales';
       case 'kolektor':

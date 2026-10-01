@@ -13,7 +13,7 @@ function decodeImage(value: string): { buffer: Buffer; extension: string } {
   return { buffer, extension: match[1] === 'jpeg' ? 'jpg' : match[1] };
 }
 
-export async function storeImage(value: string | null | undefined, category: 'ktp' | 'profile' | 'instalasi' | 'bukti-setoran', name: string): Promise<string | null> {
+export async function storeImage(value: string | null | undefined, category: 'ktp' | 'profile' | 'instalasi', name: string): Promise<string | null> {
   if (!value) return null;
   if (!value.startsWith('data:image/')) return value;
   const { buffer, extension } = decodeImage(value);

@@ -7,6 +7,8 @@ import {
   LucidePlus,
   LucideCheck,
   LucideX,
+  LucidePencil,
+  LucideTrash2,
 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
 import { AuthService } from '../../../../core/services/auth.service';
@@ -28,6 +30,8 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
     LucidePlus,
     LucideCheck,
     LucideX,
+    LucidePencil,
+    LucideTrash2,
   ],
   templateUrl: './finance-deposits.component.html',
   styleUrl: './finance-deposits.component.css',
@@ -179,6 +183,32 @@ export class FinanceDepositsComponent implements OnInit {
           this.toast.set({ message: err.message || 'Gagal menolak setoran', type: 'error' });
         },
       });
+  }
+
+  cancelAccept(d: CollectorDeposit) {
+    if (!confirm(`Batalkan ACC setoran untuk pelanggan ${d.account?.customerName}? Status setoran akan kembali menunggu ACC dan tagihan kembali belum lunas.`)) return;
+    this.api.patch(`/finance/deposits/${d.id}/cancel-accept`, {}).subscribe({
+      next: () => {
+        this.toast.set({ message: 'ACC setoran dibatalkan. Status kembali menunggu ACC.', type: 'success' });
+        this.load();
+      },
+      error: (err) => {
+        this.toast.set({ message: err.message || 'Gagal membatalkan ACC setoran', type: 'error' });
+      },
+    });
+  }
+
+  deleteDeposit(d: CollectorDeposit) {
+    if (!confirm(`Hapus setoran untuk pelanggan ${d.account?.customerName}? Jika sudah di-ACC, pembukuan kas dan status tagihan akan ikut dikembalikan.`)) return;
+    this.api.patch(`/finance/deposits/${d.id}/delete`, {}).subscribe({
+      next: () => {
+        this.toast.set({ message: 'Setoran berhasil dihapus.', type: 'success' });
+        this.load();
+      },
+      error: (err) => {
+        this.toast.set({ message: err.message || 'Gagal menghapus setoran', type: 'error' });
+      },
+    });
   }
 
   statusLabel(status: string): string {

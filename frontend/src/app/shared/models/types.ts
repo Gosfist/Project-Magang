@@ -146,7 +146,6 @@ export type CollectorDeposit = {
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
   acceptedAt?: string | null;
   notes?: string | null;
-  receiptPhoto?: string | null;
   createdAt: string;
   account?: {
     id: string;

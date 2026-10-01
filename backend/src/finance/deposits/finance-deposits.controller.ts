@@ -42,4 +42,16 @@ export class FinanceDepositsController {
   reject(@Param('id') id: string, @Body() dto: RejectDepositDto) {
     return this.deposits.reject(id, dto);
   }
+
+  @Patch(':id/cancel-accept')
+  @Roles('admin', 'finance')
+  cancelAccept(@Param('id') id: string) {
+    return this.deposits.cancelAccept(id);
+  }
+
+  @Patch(':id/delete')
+  @Roles('admin', 'finance')
+  remove(@Param('id') id: string) {
+    return this.deposits.remove(id);
+  }
 }
