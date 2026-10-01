@@ -6,7 +6,6 @@ import {
   LucideSearch,
   LucidePlus,
   LucideCheck,
-  LucideX,
   LucidePencil,
   LucideTrash2,
 } from '@lucide/angular';
@@ -29,7 +28,6 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
     LucideSearch,
     LucidePlus,
     LucideCheck,
-    LucideX,
     LucidePencil,
     LucideTrash2,
   ],
@@ -45,6 +43,10 @@ export class FinanceDepositsComponent implements OnInit {
   rejecting = signal(false);
   createModalOpen = signal(false);
   rejectModalOpen = signal(false);
+  confirmModalOpen = signal(false);
+  confirmTitle = '';
+  confirmMessage = '';
+  private confirmAction: (() => void) | null = null;
   deposits = signal<CollectorDeposit[]>([]);
   meta = signal<PageMeta | null>(null);
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -148,7 +150,10 @@ export class FinanceDepositsComponent implements OnInit {
   }
 
   accept(d: CollectorDeposit) {
-    if (!confirm(`ACC setoran dari kolektor ${d.collector?.name} untuk pelanggan ${d.account?.customerName}? Tagihan akan otomatis lunas dan tercatat di pemasukan kas.`)) return;
+    this.openConfirmation('Konfirmasi ACC Setoran', `ACC setoran dari kolektor ${d.collector?.name} untuk pelanggan ${d.account?.customerName}? Tagihan akan otomatis lunas dan tercatat di pemasukan kas.`, () => this.acceptRequest(d));
+  }
+
+  private acceptRequest(d: CollectorDeposit) {
     this.api.patch(`/finance/deposits/${d.id}/accept`, {}).subscribe({
       next: () => {
         this.toast.set({ message: 'Setoran berhasil di-ACC dan dicatat ke pembukuan kas.', type: 'success' });
@@ -186,7 +191,10 @@ export class FinanceDepositsComponent implements OnInit {
   }
 
   cancelAccept(d: CollectorDeposit) {
-    if (!confirm(`Batalkan ACC setoran untuk pelanggan ${d.account?.customerName}? Status setoran akan kembali menunggu ACC dan tagihan kembali belum lunas.`)) return;
+    this.openConfirmation('Batalkan ACC Setoran', `Batalkan ACC setoran untuk pelanggan ${d.account?.customerName}? Status setoran akan kembali menunggu ACC dan tagihan kembali belum lunas.`, () => this.cancelAcceptRequest(d));
+  }
+
+  private cancelAcceptRequest(d: CollectorDeposit) {
     this.api.patch(`/finance/deposits/${d.id}/cancel-accept`, {}).subscribe({
       next: () => {
         this.toast.set({ message: 'ACC setoran dibatalkan. Status kembali menunggu ACC.', type: 'success' });
@@ -199,7 +207,10 @@ export class FinanceDepositsComponent implements OnInit {
   }
 
   deleteDeposit(d: CollectorDeposit) {
-    if (!confirm(`Hapus setoran untuk pelanggan ${d.account?.customerName}? Jika sudah di-ACC, pembukuan kas dan status tagihan akan ikut dikembalikan.`)) return;
+    this.openConfirmation('Hapus Setoran', `Hapus setoran untuk pelanggan ${d.account?.customerName}? Jika sudah di-ACC, pembukuan kas dan status tagihan akan ikut dikembalikan.`, () => this.deleteDepositRequest(d));
+  }
+
+  private deleteDepositRequest(d: CollectorDeposit) {
     this.api.patch(`/finance/deposits/${d.id}/delete`, {}).subscribe({
       next: () => {
         this.toast.set({ message: 'Setoran berhasil dihapus.', type: 'success' });
@@ -209,6 +220,20 @@ export class FinanceDepositsComponent implements OnInit {
         this.toast.set({ message: err.message || 'Gagal menghapus setoran', type: 'error' });
       },
     });
+  }
+
+  openConfirmation(title: string, message: string, action: () => void) {
+    this.confirmTitle = title;
+    this.confirmMessage = message;
+    this.confirmAction = action;
+    this.confirmModalOpen.set(true);
+  }
+
+  runConfirmation() {
+    const action = this.confirmAction;
+    this.confirmAction = null;
+    this.confirmModalOpen.set(false);
+    action?.();
   }
 
   statusLabel(status: string): string {
