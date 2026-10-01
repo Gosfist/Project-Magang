@@ -1,12 +1,39 @@
 @import "tailwindcss";
 
-:root { color-scheme: light; }
+:root {
+  color-scheme: light;
+  --ui-font: Arial, Helvetica, sans-serif;
+  --ui-text: 14px;
+  --ui-caption: 12px;
+  --ui-control: 14px;
+  --ui-table-action: 13px;
+  --ui-border: #e2e8f0;
+}
 html { scroll-behavior: smooth; }
-body { margin: 0; background: #f1f5f9; color: #0f172a; font-family: Arial, Helvetica, sans-serif; }
-button, a, input, select, textarea { transition: all .15s ease; }
+body {
+  margin: 0;
+  background: #f4f7fb;
+  color: #0f172a;
+  font-family: var(--ui-font);
+  font-size: var(--ui-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select, textarea { font-family: var(--ui-font); }
+button, a, input, select, textarea { transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease; }
 button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+:is(button, a, input, select, textarea):focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
 .card { @apply rounded-xl border border-slate-200 bg-white shadow-sm; }
 .input { @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-slate-800 focus:ring-2 focus:ring-slate-200; }
+.input {
+  min-width: 0;
+  min-height: 42px;
+  font-size: var(--ui-control);
+  line-height: 20px;
+}
+textarea.input { min-height: 88px; resize: vertical; }
+.input::placeholder { color: #94a3b8; }
 /* Keep browser-autofilled modal fields consistent with empty fields. */
 app-modal .input:is(:autofill, :-webkit-autofill) {
   -webkit-text-fill-color: #0f172a;
@@ -19,14 +46,39 @@ app-modal .input:is(:autofill, :-webkit-autofill) {
 .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-50; }
 .btn-secondary { @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50; }
 .btn-danger { @apply inline-flex items-center justify-center gap-1 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100; }
+:is(.btn-primary, .btn-secondary, .btn-danger) {
+  min-height: 42px;
+  font-size: var(--ui-control);
+  line-height: 20px;
+  font-weight: 500;
+}
+.dashboard-shell main { min-width: 0; }
+.dashboard-shell main > :not(router-outlet) { min-width: 0; }
+.dashboard-shell :is(h2, h3) { line-height: 1.35; font-weight: 600; }
+.dashboard-shell h2 { font-size: 18px; }
+.dashboard-shell h3 { font-size: 14px; }
+.dashboard-shell :is(h2, h3) + p { line-height: 1.5; }
 .table-wrap { @apply overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm; }
+.table-wrap { max-width: 100%; scrollbar-width: thin; }
 table {
   @apply w-full border-collapse;
-  font-size: 16px;
+  font-family: var(--ui-font);
+  font-size: var(--ui-text);
   line-height: 1.5;
 }
 th { @apply border-b border-slate-200 bg-slate-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500; }
 td { @apply border-b border-slate-100 px-4 py-3 text-slate-700; }
+table th {
+  font-family: var(--ui-font);
+  font-size: var(--ui-caption);
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: .025em;
+  white-space: nowrap;
+}
+table td { font-size: var(--ui-text); line-height: 20px; vertical-align: middle; }
+table tbody tr { transition: background-color .15s ease; }
+table tbody tr:hover { background-color: #f8fafc; }
 tr:last-child td { border-bottom: 0; }
 
 /* Shared table action sizing, based on the Router/NAS controls. */
@@ -36,12 +88,14 @@ table tbody :is(button, a):is(.btn-primary, .btn-secondary, .btn-danger) {
   justify-content: center;
   flex-shrink: 0;
   min-width: 36px;
-  height: 32px;
+  min-height: 34px;
+  height: auto;
   padding: 6px 10px;
   gap: 4px;
   border-radius: 8px;
-  font-size: 16px;
-  line-height: 1.5;
+  font-size: var(--ui-table-action);
+  font-weight: 400;
+  line-height: 20px;
   white-space: nowrap;
 }
 table tbody :is(.btn-primary, .btn-secondary, .btn-danger) svg {
@@ -50,14 +104,28 @@ table tbody :is(.btn-primary, .btn-secondary, .btn-danger) svg {
   flex-shrink: 0;
 }
 
-/* One typography baseline for every table cell, badge, and action label.
-   Keep this outside Tailwind layers so utility classes cannot mix table fonts. */
-table tbody,
-table tbody tr,
-table tbody td,
-table tbody td :where(:not(svg, svg *)) {
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 16px;
+/* Data stays regular sans-serif. Supporting text and controls have their own
+   scale instead of forcing one font size onto every descendant. */
+table tbody :is(td, p, span, div, code, pre, strong, b, small, a, button) {
+  font-family: var(--ui-font);
   font-weight: 400;
-  line-height: 1.5;
+}
+table tbody .table-meta { font-size: var(--ui-caption); line-height: 18px; }
+table tbody .table-meta :is(span, p, a, code, small) { font-size: var(--ui-caption); line-height: 18px; }
+table tbody span.rounded-full {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--ui-caption);
+  line-height: 18px;
+  white-space: nowrap;
+}
+table tbody span.rounded-full :is(span, small) { font-size: var(--ui-caption); line-height: 18px; }
+@media (max-width: 639px) {
+  .input { font-size: 16px; }
+  table :is(th, td) { padding-inline: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition: none !important; }
 }

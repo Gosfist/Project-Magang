@@ -116,8 +116,8 @@
               <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
-              <p class="mt-2 font-medium text-slate-700">Belum ada riwayat notifikasi</p>
-              <p class="text-xs text-slate-400">Pesan yang dikirim oleh Bot WhatsApp akan tercatat otomatis di sini.</p>
+              <p class="mt-2 font-normal text-slate-700">Belum ada riwayat notifikasi</p>
+              <p class="table-meta text-sm text-slate-400">Pesan yang dikirim oleh Bot WhatsApp akan tercatat otomatis di sini.</p>
             </td>
           </tr>
         } @else {
@@ -125,9 +125,9 @@
             <tr class="hover:bg-slate-50 cursor-pointer transition-colors" (click)="openDetail(item)">
               <!-- Jam & Tanggal -->
               <td class="whitespace-nowrap">
-                <span class="font-semibold text-slate-900">{{ item.createdAt | date: 'HH:mm:ss' : '+0700' }}</span>
-                <span class="ml-1 text-xs text-slate-500 font-medium">WIB</span>
-                <p class="text-xs text-slate-500">{{ item.createdAt | date: 'dd MMM yyyy' : '+0700' }}</p>
+                <span class="font-normal text-slate-900">{{ item.createdAt | date: 'HH:mm:ss' : '+0700' }}</span>
+                <span class="table-meta ml-1 text-sm text-slate-500 font-normal">WIB</span>
+                <p class="table-meta text-sm text-slate-500">{{ item.createdAt | date: 'dd MMM yyyy' : '+0700' }}</p>
               </td>
 
               <!-- Target -->
@@ -138,7 +138,7 @@
                       <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0012.04 2z"/>
                     </svg>
                   </span>
-                  <span class="font-mono text-xs font-semibold text-slate-800">{{ formatPhone(item.target) }}</span>
+                  <span class="font-normal text-sm text-slate-800">{{ formatPhone(item.target) }}</span>
                 </div>
               </td>
 
@@ -147,8 +147,8 @@
                 <span
                   [class]="
                     item.status === 'berhasil'
-                      ? 'inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200'
-                      : 'inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 border border-red-200'
+                      ? 'inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-sm font-normal text-emerald-700 border border-emerald-200'
+                      : 'inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-sm font-normal text-red-700 border border-red-200'
                   "
                 >
                   <span class="h-1.5 w-1.5 rounded-full" [class.bg-emerald-500]="item.status === 'berhasil'" [class.bg-red-500]="item.status !== 'berhasil'"></span>
@@ -158,11 +158,11 @@
 
               <!-- Text Notifikasi -->
               <td>
-                <p class="line-clamp-2 text-xs text-slate-700 font-sans max-w-md" [title]="item.text">
+                <p class="line-clamp-2 text-sm text-slate-700 font-normal max-w-md" [title]="item.text">
                   {{ item.text }}
                 </p>
                 @if (item.errorMessage) {
-                  <p class="mt-0.5 text-[11px] text-red-600 truncate">
+                  <p class="mt-0.5 text-sm text-red-600 truncate">
                     Error: {{ item.errorMessage }}
                   </p>
                 }

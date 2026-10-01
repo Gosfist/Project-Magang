@@ -16,13 +16,13 @@ interface DetailRow {
   templateUrl: './customer-services.component.html',
   styles: [`:host { display: block; } .detail-list { display: grid; gap: 8px; max-height: min(380px, 45dvh); overflow-y: auto; }
     .detail-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .detail-card p { overflow-wrap: anywhere; } .badge { border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 600; display:inline-block; }
+    .detail-card p { overflow-wrap: anywhere; } .badge { border-radius: 6px; padding: 4px 8px; font-size: 12px; line-height: 18px; font-weight: 400; display:inline-block; }
     .entry { margin-top:12px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; }
     .entry .input { margin-bottom: 10px; }
     .service-dialog { margin-inline: auto; max-width: 492px; border-radius: 16px; border: 1px solid #dbe3ee; background: #fff; padding: 22px 26px; box-shadow: 0 18px 44px rgba(15, 23, 42, .16); }
     .service-title { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
     .fee-toggle { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-bottom:18px; }
-    .fee-toggle label { cursor:pointer; border:1px solid #cbd5e1; border-radius:8px; padding:10px; text-align:center; font-size:13px; font-weight:600; color:#475569; }
+    .fee-toggle label { cursor:pointer; border:1px solid #cbd5e1; border-radius:8px; padding:12px; text-align:center; font-size:14px; font-weight:500; color:#475569; }
     .fee-toggle label.active { border-color:#4f46e5; background:#eef2ff; color:#4338ca; box-shadow: inset 0 0 0 1px #4f46e5; }
     .service-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
     @media (max-width: 520px) { .service-dialog { padding:18px; } .service-actions { grid-template-columns:1fr; } }`],

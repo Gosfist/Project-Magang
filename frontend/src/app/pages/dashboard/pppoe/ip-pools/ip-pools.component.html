@@ -37,15 +37,15 @@
           <tr>
             <td>{{ item.routerName }}</td>
             <td>
-              <p class="font-semibold text-slate-900">{{ item.name }}</p>
+              <p class="font-normal text-slate-900">{{ item.name }}</p>
             </td>
             <td>{{ item.ranges }}</td>
             <td>{{ item.totalIps ?? "?" }}</td>
-            <td class="font-semibold text-amber-600">
+            <td class="font-normal text-amber-600">
               {{ item.usedIps ?? "?" }}
             </td>
             <td
-              class="font-semibold"
+              class="font-normal"
               [class.text-emerald-600]="
                 item.freeIps !== null && item.freeIps > 0
               "

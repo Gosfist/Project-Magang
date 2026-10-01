@@ -32,7 +32,6 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
     LucideTrash2,
   ],
   templateUrl: './finance-deposits.component.html',
-  styleUrl: './finance-deposits.component.css',
 })
 export class FinanceDepositsComponent implements OnInit {
   private api = inject(ApiService);

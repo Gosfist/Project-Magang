@@ -74,13 +74,13 @@
       <tbody>
         @for (t of transactions(); track t.id) {
           <tr>
-            <td class="whitespace-nowrap font-mono text-xs text-slate-700">
+            <td class="whitespace-nowrap font-normal text-sm text-slate-700">
               {{ formatDate(t.transactionDate) }}
             </td>
             <td>
               <span
                 [class]="
-                  'rounded-full px-2.5 py-1 text-xs font-semibold ' +
+                  'rounded-full px-2.5 py-1 text-sm font-normal ' +
                   (t.type === 'INCOME'
                     ? 'bg-green-100 text-green-700'
                     : 'bg-red-100 text-red-700')
@@ -90,23 +90,23 @@
               </span>
             </td>
             <td>
-              <span class="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+              <span class="rounded bg-slate-100 px-2 py-0.5 text-sm font-normal text-slate-700">
                 {{ formatCategory(t.category) }}
               </span>
             </td>
-            <td class="font-medium text-slate-900 max-w-sm">
+            <td class="font-normal text-slate-900 max-w-sm">
               <p class="truncate">{{ t.description }}</p>
               @if (t.referenceType) {
-                <span class="text-[11px] text-slate-400">Ref: {{ formatReference(t.referenceType) }}</span>
+                <span class="text-sm text-slate-400">Ref: {{ formatReference(t.referenceType) }}</span>
               }
             </td>
             <td
-              class="font-bold whitespace-nowrap"
+              class="font-normal whitespace-nowrap"
               [class]="t.type === 'INCOME' ? 'text-emerald-600' : 'text-red-600'"
             >
               {{ t.type === 'INCOME' ? '+' : '-' }} {{ formatCurrency(t.amount) }}
             </td>
-            <td class="text-xs text-slate-500">
+            <td class="table-meta text-sm text-slate-500">
               {{ t.createdBy?.name || '—' }}
             </td>
             <td>

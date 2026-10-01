@@ -1,18 +1,18 @@
 @if (meta && meta.lastPage > 1) {
-  <div class="mt-4 flex justify-end gap-1">
-    <button class="h-9 rounded-lg border px-3 disabled:opacity-40"
+  <nav aria-label="Navigasi halaman tabel" class="mt-4 flex flex-wrap items-center justify-end gap-1.5 text-sm">
+    <button type="button" aria-label="Halaman sebelumnya" class="h-9 rounded-lg border border-slate-200 bg-white px-3 hover:bg-slate-50 disabled:opacity-40"
             [disabled]="meta.currentPage === 1"
             (click)="pageChange.emit(meta.currentPage - 1)">‹</button>
     @for (page of pages; track page; let i = $index) {
       @if (i > 0 && page - pages[i - 1] > 1) {
         <span class="px-1 py-2">…</span>
       }
-      <button [class]="'h-9 min-w-9 rounded-lg border px-2 ' +
-        (page === meta.currentPage ? 'border-blue-600 bg-blue-600 text-white' : 'bg-white')"
+      <button type="button" [attr.aria-label]="'Halaman ' + page" [attr.aria-current]="page === meta.currentPage ? 'page' : null" [class]="'h-9 min-w-9 rounded-lg border px-2 ' +
+        (page === meta.currentPage ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white hover:bg-slate-50')"
               (click)="pageChange.emit(page)">{{ page }}</button>
     }
-    <button class="h-9 rounded-lg border px-3 disabled:opacity-40"
+    <button type="button" aria-label="Halaman berikutnya" class="h-9 rounded-lg border border-slate-200 bg-white px-3 hover:bg-slate-50 disabled:opacity-40"
             [disabled]="meta.currentPage === meta.lastPage"
             (click)="pageChange.emit(meta.currentPage + 1)">›</button>
-  </div>
+  </nav>
 }

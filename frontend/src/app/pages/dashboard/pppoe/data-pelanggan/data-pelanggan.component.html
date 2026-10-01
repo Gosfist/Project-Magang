@@ -160,11 +160,11 @@
       <tbody>
         @for (item of items(); track item.id) {
           <tr>
-            <td class="font-mono">{{ item.customerId }}</td>
+            <td class="font-normal">{{ item.customerId }}</td>
             <td>
-              <p class="font-medium text-slate-900">{{ item.customerName }}</p>
+              <p class="font-normal text-slate-900">{{ item.customerName }}</p>
               <p
-                class="text-xs text-slate-500 flex items-center gap-1.5 flex-wrap"
+                class="table-meta text-sm text-slate-500 flex items-center gap-1.5 flex-wrap"
               >
                 <span>{{ phoneDisplay(item.phone) }}</span>
               </p>
@@ -179,13 +179,13 @@
             <td class="whitespace-nowrap">
               {{ registrationDate(item.psbOrder?.completedAt || null) }}
             </td>
-            <td class="whitespace-nowrap font-mono text-sm text-slate-700">
+            <td class="whitespace-nowrap font-normal text-sm text-slate-700">
               {{ uptimeDisplay(item.uptime) }}
             </td>
             <td>
               <span
                 [class]="
-                  'rounded-full px-2.5 py-1 text-xs font-semibold ' +
+                  'rounded-full px-2.5 py-1 text-sm font-normal ' +
                   (item.serviceStatus === 'Aktif'
                     ? 'bg-green-100 text-green-700'
                     : 'bg-red-100 text-red-700')
@@ -196,7 +196,7 @@
             <td>
               <span
                 [class]="
-                  'rounded-full px-2.5 py-1 text-xs font-semibold ' +
+                  'rounded-full px-2.5 py-1 text-sm font-normal ' +
                   (item.online === true
                     ? 'bg-green-100 text-green-700'
                     : item.online === false

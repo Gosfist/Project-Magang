@@ -3,12 +3,12 @@
     Memuat dashboard...
   </div>
 } @else {
-  <div class="min-h-screen">
+  <div class="dashboard-shell min-h-screen">
     <app-sidebar [(mobile)]="mobile" />
-    <div class="lg:ml-64">
+    <div class="min-w-0 lg:ml-64">
       <app-header (openSidebar)="mobile.set(true)" />
       <!-- konten -->
-      <main class="p-4 sm:p-6">
+      <main class="p-4 sm:p-6 lg:p-7">
         <router-outlet />
       </main>
     </div>

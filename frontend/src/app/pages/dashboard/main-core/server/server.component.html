@@ -29,7 +29,7 @@
       <tbody>
         @for (node of items(); track node.id) {
           <tr>
-            <td class="font-medium text-slate-900">{{ node.namaTitik }}</td>
+            <td class="font-normal text-slate-900">{{ node.namaTitik }}</td>
             <td>{{ node.routerNas?.shortname || node.routerNas?.nasname || '—' }}</td>
             <td>{{ node.redamanIn === null ? '—' : node.redamanIn + ' dBm' }}</td>
             <td>{{ node.tanggal ? formatDate(node.tanggal) : '—' }}</td>

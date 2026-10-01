@@ -151,8 +151,8 @@
                   {{ log.createdAt | date: "dd MMM yyyy, HH:mm:ss" : "+0700" }}
                 </td>
                 <td>
-                  <span class="font-medium">{{ log.userName }}</span>
-                  <p class="text-xs capitalize text-slate-500">{{ log.role }}</p>
+                  <span class="font-normal">{{ log.userName }}</span>
+                  <p class="table-meta text-sm capitalize text-slate-500">{{ log.role }}</p>
                 </td>
                 <td>{{ log.module }}</td>
                 <td>{{ activityAction(log.action) }}</td>
@@ -161,8 +161,8 @@
                   <span
                     [class]="
                       log.status === 'SUCCESS'
-                        ? 'rounded bg-green-100 px-2 py-1 text-xs text-green-700'
-                        : 'rounded bg-red-100 px-2 py-1 text-xs text-red-700'
+                        ? 'rounded bg-green-100 px-2 py-1 text-sm text-green-700'
+                        : 'rounded bg-red-100 px-2 py-1 text-sm text-red-700'
                     "
                     >{{ log.status === 'SUCCESS' ? 'Berhasil' : 'Gagal' }}</span
                   >

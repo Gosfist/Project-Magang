@@ -40,7 +40,7 @@
       <tbody>
         @for (item of items(); track item.id) {
           <tr>
-            <td class="font-semibold">{{ item.customerId }}</td>
+            <td class="font-normal">{{ item.customerId }}</td>
             <td>{{ item.customerName }}</td>
             <td>{{ item.phone }}</td>
             <td>{{ item.address }}</td>
@@ -50,7 +50,7 @@
             <td>
               <span
                 [class]="
-                  'rounded-full px-2 py-1 text-xs font-semibold ' +
+                  'rounded-full px-2 py-1 text-sm font-normal ' +
                   (item.internetOnline
                     ? 'bg-green-100 text-green-700'
                     : 'bg-red-100 text-red-700')

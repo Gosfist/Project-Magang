@@ -20,8 +20,8 @@
         @for (item of items(); track item.id) {
           <tr>
             <td>
-              <p class="font-semibold text-slate-900">{{ item.name }}</p>
-              <p class="text-xs text-slate-500">Harga: Rp {{ formatPrice(item.price) }} | Modal: Rp {{ formatPrice(item.costPrice || 0) }}</p>
+              <p class="font-normal text-slate-900">{{ item.name }}</p>
+              <p class="table-meta text-sm text-slate-500">Harga: Rp {{ formatPrice(item.price) }} | Modal: Rp {{ formatPrice(item.costPrice || 0) }}</p>
             </td>
             <td>{{ item.downloadMbps }}M ↓ / {{ item.uploadMbps }}M ↑</td>
             <td>{{ item.ipPool?.name || item.addressPool || '—' }}</td>

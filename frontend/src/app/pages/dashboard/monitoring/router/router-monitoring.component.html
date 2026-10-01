@@ -83,15 +83,15 @@
         <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500">Lalu Lintas Antarmuka</h3>
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <p class="text-[11px] text-slate-500">Unduh</p>
+            <p class="text-xs text-slate-500">Unduh</p>
             <p class="font-bold text-slate-900">{{ r.network.download | number: '1.2-2' }} <span class="text-xs font-normal text-slate-500">M</span></p>
           </div>
           <div>
-            <p class="text-[11px] text-slate-500">Unggah</p>
+            <p class="text-xs text-slate-500">Unggah</p>
             <p class="font-bold text-rose-600">{{ r.network.upload | number: '1.2-2' }} <span class="text-xs font-normal text-slate-500">M</span></p>
           </div>
         </div>
-        <p class="text-[10px] text-slate-400">Total agregat interface utama</p>
+        <p class="text-xs text-slate-400">Total agregat interface utama</p>
       </section>
 
       <!-- Kapasitas penyimpanan yang dilaporkan langsung oleh RouterOS. -->
@@ -103,7 +103,7 @@
             <div class="h-full bg-blue-500 transition-all duration-300" [style.width.%]="disk.percent"></div>
           </div>
           <p class="text-xs text-slate-500">Terpakai {{ formatBytes(disk.used) }} / {{ formatBytes(disk.total) }}</p>
-          <p class="text-[11px] text-slate-400">Tersedia {{ formatBytes(disk.free) }}</p>
+          <p class="text-xs text-slate-400">Tersedia {{ formatBytes(disk.free) }}</p>
         } @else {
           <p class="text-sm text-slate-500">Data disk tidak tersedia.</p>
         }
@@ -179,11 +179,11 @@
           <tbody class="divide-y divide-slate-100 text-slate-700">
             @for (log of logs(); track log.id) {
               <tr class="hover:bg-slate-50/80">
-                <td class="whitespace-nowrap px-4 py-2 font-mono text-[11px] text-slate-500">{{ log.time }}</td>
+                <td class="whitespace-nowrap px-4 py-2 font-normal text-sm text-slate-500">{{ log.time }}</td>
                 <td class="px-4 py-2">
-                  <span class="rounded bg-slate-100 px-2 py-0.5 font-mono text-[10px] text-slate-600">{{ log.topics }}</span>
+                  <span class="rounded bg-slate-100 px-2 py-0.5 font-normal text-sm text-slate-600">{{ log.topics }}</span>
                 </td>
-                <td class="px-4 py-2 font-mono text-[11px] text-slate-900">{{ log.message }}</td>
+                <td class="px-4 py-2 font-normal text-sm text-slate-900">{{ log.message }}</td>
               </tr>
             } @empty {
               <tr>

@@ -50,7 +50,7 @@
                     <svg lucideMapPin [size]="18"></svg>
                   </span>
                   <div>
-                    <p class="font-bold text-slate-900">{{ area.name }}</p>
+                    <p class="font-normal text-slate-900">{{ area.name }}</p>
                   </div>
                 </div>
               </td>
@@ -61,11 +61,11 @@
                 <div class="flex flex-wrap items-center gap-1.5">
                   @for (c of area.collectors; track c.id) {
                     <span
-                      class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-800 border border-slate-200"
+                      class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-sm font-normal text-slate-800 border border-slate-200"
                     >
                       <span>{{ c.user?.name }}</span>
                       @if (c.user?.phone) {
-                        <span class="text-slate-500 font-normal text-[11px]"
+                        <span class="text-slate-500 font-normal text-sm"
                           >({{ c.user?.phone }})</span
                         >
                       }
@@ -82,7 +82,7 @@
                     </span>
                   }
                   @if (!area.collectors || area.collectors.length === 0) {
-                    <span class="text-xs text-slate-400 italic"
+                    <span class="table-meta text-sm text-slate-400 italic"
                       >Belum ada kolektor</span
                     >
                   }
@@ -90,7 +90,7 @@
                     <button
                       type="button"
                       (click)="openAssignModal(area)"
-                      class="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-blue-500 hover:text-blue-600 transition-colors cursor-pointer"
+                      class="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-2.5 py-1 text-sm font-normal text-slate-600 hover:border-blue-500 hover:text-blue-600 transition-colors cursor-pointer"
                       title="Tugaskan kolektor ke area ini"
                     >
                       <svg lucideUserPlus [size]="13"></svg> + Kolektor
@@ -98,9 +98,9 @@
                   }
                 </div>
               </td>
-              <td class="font-medium">
+              <td class="font-normal">
                 <span
-                  class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700"
+                  class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-normal text-slate-700"
                 >
                   {{ area.accountsCount || 0 }} pelanggan
                 </span>
@@ -110,7 +110,7 @@
                   <!-- Tombol Buka Daftar Penagihan Area -->
                   <button
                     type="button"
-                    class="btn-primary py-1.5 px-3 text-xs flex items-center gap-1.5 shadow-xs"
+                    class="btn-primary py-1.5 px-3 text-sm flex items-center gap-1.5 shadow-xs"
                     (click)="openAreaDetail(area)"
                     title="Buka daftar pelanggan dan status penagihan area ini"
                   >
@@ -372,7 +372,7 @@
             [class.border-red-200]="customerStatusFilter() !== 'UNPAID'"
           >
             <span>🔴 Harus Ditagih</span>
-            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-[10px]">{{
+            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-xs">{{
               areaSummary()?.unpaidCustomers || 0
             }}</span>
           </button>
@@ -389,7 +389,7 @@
             [class.border-emerald-200]="customerStatusFilter() !== 'PAID'"
           >
             <span>🟢 Sudah Lunas</span>
-            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-[10px]">{{
+            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-xs">{{
               areaSummary()?.paidCustomers || 0
             }}</span>
           </button>
@@ -433,7 +433,7 @@
               <td>
                 <div class="flex items-start gap-2.5">
                   <span
-                    class="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg font-bold text-xs"
+                    class="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg font-normal text-sm"
                     [class.bg-red-100]="!c.isPaid"
                     [class.text-red-700]="!c.isPaid"
                     [class.bg-emerald-100]="c.isPaid"
@@ -442,11 +442,11 @@
                     {{ !c.isPaid ? "!" : "✓" }}
                   </span>
                   <div>
-                    <p class="font-bold text-slate-900 leading-tight">
+                    <p class="font-normal text-slate-900 leading-tight">
                       {{ c.customerName }}
                     </p>
                     <div
-                      class="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500 font-mono"
+                      class="table-meta mt-0.5 flex items-center gap-1.5 text-sm text-slate-500 font-normal"
                     >
                       <span>{{ c.username }}</span>
                     </div>
@@ -458,16 +458,16 @@
               <td>
                 <div>
                   @if (c.phone) {
-                    <p class="font-mono text-xs font-semibold text-slate-800">
+                    <p class="font-normal text-sm text-slate-800">
                       {{ c.phone }}
                     </p>
                   } @else {
-                    <p class="text-xs text-slate-400 italic">
+                    <p class="table-meta text-sm text-slate-400 italic">
                       Tanpa nomor telepon
                     </p>
                   }
                   <p
-                    class="text-xs text-slate-500 max-w-xs truncate mt-0.5"
+                    class="table-meta text-sm text-slate-500 max-w-xs truncate mt-0.5"
                     [title]="c.address || ''"
                   >
                     {{ c.address || "—" }}
@@ -478,16 +478,16 @@
               <!-- Harga Paket -->
               <td>
                 <div>
-                  <p class="text-xs font-bold text-slate-800">
+                  <p class="text-sm font-normal text-slate-800">
                     {{ c.package?.name || "-" }}
                   </p>
-                  <p class="text-[11px] text-slate-500 font-mono">
+                  <p class="text-sm text-slate-500 font-normal">
                     {{ formatCurrency(c.package?.price || 0) }}/bln
                   </p>
                 </div>
               </td>
 
-              <td class="font-medium text-slate-800">
+              <td class="font-normal text-slate-800">
                 {{ c.collectorName || "-" }}
               </td>
 
@@ -498,7 +498,7 @@
                     <p class="text-sm font-black text-slate-900">
                       {{ formatCurrency(c.activeInvoice.amount) }}
                     </p>
-                    <p class="text-[11px] text-slate-500 font-medium">
+                    <p class="text-sm text-slate-500 font-normal">
                       Tempo: {{ formatDate(c.activeInvoice.dueDate) }}
                     </p>
                   </div>
@@ -509,7 +509,7 @@
 
               <td>
                 <span
-                  class="inline-flex rounded-full px-3 py-1 text-xs font-bold"
+                  class="inline-flex rounded-full px-3 py-1 text-sm font-normal"
                   [class.bg-red-100]="c.collectionStatus === 'TAGIH'"
                   [class.text-red-700]="c.collectionStatus === 'TAGIH'"
                   [class.bg-amber-100]="c.collectionStatus === 'PROSES'"
@@ -534,7 +534,7 @@
                     <!-- Tombol Catat Setoran Kolektor -->
                     <button
                       type="button"
-                      class="btn-primary py-1.5 px-3 text-xs flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 border-emerald-600 shadow-xs cursor-pointer whitespace-nowrap"
+                      class="btn-primary py-1.5 px-3 text-sm flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 border-emerald-600 shadow-xs cursor-pointer whitespace-nowrap"
                       (click)="openQuickDeposit(c)"
                       title="Catat penerimaan uang tagihan dari pelanggan ini"
                     >
@@ -543,14 +543,14 @@
 
                     <button
                       type="button"
-                      class="btn-secondary py-1.5 px-3 text-xs font-semibold"
+                      class="btn-secondary py-1.5 px-3 text-sm font-normal"
                       (click)="openPromise(c)"
                     >
                       Janji Bayar
                     </button>
                   } @else if (c.isPaid) {
                     <span
-                      class="text-xs font-semibold text-emerald-600 flex items-center gap-1"
+                      class="text-sm font-normal text-emerald-600 flex items-center gap-1"
                     >
                       <svg lucideCheckCircle2 [size]="14"></svg> Sudah Bayar
                     </span>

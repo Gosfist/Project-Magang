@@ -13,7 +13,7 @@
       <tbody>
         @for (node of items(); track node.id) {
           <tr>
-            <td class="font-medium text-slate-900">{{ node.namaTitik }}</td>
+            <td class="font-normal text-slate-900">{{ node.namaTitik }}</td>
             <td>{{ node.parent?.namaTitik ?? '—' }}</td>
             <td>{{ node.parentPortOut ?? '—' }}</td>
             <td>{{ node.rasioRedaman ?? 'Port 1: 10% Dan Port 2: 90%' }}</td>

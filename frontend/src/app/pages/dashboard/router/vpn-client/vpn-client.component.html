@@ -32,38 +32,38 @@
         @for (item of items(); track item.id) {
           <tr>
             <td>
-              <p class="font-semibold text-slate-900">{{ item.name }}</p>
-              <p class="text-xs text-slate-500">{{ item.description || '—' }}</p>
+              <p class="font-normal text-slate-900">{{ item.name }}</p>
+              <p class="table-meta text-sm text-slate-500">{{ item.description || '—' }}</p>
             </td>
             <td>
-              <span class="text-xs font-medium text-slate-800">{{ item.vpnServer?.name || '—' }}</span>
-              <p class="font-mono text-[11px] text-slate-500">{{ item.vpnServer?.host }}:{{ item.vpnServer?.wgPort }}</p>
+              <span class="text-sm font-normal text-slate-800">{{ item.vpnServer?.name || '—' }}</span>
+              <p class="font-normal text-sm text-slate-500">{{ item.vpnServer?.host }}:{{ item.vpnServer?.wgPort }}</p>
             </td>
             <td>
-              <span class="font-mono font-semibold text-xs text-sky-700 bg-sky-50 px-2 py-0.5 rounded">
+              <span class="font-normal text-sm text-sky-700 bg-sky-50 px-2 py-0.5 rounded">
                 {{ item.vpnIp }}
               </span>
             </td>
             <td>
-              <code class="rounded bg-slate-100 px-2 py-1 font-mono text-[11px] text-slate-700" [title]="item.clientPublicKey">
+              <code class="rounded bg-slate-100 px-2 py-1 font-normal text-sm text-slate-700" [title]="item.clientPublicKey">
                 {{ item.clientPublicKey.slice(0, 14) }}...
               </code>
             </td>
             <td>
-              <span class="font-mono text-xs text-slate-600">{{ item.allowedIps }}</span>
+              <span class="font-normal text-sm text-slate-600">{{ item.allowedIps }}</span>
             </td>
             <td>
               @if (item.isRadiusServer) {
-                <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+                <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-sm font-normal text-amber-800">
                   ★ RADIUS
                 </span>
               } @else {
-                <span class="text-xs text-slate-400">—</span>
+                <span class="table-meta text-sm text-slate-400">—</span>
               }
             </td>
             <td>
               <span
-                [class]="'rounded-full px-2.5 py-1 text-xs font-semibold ' + (item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')"
+                [class]="'rounded-full px-2.5 py-1 text-sm font-normal ' + (item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')"
               >
                 {{ item.isActive ? 'Aktif' : 'Tidak aktif' }}
               </span>
@@ -71,16 +71,16 @@
             <td>
               <div class="flex gap-2">
                 <button
-                  class="btn-secondary px-2.5 py-1.5 text-xs text-indigo-700"
+                  class="btn-secondary px-2.5 py-1.5 text-sm text-indigo-700"
                   (click)="openScript(item)"
                   title="Skrip MikroTik ROS 7"
                 >
                   <svg lucideTerminal [size]="14"></svg>
                 </button>
-                <button class="btn-secondary px-2.5 py-1.5 text-xs" (click)="show(item)" title="Edit">
+                <button class="btn-secondary px-2.5 py-1.5 text-sm" (click)="show(item)" title="Edit">
                   <svg lucidePencil [size]="14"></svg>
                 </button>
-                <button class="btn-danger px-2.5 py-1.5 text-xs" (click)="remove(item)" title="Hapus">
+                <button class="btn-danger px-2.5 py-1.5 text-sm" (click)="remove(item)" title="Hapus">
                   <svg lucideTrash2 [size]="14"></svg>
                 </button>
               </div>
