@@ -1,1 +1,9 @@
-/* Finance deposits styles */
+.deposits-table tbody td,
+.deposits-table tbody p,
+.deposits-table tbody span,
+.deposits-table tbody button {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
