@@ -2,11 +2,15 @@
   <!-- ========================================== -->
   <!-- VIEW 1: DAFTAR AREA                       -->
   <!-- ========================================== -->
-  @if (viewMode() === 'list') {
+  @if (viewMode() === "list") {
     <!-- Search and Action Bar -->
     <div class="card flex flex-wrap items-center justify-between gap-3 p-4">
       <div class="relative flex-1 min-w-[240px]">
-        <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
+        <svg
+          lucideSearch
+          [size]="18"
+          class="absolute left-3 top-3 text-slate-400"
+        ></svg>
         <input
           class="input pl-10"
           placeholder="Cari nama area atau deskripsi..."
@@ -40,7 +44,9 @@
             <tr class="hover:bg-slate-50/80 transition-colors">
               <td>
                 <div class="flex items-center gap-2.5">
-                  <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
+                  <span
+                    class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-100"
+                  >
                     <svg lucideMapPin [size]="18"></svg>
                   </span>
                   <div>
@@ -49,15 +55,19 @@
                 </div>
               </td>
               <td class="text-slate-600 max-w-xs text-sm">
-                {{ area.description || '—' }}
+                {{ area.description || "—" }}
               </td>
               <td>
                 <div class="flex flex-wrap items-center gap-1.5">
                   @for (c of area.collectors; track c.id) {
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-800 border border-slate-200">
+                    <span
+                      class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-800 border border-slate-200"
+                    >
                       <span>{{ c.user?.name }}</span>
                       @if (c.user?.phone) {
-                        <span class="text-slate-500 font-normal text-[11px]">({{ c.user?.phone }})</span>
+                        <span class="text-slate-500 font-normal text-[11px]"
+                          >({{ c.user?.phone }})</span
+                        >
                       }
                       @if (auth.isAdmin()) {
                         <button
@@ -72,7 +82,9 @@
                     </span>
                   }
                   @if (!area.collectors || area.collectors.length === 0) {
-                    <span class="text-xs text-slate-400 italic">Belum ada kolektor</span>
+                    <span class="text-xs text-slate-400 italic"
+                      >Belum ada kolektor</span
+                    >
                   }
                   @if (auth.isAdmin()) {
                     <button
@@ -87,7 +99,9 @@
                 </div>
               </td>
               <td class="font-medium">
-                <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                <span
+                  class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700"
+                >
                   {{ area.accountsCount || 0 }} pelanggan
                 </span>
               </td>
@@ -105,10 +119,18 @@
                   </button>
 
                   @if (auth.isAdmin()) {
-                    <button class="btn-secondary px-2.5 py-1.5" (click)="openModal(area)" title="Edit Area">
+                    <button
+                      class="btn-secondary px-2.5 py-1.5"
+                      (click)="openModal(area)"
+                      title="Edit Area"
+                    >
                       <svg lucidePencil [size]="15"></svg>
                     </button>
-                    <button class="btn-danger px-2.5 py-1.5" (click)="remove(area)" title="Hapus Area">
+                    <button
+                      class="btn-danger px-2.5 py-1.5"
+                      (click)="remove(area)"
+                      title="Hapus Area"
+                    >
                       <svg lucideTrash2 [size]="15"></svg>
                     </button>
                   }
@@ -132,145 +154,193 @@
 
     <!-- Pagination -->
     @if (meta()) {
-      <app-pagination [meta]="meta()!" (pageChange)="page.set($event); load()"></app-pagination>
+      <app-pagination
+        [meta]="meta()!"
+        (pageChange)="page.set($event); load()"
+      ></app-pagination>
     }
   }
 
   <!-- ========================================== -->
   <!-- VIEW 2: DAFTAR PELANGGAN & PENAGIHAN AREA  -->
   <!-- ========================================== -->
-  @if (viewMode() === 'detail' && selectedArea()) {
+  @if (viewMode() === "detail" && selectedArea()) {
     <!-- Breadcrumb & Area Header Banner -->
     @if (!auth.isKolektor()) {
-    <div class="card p-5 space-y-4">
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-        <div class="flex items-center gap-3">
-          @if (!auth.isKolektor()) {
-            <button
-              type="button"
-              class="btn-secondary px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer"
-              (click)="backToList()"
-            >
-              <svg lucideArrowLeft [size]="15"></svg>
-              <span>Kembali ke Daftar Area</span>
-            </button>
-          }
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-100 text-blue-700">
-                <svg lucideMapPin [size]="14"></svg>
-              </span>
-              <h2 class="text-xl font-bold text-slate-900">
-                {{ auth.isKolektor() ? 'Daftar Tagihan' : 'Area: ' + selectedArea()?.name }}
-              </h2>
+      <div class="card p-5 space-y-4">
+        <div
+          class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4"
+        >
+          <div class="flex items-center gap-3">
+            @if (!auth.isKolektor()) {
+              <button
+                type="button"
+                class="btn-secondary px-3 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer"
+                (click)="backToList()"
+              >
+                <svg lucideArrowLeft [size]="15"></svg>
+                <span>Kembali ke Daftar Area</span>
+              </button>
+            }
+            <div>
+              <div class="flex items-center gap-2">
+                <span
+                  class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-100 text-blue-700"
+                >
+                  <svg lucideMapPin [size]="14"></svg>
+                </span>
+                <h2 class="text-xl font-bold text-slate-900">
+                  {{
+                    auth.isKolektor()
+                      ? "Daftar Tagihan"
+                      : "Area: " + selectedArea()?.name
+                  }}
+                </h2>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">
+                {{
+                  selectedArea()?.description || "Wilayah penagihan pelanggan"
+                }}
+              </p>
             </div>
-            <p class="text-xs text-slate-500 mt-0.5">
-              {{ selectedArea()?.description || 'Wilayah penagihan pelanggan' }}
+          </div>
+
+          <!-- Kolektor Ditugaskan -->
+          @if (!auth.isKolektor()) {
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-500"
+                >Kolektor:</span
+              >
+              <div class="flex flex-wrap items-center gap-1.5">
+                @for (c of selectedArea()?.collectors; track c.id) {
+                  <span
+                    class="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-xs font-semibold text-blue-800"
+                  >
+                    {{ c.user?.name }}
+                    @if (c.user?.phone) {
+                      <span class="text-blue-500 font-normal"
+                        >({{ c.user?.phone }})</span
+                      >
+                    }
+                  </span>
+                }
+                @if (!selectedArea()?.collectors?.length) {
+                  <span
+                    class="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 font-medium"
+                    >Belum ada kolektor</span
+                  >
+                }
+                @if (auth.isAdmin()) {
+                  <button
+                    type="button"
+                    (click)="openAssignModal(selectedArea()!)"
+                    class="inline-flex items-center gap-1 rounded-full border border-slate-300 px-2 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-100 cursor-pointer"
+                  >
+                    <svg lucideUserPlus [size]="12"></svg> + Kolektor
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Ringkasan Status Penagihan (Merah vs Hijau) -->
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <!-- Card 1: Belum Lunas (Merah / Harus Ditagih) -->
+          <div
+            class="rounded-2xl border border-red-200 bg-red-50/80 p-4 transition-all cursor-pointer hover:shadow-sm"
+            [class.ring-2]="customerStatusFilter() === 'UNPAID'"
+            [class.ring-red-500]="customerStatusFilter() === 'UNPAID'"
+            (click)="setCustomerFilter('UNPAID')"
+          >
+            <div class="flex items-center justify-between">
+              <span
+                class="text-xs font-bold uppercase tracking-wider text-red-700"
+                >🔴 HARUS DITAGIH (BELUM LUNAS)</span
+              >
+              <span
+                class="flex h-7 w-7 items-center justify-center rounded-full bg-red-200/80 text-red-700"
+              >
+                <svg lucideAlertCircle [size]="16"></svg>
+              </span>
+            </div>
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="text-2xl font-black text-red-900">{{
+                areaSummary()?.unpaidCustomers || 0
+              }}</span>
+              <span class="text-xs font-medium text-red-700">pelanggan</span>
+            </div>
+            <p class="mt-1 text-xs font-semibold text-red-800">
+              Total Tunggakan:
+              {{ formatCurrency(areaSummary()?.totalUnpaidAmount || 0) }}
+            </p>
+          </div>
+
+          <!-- Card 2: Sudah Lunas (Hijau) -->
+          <div
+            class="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 transition-all cursor-pointer hover:shadow-sm"
+            [class.ring-2]="customerStatusFilter() === 'PAID'"
+            [class.ring-emerald-500]="customerStatusFilter() === 'PAID'"
+            (click)="setCustomerFilter('PAID')"
+          >
+            <div class="flex items-center justify-between">
+              <span
+                class="text-xs font-bold uppercase tracking-wider text-emerald-700"
+                >🟢 SUDAH LUNAS</span
+              >
+              <span
+                class="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-200/80 text-emerald-700"
+              >
+                <svg lucideCheckCircle2 [size]="16"></svg>
+              </span>
+            </div>
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="text-2xl font-black text-emerald-900">{{
+                areaSummary()?.paidCustomers || 0
+              }}</span>
+              <span class="text-xs font-medium text-emerald-700"
+                >pelanggan</span
+              >
+            </div>
+            <p class="mt-1 text-xs text-emerald-700 font-medium">
+              Tidak ada tunggakan pembayaran
+            </p>
+          </div>
+
+          <!-- Card 3: Total Pelanggan Area -->
+          <div
+            class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 transition-all cursor-pointer hover:shadow-sm"
+            [class.ring-2]="customerStatusFilter() === 'ALL'"
+            [class.ring-slate-800]="customerStatusFilter() === 'ALL'"
+            (click)="setCustomerFilter('ALL')"
+          >
+            <div class="flex items-center justify-between">
+              <span
+                class="text-xs font-bold uppercase tracking-wider text-slate-700"
+                >TOTAL PELANGGAN AREA</span
+              >
+              <span
+                class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-slate-700"
+              >
+                <svg lucideUsers [size]="16"></svg>
+              </span>
+            </div>
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="text-2xl font-black text-slate-900">{{
+                areaSummary()?.totalCustomers || 0
+              }}</span>
+              <span class="text-xs font-medium text-slate-600"
+                >pelanggan terdaftar</span
+              >
+            </div>
+            <p class="mt-1 text-xs text-slate-500">
+              Klik untuk melihat semua pelanggan
             </p>
           </div>
         </div>
-
-        <!-- Kolektor Ditugaskan -->
-        @if (!auth.isKolektor()) {
-        <div class="flex items-center gap-2">
-          <span class="text-xs font-semibold text-slate-500">Kolektor:</span>
-          <div class="flex flex-wrap items-center gap-1.5">
-            @for (c of selectedArea()?.collectors; track c.id) {
-              <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-xs font-semibold text-blue-800">
-                {{ c.user?.name }}
-                @if (c.user?.phone) {
-                  <span class="text-blue-500 font-normal">({{ c.user?.phone }})</span>
-                }
-              </span>
-            }
-            @if (!selectedArea()?.collectors?.length) {
-              <span class="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 font-medium">Belum ada kolektor</span>
-            }
-            @if (auth.isAdmin()) {
-              <button
-                type="button"
-                (click)="openAssignModal(selectedArea()!)"
-                class="inline-flex items-center gap-1 rounded-full border border-slate-300 px-2 py-0.5 text-xs font-medium text-slate-700 hover:bg-slate-100 cursor-pointer"
-              >
-                <svg lucideUserPlus [size]="12"></svg> + Kolektor
-              </button>
-            }
-          </div>
-        </div>
-        }
       </div>
 
-      <!-- Ringkasan Status Penagihan (Merah vs Hijau) -->
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <!-- Card 1: Belum Lunas (Merah / Harus Ditagih) -->
-        <div
-          class="rounded-2xl border border-red-200 bg-red-50/80 p-4 transition-all cursor-pointer hover:shadow-sm"
-          [class.ring-2]="customerStatusFilter() === 'UNPAID'"
-          [class.ring-red-500]="customerStatusFilter() === 'UNPAID'"
-          (click)="setCustomerFilter('UNPAID')"
-        >
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-red-700">🔴 HARUS DITAGIH (BELUM LUNAS)</span>
-            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-red-200/80 text-red-700">
-              <svg lucideAlertCircle [size]="16"></svg>
-            </span>
-          </div>
-          <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-2xl font-black text-red-900">{{ areaSummary()?.unpaidCustomers || 0 }}</span>
-            <span class="text-xs font-medium text-red-700">pelanggan</span>
-          </div>
-          <p class="mt-1 text-xs font-semibold text-red-800">
-            Total Tunggakan: {{ formatCurrency(areaSummary()?.totalUnpaidAmount || 0) }}
-          </p>
-        </div>
-
-        <!-- Card 2: Sudah Lunas (Hijau) -->
-        <div
-          class="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 transition-all cursor-pointer hover:shadow-sm"
-          [class.ring-2]="customerStatusFilter() === 'PAID'"
-          [class.ring-emerald-500]="customerStatusFilter() === 'PAID'"
-          (click)="setCustomerFilter('PAID')"
-        >
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">🟢 SUDAH LUNAS</span>
-            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-200/80 text-emerald-700">
-              <svg lucideCheckCircle2 [size]="16"></svg>
-            </span>
-          </div>
-          <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-2xl font-black text-emerald-900">{{ areaSummary()?.paidCustomers || 0 }}</span>
-            <span class="text-xs font-medium text-emerald-700">pelanggan</span>
-          </div>
-          <p class="mt-1 text-xs text-emerald-700 font-medium">
-            Tidak ada tunggakan pembayaran
-          </p>
-        </div>
-
-        <!-- Card 3: Total Pelanggan Area -->
-        <div
-          class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 transition-all cursor-pointer hover:shadow-sm"
-          [class.ring-2]="customerStatusFilter() === 'ALL'"
-          [class.ring-slate-800]="customerStatusFilter() === 'ALL'"
-          (click)="setCustomerFilter('ALL')"
-        >
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-700">TOTAL PELANGGAN AREA</span>
-            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-slate-700">
-              <svg lucideUsers [size]="16"></svg>
-            </span>
-          </div>
-          <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-2xl font-black text-slate-900">{{ areaSummary()?.totalCustomers || 0 }}</span>
-            <span class="text-xs font-medium text-slate-600">pelanggan terdaftar</span>
-          </div>
-          <p class="mt-1 text-xs text-slate-500">
-            Klik untuk melihat semua pelanggan
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filter Tab Bar & Search Pelanggan -->
+      <!-- Filter Tab Bar & Search Pelanggan -->
     }
     <div class="card p-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
@@ -302,7 +372,9 @@
             [class.border-red-200]="customerStatusFilter() !== 'UNPAID'"
           >
             <span>🔴 Harus Ditagih</span>
-            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-[10px]">{{ areaSummary()?.unpaidCustomers || 0 }}</span>
+            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-[10px]">{{
+              areaSummary()?.unpaidCustomers || 0
+            }}</span>
           </button>
 
           <button
@@ -317,13 +389,19 @@
             [class.border-emerald-200]="customerStatusFilter() !== 'PAID'"
           >
             <span>🟢 Sudah Lunas</span>
-            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-[10px]">{{ areaSummary()?.paidCustomers || 0 }}</span>
+            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-[10px]">{{
+              areaSummary()?.paidCustomers || 0
+            }}</span>
           </button>
         </div>
 
         <!-- Search Input -->
         <div class="relative w-full sm:w-80">
-          <svg lucideSearch [size]="16" class="absolute left-3 top-2.5 text-slate-400"></svg>
+          <svg
+            lucideSearch
+            [size]="16"
+            class="absolute left-3 top-2.5 text-slate-400"
+          ></svg>
           <input
             class="input pl-9 text-xs py-2 w-full"
             placeholder="Cari pelanggan, telepon, username..."
@@ -361,11 +439,15 @@
                     [class.bg-emerald-100]="c.isPaid"
                     [class.text-emerald-700]="c.isPaid"
                   >
-                    {{ !c.isPaid ? '!' : '✓' }}
+                    {{ !c.isPaid ? "!" : "✓" }}
                   </span>
                   <div>
-                    <p class="font-bold text-slate-900 leading-tight">{{ c.customerName }}</p>
-                    <div class="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500 font-mono">
+                    <p class="font-bold text-slate-900 leading-tight">
+                      {{ c.customerName }}
+                    </p>
+                    <div
+                      class="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500 font-mono"
+                    >
                       <span>{{ c.username }}</span>
                     </div>
                   </div>
@@ -376,12 +458,19 @@
               <td>
                 <div>
                   @if (c.phone) {
-                    <p class="font-mono text-xs font-semibold text-slate-800">{{ c.phone }}</p>
+                    <p class="font-mono text-xs font-semibold text-slate-800">
+                      {{ c.phone }}
+                    </p>
                   } @else {
-                    <p class="text-xs text-slate-400 italic">Tanpa nomor telepon</p>
+                    <p class="text-xs text-slate-400 italic">
+                      Tanpa nomor telepon
+                    </p>
                   }
-                  <p class="text-xs text-slate-500 max-w-xs truncate mt-0.5" [title]="c.address || ''">
-                    {{ c.address || '—' }}
+                  <p
+                    class="text-xs text-slate-500 max-w-xs truncate mt-0.5"
+                    [title]="c.address || ''"
+                  >
+                    {{ c.address || "—" }}
                   </p>
                 </div>
               </td>
@@ -389,7 +478,9 @@
               <!-- Harga Paket -->
               <td>
                 <div>
-                  <p class="text-xs font-bold text-slate-800">{{ c.package?.name || '-' }}</p>
+                  <p class="text-xs font-bold text-slate-800">
+                    {{ c.package?.name || "-" }}
+                  </p>
                   <p class="text-[11px] text-slate-500 font-mono">
                     {{ formatCurrency(c.package?.price || 0) }}/bln
                   </p>
@@ -397,7 +488,7 @@
               </td>
 
               <td class="font-medium text-slate-800">
-                {{ c.collectorName || '-' }}
+                {{ c.collectorName || "-" }}
               </td>
 
               <!-- Nominal tagihan dan jatuh tempo -->
@@ -407,7 +498,9 @@
                     <p class="text-sm font-black text-slate-900">
                       {{ formatCurrency(c.activeInvoice.amount) }}
                     </p>
-                    <p class="text-[11px] text-slate-500 font-medium">Tempo: {{ formatDate(c.activeInvoice.dueDate) }}</p>
+                    <p class="text-[11px] text-slate-500 font-medium">
+                      Tempo: {{ formatDate(c.activeInvoice.dueDate) }}
+                    </p>
                   </div>
                 } @else {
                   <span class="text-slate-400">-</span>
@@ -424,7 +517,13 @@
                   [class.bg-emerald-100]="c.collectionStatus === 'SELESAI'"
                   [class.text-emerald-800]="c.collectionStatus === 'SELESAI'"
                 >
-                  {{ c.collectionStatus === 'TAGIH' ? 'Tagih' : c.collectionStatus === 'PROSES' ? 'Proses' : 'Selesai' }}
+                  {{
+                    c.collectionStatus === "TAGIH"
+                      ? "Tagih"
+                      : c.collectionStatus === "PROSES"
+                        ? "Proses"
+                        : "Selesai"
+                  }}
                 </span>
               </td>
 
@@ -442,11 +541,17 @@
                       <span>Catat Setoran</span>
                     </button>
 
-                    <button type="button" class="btn-secondary py-1.5 px-3 text-xs font-semibold" (click)="openPromise(c)">
+                    <button
+                      type="button"
+                      class="btn-secondary py-1.5 px-3 text-xs font-semibold"
+                      (click)="openPromise(c)"
+                    >
                       Janji Bayar
                     </button>
                   } @else if (c.isPaid) {
-                    <span class="text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                    <span
+                      class="text-xs font-semibold text-emerald-600 flex items-center gap-1"
+                    >
                       <svg lucideCheckCircle2 [size]="14"></svg> Sudah Bayar
                     </span>
                   }
@@ -504,31 +609,75 @@
       @if (!editing && auth.isAdmin()) {
         <div>
           <label class="label">Tugaskan Kolektor Awal (Opsional)</label>
-          <select [(ngModel)]="form.collectorUserId" name="collectorUserId" class="input">
-            <option value="">-- Pilih Kolektor (Bisa ditugaskan nanti) --</option>
+          <select
+            [(ngModel)]="form.collectorUserId"
+            name="collectorUserId"
+            class="input"
+          >
+            <option value="">
+              -- Pilih Kolektor (Bisa ditugaskan nanti) --
+            </option>
             @for (opt of collectorOptions(); track opt.id) {
               <option [value]="opt.id">{{ opt.name }} ({{ opt.email }})</option>
             }
           </select>
-          <p class="mt-1 text-xs text-slate-400">Akun kolektor yang akan bertanggung jawab menagih di wilayah ini.</p>
+          <p class="mt-1 text-xs text-slate-400">
+            Akun kolektor yang akan bertanggung jawab menagih di wilayah ini.
+          </p>
         </div>
       }
 
       <div class="flex justify-end gap-3 pt-2">
-        <button type="button" class="btn-secondary" (click)="closeModal()">Batal</button>
+        <button type="button" class="btn-secondary" (click)="closeModal()">
+          Batal
+        </button>
         <button type="submit" class="btn-primary" [disabled]="saving()">
-          {{ saving() ? 'Menyimpan...' : 'Simpan Area' }}
+          {{ saving() ? "Menyimpan..." : "Simpan Area" }}
         </button>
       </div>
     </form>
   </app-modal>
 
-  <app-modal [open]="promiseModalOpen()" title="Janji Bayar" (closeModal)="promiseModalOpen.set(false)">
+  <app-modal
+    [open]="promiseModalOpen()"
+    title="Janji Bayar"
+    (closeModal)="promiseModalOpen.set(false)"
+  >
     @if (promiseTargetCustomer; as customer) {
       <form (submit)="savePromise($event)" class="space-y-4">
-        <div><label class="label">Tanggal Janji Bayar *</label><input class="input" type="date" [(ngModel)]="promiseForm.promisedDate" name="promisedDate" required /></div>
-        <div><label class="label">Catatan (Opsional)</label><input class="input" [(ngModel)]="promiseForm.notes" name="promiseNotes" /></div>
-        <div class="flex justify-end gap-3"><button type="button" class="btn-secondary" (click)="promiseModalOpen.set(false)">Batal</button><button type="submit" class="btn-primary" [disabled]="submittingPromise()">{{ submittingPromise() ? 'Menyimpan...' : 'Simpan Janji' }}</button></div>
+        <div>
+          <label class="label">Tanggal Janji Bayar *</label
+          ><input
+            class="input"
+            type="date"
+            [(ngModel)]="promiseForm.promisedDate"
+            name="promisedDate"
+            required
+          />
+        </div>
+        <div>
+          <label class="label">Catatan (Opsional)</label
+          ><input
+            class="input"
+            [(ngModel)]="promiseForm.notes"
+            name="promiseNotes"
+          />
+        </div>
+        <div class="flex justify-end gap-3">
+          <button
+            type="button"
+            class="btn-secondary"
+            (click)="promiseModalOpen.set(false)"
+          >
+            Batal</button
+          ><button
+            type="submit"
+            class="btn-primary"
+            [disabled]="submittingPromise()"
+          >
+            {{ submittingPromise() ? "Menyimpan..." : "Simpan Janji" }}
+          </button>
+        </div>
       </form>
     }
   </app-modal>
@@ -541,24 +690,43 @@
     [title]="'Tugaskan Kolektor ke ' + (assignArea?.name || 'Area')"
     (closeModal)="assignModalOpen.set(false)"
   >
-    <form (submit)="$event.preventDefault(); assignCollector()" class="space-y-4">
+    <form
+      (submit)="$event.preventDefault(); assignCollector()"
+      class="space-y-4"
+    >
       <div>
         <label class="label">Pilih Akun Kolektor *</label>
-        <select [(ngModel)]="selectedCollectorId" name="collectorId" required class="input">
+        <select
+          [(ngModel)]="selectedCollectorId"
+          name="collectorId"
+          required
+          class="input"
+        >
           <option value="">-- Pilih Kolektor --</option>
           @for (c of collectorOptions(); track c.id) {
             <option [value]="c.id">{{ c.name }} ({{ c.email }})</option>
           }
         </select>
         <p class="mt-1.5 text-xs text-slate-400">
-          Kolektor yang dipilih akan mendapatkan daftar pelanggan di area ini untuk dilakukan penagihan.
+          Kolektor yang dipilih akan mendapatkan daftar pelanggan di area ini
+          untuk dilakukan penagihan.
         </p>
       </div>
 
       <div class="flex justify-end gap-3 pt-2">
-        <button type="button" class="btn-secondary" (click)="assignModalOpen.set(false)">Batal</button>
-        <button type="submit" class="btn-primary" [disabled]="assigning() || !selectedCollectorId">
-          {{ assigning() ? 'Menugaskan...' : 'Tugaskan Kolektor' }}
+        <button
+          type="button"
+          class="btn-secondary"
+          (click)="assignModalOpen.set(false)"
+        >
+          Batal
+        </button>
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="assigning() || !selectedCollectorId"
+        >
+          {{ assigning() ? "Menugaskan..." : "Tugaskan Kolektor" }}
         </button>
       </div>
     </form>
@@ -573,22 +741,32 @@
     (closeModal)="closeQuickDeposit()"
   >
     <form (submit)="saveQuickDeposit($event)" class="space-y-4">
-      <div class="rounded-xl bg-slate-50 border border-slate-200 p-3 space-y-1.5 text-xs">
+      <div
+        class="rounded-xl bg-slate-50 border border-slate-200 p-3 space-y-1.5 text-xs"
+      >
         <div class="flex justify-between">
           <span class="text-slate-500">Pelanggan:</span>
-          <span class="font-bold text-slate-900">{{ depositTargetCustomer?.customerName }}</span>
+          <span class="font-bold text-slate-900">{{
+            depositTargetCustomer?.customerName
+          }}</span>
         </div>
         <div class="flex justify-between">
           <span class="text-slate-500">No. Invoice:</span>
-          <span class="font-mono font-semibold text-slate-800">{{ depositTargetCustomer?.activeInvoice?.invoiceNumber }}</span>
+          <span class="font-mono font-semibold text-slate-800">{{
+            depositTargetCustomer?.activeInvoice?.invoiceNumber
+          }}</span>
         </div>
         <div class="flex justify-between">
           <span class="text-slate-500">Tagihan:</span>
-          <span class="font-medium text-slate-700">{{ depositTargetCustomer?.activeInvoice?.billingMonth || '-' }}</span>
+          <span class="font-medium text-slate-700">{{
+            depositTargetCustomer?.activeInvoice?.billingMonth || "-"
+          }}</span>
         </div>
         <div class="flex justify-between">
           <span class="text-slate-500">Paket:</span>
-          <span class="font-medium text-slate-700">{{ depositTargetCustomer?.package?.name }}</span>
+          <span class="font-medium text-slate-700">{{
+            depositTargetCustomer?.package?.name
+          }}</span>
         </div>
       </div>
 
@@ -601,7 +779,6 @@
           readonly
           class="input font-mono text-base font-bold text-slate-900"
         />
-        <p class="mt-1 text-xs text-slate-400">Nominal mengikuti invoice dan tidak dapat diubah.</p>
       </div>
 
       <div>
@@ -616,9 +793,19 @@
       </div>
 
       <div class="flex justify-end gap-3 pt-2">
-        <button type="button" class="btn-secondary" (click)="closeQuickDeposit()">Batal</button>
-        <button type="submit" class="btn-primary" [disabled]="submittingDeposit() || quickDepositForm.amount <= 0">
-          {{ submittingDeposit() ? 'Menyimpan...' : 'Simpan' }}
+        <button
+          type="button"
+          class="btn-secondary"
+          (click)="closeQuickDeposit()"
+        >
+          Batal
+        </button>
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="submittingDeposit() || quickDepositForm.amount <= 0"
+        >
+          {{ submittingDeposit() ? "Menyimpan..." : "Simpan" }}
         </button>
       </div>
     </form>
@@ -626,6 +813,10 @@
 
   <!-- Feedback Toast -->
   @if (toast()) {
-    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
+    <app-toast
+      [message]="toast()!.message"
+      [type]="toast()!.type"
+      (close)="toast.set(null)"
+    ></app-toast>
   }
 </div>

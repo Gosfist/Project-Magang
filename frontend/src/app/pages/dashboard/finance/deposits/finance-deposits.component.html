@@ -3,7 +3,11 @@
   <div class="card p-4">
     <div class="grid gap-3 sm:grid-cols-[1fr_200px_auto]">
       <div class="relative">
-        <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
+        <svg
+          lucideSearch
+          [size]="18"
+          class="absolute left-3 top-3 text-slate-400"
+        ></svg>
         <input
           class="input pl-10"
           placeholder="Cari nama pelanggan, username..."
@@ -12,15 +16,22 @@
         />
       </div>
 
-      <select class="input" [(ngModel)]="filterStatus" (ngModelChange)="page.set(1); load()">
+      <select
+        class="input"
+        [(ngModel)]="filterStatus"
+        (ngModelChange)="page.set(1); load()"
+      >
         <option value="">Semua Status</option>
         <option value="PENDING">Menunggu ACC</option>
         <option value="ACCEPTED">Diterima</option>
         <option value="REJECTED">Ditolak</option>
       </select>
 
-      @if (auth.hasRole('admin', 'kolektor')) {
-        <button class="btn-primary whitespace-nowrap" (click)="openCreateModal()">
+      @if (auth.hasRole("admin", "kolektor")) {
+        <button
+          class="btn-primary whitespace-nowrap"
+          (click)="openCreateModal()"
+        >
           <svg lucidePlus [size]="18"></svg> Catat Setoran
         </button>
       }
@@ -39,7 +50,7 @@
           <th>No. Tagihan</th>
           <th>Jumlah</th>
           <th>Status</th>
-          @if (auth.hasRole('admin', 'finance')) {
+          @if (auth.hasRole("admin", "finance")) {
             <th>Aksi</th>
           }
         </tr>
@@ -51,21 +62,25 @@
               {{ formatDate(d.depositDate) }}
             </td>
             <td>
-              <p class="font-semibold text-slate-900">{{ d.account?.customerName || '-' }}</p>
+              <p class="font-semibold text-slate-900">
+                {{ d.account?.customerName || "-" }}
+              </p>
               <p class="text-xs text-slate-500">
                 {{ d.account?.username }} · ID: {{ d.account?.customerNumber }}
               </p>
             </td>
             <td>
-              <span class="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
-                📍 {{ d.account?.area?.name || 'Tanpa Area' }}
+              <span
+                class="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
+              >
+                📍 {{ d.account?.area?.name || "Tanpa Area" }}
               </span>
             </td>
             <td class="font-medium text-slate-800">
-              {{ d.collector?.name || '-' }}
+              {{ d.collector?.name || "-" }}
             </td>
             <td class="font-mono text-xs text-slate-600">
-              {{ d.invoice?.invoiceNumber || '-' }}
+              {{ d.invoice?.invoiceNumber || "-" }}
             </td>
             <td class="font-bold text-slate-900 whitespace-nowrap">
               {{ formatCurrency(d.amount) }}
@@ -84,10 +99,10 @@
                 {{ statusLabel(d.status) }}
               </span>
             </td>
-            @if (auth.hasRole('admin', 'finance')) {
+            @if (auth.hasRole("admin", "finance")) {
               <td>
                 <div class="flex gap-2">
-                  @if (d.status === 'PENDING') {
+                  @if (d.status === "PENDING") {
                     <button
                       type="button"
                       class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 transition-colors"
@@ -106,7 +121,11 @@
                     </button>
                   } @else {
                     <span class="text-xs text-slate-400">
-                      {{ d.acceptedBy?.name ? 'Oleh ' + d.acceptedBy?.name : 'Selesai' }}
+                      {{
+                        d.acceptedBy?.name
+                          ? "Oleh " + d.acceptedBy?.name
+                          : "Selesai"
+                      }}
                     </span>
                   }
                 </div>
@@ -116,13 +135,19 @@
         }
         @if (loading()) {
           <tr>
-            <td [attr.colspan]="auth.hasRole('admin', 'finance') ? 8 : 7" class="py-8 text-center text-slate-400">
+            <td
+              [attr.colspan]="auth.hasRole('admin', 'finance') ? 8 : 7"
+              class="py-8 text-center text-slate-400"
+            >
               Memuat data setoran...
             </td>
           </tr>
         } @else if (deposits().length === 0) {
           <tr>
-            <td [attr.colspan]="auth.hasRole('admin', 'finance') ? 8 : 7" class="py-8 text-center text-slate-400">
+            <td
+              [attr.colspan]="auth.hasRole('admin', 'finance') ? 8 : 7"
+              class="py-8 text-center text-slate-400"
+            >
               Data setoran belum tersedia.
             </td>
           </tr>
@@ -133,7 +158,10 @@
 
   <!-- Pagination -->
   @if (meta()) {
-    <app-pagination [meta]="meta()!" (pageChange)="page.set($event); load()"></app-pagination>
+    <app-pagination
+      [meta]="meta()!"
+      (pageChange)="page.set($event); load()"
+    ></app-pagination>
   }
 
   <!-- Modal Catat Setoran -->
@@ -149,7 +177,11 @@
         @if (!selectedInvoice) {
           <div class="space-y-2">
             <div class="relative">
-              <svg lucideSearch [size]="16" class="absolute left-3 top-3 text-slate-400"></svg>
+              <svg
+                lucideSearch
+                [size]="16"
+                class="absolute left-3 top-3 text-slate-400"
+              ></svg>
               <input
                 type="text"
                 placeholder="Ketik nama pelanggan, username, atau no. tagihan..."
@@ -159,11 +191,17 @@
                 class="input pl-9 text-xs"
               />
             </div>
-            <div class="max-h-44 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100 bg-white">
+            <div
+              class="max-h-44 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100 bg-white"
+            >
               @if (loadingInvoices()) {
-                <p class="p-3 text-center text-xs text-slate-400">Mencari tagihan belum lunas...</p>
+                <p class="p-3 text-center text-xs text-slate-400">
+                  Mencari tagihan belum lunas...
+                </p>
               } @else if (unpaidInvoices().length === 0) {
-                <p class="p-3 text-center text-xs text-slate-400">Tidak ada tagihan tertunggak ditemukan.</p>
+                <p class="p-3 text-center text-xs text-slate-400">
+                  Tidak ada tagihan tertunggak ditemukan.
+                </p>
               } @else {
                 @for (inv of unpaidInvoices(); track inv.id) {
                   <button
@@ -174,24 +212,38 @@
                     <div>
                       <p class="text-sm font-semibold text-slate-900">
                         {{ inv.account?.customerName }}
-                        <span class="font-normal text-xs text-slate-500">({{ inv.account?.username }})</span>
+                        <span class="font-normal text-xs text-slate-500"
+                          >({{ inv.account?.username }})</span
+                        >
                       </p>
                       <p class="text-xs text-slate-400">
-                        No: {{ inv.invoiceNumber }} · Area: {{ inv.account?.area?.name || 'Tanpa Area' }}
+                        No: {{ inv.invoiceNumber }} · Area:
+                        {{ inv.account?.area?.name || "Tanpa Area" }}
                       </p>
                     </div>
-                    <span class="text-sm font-bold text-slate-900">{{ formatCurrency(inv.amount) }}</span>
+                    <span class="text-sm font-bold text-slate-900">{{
+                      formatCurrency(inv.amount)
+                    }}</span>
                   </button>
                 }
               }
             </div>
           </div>
         } @else {
-          <div class="rounded-lg border border-slate-300 bg-slate-50 p-3 flex items-center justify-between">
+          <div
+            class="rounded-lg border border-slate-300 bg-slate-50 p-3 flex items-center justify-between"
+          >
             <div>
-              <p class="text-sm font-semibold text-slate-900">{{ selectedInvoice.account?.customerName }}</p>
+              <p class="text-sm font-semibold text-slate-900">
+                {{ selectedInvoice.account?.customerName }}
+              </p>
               <p class="text-xs text-slate-500">
-                No. Tagihan: <span class="font-mono">{{ selectedInvoice.invoiceNumber }}</span> · Area: {{ selectedInvoice.account?.area?.name || 'Tanpa Area' }}
+                No. Tagihan:
+                <span class="font-mono">{{
+                  selectedInvoice.invoiceNumber
+                }}</span>
+                · Area:
+                {{ selectedInvoice.account?.area?.name || "Tanpa Area" }}
               </p>
             </div>
             <button
@@ -214,7 +266,6 @@
           readonly
           class="input"
         />
-        <p class="mt-1 text-xs text-slate-500">Nominal mengikuti invoice dan tidak dapat diubah.</p>
       </div>
 
       <div>
@@ -229,13 +280,21 @@
       </div>
 
       <div class="flex justify-end gap-3 pt-2">
-        <button type="button" class="btn-secondary" (click)="createModalOpen.set(false)">Batal</button>
+        <button
+          type="button"
+          class="btn-secondary"
+          (click)="createModalOpen.set(false)"
+        >
+          Batal
+        </button>
         <button
           type="submit"
           class="btn-primary"
-          [disabled]="saving() || !depositForm.invoiceId || depositForm.amount <= 0"
+          [disabled]="
+            saving() || !depositForm.invoiceId || depositForm.amount <= 0
+          "
         >
-          {{ saving() ? 'Menyimpan...' : 'Simpan Setoran' }}
+          {{ saving() ? "Menyimpan..." : "Simpan Setoran" }}
         </button>
       </div>
     </form>
@@ -249,9 +308,11 @@
   >
     <div class="space-y-4">
       <p class="text-sm text-slate-700">
-        Setoran dari kolektor <strong>{{ rejectingDeposit?.collector?.name }}</strong> untuk pelanggan
+        Setoran dari kolektor
+        <strong>{{ rejectingDeposit?.collector?.name }}</strong> untuk pelanggan
         <strong>{{ rejectingDeposit?.account?.customerName }}</strong> sebesar
-        <strong>{{ formatCurrency(rejectingDeposit?.amount || 0) }}</strong> akan ditolak.
+        <strong>{{ formatCurrency(rejectingDeposit?.amount || 0) }}</strong>
+        akan ditolak.
       </p>
 
       <div>
@@ -265,14 +326,20 @@
       </div>
 
       <div class="flex justify-end gap-3 pt-2">
-        <button type="button" class="btn-secondary" (click)="rejectModalOpen.set(false)">Batal</button>
+        <button
+          type="button"
+          class="btn-secondary"
+          (click)="rejectModalOpen.set(false)"
+        >
+          Batal
+        </button>
         <button
           type="button"
           class="btn-danger"
           [disabled]="rejecting()"
           (click)="confirmReject()"
         >
-          {{ rejecting() ? 'Menolak...' : 'Konfirmasi Tolak' }}
+          {{ rejecting() ? "Menolak..." : "Konfirmasi Tolak" }}
         </button>
       </div>
     </div>
@@ -280,6 +347,10 @@
 
   <!-- Toast Feedback -->
   @if (toast()) {
-    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
+    <app-toast
+      [message]="toast()!.message"
+      [type]="toast()!.type"
+      (close)="toast.set(null)"
+    ></app-toast>
   }
 </div>
