@@ -237,6 +237,10 @@ export class PsbComponent implements OnInit, OnDestroy {
     reader.readAsDataURL(file);
   }
   activate() {
+    if (this.selected()?.status !== 'PROCESS' && !this.activation.password) {
+      this.activationOpen.set(false);
+      return;
+    }
     if (!this.activation.installationPhoto && !this.activationPhotoReference)
       return this.toast.set({
         message: 'Foto instalasi wajib dipilih.',

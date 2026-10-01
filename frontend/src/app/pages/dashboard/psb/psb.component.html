@@ -400,7 +400,7 @@
             class="btn-primary"
             [disabled]="
               !activation.username ||
-              !activation.password ||
+              (selected()?.status === 'PROCESS' && !activation.password) ||
               !activation.odp ||
               selectedRouterName() === 'belum disetel'
             "
