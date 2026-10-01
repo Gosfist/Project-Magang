@@ -26,9 +26,6 @@ export class HomeComponent implements OnInit {
   cards = signal<StatCard[]>([]);
   billingSummary = signal<AreaBillingSummary | null>(null);
   billingError = signal(false);
-  formatCurrency(value: number): string {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
-  }
 
   ngOnInit(): void {
     if (this.auth.isKolektor()) {

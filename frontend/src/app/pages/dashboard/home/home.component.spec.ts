@@ -28,7 +28,8 @@ describe('Collector dashboard', () => {
     const fixture = TestBed.createComponent(HomeComponent);
     fixture.detectChanges();
     const element: HTMLElement = fixture.nativeElement;
-    expect(element.textContent).toContain('110.000');
+    expect(element.textContent).not.toContain('Total Tunggakan');
+    expect(element.textContent).not.toContain('110.000');
     expect(element.textContent).not.toContain('Pelanggan Tugas');
     expect(element.textContent).not.toContain('Ringkasan data jaringan');
     const links = Array.from(element.querySelectorAll('a')).map(link => link.getAttribute('href'));
