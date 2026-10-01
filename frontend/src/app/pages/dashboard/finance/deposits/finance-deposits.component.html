@@ -66,20 +66,20 @@
               {{ d.account?.customerNumber?.padStart(6, '0') || "-" }}
             </td>
             <td>
-              <p class="font-semibold text-slate-900">
+              <p class="font-normal text-slate-900">
                 {{ d.account?.customerName || "-" }}
               </p>
             </td>
             <td class="whitespace-nowrap font-mono text-xs text-slate-700">
               {{ formatDate(d.depositDate) }}
             </td>
-            <td class="font-medium text-slate-800">
+            <td class="font-normal text-slate-800">
               {{ d.collector?.name || "-" }}
             </td>
             <td class="font-mono text-xs text-slate-600">
               {{ d.invoice?.invoiceNumber || "-" }}
             </td>
-            <td class="font-bold text-slate-900 whitespace-nowrap">
+            <td class="font-normal text-slate-900 whitespace-nowrap">
               {{ formatCurrency(d.amount) }}
             </td>
             <td>
