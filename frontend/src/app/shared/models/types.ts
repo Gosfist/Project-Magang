@@ -124,6 +124,7 @@ export type AreaCustomer = {
     amount: number;
     dueDate: string;
     hasPendingDeposit: boolean;
+    billingMonth?: string;
     depositId?: string | null;
   } | null;
 };

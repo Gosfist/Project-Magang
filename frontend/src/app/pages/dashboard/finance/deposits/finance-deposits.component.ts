@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { todayWib } from '../../../../shared/utils/wib-date';
 import {
   LucideSearch,
   LucidePlus,
@@ -52,7 +53,7 @@ export class FinanceDepositsComponent implements OnInit {
     pppoeAccountId: '',
     invoiceId: '',
     amount: 0,
-    depositDate: new Date().toISOString().slice(0, 10),
+    depositDate: todayWib(),
   };
   unpaidInvoices = signal<any[]>([]);
   loadingInvoices = signal(false);
@@ -95,7 +96,7 @@ export class FinanceDepositsComponent implements OnInit {
       pppoeAccountId: '',
       invoiceId: '',
       amount: 0,
-      depositDate: new Date().toISOString().slice(0, 10),
+      depositDate: todayWib(),
     };
     this.createModalOpen.set(true);
     this.loadUnpaidInvoices();

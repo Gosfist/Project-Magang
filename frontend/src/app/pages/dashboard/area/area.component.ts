@@ -1,6 +1,8 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { todayWib } from '../../../shared/utils/wib-date';
+import { ActivatedRoute } from '@angular/router';
 import {
   LucideSearch,
   LucidePlus,
@@ -13,7 +15,6 @@ import {
   LucideUsers,
   LucideCheckCircle2,
   LucideAlertCircle,
-  LucideDollarSign,
 } from '@lucide/angular';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -47,13 +48,13 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
     LucideUsers,
     LucideCheckCircle2,
     LucideAlertCircle,
-    LucideDollarSign,
   ],
   templateUrl: './area.component.html',
   styleUrl: './area.component.css',
 })
 export class AreaComponent implements OnInit {
   private api = inject(ApiService);
+  private route = inject(ActivatedRoute);
   auth = inject(AuthService);
 
   // View Mode: 'list' (Tabel Area) | 'detail' (Daftar Penagihan Pelanggan Area)
@@ -89,7 +90,7 @@ export class AreaComponent implements OnInit {
   depositTargetCustomer: AreaCustomer | null = null;
   quickDepositForm = {
     amount: 0,
-    depositDate: new Date().toISOString().slice(0, 10),
+    depositDate: todayWib(),
   };
   submittingDeposit = signal(false);
   promiseModalOpen = signal(false);
@@ -99,6 +100,8 @@ export class AreaComponent implements OnInit {
 
   ngOnInit() {
     if (this.auth.isKolektor()) {
+      const status = this.route.snapshot.queryParamMap.get('status');
+      if (status === 'PAID' || status === 'UNPAID') this.customerStatusFilter.set(status);
       this.viewMode.set('detail');
       this.selectedArea.set({
         id: 'collector-all',
@@ -332,7 +335,7 @@ export class AreaComponent implements OnInit {
     this.depositTargetCustomer = customer;
     this.quickDepositForm = {
       amount: customer.activeInvoice.amount,
-      depositDate: new Date().toISOString().slice(0, 10),
+      depositDate: todayWib(),
     };
     this.quickDepositModalOpen.set(true);
   }

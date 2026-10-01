@@ -2,10 +2,10 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { pageMeta, serialize } from '../common/serialize.js';
-import { RadiusService } from '../pppoe/radius.service.js';
-import { SecretService } from '../pppoe/secret.service.js';
-import { WhatsappNotifyService } from '../pppoe/whatsapp-notify.service.js';
-import { SettingsService } from '../settings/settings.service.js';
+import { RadiusService } from '../pppoe/shared/radius.service.js';
+import { SecretService } from '../pppoe/shared/secret.service.js';
+import { WhatsappNotifyService } from '../bot-whatsapp/shared/whatsapp-notify.service.js';
+import { PengaturanService } from '../tools/pengaturan/pengaturan.service.js';
 import { ActivatePsbOrderDto, CompletePsbOrderDto, CreatePsbOrderDto, UpdatePsbOrderDto } from './psb.dto.js';
 import { storeImage } from '../common/image-storage.js';
 
@@ -15,7 +15,7 @@ export class PsbService {
     private readonly prisma: PrismaService,
     private readonly radius: RadiusService,
     private readonly secrets: SecretService,
-    private readonly settings: SettingsService,
+    private readonly settings: PengaturanService,
     private readonly wa: WhatsappNotifyService,
   ) {}
 

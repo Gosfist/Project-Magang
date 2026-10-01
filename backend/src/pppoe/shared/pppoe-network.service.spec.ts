@@ -1,0 +1,96 @@
+import { PppoeNetworkService } from './pppoe-network.service.js';
+import type { PrismaService } from '../../prisma/prisma.service.js';
+import type { MikrotikService } from '../../router/shared/mikrotik.service.js';
+
+describe('PPPoE network operations', () => {
+  const router = { id: 3, name: 'NAS 3', nasname: '10.99.0.2', ipAddress: '10.99.0.2' };
+  function setup(rows: Record<string, string>[] = []) {
+    const write = vi.fn().mockResolvedValue(rows);
+    const prisma = { nas: { findMany: vi.fn().mockResolvedValue([router]) }, radacct: { findMany: vi.fn().mockResolvedValue([]) } };
+    const mikrotik = { withRouter: vi.fn().mockImplementation((_, action) => action(write)), errorMessage: () => 'API gagal' };
+    return { service: new PppoeNetworkService(prisma as unknown as PrismaService, mikrotik as unknown as MikrotikService), prisma, mikrotik, write };
+  }
+  it('reports exact PPPoE session names and separates offline from failed checks', async () => {
+    const { service, mikrotik } = setup([{ name: 'andi', service: 'pppoe' }, { name: 'vpn', service: 'l2tp' }]);
+    const accounts = [{ username: 'andi', routerNasId: 3 }, { username: 'and', routerNasId: 3 }, { username: 'vpn', routerNasId: 3 }];
+    const result = await service.accountPresence(accounts);
+    expect(result.states.get('andi')).toBe(true);
+    expect(result.states.get('and')).toBe(false);
+    expect(result.states.get('vpn')).toBe(false);
+    mikrotik.withRouter.mockRejectedValue(new Error('unreachable'));
+    const failed = await service.accountPresence(accounts);
+    expect(failed.states.get('andi')).toBeNull();
+    expect(failed.warnings).toHaveLength(1);
+  });
+  it('does not use sessions from another NAS and handles missing NAS', async () => {
+    const { service } = setup([{ name: 'andi', service: 'pppoe' }]);
+    const result = await service.accountPresence([{ username: 'andi', routerNasId: 4 }]);
+    expect(result.states.get('andi')).toBeNull();
+  });
+  it('requires all routers to be checked before marking an unassigned customer offline', async () => {
+    const { service, prisma, mikrotik } = setup();
+    prisma.nas.findMany.mockResolvedValue([{ ...router }, { ...router, id: 4 }]);
+    mikrotik.withRouter.mockImplementation(async (nas, action) => {
+      if (nas.id === 4) throw new Error('unreachable');
+      return action(async () => []);
+    });
+    const result = await service.accountPresence([{ username: 'andi', routerNasId: null }]);
+    expect(result.states.get('andi')).toBeNull();
+  });
+  it('reads pools from routers with device-specific IDs and preserves complex ranges', async () => {
+    const { service, write } = setup([{ '.id': '*5', name: 'pool-10', ranges: '10.0.0.2-10.0.0.254' },
+      { '.id': '*6', name: 'complex', ranges: '10.1.0.0/24,10.2.0.2' }]);
+    const result = await service.listPools();
+    expect(result.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: '3:*5', routerNasId: 3, networkStart: '10.0.0.2', networkEnd: '10.0.0.254' }),
+      expect.objectContaining({ id: '3:*6', ranges: '10.1.0.0/24,10.2.0.2', networkStart: '' }),
+    ]));
+    expect(write).toHaveBeenCalledWith('/ip/pool/print', ['=.proplist=.id,name,ranges']);
+  });
+  it('matches allocations by pool name or ID and keeps usage scoped to each router', async () => {
+    const { service, prisma, mikrotik } = setup();
+    prisma.nas.findMany.mockResolvedValue([router, { ...router, id: 4 }]);
+    mikrotik.withRouter.mockImplementation((nas, action) => action(async (command: string) => {
+      if (command === '/ip/pool/print') return [{ '.id': '*5', name: 'pool', ranges: '10.0.0.1-10.0.0.3' }];
+      return nas.id === 3 ? [{ pool: 'pool', address: '10.0.0.1' }, { pool: '*5', address: '10.0.0.2' },
+        { pool: 'unrelated', address: '10.0.0.3' }] : [];
+    }));
+    const result = await service.listPools();
+    expect(result.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ routerNasId: 3, totalIps: 3, usedIps: 2, freeIps: 1 }),
+      expect.objectContaining({ routerNasId: 4, totalIps: 3, usedIps: 0, freeIps: 3 }),
+    ]));
+  });
+  it('keeps pool definitions visible when reading usage fails', async () => {
+    const { service, write } = setup();
+    write.mockResolvedValueOnce([{ '.id': '*5', name: 'pool', ranges: '10.0.0.1-10.0.0.3' }]).mockRejectedValueOnce(new Error('denied'));
+    const result = await service.listPools();
+    expect(result.data[0]).toMatchObject({ totalIps: 3, usedIps: null, freeIps: null });
+    expect(result.warnings).toHaveLength(1);
+  });
+  it('reports inaccessible routers when reading pools', async () => {
+    const { service, mikrotik } = setup();
+    mikrotik.withRouter.mockRejectedValue(new Error('connection refused'));
+    expect(await service.listPools()).toEqual({ data: [], warnings: ['NAS 3: API gagal'] });
+  });
+  it('rejects database IDs and malformed RouterOS IDs', () => {
+    const { service } = setup();
+    expect(() => service.poolIdentity('1')).toThrow();
+    expect(() => service.poolIdentity('3:arbitrary')).toThrow();
+    expect(service.poolIdentity('3:*A')).toEqual({ routerNasId: 3, routerId: '*A' });
+  });
+  it('removes only exact username sessions using RouterOS IDs', async () => {
+    const { service, write, prisma } = setup([{ '.id': '*8', name: 'andi' }, { '.id': '*9', name: 'andi2' }]);
+    prisma.radacct.findMany.mockResolvedValue([{ nasipaddress: router.nasname }]);
+    await service.disconnect('andi', 3);
+    expect(write).toHaveBeenCalledWith('/ppp/active/remove', ['=.id=*8']);
+    expect(write).not.toHaveBeenCalledWith('/ppp/active/remove', ['=.id=*9']);
+    expect(prisma.nas.findMany).toHaveBeenCalledWith({ where: { OR: [{ id: 3 }, { nasname: { in: [router.nasname] } }, { ipAddress: { in: [router.nasname] } }] } });
+  });
+  it('reports unknown NAS rather than disconnecting an arbitrary router', async () => {
+    const { service, prisma, write } = setup();
+    prisma.nas.findMany.mockResolvedValue([]);
+    expect((await service.disconnect('andi', null)).warnings.length).toBeGreaterThan(0);
+    expect(write).not.toHaveBeenCalled();
+  });
+});

@@ -141,6 +141,7 @@
   <!-- ========================================== -->
   @if (viewMode() === 'detail' && selectedArea()) {
     <!-- Breadcrumb & Area Header Banner -->
+    @if (!auth.isKolektor()) {
     <div class="card p-5 space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div class="flex items-center gap-3">
@@ -164,7 +165,7 @@
               </h2>
             </div>
             <p class="text-xs text-slate-500 mt-0.5">
-              {{ auth.isKolektor() ? 'Seluruh pelanggan dari area yang ditugaskan kepada Anda.' : (selectedArea()?.description || 'Wilayah penagihan pelanggan') }}
+              {{ selectedArea()?.description || 'Wilayah penagihan pelanggan' }}
             </p>
           </div>
         </div>
@@ -270,6 +271,7 @@
     </div>
 
     <!-- Filter Tab Bar & Search Pelanggan -->
+    }
     <div class="card p-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <!-- Tabs Filter -->
@@ -364,8 +366,6 @@
                   <div>
                     <p class="font-bold text-slate-900 leading-tight">{{ c.customerName }}</p>
                     <div class="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500 font-mono">
-                      <span>#{{ c.customerNumber }}</span>
-                      <span>•</span>
                       <span>{{ c.username }}</span>
                     </div>
                   </div>
@@ -439,7 +439,6 @@
                       (click)="openQuickDeposit(c)"
                       title="Catat penerimaan uang tagihan dari pelanggan ini"
                     >
-                      <svg lucideDollarSign [size]="14"></svg>
                       <span>Catat Setoran</span>
                     </button>
 
@@ -527,7 +526,6 @@
   <app-modal [open]="promiseModalOpen()" title="Janji Bayar" (closeModal)="promiseModalOpen.set(false)">
     @if (promiseTargetCustomer; as customer) {
       <form (submit)="savePromise($event)" class="space-y-4">
-        <p class="text-sm text-slate-600">Simpan janji bayar untuk <strong>{{ customer.customerName }}</strong>. Akses dibuka sampai akhir tanggal janji bayar.</p>
         <div><label class="label">Tanggal Janji Bayar *</label><input class="input" type="date" [(ngModel)]="promiseForm.promisedDate" name="promisedDate" required /></div>
         <div><label class="label">Catatan (Opsional)</label><input class="input" [(ngModel)]="promiseForm.notes" name="promiseNotes" /></div>
         <div class="flex justify-end gap-3"><button type="button" class="btn-secondary" (click)="promiseModalOpen.set(false)">Batal</button><button type="submit" class="btn-primary" [disabled]="submittingPromise()">{{ submittingPromise() ? 'Menyimpan...' : 'Simpan Janji' }}</button></div>
@@ -578,11 +576,15 @@
       <div class="rounded-xl bg-slate-50 border border-slate-200 p-3 space-y-1.5 text-xs">
         <div class="flex justify-between">
           <span class="text-slate-500">Pelanggan:</span>
-          <span class="font-bold text-slate-900">{{ depositTargetCustomer?.customerName }} (#{{ depositTargetCustomer?.customerNumber }})</span>
+          <span class="font-bold text-slate-900">{{ depositTargetCustomer?.customerName }}</span>
         </div>
         <div class="flex justify-between">
           <span class="text-slate-500">No. Invoice:</span>
           <span class="font-mono font-semibold text-slate-800">{{ depositTargetCustomer?.activeInvoice?.invoiceNumber }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Tagihan:</span>
+          <span class="font-medium text-slate-700">{{ depositTargetCustomer?.activeInvoice?.billingMonth || '-' }}</span>
         </div>
         <div class="flex justify-between">
           <span class="text-slate-500">Paket:</span>
@@ -591,7 +593,7 @@
       </div>
 
       <div>
-        <label class="label">Nominal Pembayaran Diterima (Rp) *</label>
+        <label class="label">Nominal Pembayaran Diterima</label>
         <input
           type="number"
           [(ngModel)]="quickDepositForm.amount"
@@ -616,7 +618,7 @@
       <div class="flex justify-end gap-3 pt-2">
         <button type="button" class="btn-secondary" (click)="closeQuickDeposit()">Batal</button>
         <button type="submit" class="btn-primary" [disabled]="submittingDeposit() || quickDepositForm.amount <= 0">
-          {{ submittingDeposit() ? 'Menyimpan...' : 'Simpan & Kirim Notif WA' }}
+          {{ submittingDeposit() ? 'Menyimpan...' : 'Simpan' }}
         </button>
       </div>
     </form>

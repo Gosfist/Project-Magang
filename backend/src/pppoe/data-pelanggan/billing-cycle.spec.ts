@@ -1,0 +1,35 @@
+import { describe, expect, it } from 'vitest';
+import { firstBillingCycle, serviceInvoiceNumber } from './billing-cycle.js';
+
+describe('service invoice number', () => {
+  it('uses the usage period and seven-digit customer number', () => {
+    expect(serviceInvoiceNumber(2026, 9, 1n)).toBe('INV/202609/0000001');
+  });
+  it('rolls January billing back to December usage', () => {
+    expect(serviceInvoiceNumber(2027, 0, 42n)).toBe('INV/202612/0000042');
+  });
+});
+
+describe('first postpaid bill', () => {
+  it.each([
+    ['2026-09-30T17:00:00Z', 110000, 'MONTHLY'],
+    ['2026-10-01T17:00:00Z', 106452, 'PRORATE'],
+  ])('bills October activation %s in November', (activation, amount, invoiceType) => {
+    expect(firstBillingCycle(new Date(activation), 110000, 10, 'WIB')).toEqual({
+      amount, invoiceType, dueDate: new Date('2026-11-10T00:00:00Z'),
+    });
+  });
+  it('charges September 23-30 in October, not September', () => {
+    const cycle = firstBillingCycle(new Date('2026-09-23T02:00:00Z'), 110000, 10, 'WIB');
+    expect(cycle.amount).toBe(29333);
+    expect(cycle.dueDate.toISOString()).toBe('2026-10-10T00:00:00.000Z');
+  });
+  it.each(['2026-02-01', '2028-02-01', '2026-04-01', '2026-01-01'])('charges a full calendar month for %s', date => {
+    expect(firstBillingCycle(new Date(`${date}T00:00:00Z`), 100000, 10, 'WIB').amount).toBe(100000);
+  });
+  it('uses local activation date and crosses the year boundary', () => {
+    const cycle = firstBillingCycle(new Date('2026-12-31T17:30:00Z'), 100000, 31, 'WIB');
+    expect(cycle.amount).toBe(100000);
+    expect(cycle.dueDate.toISOString()).toBe('2027-02-28T00:00:00.000Z');
+  });
+});

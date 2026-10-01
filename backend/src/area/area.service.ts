@@ -279,6 +279,9 @@ export class AreaService {
               invoiceNumber: activeInvoice.invoiceNumber,
               amount: Number(activeInvoice.amount),
               dueDate: activeInvoice.dueDate,
+              billingMonth: new Intl.DateTimeFormat('id-ID', { month: 'long', timeZone: 'UTC' }).format(
+                new Date(Date.UTC(activeInvoice.dueDate.getUTCFullYear(), activeInvoice.dueDate.getUTCMonth() - (acc.subscriptionType === 'POSTPAID' ? 1 : 0), 1)),
+              ),
               hasPendingDeposit,
               depositId: latestDeposit?.id || null,
             }

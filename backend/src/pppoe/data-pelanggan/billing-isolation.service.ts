@@ -1,0 +1,214 @@
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { PengaturanService, BillingSettings } from '../../tools/pengaturan/pengaturan.service.js';
+import { RadiusService } from '../shared/radius.service.js';
+import { PppoeNetworkService } from '../shared/pppoe-network.service.js';
+import { WhatsappNotifyService } from '../../bot-whatsapp/shared/whatsapp-notify.service.js';
+import { firstBillingCycle, billingOffsets, serviceInvoiceNumber } from './billing-cycle.js';
+
+const timezoneOffset: Record<BillingSettings['billingTimezone'], number> = { WIB: 7, WITA: 8, WIT: 9 };
+
+@Injectable()
+export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
+  private timer?: ReturnType<typeof setInterval>;
+  private running = false;
+  private readonly logger = new Logger(BillingIsolationService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settings: PengaturanService,
+    private readonly radius: RadiusService,
+    private readonly network: PppoeNetworkService,
+    private readonly waNotify: WhatsappNotifyService,
+  ) {}
+
+  onModuleInit() {
+    void this.tick();
+    this.timer = setInterval(() => void this.tick(), 5 * 60 * 1000);
+    this.timer.unref();
+  }
+
+  onModuleDestroy() {
+    if (this.timer) clearInterval(this.timer);
+  }
+
+  async tick(now = new Date(), onlyAccountId?: bigint): Promise<boolean> {
+    if (this.running) return false;
+    this.running = true;
+    try {
+      const settings = await this.settings.billing();
+      const local = this.localNow(settings.billingTimezone, now);
+      if (local.day >= settings.billingStartDay) {
+        await this.createMonthlyInvoices(settings, local.year, local.month, onlyAccountId);
+        await this.notifyPaymentReminders(settings, local.year, local.month, onlyAccountId);
+      }
+      if (local.hour < settings.isolationCheckHour || local.day <= settings.billingEndDay) return true;
+      await this.isolateOverdue(settings, this.utcDate(local.year, local.month, settings.billingEndDay), now, onlyAccountId);
+      return true;
+    } catch (error) {
+      this.logger.error(`Auto isolir gagal. ${error instanceof Error ? error.message : error}`);
+      if (onlyAccountId) throw error;
+      return false;
+    } finally {
+      this.running = false;
+    }
+  }
+
+  private async createMonthlyInvoices(settings: BillingSettings, year: number, month: number, onlyAccountId?: bigint) {
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const dueDay = Math.min(settings.billingEndDay, daysInMonth);
+    const dueDate = this.utcDate(year, month, dueDay);
+    const monthStart = this.utcDate(year, month, 1);
+    const nextMonthStart = month === 12 ? this.utcDate(year + 1, 1, 1) : this.utcDate(year, month + 1, 1);
+    const accounts = await this.prisma.pppoeAccount.findMany({
+      where: {
+        ...(onlyAccountId ? { id: onlyAccountId } : {}),
+        subscriptionType: 'POSTPAID',
+        package: { isActive: true },
+        createdAt: { lt: new Date(monthStart.getTime() - billingOffsets[settings.billingTimezone] * 3600000) },
+      },
+      select: {
+        id: true,
+        customerNumber: true,
+        createdAt: true,
+        package: { select: { price: true } },
+        discount: true,
+        invoices: {
+          where: { status: { not: 'CANCELLED' }, invoiceType: { in: ['PRORATE', 'MONTHLY'] }, dueDate: { gte: monthStart, lt: nextMonthStart } },
+          select: { id: true },
+          take: 1,
+        },
+      },
+      take: 500,
+    });
+
+    for (const account of accounts) {
+      if (account.invoices.length) continue;
+      const price = Math.max(0, Number(account.package.price) - Number(account.discount));
+      const first = account.createdAt ? firstBillingCycle(account.createdAt, price, settings.billingEndDay, settings.billingTimezone) : null;
+      if (first && first.dueDate > dueDate) continue;
+      const prorate = first?.dueDate.getTime() === dueDate.getTime();
+      const amount = prorate ? first!.amount : price;
+      await this.prisma.invoice.create({
+        data: {
+          pppoeAccountId: account.id,
+          invoiceNumber: serviceInvoiceNumber(year, month - 1, account.customerNumber),
+          amount: BigInt(amount),
+          baseAmount: BigInt(Number(account.package.price)),
+          discount: account.discount,
+          invoiceType: prorate ? first!.invoiceType : 'MONTHLY',
+          status: 'PENDING',
+          dueDate,
+          notes: `Tagihan bulanan ${String(month).padStart(2, '0')}/${year}`,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      }).catch((error) => {
+        this.logger.warn(`Invoice bulanan pelanggan ${account.customerNumber} tidak dibuat: ${error instanceof Error ? error.message : error}`);
+      });
+    }
+  }
+
+  private async isolateOverdue(settings: BillingSettings, cutoffDate: Date, now = new Date(), onlyAccountId?: bigint) {
+    const accounts = await this.prisma.pppoeAccount.findMany({
+      where: {
+        ...(onlyAccountId ? { id: onlyAccountId } : {}),
+        isActive: true,
+        createdAt: { lt: new Date(Date.UTC(cutoffDate.getUTCFullYear(), cutoffDate.getUTCMonth(), 1) - billingOffsets[settings.billingTimezone] * 3600000) },
+        package: { isActive: true },
+        invoices: { some: { status: 'PENDING', dueDate: { lte: cutoffDate } } },
+        paymentPromises: { none: { status: 'ACTIVE', deadline: { gt: now } } },
+      },
+      include: { package: { include: { ipPool: true } }, invoices: { where: { status: 'PENDING', dueDate: { lte: cutoffDate } }, select: { id: true, amount: true, dueDate: true }, take: 10 } },
+      take: 100,
+    });
+    if (!accounts.length) return;
+
+    for (const account of accounts) {
+      try {
+        await this.prisma.$transaction(async (tx) => {
+          const current = await tx.pppoeAccount.update({
+            where: { id: account.id },
+            data: { isActive: false, updatedAt: new Date() },
+            include: { package: { include: { ipPool: true } } },
+          });
+          await tx.paymentPromise.updateMany({ where: { pppoeAccountId: account.id, status: { in: ['ACTIVE', 'EXPIRED'] } }, data: { status: 'CANCELLED', disconnectPending: false } });
+          await this.radius.sync(tx as Prisma.TransactionClient, current);
+        });
+        const result = await this.network.disconnect(account.username, account.routerNasId);
+        if (result.warnings.length) this.logger.warn(`Auto isolir ${account.username}: ${result.warnings.join(' ')}`);
+        else this.logger.log(`Auto isolir ${account.username} karena tagihan melewati tanggal ${settings.billingEndDay} ${settings.billingTimezone}.`);
+        await this.waNotify.notifyIsolation({
+          customerName: account.customerName,
+          customerNumber: account.customerNumber,
+          phone: account.phone,
+          packageName: account.package.name,
+          totalAmount: account.invoices.reduce((total, invoice) => total + Number(invoice.amount), 0),
+          dueDate: this.formatDate(account.invoices[0]?.dueDate),
+        });
+      } catch (error) {
+        this.logger.error(`Auto isolir ${account.username} gagal. ${error instanceof Error ? error.message : error}`);
+      }
+    }
+  }
+
+  private async notifyPaymentReminders(settings: BillingSettings, year: number, month: number, onlyAccountId?: bigint) {
+    const monthStart = this.utcDate(year, month, 1);
+    const nextMonthStart = month === 12 ? this.utcDate(year + 1, 1, 1) : this.utcDate(year, month + 1, 1);
+    const invoices = await this.prisma.invoice.findMany({
+      where: {
+        ...(onlyAccountId ? { pppoeAccountId: onlyAccountId } : {}),
+        status: 'PENDING',
+        reminderSentAt: null,
+        account: { isNot: null },
+        dueDate: { gte: monthStart, lt: nextMonthStart },
+      },
+      include: {
+        account: { select: { customerName: true, customerNumber: true, phone: true, package: { select: { name: true } } } },
+      },
+      take: 500,
+    });
+
+    for (const invoice of invoices) {
+      if (!invoice.account) continue;
+      const claimed = await this.prisma.invoice.updateMany({
+        where: { id: invoice.id, reminderSentAt: null, status: 'PENDING' },
+        data: { reminderSentAt: new Date() },
+      });
+      if (!claimed.count) continue;
+      try {
+        await this.waNotify.notifyPaymentReminder({
+          customerName: invoice.account.customerName,
+          customerNumber: invoice.account.customerNumber,
+          phone: invoice.account.phone,
+          packageName: invoice.account.package.name,
+          totalAmount: Number(invoice.amount),
+          dueDate: this.formatDate(invoice.dueDate) || '-',
+        });
+      } catch (error) {
+        await this.prisma.invoice.update({ where: { id: invoice.id }, data: { reminderSentAt: null } });
+        this.logger.warn(`Pengingat tagihan ${invoice.invoiceNumber} gagal: ${error instanceof Error ? error.message : error}`);
+      }
+    }
+  }
+
+  private localNow(timezone: BillingSettings['billingTimezone'], now = new Date()) {
+    const shifted = new Date(now.getTime() + timezoneOffset[timezone] * 3600000);
+    return {
+      year: shifted.getUTCFullYear(),
+      month: shifted.getUTCMonth() + 1,
+      day: shifted.getUTCDate(),
+      hour: shifted.getUTCHours(),
+    };
+  }
+
+  private utcDate(year: number, month: number, day: number) {
+    return new Date(Date.UTC(year, month - 1, day));
+  }
+
+  private formatDate(date?: Date) {
+    if (!date) return undefined;
+    return new Intl.DateTimeFormat('id-ID', { dateStyle: 'long', timeZone: 'Asia/Jakarta' }).format(date);
+  }
+}

@@ -1,17 +1,19 @@
 import { Module } from '@nestjs/common';
+import { RouterMonitoringController } from './router/router-monitoring.controller.js';
+import { RadiusMonitoringController } from './radius/radius-monitoring.controller.js';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthModule } from '../auth/auth.module.js';
 import { RouterModule } from '../router/router.module.js';
-import { MonitoringController } from './monitoring.controller.js';
-import { MonitoringService, MonitoringInterceptor } from './monitoring.service.js';
-import { ServerStatsService } from './server-stats.service.js';
-import { RouterMonitoringService } from './router-monitoring.service.js';
-import { StatsCollectorService } from './stats-collector.service.js';
-import { RadiusMonitoringService } from './radius-monitoring.service.js';
+import { MonitoringController } from './server/server.controller.js';
+import { MonitoringService, MonitoringInterceptor } from './server/server.service.js';
+import { ServerStatsService } from './server/server-stats.service.js';
+import { RouterMonitoringService } from './router/router-monitoring.service.js';
+import { StatsCollectorService } from './shared/stats-collector.service.js';
+import { RadiusMonitoringService } from './radius/radius-monitoring.service.js';
 
 @Module({
   imports: [AuthModule, RouterModule],
-  controllers: [MonitoringController],
+  controllers: [MonitoringController, RouterMonitoringController, RadiusMonitoringController],
   providers: [
     MonitoringService,
     ServerStatsService,

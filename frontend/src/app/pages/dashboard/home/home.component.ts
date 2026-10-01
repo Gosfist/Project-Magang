@@ -2,6 +2,9 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { LucideGitBranch, LucideNetwork, LucideServer, LucideUsers } from '@lucide/angular';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { AreaBillingSummary } from '../../../shared/models/types';
 
 type StatCard = {
   label: string;
@@ -12,7 +15,7 @@ type StatCard = {
 @Component({
   selector: 'app-dashboard-home',
   standalone: true,
-  imports: [LucideGitBranch, LucideNetwork, LucideServer, LucideUsers],
+  imports: [CommonModule, RouterLink, LucideGitBranch, LucideNetwork, LucideServer, LucideUsers],
   templateUrl: './home.component.html',
 })
 export class HomeComponent implements OnInit {
@@ -21,8 +24,19 @@ export class HomeComponent implements OnInit {
 
   private stats = signal<Record<string, number>>({});
   cards = signal<StatCard[]>([]);
+  billingSummary = signal<AreaBillingSummary | null>(null);
+  billingError = signal(false);
+  formatCurrency(value: number): string {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
+  }
 
   ngOnInit(): void {
+    if (this.auth.isKolektor()) {
+      this.api.get<{ summary: AreaBillingSummary }>('/areas/customers').subscribe({
+        next: (data) => this.billingSummary.set(data.summary),
+        error: () => this.billingError.set(true),
+      });
+    }
     this.api.get<Record<string, number>>('/dashboard/stats').subscribe({
       next: (data) => {
         this.stats.set(data);
@@ -57,7 +71,7 @@ export class HomeComponent implements OnInit {
       ];
     } else if (this.auth.isKolektor()) {
       result = [
-        { label: 'Pelanggan Tugas', value: s['assignedCustomers'], type: 'users' },
+        { label: 'Pelanggan', value: s['assignedCustomers'], type: 'users' },
         { label: 'Menunggu Finance', value: s['pendingDeposits'], type: 'redaman' },
         { label: 'Pembayaran Selesai', value: s['acceptedDeposits'], type: 'odc' },
       ];
