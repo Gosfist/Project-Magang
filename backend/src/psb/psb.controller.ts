@@ -18,6 +18,7 @@ export class PsbController {
   @Patch(':id') @Roles('admin', 'sales') update(@Param('id') id: string, @Body() dto: UpdatePsbOrderDto, @Req() req: AuthRequest) { return this.psb.update(id, dto, req.user); }
   @Delete(':id') @Roles('admin', 'sales') remove(@Param('id') id: string, @Req() req: AuthRequest) { return this.psb.remove(id, req.user); }
   @Post(':id/activate') @Roles('admin', 'teknisi') activate(@Param('id') id: string, @Body() dto: ActivatePsbOrderDto, @Req() req: AuthRequest) { return this.psb.activate(id, dto, req.user.id); }
+  @Get(':id/installation-photo') @Roles('admin', 'teknisi') installationPhoto(@Param('id') id: string) { return this.psb.installationPhoto(id); }
   @Get(':id/completion-summary') @Roles('admin', 'teknisi') completionSummary(@Param('id') id: string) { return this.psb.completionSummary(id); }
   @Post(':id/complete') @Roles('admin', 'teknisi') complete(@Param('id') id: string, @Body() dto: CompletePsbOrderDto, @Req() req: AuthRequest) { return this.psb.complete(id, req.user.id, dto); }
 }

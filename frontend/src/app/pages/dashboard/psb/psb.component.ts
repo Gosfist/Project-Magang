@@ -53,6 +53,7 @@ export class PsbComponent implements OnInit, OnDestroy {
   odpPickerOpen = false;
   odpSearch = '';
   activationViewOnly = false;
+  private activationPhotoReference = '';
   form = {
     customerName: '',
     phone: '',
@@ -183,11 +184,22 @@ export class PsbComponent implements OnInit, OnDestroy {
     this.odpSearch = '';
     this.activation = {
       username: item.username || item.customerId,
-      password: item.customerId,
+      password: viewOnly ? '' : (item.status === 'PROCESS' ? item.customerId : ''),
       odp: item.odp || '',
       installationPhoto: item.installationPhoto || '',
     };
+    this.activationPhotoReference = item.installationPhoto || '';
     this.activationOpen.set(true);
+    if (item.installationPhoto) {
+      this.api.getBlob(`/psb/${item.id}/installation-photo`).subscribe({
+        next: (blob) => {
+          const reader = new FileReader();
+          reader.onload = () => (this.activation.installationPhoto = String(reader.result));
+          reader.readAsDataURL(blob);
+        },
+        error: () => this.toast.set({ message: 'Foto instalasi tidak dapat dimuat.', type: 'error' }),
+      });
+    }
   }
   toggleOdpPicker() {
     this.odpPickerOpen = !this.odpPickerOpen;
@@ -221,17 +233,25 @@ export class PsbComponent implements OnInit, OnDestroy {
     const reader = new FileReader();
     reader.onload = () =>
       (this.activation.installationPhoto = String(reader.result));
+    this.activationPhotoReference = '';
     reader.readAsDataURL(file);
   }
   activate() {
-    if (!this.activation.installationPhoto)
+    if (!this.activation.installationPhoto && !this.activationPhotoReference)
       return this.toast.set({
         message: 'Foto instalasi wajib dipilih.',
         type: 'error',
       });
     this.saving.set(true);
+    const payload = {
+      ...this.activation,
+      password: this.activation.password || undefined,
+      installationPhoto: this.activationPhotoReference && this.activation.installationPhoto && !this.activation.installationPhoto.startsWith('data:')
+        ? this.activationPhotoReference
+        : this.activation.installationPhoto,
+    };
     this.api
-      .post<any>(`/psb/${this.selected()!.id}/activate`, this.activation)
+      .post<any>(`/psb/${this.selected()!.id}/activate`, payload)
       .subscribe({
         next: (r) => {
           this.saving.set(false);

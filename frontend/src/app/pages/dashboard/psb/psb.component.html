@@ -106,7 +106,7 @@
                 ) {
                   <button
                     class="btn-secondary"
-                    (click)="openActivation(item, true)"
+                    (click)="openActivation(item)"
                   >
                     Lihat
                   </button>
@@ -338,7 +338,7 @@
         </div>
         <div>
           <label class="label">Password PPPoE</label
-          ><input class="input" readonly [(ngModel)]="activation.password" />
+          ><input class="input" type="password" [readonly]="activationViewOnly" [(ngModel)]="activation.password" placeholder="Kosongkan jika tidak ingin mengganti" />
         </div>
         <div class="relative">
           <label class="label">ODC / ODP *</label
@@ -439,7 +439,7 @@
               class="btn-primary"
               (click)="activationOpen.set(false)"
             >
-              Tutup
+              Simpan
             </button>
           } @else {
             <button

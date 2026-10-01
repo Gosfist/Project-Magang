@@ -9,6 +9,7 @@ import { PengaturanService } from '../tools/pengaturan/pengaturan.service.js';
 import { ActivatePsbOrderDto, CompletePsbOrderDto, CreatePsbOrderDto, UpdatePsbOrderDto } from './psb.dto.js';
 import { storeImage } from '../common/image-storage.js';
 import { PppoeNetworkService } from '../pppoe/shared/pppoe-network.service.js';
+import { readInstallationPhoto } from '../pppoe/data-pelanggan/installation-photo.js';
 
 @Injectable()
 export class PsbService {
@@ -85,24 +86,38 @@ export class PsbService {
 
   async activate(id: string, dto: ActivatePsbOrderDto, technicianId: string) {
     const order = await this.find(id, true);
+    if (!dto.password && order.status === 'PROCESS') throw new BadRequestException('Password PPPoE wajib diisi saat aktivasi pertama.');
+    if (!dto.installationPhoto && order.status === 'PROCESS') throw new BadRequestException('Foto instalasi wajib dipilih saat aktivasi pertama.');
     const odp = await this.prisma.mainCore.findFirst({ where: { id: BigInt(dto.odp), tipeTitik: { in: ['odc', 'odp'] }, deletedAt: null } });
     if (!odp) throw new BadRequestException('ODC / ODP tidak ditemukan.');
     const routerNasId = await this.routerForLocation(odp.id);
-    const installationPhoto = await storeImage(dto.installationPhoto, 'instalasi', String(order.id));
+    const installationPhoto = dto.installationPhoto ? await storeImage(dto.installationPhoto, 'instalasi', String(order.id)) : order.installationPhoto;
     if (order.status !== 'PROCESS') {
       if (!order.pppoeAccountId || !['ACTIVATED', 'COMPLETED'].includes(order.status)) {
         throw new BadRequestException('Pesanan ini tidak dapat diedit.');
       }
       const updated = await this.prisma.$transaction(async tx => {
+        const currentAccount = await tx.pppoeAccount.findUnique({ where: { id: order.pppoeAccountId! }, select: { username: true } });
         const account = await tx.pppoeAccount.update({
           where: { id: order.pppoeAccountId! },
-          data: { odp: dto.odp, routerNasId },
+          data: {
+            odp: dto.odp,
+            routerNasId,
+            ...(dto.username.trim() !== currentAccount?.username ? { username: dto.username.trim() } : {}),
+            ...(dto.password ? { password: this.secrets.encrypt(dto.password) } : {}),
+          },
           include: { package: { include: { ipPool: true } } },
         });
         await this.radius.sync(tx, account);
         return tx.psbOrder.update({
           where: { id: order.id },
-          data: { odp: dto.odp, routerNasId, installationPhoto },
+          data: {
+            odp: dto.odp,
+            routerNasId,
+            installationPhoto,
+            ...(dto.username.trim() !== currentAccount?.username ? { username: dto.username.trim() } : {}),
+            ...(dto.password ? { password: this.secrets.encrypt(dto.password) } : {}),
+          },
         });
       });
       return serialize({ message: 'Data aktivasi berhasil diperbarui.', order: updated });
@@ -117,7 +132,7 @@ export class PsbService {
             idCardNumber: order.idCardNumber,
             idCardPhoto: order.idCardPhoto,
             username: dto.username.trim(),
-            password: this.secrets.encrypt(dto.password),
+            password: this.secrets.encrypt(dto.password!),
             phone: order.phone,
             address: order.address,
             subscriptionType: 'POSTPAID',
@@ -135,7 +150,7 @@ export class PsbService {
         await this.radius.sync(tx, account);
         const updated = await tx.psbOrder.update({
           where: { id: order.id },
-          data: { status: 'ACTIVATED', username: dto.username.trim(), password: this.secrets.encrypt(dto.password), odp: dto.odp, routerNasId, installationPhoto, pppoeAccountId: account.id, activatedByUserId: BigInt(technicianId), activatedAt: new Date() },
+          data: { status: 'ACTIVATED', username: dto.username.trim(), password: this.secrets.encrypt(dto.password!), odp: dto.odp, routerNasId, installationPhoto, pppoeAccountId: account.id, activatedByUserId: BigInt(technicianId), activatedAt: new Date() },
         });
         return { account, updated };
       });
@@ -147,6 +162,11 @@ export class PsbService {
       }
       throw error;
     }
+  }
+
+  async installationPhoto(id: string) {
+    const order = await this.find(id);
+    return readInstallationPhoto(order.installationPhoto);
   }
 
   async completionSummary(id: string) {
