@@ -35,10 +35,10 @@
             <td>{{ node.tanggal ? formatDate(node.tanggal) : '—' }}</td>
             <td>
               <div class="flex gap-2">
-                <button class="btn-secondary px-3" (click)="show(node)">
+                <button class="btn-secondary px-3 table-action table-action-icon" (click)="show(node)">
                   <svg lucidePencil [size]="15"></svg>
                 </button>
-                <button class="btn-danger" (click)="remove(node)">
+                <button class="btn-danger table-action table-action-icon" (click)="remove(node)">
                   <svg lucideTrash2 [size]="15"></svg>
                 </button>
               </div>

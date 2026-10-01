@@ -64,7 +64,7 @@
                   auth.hasRole("admin", "sales") && item.status === "PROCESS"
                 ) {
                   <button
-                    class="btn-secondary"
+                    class="btn-secondary table-action table-action-icon"
                     title="Edit registrasi"
                     aria-label="Edit registrasi"
                     (click)="openForm(item)"
@@ -72,7 +72,7 @@
                     <svg lucidePencil [size]="15"></svg>
                   </button>
                   <button
-                    class="btn-danger"
+                    class="btn-danger table-action table-action-icon"
                     title="Hapus registrasi"
                     aria-label="Hapus registrasi"
                     (click)="remove(item)"
@@ -83,7 +83,7 @@
                 @if (
                   auth.hasRole("admin", "teknisi") && item.status === "PROCESS"
                 ) {
-                  <button class="btn-primary" (click)="openActivation(item)">
+                  <button class="btn-primary table-action" (click)="openActivation(item)">
                     Aktivasi
                   </button>
                 }
@@ -92,7 +92,7 @@
                   item.status === "ACTIVATED"
                 ) {
                   <button
-                    class="btn-primary"
+                    class="btn-primary table-action table-action-icon"
                     title="Tandai selesai"
                     aria-label="Tandai selesai"
                     (click)="requestComplete(item)"
@@ -105,7 +105,7 @@
                   item.status === "COMPLETED"
                 ) {
                   <button
-                    class="btn-secondary"
+                    class="btn-secondary table-action"
                     (click)="openActivation(item)"
                   >
                     Lihat

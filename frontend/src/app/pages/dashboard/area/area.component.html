@@ -90,7 +90,7 @@
                     <button
                       type="button"
                       (click)="openAssignModal(area)"
-                      class="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-2.5 py-1 text-sm font-normal text-slate-600 hover:border-blue-500 hover:text-blue-600 transition-colors cursor-pointer"
+                      class="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-2.5 py-1 text-sm font-normal text-slate-600 hover:border-blue-500 hover:text-blue-600 transition-colors cursor-pointer table-action"
                       title="Tugaskan kolektor ke area ini"
                     >
                       <svg lucideUserPlus [size]="13"></svg> + Kolektor
@@ -110,7 +110,7 @@
                   <!-- Tombol Buka Daftar Penagihan Area -->
                   <button
                     type="button"
-                    class="btn-primary py-1.5 px-3 text-sm flex items-center gap-1.5 shadow-xs"
+                    class="btn-primary py-1.5 px-3 text-sm flex items-center gap-1.5 shadow-xs table-action"
                     (click)="openAreaDetail(area)"
                     title="Buka daftar pelanggan dan status penagihan area ini"
                   >
@@ -120,14 +120,14 @@
 
                   @if (auth.isAdmin()) {
                     <button
-                      class="btn-secondary px-2.5 py-1.5"
+                      class="btn-secondary px-2.5 py-1.5 table-action table-action-icon"
                       (click)="openModal(area)"
                       title="Edit Area"
                     >
                       <svg lucidePencil [size]="15"></svg>
                     </button>
                     <button
-                      class="btn-danger px-2.5 py-1.5"
+                      class="btn-danger px-2.5 py-1.5 table-action table-action-icon"
                       (click)="remove(area)"
                       title="Hapus Area"
                     >
@@ -534,7 +534,7 @@
                     <!-- Tombol Catat Setoran Kolektor -->
                     <button
                       type="button"
-                      class="btn-primary py-1.5 px-3 text-sm flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 border-emerald-600 shadow-xs cursor-pointer whitespace-nowrap"
+                      class="btn-primary py-1.5 px-3 text-sm flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 border-emerald-600 shadow-xs cursor-pointer whitespace-nowrap table-action"
                       (click)="openQuickDeposit(c)"
                       title="Catat penerimaan uang tagihan dari pelanggan ini"
                     >
@@ -543,7 +543,7 @@
 
                     <button
                       type="button"
-                      class="btn-secondary py-1.5 px-3 text-sm font-normal"
+                      class="btn-secondary py-1.5 px-3 text-sm font-normal table-action"
                       (click)="openPromise(c)"
                     >
                       Janji Bayar

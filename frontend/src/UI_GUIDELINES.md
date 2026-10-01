@@ -27,7 +27,7 @@ blok skrip RouterOS atau template teknis di luar tabel.
 ## Tata letak
 
 - Jarak antar bagian 16–24px; padding konten 16px mobile dan 24–28px desktop.
-- Input/tombol utama minimal 42px. Tombol tabel minimal 34px dan tinggi mengikuti isi.
+- Input/tombol utama minimal 42px. Tombol aksi tabel tinggi 32px, teks 13px/line-height 18px, ikon 14px, padding horizontal 10px. Tombol ikon memakai `.table-action-icon` (32 x 32px). Gaya khusus seperti ACC/Edit memakai `.table-action`; sakelar status dan aksi kecil di dalam badge memiliki ukuran tersendiri.
 - Tabel boleh menggulir horizontal di dalam `.table-wrap`; konten halaman tidak
   boleh melebar bersama tabel. Header tetap satu baris, data panjang boleh membungkus.
 - Form pelanggan memakai satu kolom mobile dan dua kolom desktop. Form panjang

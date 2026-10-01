@@ -221,7 +221,7 @@
               <td>
                 <div class="flex gap-2">
                   <button
-                    class="btn-secondary"
+                    class="btn-secondary table-action table-action-icon"
                     title="Putus Sesi"
                     aria-label="Putus sesi pelanggan"
                     [disabled]="disconnecting() !== null"
@@ -230,7 +230,7 @@
                     <svg lucideUnplug [size]="14"></svg>
                   </button>
                   <button
-                    class="btn-secondary"
+                    class="btn-secondary table-action table-action-icon"
                     title="Edit"
                     aria-label="Edit pelanggan"
                     (click)="show(item)"
@@ -238,7 +238,7 @@
                     <svg lucidePencil [size]="15"></svg>
                   </button>
                   <button
-                    class="btn-danger"
+                    class="btn-danger table-action table-action-icon"
                     title="Hapus"
                     aria-label="Hapus pelanggan"
                     (click)="remove(item)"

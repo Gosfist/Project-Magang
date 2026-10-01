@@ -71,16 +71,16 @@
             <td>
               <div class="flex gap-2">
                 <button
-                  class="btn-secondary px-2.5 py-1.5 text-sm text-indigo-700"
+                  class="btn-secondary px-2.5 py-1.5 text-sm text-indigo-700 table-action table-action-icon"
                   (click)="openScript(item)"
                   title="Skrip MikroTik ROS 7"
                 >
                   <svg lucideTerminal [size]="14"></svg>
                 </button>
-                <button class="btn-secondary px-2.5 py-1.5 text-sm" (click)="show(item)" title="Edit">
+                <button class="btn-secondary px-2.5 py-1.5 text-sm table-action table-action-icon" (click)="show(item)" title="Edit">
                   <svg lucidePencil [size]="14"></svg>
                 </button>
-                <button class="btn-danger px-2.5 py-1.5 text-sm" (click)="remove(item)" title="Hapus">
+                <button class="btn-danger px-2.5 py-1.5 text-sm table-action table-action-icon" (click)="remove(item)" title="Hapus">
                   <svg lucideTrash2 [size]="14"></svg>
                 </button>
               </div>

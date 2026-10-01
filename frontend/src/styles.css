@@ -82,26 +82,30 @@ table tbody tr:hover { background-color: #f8fafc; }
 tr:last-child td { border-bottom: 0; }
 
 /* Shared table action sizing, based on the Router/NAS controls. */
-table tbody :is(button, a):is(.btn-primary, .btn-secondary, .btn-danger) {
+table tbody :is(button, a):is(.btn-primary, .btn-secondary, .btn-danger, .table-action) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  min-width: 36px;
-  min-height: 34px;
-  height: auto;
+  min-width: 32px;
+  min-height: 32px;
+  height: 32px;
   padding: 6px 10px;
-  gap: 4px;
-  border-radius: 8px;
+  gap: 5px;
+  border-radius: 6px;
   font-size: var(--ui-table-action);
   font-weight: 400;
-  line-height: 20px;
+  line-height: 18px;
   white-space: nowrap;
 }
-table tbody :is(.btn-primary, .btn-secondary, .btn-danger) svg {
+table tbody :is(.btn-primary, .btn-secondary, .btn-danger, .table-action) svg {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
+}
+table tbody :is(button, a).table-action-icon {
+  width: 32px;
+  padding: 0;
 }
 
 /* Data stays regular sans-serif. Supporting text and controls have their own

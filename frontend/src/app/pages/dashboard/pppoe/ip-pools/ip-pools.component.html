@@ -56,14 +56,14 @@
             <td>
               <div class="flex gap-2">
                 <button
-                  class="btn-secondary px-3"
+                  class="btn-secondary px-3 table-action table-action-icon"
                   [disabled]="!item.networkStart || !item.networkEnd"
                   title="Edit tersedia untuk satu rentang IPv4"
                   (click)="show(item)"
                 >
                   <svg lucidePencil [size]="15"></svg>
                 </button>
-                <button class="btn-danger" (click)="remove(item)">
+                <button class="btn-danger table-action table-action-icon" (click)="remove(item)">
                   <svg lucideTrash2 [size]="15"></svg>
                 </button>
               </div>
