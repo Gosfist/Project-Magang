@@ -93,7 +93,15 @@ export class FinanceInvoicesService {
           where: { status: { not: 'CANCELLED' } },
           orderBy: [{ dueDate: 'desc' }, { id: 'desc' }],
           take: 1,
-          select: { id: true, invoiceNumber: true, amount: true, dueDate: true, status: true, paidAt: true },
+          select: {
+            id: true, invoiceNumber: true, amount: true, dueDate: true, status: true, paidAt: true,
+            deposits: {
+              where: { status: 'ACCEPTED', acceptedAt: { not: null } },
+              orderBy: [{ acceptedAt: 'desc' }, { id: 'desc' }],
+              take: 1,
+              select: { acceptedAt: true },
+            },
+          },
         },
       },
       orderBy: { customerName: 'asc' },
@@ -112,7 +120,15 @@ export class FinanceInvoicesService {
         packageName: account.package.name,
         area: account.area ? { id: account.area.id, name: account.area.name } : null,
         collectors: account.area?.collectors.map((item) => ({ id: item.user.id, name: item.user.name })) ?? [],
-        invoice: invoice ? { ...invoice, amount: Number(invoice.amount) } : null,
+        invoice: invoice ? {
+          id: invoice.id,
+          invoiceNumber: invoice.invoiceNumber,
+          amount: Number(invoice.amount),
+          dueDate: invoice.dueDate,
+          status: invoice.status,
+          paidAt: invoice.paidAt,
+          acceptedAt: invoice.deposits[0]?.acceptedAt ?? null,
+        } : null,
       };
     }).filter((row) => {
       if (!status) return true;

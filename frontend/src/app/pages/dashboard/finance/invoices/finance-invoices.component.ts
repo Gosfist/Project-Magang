@@ -14,7 +14,7 @@ type InvoiceRow = {
   packageName: string;
   area?: { id: string; name: string } | null;
   collectors: { id: string; name: string }[];
-  invoice?: { id: string; invoiceNumber: string; amount: number; dueDate: string; status: string; paidAt?: string | null } | null;
+  invoice?: { id: string; invoiceNumber: string; amount: number; dueDate: string; status: string; paidAt?: string | null; acceptedAt?: string | null } | null;
 };
 
 @Component({
