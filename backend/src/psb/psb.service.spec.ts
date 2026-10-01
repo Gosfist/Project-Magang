@@ -12,7 +12,8 @@ describe('PSB fee paid to technician', () => {
     const settings = { psb: vi.fn().mockResolvedValue({ installationFee: fee }),
       billing: vi.fn().mockResolvedValue({ billingStartDay: 5, billingEndDay: 10 }) };
     const wa = { notifyPsbCompleted: vi.fn().mockResolvedValue(true) };
-    const service = new PsbService(prisma as any, {} as any, {} as any, settings as any, wa as any);
+    const network = { accountPresence: vi.fn().mockResolvedValue({ states: new Map(), warnings: [] }) };
+    const service = new PsbService(prisma as any, {} as any, {} as any, settings as any, wa as any, network as any);
     return { service, prisma, wa };
   }
   it.each([0, 150000])('records Rp%s as received without invoicing the collector', async fee => {

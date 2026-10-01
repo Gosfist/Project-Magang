@@ -15,5 +15,5 @@ import { BillingIsolationService } from './data-pelanggan/billing-isolation.serv
 import { PengaturanModule } from '../tools/pengaturan/pengaturan.module.js';
 import { WhatsappNotifyService } from '../bot-whatsapp/shared/whatsapp-notify.service.js';
 
-@Module({ imports: [AuthModule, RouterModule, PengaturanModule], controllers: [DataPelangganController, IpPoolsController, PaketLayananController], providers: [DataPelangganService, IpPoolsService, PaketLayananService, RadiusService, SecretService, PppoeNetworkService, CustomerServicesService, BillingIsolationService, WhatsappNotifyService], exports: [WhatsappNotifyService, RadiusService, SecretService] })
+@Module({ imports: [AuthModule, RouterModule, PengaturanModule], controllers: [DataPelangganController, IpPoolsController, PaketLayananController], providers: [DataPelangganService, IpPoolsService, PaketLayananService, RadiusService, SecretService, PppoeNetworkService, CustomerServicesService, BillingIsolationService, WhatsappNotifyService], exports: [WhatsappNotifyService, RadiusService, SecretService, PppoeNetworkService] })
 export class PppoeModule { }

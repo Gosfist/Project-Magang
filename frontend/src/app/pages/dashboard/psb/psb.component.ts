@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideCheck, LucidePencil, LucideTrash2 } from '@lucide/angular';
 import { ApiService } from '../../../core/services/api.service';
@@ -28,7 +28,7 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
   ],
   templateUrl: './psb.component.html',
 })
-export class PsbComponent implements OnInit {
+export class PsbComponent implements OnInit, OnDestroy {
   readonly auth = inject(AuthService);
   private readonly api = inject(ApiService);
   items = signal<PsbOrder[]>([]);
@@ -43,7 +43,8 @@ export class PsbComponent implements OnInit {
   });
   page = signal(1);
   search = '';
-  status = '';
+  status = 'PROCESS';
+  private refreshTimer: ReturnType<typeof setInterval> | null = null;
   formOpen = signal(false);
   activationOpen = signal(false);
   activationStep = signal(1);
@@ -77,8 +78,12 @@ export class PsbComponent implements OnInit {
   ngOnInit() {
     this.load();
     this.loadOptions();
+    this.refreshTimer = setInterval(() => this.load(true), 5000);
   }
-  load() {
+  ngOnDestroy() {
+    if (this.refreshTimer) clearInterval(this.refreshTimer);
+  }
+  load(silent = false) {
     this.api
       .get<{
         data: PsbOrder[];
@@ -89,7 +94,9 @@ export class PsbComponent implements OnInit {
           this.items.set(r.data);
           this.meta.set(r.meta);
         },
-        error: (e) => this.error(e),
+        error: (e) => {
+          if (!silent) this.error(e);
+        },
       });
   }
   loadOptions() {
@@ -281,6 +288,16 @@ export class PsbComponent implements OnInit {
   }
   statusLabel(value: string) {
     return value === 'COMPLETED' ? 'Selesai' : 'Proses';
+  }
+  internetLabel(item: PsbOrder) {
+    return item.internetOnline ? 'Aktif' : 'Offline';
+  }
+  formatDate(value?: string | null) {
+    if (!value) return '-';
+    return new Intl.DateTimeFormat('id-ID', {
+      dateStyle: 'medium',
+      timeZone: 'Asia/Jakarta',
+    }).format(new Date(value));
   }
   private error(e: any) {
     this.toast.set({

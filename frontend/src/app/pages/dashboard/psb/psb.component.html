@@ -1,6 +1,6 @@
 <div class="space-y-4">
   <div class="card p-4">
-    <div class="grid grid-cols-[minmax(0,1fr)_180px_auto] items-center gap-3">
+    <div class="grid grid-cols-[minmax(0,1fr)_160px_auto] items-center gap-3">
       <input
         class="input"
         placeholder="Cari nama atau nomor WA..."
@@ -12,7 +12,6 @@
         [(ngModel)]="status"
         (ngModelChange)="page.set(1); load()"
       >
-        <option value="">Semua status</option>
         <option value="PROCESS">Proses</option>
         <option value="COMPLETED">Selesai</option>
       </select>
@@ -32,7 +31,9 @@
           <th>No. WA</th>
           <th>Alamat</th>
           <th>Layanan</th>
-          <th>Status</th>
+          <th>Tgl Registrasi</th>
+          <th>Tgl Selesai</th>
+          <th>Internet</th>
           <th>Aksi</th>
         </tr>
       </thead>
@@ -44,15 +45,17 @@
             <td>{{ item.phone }}</td>
             <td>{{ item.address }}</td>
             <td>{{ item.package.name }}</td>
+            <td class="whitespace-nowrap">{{ formatDate(item.createdAt) }}</td>
+            <td class="whitespace-nowrap">{{ formatDate(item.completedAt) }}</td>
             <td>
               <span
                 [class]="
                   'rounded-full px-2 py-1 text-xs font-semibold ' +
-                  (item.status === 'COMPLETED'
+                  (item.internetOnline
                     ? 'bg-green-100 text-green-700'
-                    : 'bg-amber-100 text-amber-700')
+                    : 'bg-slate-200 text-slate-700')
                 "
-                >{{ statusLabel(item.status) }}</span
+                >{{ internetLabel(item) }}</span
               >
             </td>
             <td>
@@ -123,7 +126,7 @@
         }
         @if (!items().length) {
           <tr>
-            <td colspan="7" class="py-8 text-center text-slate-400">
+            <td colspan="9" class="py-8 text-center text-slate-400">
               Belum ada registrasi pasang baru.
             </td>
           </tr>

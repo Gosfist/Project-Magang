@@ -10,7 +10,7 @@ import type { Subscription } from 'rxjs';
 import { CustomerServicesComponent } from './customer-services.component';
 import { AuthService } from '../../../../core/services/auth.service';
 
-type AccountListItem = PppoeAccount & { customerId?: string; customerNumber?: string; createdAt: string | null; online: boolean | null; serviceStatus?: 'Aktif' | 'Isolir'; psbOrder?: { installationPhoto: string | null } | null };
+type AccountListItem = PppoeAccount & { customerId?: string; customerNumber?: string; createdAt: string | null; online: boolean | null; serviceStatus?: 'Aktif' | 'Isolir'; psbOrder?: { installationPhoto: string | null; completedAt?: string | null } | null };
 
 @Component({
   selector: 'app-pppoe-data-pelanggan',

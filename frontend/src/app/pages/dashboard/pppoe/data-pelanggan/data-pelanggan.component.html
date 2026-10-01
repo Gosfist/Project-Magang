@@ -145,8 +145,10 @@
         <tr>
           <th>ID Pelanggan</th>
           <th>Nama Pelanggan</th>
+          <th>Alamat</th>
           <th>Paket</th>
-          <th>Tanggal Daftar</th>
+          <th>Tgl Registrasi</th>
+          <th>Tgl Selesai</th>
           <th>Uptime</th>
           <th>Status</th>
           <th>Sesi</th>
@@ -167,9 +169,15 @@
                 <span>{{ phoneDisplay(item.phone) }}</span>
               </p>
             </td>
+            <td class="max-w-xs">
+              <span class="line-clamp-2">{{ item.address || "—" }}</span>
+            </td>
             <td>{{ item.package.name }}</td>
             <td class="whitespace-nowrap">
               {{ registrationDate(item.createdAt) }}
+            </td>
+            <td class="whitespace-nowrap">
+              {{ registrationDate(item.psbOrder?.completedAt || null) }}
             </td>
             <td class="whitespace-nowrap font-mono text-sm text-slate-700">
               {{ uptimeDisplay(item.uptime) }}
@@ -245,7 +253,7 @@
         @if (items().length === 0) {
           <tr>
             <td
-              [attr.colspan]="readOnly() ? 7 : 8"
+              [attr.colspan]="readOnly() ? 9 : 10"
               class="py-8 text-center text-slate-400"
             >
               {{

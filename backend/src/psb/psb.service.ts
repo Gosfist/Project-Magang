@@ -8,6 +8,7 @@ import { WhatsappNotifyService } from '../bot-whatsapp/shared/whatsapp-notify.se
 import { PengaturanService } from '../tools/pengaturan/pengaturan.service.js';
 import { ActivatePsbOrderDto, CompletePsbOrderDto, CreatePsbOrderDto, UpdatePsbOrderDto } from './psb.dto.js';
 import { storeImage } from '../common/image-storage.js';
+import { PppoeNetworkService } from '../pppoe/shared/pppoe-network.service.js';
 
 @Injectable()
 export class PsbService {
@@ -17,25 +18,36 @@ export class PsbService {
     private readonly secrets: SecretService,
     private readonly settings: PengaturanService,
     private readonly wa: WhatsappNotifyService,
+    private readonly network: PppoeNetworkService,
   ) {}
 
   async list(user: { id: string; role: string }, search = '', status = '', page = 1) {
+    if (status && !['PROCESS', 'COMPLETED'].includes(status)) throw new BadRequestException('Filter status tidak valid.');
     const where: Prisma.PsbOrderWhereInput = {
       ...(user.role === 'sales' ? { salesUserId: BigInt(user.id) } : {}),
-      ...(status ? { status } : {}),
+      ...(status === 'PROCESS' ? { status: { in: ['PROCESS', 'ACTIVATED'] } } : status ? { status } : {}),
       ...(search ? { OR: [{ customerName: { contains: search } }, { phone: { contains: search } }] } : {}),
     };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.psbOrder.findMany({
         where,
-        include: { package: true, area: true, sales: { select: { id: true, name: true } }, activatedBy: { select: { id: true, name: true } } },
+        include: {
+          package: true,
+          area: true,
+          account: { select: { username: true, routerNasId: true } },
+          sales: { select: { id: true, name: true } },
+          activatedBy: { select: { id: true, name: true } },
+        },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip: (page - 1) * 10,
         take: 10,
       }),
       this.prisma.psbOrder.count({ where }),
     ]);
-    return serialize({ data: data.map(item => ({ ...item, customerId: this.customerId(item.customerNumber), package: { ...item.package, price: Number(item.package.price), costPrice: Number(item.package.costPrice) }, password: undefined })), meta: pageMeta(page, 10, total) });
+    const presence = await this.network.accountPresence(data.flatMap(item => item.account ? [item.account] : []));
+    return serialize({ data: data.map(item => ({ ...item, customerId: this.customerId(item.customerNumber),
+      internetOnline: item.account ? presence.states.get(item.account.username) ?? false : false,
+      package: { ...item.package, price: Number(item.package.price), costPrice: Number(item.package.costPrice) }, password: undefined })), meta: pageMeta(page, 10, total), warnings: presence.warnings });
   }
 
   async create(dto: CreatePsbOrderDto, salesUserId: string) {
