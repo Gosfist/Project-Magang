@@ -59,23 +59,19 @@
       <tbody>
         @for (d of deposits(); track d.id) {
           <tr>
-            <td class="whitespace-nowrap font-mono text-xs text-slate-700">
-              {{ formatDate(d.depositDate) }}
+            <td class="text-slate-700">
+              {{ ((meta()?.currentPage || page()) - 1) * (meta()?.perPage || 10) + $index + 1 }}
+            </td>
+            <td class="font-mono text-xs text-slate-700">
+              {{ d.account?.customerNumber?.padStart(6, '0') || "-" }}
             </td>
             <td>
               <p class="font-semibold text-slate-900">
                 {{ d.account?.customerName || "-" }}
               </p>
-              <p class="text-xs text-slate-500">
-                {{ d.account?.username }} · ID: {{ d.account?.customerNumber }}
-              </p>
             </td>
-            <td>
-              <span
-                class="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
-              >
-                📍 {{ d.account?.area?.name || "Tanpa Area" }}
-              </span>
+            <td class="whitespace-nowrap font-mono text-xs text-slate-700">
+              {{ formatDate(d.depositDate) }}
             </td>
             <td class="font-medium text-slate-800">
               {{ d.collector?.name || "-" }}
@@ -99,13 +95,6 @@
               >
                 {{ statusLabel(d.status) }}
               </span>
-            </td>
-            <td class="text-xs text-slate-500">
-              {{
-                d.acceptedBy?.name
-                  ? "Oleh " + d.acceptedBy?.name
-                  : "-"
-              }}
             </td>
             @if (auth.hasRole("admin", "finance")) {
               <td>
