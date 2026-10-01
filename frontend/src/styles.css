@@ -45,3 +45,13 @@ table tbody :is(.btn-primary, .btn-secondary, .btn-danger) svg {
   height: 14px;
   flex-shrink: 0;
 }
+
+/* One typography baseline for every table cell, badge, and action label.
+   Keep this outside Tailwind layers so utility classes cannot mix table fonts. */
+table tbody td,
+table tbody td :where(:not(svg, svg *)) {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+}

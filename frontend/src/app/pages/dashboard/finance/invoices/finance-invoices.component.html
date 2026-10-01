@@ -18,22 +18,21 @@
 
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Pelanggan</th><th>Area</th><th>Kolektor</th><th>Paket</th><th>No. Tagihan</th><th>Jatuh Tempo</th><th>Jumlah</th><th>Status</th></tr></thead>
+      <thead><tr><th>No</th><th>ID Pelanggan</th><th>Nama</th><th>Kolektor</th><th>Jatuh Tempo</th><th>Jumlah</th><th>Status</th></tr></thead>
       <tbody>
         @for (row of rows(); track row.id) {
           <tr>
-            <td><p class="font-semibold text-slate-900">{{ row.customerName }}</p><p class="text-xs text-slate-500 font-mono">#{{ row.customerNumber }} · {{ row.username }}</p></td>
-            <td>{{ row.area?.name || '-' }}</td>
+            <td>{{ $index + 1 }}</td>
+            <td>{{ row.customerNumber.padStart(6, '0') }}</td>
+            <td>{{ row.customerName }}</td>
             <td>{{ collectorNames(row) }}</td>
-            <td>{{ row.packageName }}</td>
-            <td class="font-mono text-xs">{{ row.invoice?.invoiceNumber || '-' }}</td>
             <td>{{ date(row.invoice?.dueDate) }}</td>
-            <td class="font-semibold whitespace-nowrap">{{ currency(row.invoice?.amount) }}</td>
-            <td><span class="rounded-full px-2.5 py-1 text-xs font-semibold" [class]="statusClass(row)">{{ statusLabel(row) }}</span></td>
+            <td class="whitespace-nowrap">{{ currency(row.invoice?.amount) }}</td>
+            <td><span class="rounded-full px-2.5 py-1" [class]="statusClass(row)">{{ statusLabel(row) }}</span></td>
           </tr>
         }
-        @if (loading()) { <tr><td colspan="8" class="py-8 text-center text-slate-400">Memuat tagihan...</td></tr> }
-        @else if (!rows().length) { <tr><td colspan="8" class="py-8 text-center text-slate-400">Belum ada data pelanggan/tagihan.</td></tr> }
+        @if (loading()) { <tr><td colspan="7" class="py-8 text-center text-slate-400">Memuat tagihan...</td></tr> }
+        @else if (!rows().length) { <tr><td colspan="7" class="py-8 text-center text-slate-400">Belum ada data pelanggan/tagihan.</td></tr> }
       </tbody>
     </table>
   </div>
