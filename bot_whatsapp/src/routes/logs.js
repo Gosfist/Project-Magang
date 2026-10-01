@@ -1,10 +1,11 @@
+import { jwtAuth } from '../middleware/auth.js';
 import { Router } from 'express';
 import { getWaLogs, clearWaLogs, deleteWaLog } from '../db.js';
 
 const router = Router();
 
 // GET /api/wa/logs
-router.get('/logs', async (req, res) => {
+router.get('/logs', jwtAuth, async (req, res) => {
   const { limit = 100, search = '' } = req.query;
   try {
     const logs = await getWaLogs({ limit, search });
@@ -26,7 +27,7 @@ router.get('/logs', async (req, res) => {
 });
 
 // DELETE /api/wa/logs - Clear all logs
-router.delete('/logs', async (req, res) => {
+router.delete('/logs', jwtAuth, async (req, res) => {
   try {
     await clearWaLogs();
     res.json({ message: 'Semua log notifikasi berhasil dibersihkan.' });
@@ -37,7 +38,7 @@ router.delete('/logs', async (req, res) => {
 });
 
 // DELETE /api/wa/logs/:id - Delete single log
-router.delete('/logs/:id', async (req, res) => {
+router.delete('/logs/:id', jwtAuth, async (req, res) => {
   const { id } = req.params;
   try {
     await deleteWaLog(id);

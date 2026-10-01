@@ -17,7 +17,7 @@ export class FinanceInvoicesController {
   }
 
   @Get('invoices')
-  @Roles('admin', 'finance')
+  @Roles('finance')
   invoices(@Query('search') search = '', @Query('status') status = '') {
     return this.deposits.invoiceOverview(search.trim(), status);
   }

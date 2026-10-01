@@ -1,14 +1,15 @@
+import { jwtAuth } from '../middleware/auth.js';
 import { Router } from 'express';
 import QRCode from 'qrcode';
 import { getStatus, getQR, logout, restart, resetSession, startConnection } from '../whatsapp.js';
 
 const router = Router();
 
-router.get('/status', (req, res) => {
+router.get('/status', jwtAuth, (req, res) => {
   res.json(getStatus());
 });
 
-router.get('/qr', async (req, res) => {
+router.get('/qr', jwtAuth, async (req, res) => {
   const qr = getQR();
   if (!qr) {
     return res.status(404).json({ message: 'QR code belum tersedia.' });
@@ -21,22 +22,22 @@ router.get('/qr', async (req, res) => {
   }
 });
 
-router.post('/logout', async (req, res) => {
+router.post('/logout', jwtAuth, async (req, res) => {
   await logout();
   res.json({ message: 'WhatsApp berhasil diputuskan.' });
 });
 
-router.post('/restart', async (req, res) => {
+router.post('/restart', jwtAuth, async (req, res) => {
   await restart();
   res.json({ message: 'WhatsApp sedang dihubungkan ulang.' });
 });
 
-router.post('/reset', async (req, res) => {
+router.post('/reset', jwtAuth, async (req, res) => {
   await resetSession();
   res.json({ message: 'Sesi WhatsApp direset. QR baru sedang disiapkan.' });
 });
 
-router.post('/connect', async (req, res) => {
+router.post('/connect', jwtAuth, async (req, res) => {
   const status = getStatus();
   if (status.status === 'connected') {
     return res.json({ message: 'WhatsApp sudah terhubung.' });

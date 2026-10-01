@@ -8,7 +8,7 @@ import { AssignCollectorDto, SaveAreaDto } from './area.dto.js';
 
 @Controller('areas')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin', 'finance', 'sales', 'kolektor', 'teknisi')
+@Roles('admin')
 export class AreaController {
   constructor(private readonly areas: AreaService) {}
 
@@ -22,6 +22,7 @@ export class AreaController {
   }
 
   @Get('options')
+  @Roles('admin', 'sales', 'teknisi')
   options() {
     return this.areas.options();
   }
@@ -32,6 +33,7 @@ export class AreaController {
   }
 
   @Get('customers')
+  @Roles('kolektor')
   collectorCustomers(
     @Req() req: AuthRequest,
     @Query('search') search = '',

@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { sendMessage, getStatus } from '../whatsapp.js';
-import { apiKeyAuth } from '../middleware/auth.js';
+import { apiKeyAuth, jwtAuth } from '../middleware/auth.js';
 import { insertWaLog } from '../db.js';
 
 const router = Router();
 
 // Endpoint test ping dari frontend
-router.post('/ping', async (req, res) => {
+router.post('/ping', jwtAuth, async (req, res) => {
   const { phone } = req.body;
   if (!phone) {
     return res.status(400).json({ message: 'Nomor target wajib diisi.' });

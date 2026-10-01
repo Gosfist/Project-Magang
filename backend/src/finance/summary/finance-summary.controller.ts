@@ -7,7 +7,7 @@ import { FinanceSummaryService } from './finance-summary.service.js';
 
 @Controller('finance')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin', 'finance')
+@Roles('finance')
 export class FinanceSummaryController {
   constructor(private readonly finance: FinanceSummaryService) {}
 

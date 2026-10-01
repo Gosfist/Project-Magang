@@ -20,7 +20,10 @@ describe('KTP upload', () => {
   beforeAll(async () => {
     directory = await mkdtemp(join(tmpdir(), 'unzanet-upload-test-'));
     const module = await Test.createTestingModule({ controllers: [DataPelangganController], providers: [{ provide: DataPelangganService, useValue: {} }, { provide: CustomerServicesService, useValue: {} }, { provide: BillingIsolationService, useValue: {} }, { provide: PengaturanService, useValue: {} }] })
-      .overrideGuard(JwtAuthGuard).useValue({ canActivate: () => allowed }).compile();
+      .overrideGuard(JwtAuthGuard).useValue({ canActivate: (context: import('@nestjs/common').ExecutionContext) => {
+        context.switchToHttp().getRequest().user = { id: '1', role: 'admin' };
+        return allowed;
+      } }).compile();
     app = module.createNestApplication();
     await app.init();
     vi.spyOn(process, 'cwd').mockReturnValue(directory);

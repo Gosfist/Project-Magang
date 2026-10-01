@@ -1,3 +1,4 @@
+import { jwtAuth } from '../middleware/auth.js';
 import { Router } from 'express';
 import { getSettings, setSetting } from '../db.js';
 
@@ -17,12 +18,12 @@ const response = settings => Object.fromEntries([
   ...templateKeys.map(key => [key, settings.get(`wa_template_${key}`) || DEFAULTS[key]]),
 ]);
 
-router.get('/templates', async (_req, res) => {
+router.get('/templates', jwtAuth, async (_req, res) => {
   try { res.json(response(await getSettings(dbKeys))); }
   catch (error) { res.json({ enabled: false, ...DEFAULTS, warning: `Gagal membaca database: ${error.message || String(error)}` }); }
 });
 
-router.patch('/templates', async (req, res) => {
+router.patch('/templates', jwtAuth, async (req, res) => {
   try {
     if (typeof req.body.enabled === 'boolean') await setSetting('wa_bot_enabled', String(req.body.enabled));
     for (const key of templateKeys) {

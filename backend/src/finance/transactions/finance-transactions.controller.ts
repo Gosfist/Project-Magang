@@ -8,7 +8,7 @@ import { CreateTransactionDto, UpdateTransactionDto } from './finance-transactio
 
 @Controller('finance')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin', 'finance')
+@Roles('finance')
 export class FinanceTransactionsController {
   constructor(private readonly finance: FinanceTransactionsService) {}
 

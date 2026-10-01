@@ -27,12 +27,12 @@ export class DataPelangganController {
   }
 
   @Post('id-card-photo')
-  @Roles()
+  @Roles('admin', 'sales', 'teknisi')
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: ID_CARD_MAX_BYTES, files: 1 } }))
   uploadIdCardPhoto(@UploadedFile() file?: { buffer: Buffer }) { return storeIdCardPhoto(file); }
 
   @Get('id-card-photo/:filename')
-  @Roles()
+  @Roles('admin', 'sales', 'teknisi')
   @Header('Cache-Control', 'private, no-store')
   @Header('X-Content-Type-Options', 'nosniff')
   idCardPhoto(@Param('filename') filename: string) { return readIdCardPhoto(filename); }

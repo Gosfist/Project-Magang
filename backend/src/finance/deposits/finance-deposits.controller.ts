@@ -12,7 +12,7 @@ export class FinanceDepositsController {
   constructor(private readonly deposits: FinanceDepositsService) {}
 
   @Get()
-  @Roles('admin', 'finance', 'kolektor')
+  @Roles('finance', 'kolektor')
   list(
     @Req() req: AuthRequest,
     @Query('status') status = '',
@@ -32,25 +32,25 @@ export class FinanceDepositsController {
   }
 
   @Patch(':id/accept')
-  @Roles('admin', 'finance')
+  @Roles('finance')
   accept(@Param('id') id: string, @Req() req: AuthRequest) {
     return this.deposits.accept(id, req.user.id);
   }
 
   @Patch(':id/reject')
-  @Roles('admin', 'finance')
+  @Roles('finance')
   reject(@Param('id') id: string, @Body() dto: RejectDepositDto) {
     return this.deposits.reject(id, dto);
   }
 
   @Patch(':id/cancel-accept')
-  @Roles('admin', 'finance')
+  @Roles('finance')
   cancelAccept(@Param('id') id: string) {
     return this.deposits.cancelAccept(id);
   }
 
   @Patch(':id/delete')
-  @Roles('admin', 'finance')
+  @Roles('finance')
   remove(@Param('id') id: string) {
     return this.deposits.remove(id);
   }

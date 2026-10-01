@@ -18,6 +18,7 @@ export const routes: Routes = [
     path: 'dashboard',
     component: LayoutComponent,
     canActivate: [authGuard],
+    canActivateChild: [authGuard],
     children: [
       { path: '', component: HomeComponent },
       {
@@ -56,6 +57,7 @@ export const routes: Routes = [
       {
         path: 'mainCore',
         canActivate: [roleGuard('admin', 'teknisi')],
+        canActivateChild: [roleGuard('admin', 'teknisi')],
         children: [
           { path: '', redirectTo: 'traceJalur', pathMatch: 'full' },
           {
@@ -154,7 +156,7 @@ export const routes: Routes = [
           import('./pages/dashboard/psb/psb.component').then(
             (m) => m.PsbComponent,
           ),
-        canActivate: [roleGuard('admin', 'sales')],
+        canActivate: [roleGuard('sales')],
       },
       {
         path: 'pasang-baru',
@@ -170,7 +172,7 @@ export const routes: Routes = [
           import('./pages/dashboard/area/area.component').then(
             (m) => m.AreaComponent,
           ),
-        canActivate: [roleGuard('admin', 'kolektor')],
+        canActivate: [roleGuard('kolektor')],
       },
       {
         path: 'kolektor/titipan',
@@ -178,7 +180,7 @@ export const routes: Routes = [
           import('./pages/dashboard/finance/deposits/finance-deposits.component').then(
             (m) => m.FinanceDepositsComponent,
           ),
-        canActivate: [roleGuard('admin', 'kolektor')],
+        canActivate: [roleGuard('kolektor')],
       },
       {
         path: 'finance/tagihan',
@@ -186,7 +188,7 @@ export const routes: Routes = [
           import('./pages/dashboard/finance/invoices/finance-invoices.component').then(
             (m) => m.FinanceInvoicesComponent,
           ),
-        canActivate: [roleGuard('admin', 'finance')],
+        canActivate: [roleGuard('finance')],
       },
       {
         path: 'pengaturan',
@@ -229,7 +231,7 @@ export const routes: Routes = [
           import('./pages/dashboard/finance/summary/finance-summary.component').then(
             (m) => m.FinanceSummaryComponent,
           ),
-        canActivate: [roleGuard('admin', 'finance')],
+        canActivate: [roleGuard('finance')],
       },
       {
         path: 'finance/transaksi',
@@ -237,7 +239,7 @@ export const routes: Routes = [
           import('./pages/dashboard/finance/transactions/finance-transactions.component').then(
             (m) => m.FinanceTransactionsComponent,
           ),
-        canActivate: [roleGuard('admin', 'finance')],
+        canActivate: [roleGuard('finance')],
       },
       {
         path: 'finance/setoran',
@@ -245,7 +247,7 @@ export const routes: Routes = [
           import('./pages/dashboard/finance/deposits/finance-deposits.component').then(
             (m) => m.FinanceDepositsComponent,
           ),
-        canActivate: [roleGuard('admin', 'finance', 'kolektor')],
+        canActivate: [roleGuard('finance')],
       },
 
       // Area
@@ -255,7 +257,7 @@ export const routes: Routes = [
           import('./pages/dashboard/area/area.component').then(
             (m) => m.AreaComponent,
           ),
-        canActivate: [roleGuard('admin', 'finance', 'kolektor')],
+        canActivate: [roleGuard('admin')],
       },
     ],
   },
