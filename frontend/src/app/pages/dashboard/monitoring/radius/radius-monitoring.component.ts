@@ -4,11 +4,10 @@ import { ApiService } from '../../../../core/services/api.service';
 
 interface RadiusLogItem {
   id: string;
-  username: string;
-  pass: string;
+  customerId: string | null;
+  customerName: string | null;
   reply: string;
   authdate: string;
-  class: string;
 }
 
 interface RadiusLogResponse {
@@ -68,11 +67,6 @@ export class RadiusMonitoringComponent implements OnInit {
 
   isSuccess(reply: string): boolean {
     return /accept/i.test(reply);
-  }
-
-  attemptedPassword(value: string): string {
-    if (/^0x[0-9a-f]{34}$/i.test(value || '')) return 'Tidak tersedia (CHAP)';
-    return value || '-';
   }
 
   statusLabel(reply: string): string {
