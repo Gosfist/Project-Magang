@@ -400,10 +400,10 @@
           <svg
             lucideSearch
             [size]="16"
-            class="absolute left-3 top-2.5 text-slate-400"
+            class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
           ></svg>
           <input
-            class="input pl-9 text-xs py-2 w-full"
+            class="input input-with-icon text-xs py-2 w-full"
             placeholder="Cari pelanggan, telepon, username..."
             [(ngModel)]="customerSearch"
             (ngModelChange)="loadAreaCustomers()"
