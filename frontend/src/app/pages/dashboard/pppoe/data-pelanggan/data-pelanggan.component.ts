@@ -316,7 +316,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     this.refreshing.set(!silent);
     this.listRequest = this.api
       .get<{ data: AccountListItem[]; meta: PageMeta }>(
-        `/pppoe/accounts?search=${encodeURIComponent(this.search)}&page=${this.page()}&status=${this.statusFilter}&session=${this.sessionFilter}`
+        `/pppoe/accounts?search=${encodeURIComponent(this.search)}&page=${this.page()}&status=${this.statusFilter}&session=${this.sessionFilter}&numberOnly=${this.readOnly()}`
       )
       .subscribe({
         next: (r) => {

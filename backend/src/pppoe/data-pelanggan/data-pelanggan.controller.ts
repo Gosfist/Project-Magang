@@ -40,7 +40,7 @@ export class DataPelangganController {
   @Get('nas/options') @Roles('admin', 'teknisi') nasOptions() { return this.pppoe.nasOptions(); }
   @Get('odp/options') @Roles('admin', 'teknisi') odpOptions() { return this.pppoe.odpOptions(); }
 
-  @Get('accounts') @Roles('admin', 'teknisi') accounts(@Query('search') search = '', @Query('page', new ParseIntPipe({ optional: true })) page = 1, @Query('status') status = '', @Query('session') session = '') { return this.pppoe.accounts(search.trim(), Math.max(1, page), status, session); }
+  @Get('accounts') @Roles('admin', 'teknisi') accounts(@Query('search') search = '', @Query('page', new ParseIntPipe({ optional: true })) page = 1, @Query('status') status = '', @Query('session') session = '', @Query('numberOnly') numberOnly = '') { return this.pppoe.accounts(search.trim(), Math.max(1, page), status, session, numberOnly === 'true'); }
   @Get('accounts/:id/installation-photo') @Roles('admin', 'teknisi') installationPhoto(@Param('id') id: string) { return this.pppoe.installationPhoto(id); }
   @Get('accounts/:id/credentials')
   @Header('Cache-Control', 'private, no-store')

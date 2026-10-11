@@ -27,7 +27,7 @@ export class PsbService {
     const where: Prisma.PsbOrderWhereInput = {
       ...(user.role === 'sales' ? { salesUserId: BigInt(user.id) } : {}),
       ...(status === 'PROCESS' ? { status: { in: ['PROCESS', 'ACTIVATED'] } } : status ? { status } : {}),
-      ...(search ? { OR: [{ customerName: { contains: search } }, { phone: { contains: search } }] } : {}),
+      ...(search.trim() ? (/^\d{1,18}$/.test(search.trim()) ? { customerNumber: BigInt(search.trim()) } : { id: { in: [] } }) : {}),
     };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.psbOrder.findMany({
