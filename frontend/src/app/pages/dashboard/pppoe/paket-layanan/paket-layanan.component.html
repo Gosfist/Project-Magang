@@ -21,7 +21,7 @@
           <tr>
             <td>
               <p class="font-normal text-slate-900">{{ item.name }}</p>
-              <p class="table-meta text-sm text-slate-500">Harga: Rp {{ formatPrice(item.price) }} | Modal: Rp {{ formatPrice(item.costPrice || 0) }}</p>
+              <p class="table-meta text-sm text-slate-500">Harga Jual: Rp {{ formatPrice(item.price) }}</p>
             </td>
             <td>{{ item.downloadMbps }}M ↓ / {{ item.uploadMbps }}M ↑</td>
             <td>{{ item.ipPool?.name || item.addressPool || '—' }}</td>
@@ -55,7 +55,7 @@
 
   <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Harga Paket'" (closeModal)="open.set(false)">
     <form (ngSubmit)="save()" class="space-y-4">
-      <div class="grid gap-4 sm:grid-cols-3">
+      <div class="grid gap-4 sm:grid-cols-2">
         <div>
           <label class="label">Nama Paket *</label>
           <input class="input" required [(ngModel)]="form.name" name="name" />
@@ -63,10 +63,6 @@
         <div>
           <label class="label">Harga Jual *</label>
           <input class="input" type="number" min="0" required [(ngModel)]="form.price" name="price" />
-        </div>
-        <div>
-          <label class="label">Harga Modal *</label>
-          <input class="input" type="number" min="0" required [(ngModel)]="form.costPrice" name="costPrice" />
         </div>
       </div>
       <div class="grid grid-cols-2 gap-4">
@@ -95,9 +91,6 @@
           <input class="input" type="number" min="1" required [(ngModel)]="form.validityDays" name="validityDays" />
         </div>
       </div>
-      @if (editing()) {
-        <p class="text-sm text-slate-500">Perubahan kecepatan atau IP pool menyambungkan ulang pelanggan yang memakai paket ini.</p>
-      }
       <div class="flex justify-end gap-3">
         <button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button>
         <button class="btn-primary">Simpan</button>

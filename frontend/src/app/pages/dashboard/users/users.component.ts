@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { LucideEye, LucideEyeOff, LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
 import { ApiService } from '../../../core/services/api.service';
@@ -24,10 +25,13 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
   ],
   templateUrl: './users.component.html',
 })
-export class UsersComponent implements OnInit {
+export class UsersComponent implements OnInit, OnDestroy {
   private api = inject(ApiService);
 
   items = signal<User[]>([]);
+  photoUrls = signal<Record<string, string>>({});
+  private photoSubscriptions = new Subscription();
+  private listSubscription?: Subscription;
   meta = signal<PageMeta>({ currentPage: 1, lastPage: 1, perPage: 15, total: 0 });
   search = '';
   role = '';
@@ -44,7 +48,8 @@ export class UsersComponent implements OnInit {
   }
 
   load(): void {
-    this.api
+    this.listSubscription?.unsubscribe();
+    this.listSubscription = this.api
       .get<{ data: User[]; meta: PageMeta }>(
         `/users?search=${encodeURIComponent(this.search)}&role=${this.role}&status=${this.status}&page=${this.page()}`
       )
@@ -52,9 +57,45 @@ export class UsersComponent implements OnInit {
         next: (r) => {
           this.items.set(r.data);
           this.meta.set(r.meta);
+          this.loadPhotos(r.data);
         },
         error: (e) => this.toast.set({ message: e.message, type: 'error' }),
       });
+  }
+
+  private loadPhotos(users: User[]): void {
+    this.clearPhotos();
+    for (const user of users) {
+      if (!user.photo) continue;
+      if (/^data:image\/(jpeg|png|webp);base64,/.test(user.photo)) {
+        this.photoUrls.update(urls => ({ ...urls, [user.id]: user.photo! }));
+        continue;
+      }
+      this.photoSubscriptions.add(this.api.getBlob(`/users/${encodeURIComponent(user.id)}/photo`).subscribe({
+        next: blob => this.photoUrls.update(urls => ({ ...urls, [user.id]: URL.createObjectURL(blob) })),
+        error: () => { /* Keep the initial avatar if the file is unavailable. */ },
+      }));
+    }
+  }
+
+  formPhotoUrl(): string {
+    if (!this.form.photo) return '';
+    if (this.form.photo.startsWith('data:image/')) return this.form.photo;
+    return this.photoUrls()[this.editing()?.id ?? ''] ?? '';
+  }
+
+  private clearPhotos(): void {
+    this.photoSubscriptions.unsubscribe();
+    this.photoSubscriptions = new Subscription();
+    for (const url of Object.values(this.photoUrls())) {
+      if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+    }
+    this.photoUrls.set({});
+  }
+
+  ngOnDestroy(): void {
+    this.listSubscription?.unsubscribe();
+    this.clearPhotos();
   }
 
   show(user?: User): void {

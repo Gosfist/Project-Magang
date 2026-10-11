@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../auth/roles.guard.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import type { AuthRequest } from '../auth/jwt-auth.guard.js';
@@ -19,6 +19,10 @@ export class UsersController {
   }
 
   @Get('sales-summary') salesSummary() { return this.users.salesSummary(); }
+
+  @Get(':id/photo')
+  @Header('Cache-Control', 'private, no-store')
+  photo(@Param('id', ParseIntPipe) id: number) { return this.users.photo(String(id)); }
 
   @Post() create(@Body() dto: CreateUserDto) { return this.users.create(dto); }
   @Patch(':id') update(@Param('id') id: string, @Body() dto: UpdateUserDto) { return this.users.update(id, dto); }

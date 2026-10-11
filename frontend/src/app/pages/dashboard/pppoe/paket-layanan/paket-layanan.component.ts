@@ -31,7 +31,7 @@ export class PaketLayananComponent implements OnInit {
   page = signal(1);
   open = signal(false);
   editing = signal<PppoePackage | null>(null);
-  form = { name: '', downloadMbps: '', uploadMbps: '', price: '', costPrice: '', addressPool: '', ipPoolId: '', validityDays: '30' };
+  form = { name: '', downloadMbps: '', uploadMbps: '', price: '', addressPool: '', ipPoolId: '', validityDays: '30' };
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
   ipPools = signal<IpPool[]>([]);
 
@@ -69,12 +69,11 @@ export class PaketLayananComponent implements OnInit {
           downloadMbps: String(item.downloadMbps),
           uploadMbps: String(item.uploadMbps),
           price: String(item.price),
-          costPrice: String(item.costPrice ?? ''),
           addressPool: item.addressPool || item.ipPool?.name || '',
           ipPoolId: item.ipPool?.id ?? '',
           validityDays: String(item.validityDays ?? 30),
         }
-      : { name: '', downloadMbps: '', uploadMbps: '', price: '', costPrice: '', addressPool: '', ipPoolId: '', validityDays: '30' };
+      : { name: '', downloadMbps: '', uploadMbps: '', price: '', addressPool: '', ipPoolId: '', validityDays: '30' };
     this.open.set(true);
   }
 
@@ -84,7 +83,7 @@ export class PaketLayananComponent implements OnInit {
       downloadMbps: Number(this.form.downloadMbps),
       uploadMbps: Number(this.form.uploadMbps),
       price: Number(this.form.price),
-      costPrice: Number(this.form.costPrice),
+      costPrice: this.editing()?.costPrice ?? 0,
       addressPool: this.form.addressPool || undefined,
       validityDays: Number(this.form.validityDays),
     };

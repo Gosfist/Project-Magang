@@ -1,14 +1,30 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, StreamableFile } from '@nestjs/common';
 import { hash } from 'bcryptjs';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { pageMeta, serialize } from '../common/serialize.js';
 import { CreateUserDto, UpdateUserDto } from './users.dto.js';
-import { storeImage } from '../common/image-storage.js';
+import { storeImage, uploadsDirectory } from '../common/image-storage.js';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async photo(id: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: BigInt(id) }, select: { photo: true } });
+    if (!user) throw new NotFoundException('Petugas tidak ditemukan.');
+    const match = /^\/uploads\/profile\/([A-Za-z0-9_-]+\.(jpg|png|webp))$/.exec(user.photo ?? '');
+    if (!match) throw new NotFoundException('Foto profil belum tersedia.');
+    try {
+      const buffer = await readFile(join(uploadsDirectory(), 'profile', match[1]));
+      return new StreamableFile(buffer, { type: match[2] === 'jpg' ? 'image/jpeg' : `image/${match[2]}`, disposition: 'inline' });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new NotFoundException('File foto profil tidak ditemukan.');
+      throw error;
+    }
+  }
 
   async salesSummary() {
     const now = new Date();
