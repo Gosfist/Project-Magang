@@ -1,20 +1,18 @@
 <div class="space-y-5">
-  <div class="card p-5">
+  <div class="card flex flex-wrap items-center justify-between gap-4 p-5">
     <h2 class="text-xl font-semibold">Selamat datang, {{ auth.user()?.name }}</h2>
-  </div>
-  @if (auth.isSales()) {
-    <section class="card p-5 flex flex-wrap items-end gap-4">
-      <div><label for="period-year" class="block mb-2 text-sm">Periode - Tahun</label>
-        <select id="period-year" class="input" [(ngModel)]="selectedYear" (ngModelChange)="changeYear()" [disabled]="loading() || !years.length">
+    @if (auth.isSales()) {
+      <div class="ml-auto flex items-center gap-2">
+        <select id="period-year" aria-label="Tahun" class="input" [(ngModel)]="selectedYear" (ngModelChange)="changeYear()" [disabled]="loading() || !years.length">
           @for (year of years; track year) { <option [ngValue]="year">{{ year }}</option> }
         </select>
-      </div>
-      <div><label for="period-month" class="block mb-2 text-sm">Bulan</label>
-        <select id="period-month" class="input" [(ngModel)]="selectedMonth" (ngModelChange)="loadStats()" [disabled]="loading() || !months.length">
+        <select id="period-month" aria-label="Bulan" class="input" [(ngModel)]="selectedMonth" (ngModelChange)="loadStats()" [disabled]="loading() || !months.length">
           @for (month of months; track month.value) { <option [ngValue]="month.value">{{ month.label }}</option> }
         </select>
       </div>
-    </section>
+    }
+  </div>
+  @if (auth.isSales()) {
     @if (loading()) { <p class="text-sm text-slate-500">Memuat dashboard...</p> }
     @if (statsError()) { <div role="alert" class="text-sm text-red-600">{{ statsError() }} <button class="btn-secondary" (click)="loadStats()">Coba Lagi</button></div> }
   }
@@ -43,7 +41,6 @@
         <div>
           <p class="text-sm text-slate-500">{{ card.label }}</p>
           <p class="text-2xl font-bold">{{ card.value === undefined ? "-" : card.currency ? formatSalary(card.value) : card.value }}</p>
-        <p *ngIf="card.detail" class="mt-1 text-xs text-slate-500">{{ card.detail }}</p>
         </div>
       </div>
     }

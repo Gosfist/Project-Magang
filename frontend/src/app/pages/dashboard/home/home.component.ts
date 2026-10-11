@@ -11,7 +11,6 @@ type StatCard = {
   label: string;
   value: number | undefined;
   currency?: boolean;
-  detail?: string;
   type: 'server' | 'odc' | 'odp' | 'redaman' | 'users';
 };
 
@@ -107,7 +106,7 @@ export class HomeComponent implements OnInit {
       result = [
         { label: 'Inputan', value: s['monthlyRegistrations'], type: 'users' },
         { label: 'Selesai', value: s['monthlyCompletedOrders'], type: 'odp' },
-        { label: 'Gaji', value: s['monthlySalary'], type: 'users', currency: true, detail: `${s['monthlyCompletedOrders']} pemasangan x Rp ${(s['salaryRate'] ?? 0).toLocaleString('id-ID')}` },
+        { label: 'Gaji', value: s['monthlySalary'], type: 'users', currency: true },
       ];
     } else if (this.auth.isTeknisi()) {
       result = [
@@ -115,7 +114,7 @@ export class HomeComponent implements OnInit {
         { label: 'Menunggu Selesai', value: s['activatedOrders'], type: 'redaman' },
         { label: 'Pemasangan Selesai', value: s['completedOrders'], type: 'odc' },
         { label: 'Pemasangan Selesai Bulan Ini', value: s['monthlyCompletedOrders'], type: 'odp' },
-        { label: 'Gaji Bulan Ini', value: s['monthlySalary'], type: 'users', currency: true, detail: `${s['monthlyCompletedOrders']} pemasangan x Rp ${(s['salaryRate'] ?? 0).toLocaleString('id-ID')}` },
+        { label: 'Gaji Bulan Ini', value: s['monthlySalary'], type: 'users', currency: true },
       ];
     } else if (this.auth.isKolektor()) {
       result = [
