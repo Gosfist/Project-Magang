@@ -2,27 +2,19 @@ import { Routes } from '@angular/router';
 import { adminGuard } from './core/guards/admin.guard';
 import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
-import { LandingComponent } from './pages/landing/landing.component';
-import { LoginComponent } from './pages/login/login.component';
-import { LayoutComponent } from './pages/layout/layout.component';
-import { HomeComponent } from './pages/dashboard/home/home.component';
-import { UsersComponent } from './pages/dashboard/users/users.component';
-import { PaketLayananComponent } from './pages/dashboard/pppoe/paket-layanan/paket-layanan.component';
-import { DataPelangganComponent } from './pages/dashboard/pppoe/data-pelanggan/data-pelanggan.component';
-import { KalkulatorRedamanComponent } from './pages/dashboard/tools/kalkulator-redaman/kalkulator-redaman.component';
 
 export const routes: Routes = [
-  { path: '', component: LandingComponent },
-  { path: 'login', component: LoginComponent },
+  { path: '', loadComponent: () => import('./pages/landing/landing.component').then(m => m.LandingComponent) },
+  { path: 'login', loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
   {
     path: 'dashboard',
-    component: LayoutComponent,
+    loadComponent: () => import('./pages/layout/layout.component').then(m => m.LayoutComponent),
     canActivate: [authGuard],
     canActivateChild: [authGuard],
     children: [
-      { path: '', component: HomeComponent },
+      { path: '', loadComponent: () => import('./pages/dashboard/home/home.component').then(m => m.HomeComponent) },
       ...['finance', 'sales', 'kolektor', 'teknisi'].map(role => ({
-        path: `${role}/dashboard`, component: HomeComponent, canActivate: [roleGuard(role)],
+        path: `${role}/dashboard`, loadComponent: () => import('./pages/dashboard/home/home.component').then(m => m.HomeComponent), canActivate: [roleGuard(role)],
       })),
       {
         path: 'monitoring/server',
@@ -48,7 +40,7 @@ export const routes: Routes = [
           ),
         canActivate: [roleGuard('admin')],
       },
-      { path: 'users', component: UsersComponent, canActivate: [adminGuard] },
+      { path: 'users', loadComponent: () => import('./pages/dashboard/users/users.component').then(m => m.UsersComponent), canActivate: [adminGuard] },
       {
         path: 'sales',
         loadComponent: () =>
@@ -102,18 +94,18 @@ export const routes: Routes = [
       },
       {
         path: 'pppoe/harga-paket',
-        component: PaketLayananComponent,
+        loadComponent: () => import('./pages/dashboard/pppoe/paket-layanan/paket-layanan.component').then(m => m.PaketLayananComponent),
         canActivate: [roleGuard('admin')],
       },
       { path: 'pppoe/paket-layanan', redirectTo: 'pppoe/harga-paket', pathMatch: 'full' },
       {
         path: 'pppoe/data-pelanggan',
-        component: DataPelangganComponent,
+        loadComponent: () => import('./pages/dashboard/pppoe/data-pelanggan/data-pelanggan.component').then(m => m.DataPelangganComponent),
         canActivate: [roleGuard('admin')],
       },
       {
         path: 'teknisi/data-pelanggan',
-        component: DataPelangganComponent,
+        loadComponent: () => import('./pages/dashboard/pppoe/data-pelanggan/data-pelanggan.component').then(m => m.DataPelangganComponent),
         canActivate: [roleGuard('teknisi')],
       },
       {
@@ -150,7 +142,7 @@ export const routes: Routes = [
       },
       {
         path: 'tools/kalkulator-redaman',
-        component: KalkulatorRedamanComponent,
+        loadComponent: () => import('./pages/dashboard/tools/kalkulator-redaman/kalkulator-redaman.component').then(m => m.KalkulatorRedamanComponent),
         canActivate: [roleGuard('admin', 'teknisi')],
       },
       {
