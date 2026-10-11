@@ -33,7 +33,9 @@
           <th>Layanan</th>
           <th>Tgl Registrasi</th>
           <th>Tgl Selesai</th>
-          <th>Internet</th>
+          @if (!auth.isSales()) {
+            <th>Internet</th>
+          }
           <th>Aksi</th>
         </tr>
       </thead>
@@ -47,6 +49,7 @@
             <td>{{ item.package.name }}</td>
             <td class="whitespace-nowrap">{{ formatDate(item.createdAt) }}</td>
             <td class="whitespace-nowrap">{{ formatDate(item.completedAt) }}</td>
+            @if (!auth.isSales()) {
             <td>
               <span
                 [class]="
@@ -58,6 +61,7 @@
                 >{{ internetLabel(item) }}</span
               >
             </td>
+            }
             <td>
               <div class="flex gap-2">
                 @if (
@@ -126,7 +130,7 @@
         }
         @if (!items().length) {
           <tr>
-            <td colspan="9" class="py-8 text-center text-slate-400">
+            <td [attr.colspan]="auth.isSales() ? 8 : 9" class="py-8 text-center text-slate-400">
               Belum ada registrasi pasang baru.
             </td>
           </tr>
