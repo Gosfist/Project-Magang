@@ -421,7 +421,7 @@
             <th>Kontak & Alamat</th>
             <th>Paket Internet</th>
             <th>Nama Kolektor</th>
-            <th>Tagihan</th>
+            <th class="billing-column">Tagihan</th>
             <th>Janji Bayar</th>
             <th>Status</th>
             <th>Aksi Kolektor</th>
@@ -493,7 +493,7 @@
               </td>
 
               <!-- Nominal tagihan dan jatuh tempo -->
-              <td>
+              <td class="billing-column">
                 @if (c.activeInvoice) {
                   <div>
                     <p class="text-sm font-black text-slate-900">

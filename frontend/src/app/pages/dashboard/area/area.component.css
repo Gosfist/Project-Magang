@@ -1,1 +1,6 @@
 /* Area component styles */
+
+.billing-column {
+  min-width: 150px;
+  white-space: nowrap;
+}
