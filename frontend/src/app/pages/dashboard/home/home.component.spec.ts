@@ -49,3 +49,45 @@ describe('Collector dashboard', () => {
     expect(fixture.nativeElement.querySelectorAll('a').length).toBe(0);
   });
 });
+
+describe('Sales dashboard periods', () => {
+  let get: jasmine.Spy;
+  const response = { monthlyRegistrations: 3, monthlyCompletedOrders: 2, monthlySalary: 100000, salaryRate: 50000,
+    year: 2027, month: 2, startYear: 2026, startMonth: 10, currentYear: 2027, currentMonth: 2 };
+  beforeEach(async () => {
+    get = jasmine.createSpy('get').and.callFake((url: string) => {
+      const query = new URL('http://test' + url).searchParams;
+      return of({ ...response, year: Number(query.get('year') || response.year), month: Number(query.get('month') || response.month) });
+    });
+    await TestBed.configureTestingModule({ imports: [HomeComponent], providers: [provideRouter([]),
+      { provide: ApiService, useValue: { get } },
+      { provide: AuthService, useValue: { user: () => ({ name: 'Sales' }), isSales: () => true,
+        isAdmin: () => false, isTeknisi: () => false, isKolektor: () => false, isFinance: () => false } },
+    ] }).compileComponents();
+  });
+  it('shows only the three period totals and defaults to the server current month', () => {
+    const fixture = TestBed.createComponent(HomeComponent); fixture.detectChanges();
+    const component = fixture.componentInstance;
+    expect(component.cards().map(card => card.label)).toEqual(['Inputan', 'Selesai', 'Gaji']);
+    expect(component.selectedYear).toBe(2027); expect(component.selectedMonth).toBe(2);
+    expect(component.years).toEqual([2026, 2027]);
+    expect(component.months.map(month => month.value)).toEqual([1, 2]);
+  });
+  it('limits the creation year to October onward and fetches the selected historical period', () => {
+    const fixture = TestBed.createComponent(HomeComponent); fixture.detectChanges();
+    const component = fixture.componentInstance;
+    component.selectedYear = 2026; component.changeYear();
+    expect(component.months.map(month => month.value)).toEqual([10, 11, 12]);
+    expect(component.selectedMonth).toBe(10);
+    expect(get).toHaveBeenCalledWith('/dashboard/stats?year=2026&month=10');
+    component.selectedMonth = 12; component.loadStats();
+    expect(get).toHaveBeenCalledWith('/dashboard/stats?year=2026&month=12');
+  });
+  it('clears totals when a period request fails', () => {
+    const fixture = TestBed.createComponent(HomeComponent); fixture.detectChanges();
+    get.and.returnValue(throwError(() => new Error('offline')));
+    fixture.componentInstance.loadStats(); fixture.detectChanges();
+    expect(fixture.componentInstance.cards()).toEqual([]);
+    expect(fixture.nativeElement.textContent).toContain('offline');
+  });
+});

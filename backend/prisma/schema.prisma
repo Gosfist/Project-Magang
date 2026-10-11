@@ -16,6 +16,7 @@ model User {
   password String
   role     String  @default("teknisi") // admin, teknisi, finance, sales, kolektor
   status   String  @default("active")
+  createdAt DateTime? @default(now()) @map("created_at")
 
   areaCollectors      AreaCollector[]
   collectorDeposits   CollectorDeposit[]   @relation("CollectorDeposits")

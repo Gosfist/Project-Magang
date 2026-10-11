@@ -50,6 +50,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard/bot-whatsapp/logs': 'Log Notifikasi Bot WhatsApp',
     '/dashboard/tools/kalkulator-redaman': 'Kalkulator Redaman',
     '/dashboard/pengaturan': 'Pengaturan',
+    '/dashboard/finance/gaji': 'Gaji',
     '/dashboard/finance/ringkasan': 'Ringkasan Finance',
     '/dashboard/finance/transaksi': 'Transaksi Finance',
     '/dashboard/finance/setoran': 'Setoran Kolektor',

@@ -226,6 +226,11 @@ export const routes: Routes = [
 
       // Finance
       {
+        path: 'finance/gaji',
+        loadComponent: () => import('./pages/dashboard/finance/salary/finance-salary.component').then(m => m.FinanceSalaryComponent),
+        canActivate: [roleGuard('finance')],
+      },
+      {
         path: 'finance/ringkasan',
         loadComponent: () =>
           import('./pages/dashboard/finance/summary/finance-summary.component').then(

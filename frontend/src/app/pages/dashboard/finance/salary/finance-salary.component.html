@@ -1,0 +1,14 @@
+<section class="card max-w-2xl p-5 space-y-4">
+  <h2 class="text-lg font-semibold">Pengaturan Gaji</h2>
+  <p class="text-sm text-slate-500">Gaji bulan ini = pemasangan selesai bulan ini x nominal per pemasangan. Periode mengikuti WIB. Perubahan nominal langsung berlaku pada perhitungan bulan ini.</p>
+  @if (loading()) { <p>Memuat pengaturan gaji...</p> }
+  @if (error()) { <p role="alert" class="text-sm text-red-600">{{ error() }}</p> }
+  @if (message()) { <p role="status" class="text-sm text-emerald-600">{{ message() }}</p> }
+  @if (loaded()) {
+    <form (ngSubmit)="save()" class="space-y-4">
+      <div><label for="psb-salary" class="block mb-2 text-sm">Gaji PSB / Teknisi per pemasangan (Rp)</label><input id="psb-salary" name="psb" type="number" min="0" max="1000000000" step="1" required class="input w-full" [(ngModel)]="rates.psb" /></div>
+      <div><label for="sales-salary" class="block mb-2 text-sm">Gaji Sales per pemasangan (Rp)</label><input id="sales-salary" name="sales" type="number" min="0" max="1000000000" step="1" required class="input w-full" [(ngModel)]="rates.sales" /></div>
+      <button type="submit" class="btn-primary" [disabled]="saving()">{{ saving() ? 'Menyimpan...' : 'Simpan Gaji' }}</button>
+    </form>
+  }
+</section>

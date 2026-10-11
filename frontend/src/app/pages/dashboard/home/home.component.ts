@@ -3,19 +3,22 @@ import { LucideGitBranch, LucideNetwork, LucideServer, LucideUsers } from '@luci
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AreaBillingSummary } from '../../../shared/models/types';
 
 type StatCard = {
   label: string;
   value: number | undefined;
+  currency?: boolean;
+  detail?: string;
   type: 'server' | 'odc' | 'odp' | 'redaman' | 'users';
 };
 
 @Component({
   selector: 'app-dashboard-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, LucideGitBranch, LucideNetwork, LucideServer, LucideUsers],
+  imports: [FormsModule, CommonModule, RouterLink, LucideGitBranch, LucideNetwork, LucideServer, LucideUsers],
   templateUrl: './home.component.html',
 })
 export class HomeComponent implements OnInit {
@@ -27,6 +30,15 @@ export class HomeComponent implements OnInit {
   billingSummary = signal<AreaBillingSummary | null>(null);
   billingError = signal(false);
 
+  selectedYear = 0;
+  selectedMonth = 0;
+  years: number[] = [];
+  months: { value: number; label: string }[] = [];
+  loading = signal(false);
+  statsError = signal('');
+  private requestId = 0;
+  private monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
   ngOnInit(): void {
     if (this.auth.isKolektor()) {
       this.api.get<{ summary: AreaBillingSummary }>('/areas/customers').subscribe({
@@ -34,14 +46,51 @@ export class HomeComponent implements OnInit {
         error: () => this.billingError.set(true),
       });
     }
-    this.api.get<Record<string, number>>('/dashboard/stats').subscribe({
-      next: (data) => {
+    this.loadStats();
+  }
+
+  loadStats(): void {
+    const id = ++this.requestId;
+    this.loading.set(true);
+    this.statsError.set('');
+    this.cards.set([]);
+    const query = this.auth.isSales() && this.selectedYear && this.selectedMonth
+      ? `?year=${this.selectedYear}&month=${this.selectedMonth}` : '';
+    this.api.get<Record<string, number>>('/dashboard/stats' + query).subscribe({
+      next: data => {
+        if (id !== this.requestId) return;
         this.stats.set(data);
+        if (this.auth.isSales()) {
+          this.selectedYear = data['year'];
+          this.selectedMonth = data['month'];
+          this.years = Array.from({ length: data['currentYear'] - data['startYear'] + 1 }, (_, i) => data['startYear'] + i);
+          this.updateMonths();
+        }
         this.buildCards();
+        this.loading.set(false);
       },
-      error: () => {},
+      error: err => {
+        if (id !== this.requestId) return;
+        this.loading.set(false);
+        this.statsError.set(err.message || 'Gagal memuat dashboard.');
+      },
     });
   }
+
+  changeYear(): void {
+    this.updateMonths();
+    this.loadStats();
+  }
+
+  private updateMonths(): void {
+    const data = this.stats();
+    const first = this.selectedYear === data['startYear'] ? data['startMonth'] : 1;
+    const last = this.selectedYear === data['currentYear'] ? data['currentMonth'] : 12;
+    this.months = Array.from({ length: last - first + 1 }, (_, i) => ({ value: first + i, label: this.monthNames[first + i - 1] }));
+    this.selectedMonth = Math.min(last, Math.max(first, this.selectedMonth));
+  }
+
+  formatSalary(value: number): string { return 'Rp ' + value.toLocaleString('id-ID'); }
 
   private buildCards(): void {
     const s = this.stats();
@@ -56,15 +105,17 @@ export class HomeComponent implements OnInit {
       result.push({ label: 'Total Pengguna', value: s['totalUsers'], type: 'users' });
     } else if (this.auth.isSales()) {
       result = [
-        { label: 'Total Registrasi', value: s['totalRegistrations'], type: 'users' },
-        { label: 'Dalam Proses', value: s['processOrders'], type: 'redaman' },
-        { label: 'Pemasangan Selesai', value: s['completedOrders'], type: 'odp' },
+        { label: 'Inputan', value: s['monthlyRegistrations'], type: 'users' },
+        { label: 'Selesai', value: s['monthlyCompletedOrders'], type: 'odp' },
+        { label: 'Gaji', value: s['monthlySalary'], type: 'users', currency: true, detail: `${s['monthlyCompletedOrders']} pemasangan x Rp ${(s['salaryRate'] ?? 0).toLocaleString('id-ID')}` },
       ];
     } else if (this.auth.isTeknisi()) {
       result = [
         { label: 'Order Baru', value: s['newOrders'], type: 'users' },
         { label: 'Menunggu Selesai', value: s['activatedOrders'], type: 'redaman' },
         { label: 'Pemasangan Selesai', value: s['completedOrders'], type: 'odc' },
+        { label: 'Pemasangan Selesai Bulan Ini', value: s['monthlyCompletedOrders'], type: 'odp' },
+        { label: 'Gaji Bulan Ini', value: s['monthlySalary'], type: 'users', currency: true, detail: `${s['monthlyCompletedOrders']} pemasangan x Rp ${(s['salaryRate'] ?? 0).toLocaleString('id-ID')}` },
       ];
     } else if (this.auth.isKolektor()) {
       result = [

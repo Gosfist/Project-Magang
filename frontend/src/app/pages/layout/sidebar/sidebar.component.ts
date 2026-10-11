@@ -95,6 +95,7 @@ export class SidebarComponent implements OnInit {
     ['Log Notifikasi', '/dashboard/bot-whatsapp/logs']
   ];
   readonly financeLinks = [
+    ['Gaji', '/dashboard/finance/gaji'],
     ['Tagihan', '/dashboard/finance/tagihan'],
     ['Ringkasan', '/dashboard/finance/ringkasan'],
     ['Transaksi', '/dashboard/finance/transaksi'],

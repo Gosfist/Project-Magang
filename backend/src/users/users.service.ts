@@ -84,7 +84,7 @@ export class UsersService {
   async create(dto: CreateUserDto) {
     try {
       const user = await this.prisma.user.create({
-        data: { ...dto, photo: null, password: await hash(dto.password, 12) },
+        data: { ...dto, createdAt: new Date(), photo: null, password: await hash(dto.password, 12) },
         omit: { password: true },
       });
       const photo = await storeImage(dto.photo, 'profile', String(user.id));
