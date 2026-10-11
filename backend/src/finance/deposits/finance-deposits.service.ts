@@ -24,6 +24,7 @@ export class FinanceDepositsService {
     search = '',
     page = 1,
     perPage = 15,
+    outsideOwnAreas = false,
   ) {
     const where: Prisma.CollectorDepositWhereInput = {};
 
@@ -32,6 +33,9 @@ export class FinanceDepositsService {
     }
     if (collectorId) {
       where.collectorUserId = BigInt(collectorId);
+      if (outsideOwnAreas) {
+        where.account = { is: { area: { is: { collectors: { none: { userId: BigInt(collectorId) } } } } } };
+      }
     }
     if (startDate || endDate) {
       where.depositDate = {};

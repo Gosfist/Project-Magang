@@ -1,5 +1,6 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard.js';
+import type { AuthRequest } from '../../auth/jwt-auth.guard.js';
 
 import { RolesGuard } from '../../auth/roles.guard.js';
 import { Roles } from '../../auth/roles.decorator.js';
@@ -12,8 +13,8 @@ export class FinanceInvoicesController {
 
   @Get('unpaid-invoices')
   @Roles('admin', 'finance', 'kolektor')
-  unpaidInvoices(@Query('search') search = '') {
-    return this.deposits.unpaidInvoices(search.trim());
+  unpaidInvoices(@Req() req: AuthRequest, @Query('search') search = '') {
+    return this.deposits.unpaidInvoices(search.trim(), req.user.role === 'kolektor' ? req.user.id : '');
   }
 
   @Get('invoices')

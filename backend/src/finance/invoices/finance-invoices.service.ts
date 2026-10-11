@@ -13,7 +13,7 @@ export class FinanceInvoicesService {
     private readonly waNotify?: WhatsappNotifyService,
   ) {}
 
-  async unpaidInvoices(search = '') {
+  async unpaidInvoices(search = '', outsideAreaCollectorId = '') {
     const where: Prisma.InvoiceWhereInput = {
       pppoeAccountId: { not: null },
       status: { in: ['PENDING', 'OVERDUE'] },
@@ -23,6 +23,10 @@ export class FinanceInvoicesService {
         },
       },
     };
+
+    if (outsideAreaCollectorId) {
+      where.account = { is: { area: { is: { collectors: { none: { userId: BigInt(outsideAreaCollectorId) } } } } } };
+    }
 
     if (search) {
       const orConditions: Prisma.InvoiceWhereInput[] = [

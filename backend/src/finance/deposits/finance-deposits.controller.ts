@@ -22,7 +22,7 @@ export class FinanceDepositsController {
     @Query('search') search = '',
     @Query('page', new ParseIntPipe({ optional: true })) page = 1,
   ) {
-    return this.deposits.list(status, req.user.role === 'kolektor' ? req.user.id : collectorId, startDate, endDate, search.trim(), Math.max(1, page));
+    return this.deposits.list(status, req.user.role === 'kolektor' ? req.user.id : collectorId, startDate, endDate, search.trim(), Math.max(1, page), 15, req.user.role === 'kolektor');
   }
 
   @Post()
