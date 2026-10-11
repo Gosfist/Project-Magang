@@ -433,15 +433,6 @@
               <!-- Nama & No Pelanggan -->
               <td>
                 <div class="flex items-start gap-2.5">
-                  <span
-                    class="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg font-normal text-sm"
-                    [class.bg-red-100]="!c.isPaid"
-                    [class.text-red-700]="!c.isPaid"
-                    [class.bg-emerald-100]="c.isPaid"
-                    [class.text-emerald-700]="c.isPaid"
-                  >
-                    {{ !c.isPaid ? "!" : "✓" }}
-                  </span>
                   <div>
                     <p class="font-normal text-slate-900 leading-tight">
                       {{ c.customerName }}
