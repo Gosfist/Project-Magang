@@ -164,6 +164,7 @@ export type CollectorDeposit = {
 
 export type FinanceTransaction = {
   id: string;
+  invoiceNumber?: string | null;
   type: 'INCOME' | 'EXPENSE';
   category: string;
   amount: number;

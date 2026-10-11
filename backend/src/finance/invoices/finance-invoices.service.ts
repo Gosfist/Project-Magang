@@ -77,12 +77,10 @@ export class FinanceInvoicesService {
 
   async invoiceOverview(search = '', status = '') {
     const where: Prisma.PppoeAccountWhereInput = {};
-    if (search) {
-      where.OR = [
-        { customerName: { contains: search } },
-        { username: { contains: search } },
-        { phone: { contains: search } },
-      ];
+    if (search.trim()) {
+      const number = search.trim();
+      if (/^\d+$/.test(number)) where.customerNumber = BigInt(number);
+      else where.id = { in: [] };
     }
 
     const accounts = await this.prisma.pppoeAccount.findMany({

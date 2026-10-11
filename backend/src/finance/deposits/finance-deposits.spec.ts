@@ -2,6 +2,20 @@ import { describe, expect, it, vi } from 'vitest';
 import { FinanceDepositsService } from './finance-deposits.service.js';
 
 describe('payments for deleted customers', () => {
+  it('searches padded customer numbers and snapshots without removing collector/area restrictions', async () => {
+    const prisma = {
+      collectorDeposit: { findMany: vi.fn().mockResolvedValue([]), count: vi.fn().mockResolvedValue(0) },
+      $transaction: (requests: Promise<unknown>[]) => Promise.all(requests),
+    };
+    await new FinanceDepositsService(prisma as any, {} as any).list('', '5', '', '', '000042', 1, 15, true);
+    const where = prisma.collectorDeposit.count.mock.calls[0][0].where;
+    expect(where.collectorUserId).toBe(5n);
+    expect(where.account.is.area.is.collectors.none.userId).toBe(5n);
+    expect(where.AND[0]).toEqual({ account: { customerNumber: 42n } });
+    await new FinanceDepositsService(prisma as any, {} as any).list('', '', '', '', '000042');
+    const archiveWhere = prisma.collectorDeposit.count.mock.calls[1][0].where;
+    expect(archiveWhere.AND[0].OR).toContainEqual({ customerSnapshot: { path: '$.customerNumber', equals: '42' } });
+  });
   it('retains customer identity in deposit lists', async () => {
     const snapshot = { customerName: 'Andi', customerNumber: '42', username: 'andi', deleted: true };
     const prisma = {

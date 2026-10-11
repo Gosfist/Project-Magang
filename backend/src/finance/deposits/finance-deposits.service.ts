@@ -43,18 +43,15 @@ export class FinanceDepositsService {
       if (endDate) where.depositDate.lte = new Date(`${endDate}T23:59:59.999Z`);
     }
     if (search.trim()) {
-      if (outsideOwnAreas) {
-        const number = search.trim();
-        if (/^\d+$/.test(number)) where.AND = [{ account: { customerNumber: BigInt(number) } }];
-        else where.id = { in: [] };
-      } else where.OR = [
-        { account: { OR: [
-          { customerName: { contains: search } },
-          { username: { contains: search } },
-        ] } },
-        { customerSnapshot: { path: '$.customerName', string_contains: search } },
-        { customerSnapshot: { path: '$.username', string_contains: search } },
-      ];
+      const number = search.trim();
+      if (/^\d+$/.test(number)) {
+        const customerNumber = BigInt(number);
+        where.AND = [outsideOwnAreas ? { account: { customerNumber } } : { OR: [
+          { account: { customerNumber } },
+          { customerSnapshot: { path: '$.customerNumber', equals: customerNumber.toString() } },
+          { customerSnapshot: { path: '$.customerNumber', equals: Number(customerNumber) } },
+        ] }];
+      } else where.id = { in: [] };
     }
 
     const [data, total] = await this.prisma.$transaction([

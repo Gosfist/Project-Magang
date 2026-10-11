@@ -7,7 +7,7 @@
         <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
         <input
           class="input pl-10"
-          placeholder="Cari deskripsi transaksi..."
+          placeholder="Cari nomor invoice..."
           [(ngModel)]="search"
           (ngModelChange)="page.set(1); load()"
         />
@@ -63,6 +63,7 @@
       <thead>
         <tr>
           <th>Tanggal</th>
+          <th>No Invoice</th>
           <th>Jenis</th>
           <th>Kategori</th>
           <th>Deskripsi</th>
@@ -77,6 +78,7 @@
             <td class="whitespace-nowrap font-normal text-sm text-slate-700">
               {{ formatDate(t.transactionDate) }}
             </td>
+            <td class="whitespace-nowrap">{{ t.invoiceNumber || '-' }}</td>
             <td>
               <span
                 [class]="
@@ -123,13 +125,13 @@
         }
         @if (loading()) {
           <tr>
-            <td colspan="7" class="py-8 text-center text-slate-400">
+            <td colspan="8" class="py-8 text-center text-slate-400">
               Memuat data transaksi...
             </td>
           </tr>
         } @else if (transactions().length === 0) {
           <tr>
-            <td colspan="7" class="py-8 text-center text-slate-400">
+            <td colspan="8" class="py-8 text-center text-slate-400">
               Data transaksi belum tersedia.
             </td>
           </tr>

@@ -19,8 +19,13 @@ export class FinanceTransactionsService {
   ) {
     const where: Prisma.FinanceTransactionWhereInput = {};
 
-    if (search) {
-      where.description = { contains: search };
+    if (search.trim()) {
+      const matchingDeposits = await this.prisma.collectorDeposit.findMany({
+        where: { invoice: { invoiceNumber: { contains: search.trim() } } },
+        select: { id: true },
+      });
+      where.referenceType = 'DEPOSIT';
+      where.referenceId = { in: matchingDeposits.map((deposit) => deposit.id) };
     }
     if (type && ['INCOME', 'EXPENSE'].includes(type)) {
       where.type = type;
@@ -47,8 +52,20 @@ export class FinanceTransactionsService {
       this.prisma.financeTransaction.count({ where }),
     ]);
 
+    const depositIds = data.filter((t) => t.referenceType === 'DEPOSIT' && t.referenceId !== null)
+      .map((t) => t.referenceId!);
+    const deposits = depositIds.length ? await this.prisma.collectorDeposit.findMany({
+      where: { id: { in: depositIds } },
+      select: { id: true, invoice: { select: { invoiceNumber: true } } },
+    }) : [];
+    const invoiceNumbers = new Map(deposits.map((deposit) => [deposit.id.toString(), deposit.invoice?.invoiceNumber ?? null]));
+
     return serialize({
-      data: data.map((t) => ({ ...t, amount: Number(t.amount) })),
+      data: data.map((t) => ({
+        ...t, amount: Number(t.amount),
+        invoiceNumber: t.referenceType === 'DEPOSIT' && t.referenceId !== null
+          ? invoiceNumbers.get(t.referenceId.toString()) ?? null : null,
+      })),
       meta: pageMeta(page, perPage, total),
     });
   }
