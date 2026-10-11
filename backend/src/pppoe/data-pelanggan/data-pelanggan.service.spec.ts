@@ -10,7 +10,7 @@ vi.mock('./id-card-photo.js', () => ({ validateIdCardPhoto: vi.fn().mockResolved
 describe('PPPoE billing and account deactivation', () => {
   function setup() {
     const pkg = { id: 1n, price: 300000n, costPrice: 0n, validityDays: 30, isActive: true };
-    const current = { id: 2n, username: 'andi', password: 'encrypted', routerNasId: 3, isActive: true };
+    const current = { id: 2n, pppoePackageId: 1n, username: 'andi', password: 'encrypted', routerNasId: 3, isActive: true };
     const invoice = { create: vi.fn().mockResolvedValue({}) };
     const tx = {
       paymentPromise: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
@@ -102,6 +102,17 @@ describe('PPPoE billing and account deactivation', () => {
     await service.updateAccount('2', dto);
     expect(invoice.create).not.toHaveBeenCalled();
     expect(network.disconnect).not.toHaveBeenCalled();
+  });
+  it('reauthenticates after changing the customer package', async () => {
+    const { service, dto, network, radius } = setup();
+    await service.updateAccount('2', { ...dto, pppoePackageId: '9' });
+    expect(radius.sync).toHaveBeenCalled();
+    expect(network.disconnect).toHaveBeenCalledWith('andi', 3);
+  });
+  it('disconnects the old NAS after moving a customer to another router', async () => {
+    const { service, dto, network } = setup();
+    await service.updateAccount('2', { ...dto, routerNasId: '4' });
+    expect(network.disconnect).toHaveBeenCalledWith('andi', 3);
   });
   it.each(['phone', 'idCardNumber', 'idCardPhoto', 'address'] as const)('rejects creating a customer with blank %s', async field => {
     const { service, dto, tx } = setup();

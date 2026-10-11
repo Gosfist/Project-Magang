@@ -95,6 +95,9 @@
           <input class="input" type="number" min="1" required [(ngModel)]="form.validityDays" name="validityDays" />
         </div>
       </div>
+      @if (editing()) {
+        <p class="text-sm text-slate-500">Perubahan kecepatan atau IP pool menyambungkan ulang pelanggan yang memakai paket ini.</p>
+      }
       <div class="flex justify-end gap-3">
         <button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button>
         <button class="btn-primary">Simpan</button>

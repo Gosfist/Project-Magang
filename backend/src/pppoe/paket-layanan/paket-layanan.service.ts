@@ -53,9 +53,12 @@ export class PaketLayananService {
   }
 
   async updatePackage(id: string, dto: SavePackageDto) {
-    await this.findPackage(id);
+    const current = await this.findPackage(id);
+    const networkChanged = current.downloadMbps !== dto.downloadMbps
+      || current.uploadMbps !== dto.uploadMbps
+      || (current.ipPool?.name || current.addressPool || '') !== (dto.addressPool?.trim() || '');
     try {
-      const item = await this.prisma.$transaction(async (tx) => {
+      const { item, accounts } = await this.prisma.$transaction(async (tx) => {
         const updated = await tx.pppoePackage.update({
           where: { id: BigInt(id) },
           data: {
@@ -71,9 +74,23 @@ export class PaketLayananService {
         });
         const accounts = await tx.pppoeAccount.findMany({ where: { pppoePackageId: updated.id }, include: { package: { include: { ipPool: true } } } });
         for (const account of accounts) await this.radius.sync(tx, account);
-        return updated;
+        return { item: updated, accounts };
       });
-      return serialize({ message: 'Harga paket berhasil diperbarui dan disinkronkan ke RADIUS.', package: { ...item, price: Number(item.price), costPrice: Number(item.costPrice) } });
+      const warnings: string[] = [];
+      if (networkChanged) {
+        // RADIUS replies apply at authentication, not to an existing PPP session.
+        // Reauthenticate after commit; RouterOS dynamic queues cannot be edited
+        // reliably across versions. This is the reference stack's fallback.
+        for (const account of accounts) {
+          try { warnings.push(...(await this.network.disconnect(account.username, account.routerNasId)).warnings); }
+          catch { warnings.push(`Sesi ${account.username} belum dapat disambungkan ulang. Limit baru berlaku saat pelanggan login kembali.`); }
+        }
+      }
+      const message = networkChanged
+        ? 'Harga paket dan RADIUS diperbarui. Sesi pelanggan disambungkan ulang agar kecepatan dan IP pool terbaru diterapkan.'
+        : 'Harga paket berhasil diperbarui dan disinkronkan ke RADIUS.';
+      return serialize({ message: warnings.length ? `${message} Perhatian: ${warnings.join(' ')}` : message,
+        warnings, package: { ...item, price: Number(item.price), costPrice: Number(item.costPrice) } });
     } catch (error) { this.unique(error, 'Nama paket sudah digunakan.'); }
   }
 
@@ -102,7 +119,7 @@ export class PaketLayananService {
   }
 
   private async findPackage(id: string) {
-    const item = await this.prisma.pppoePackage.findUnique({ where: { id: BigInt(id) } });
+    const item = await this.prisma.pppoePackage.findUnique({ where: { id: BigInt(id) }, include: { ipPool: true } });
     if (!item) throw new NotFoundException('Harga paket tidak ditemukan.');
     return item;
   }

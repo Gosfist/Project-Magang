@@ -145,7 +145,8 @@ export class DataPelangganService {
       });
       const { password: _password, ...safe } = account;
       const warnings: string[] = [];
-      if (!account.isActive || !account.package.isActive || current.username !== account.username || passwordChanged) {
+      if (!account.isActive || !account.package.isActive || current.username !== account.username || passwordChanged
+        || current.pppoePackageId !== account.pppoePackageId || current.routerNasId !== account.routerNasId) {
         warnings.push(...(await this.network.disconnect(current.username, current.routerNasId)).warnings);
       }
       if (current.isActive && !account.isActive && this.waNotify) {
