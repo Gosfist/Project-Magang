@@ -47,6 +47,10 @@ export class PaketLayananComponent implements OnInit {
     return price.toLocaleString('id-ID');
   }
 
+  showStoredPoolOption(): boolean {
+    return !!this.form.addressPool && !this.ipPools().some(pool => pool.name === this.form.addressPool);
+  }
+
   load(): void {
     this.api
       .get<{ data: PppoePackage[]; meta: PageMeta }>(
