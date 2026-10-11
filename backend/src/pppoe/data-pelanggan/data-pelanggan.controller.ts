@@ -42,6 +42,9 @@ export class DataPelangganController {
 
   @Get('accounts') @Roles('admin', 'teknisi') accounts(@Query('search') search = '', @Query('page', new ParseIntPipe({ optional: true })) page = 1, @Query('status') status = '', @Query('session') session = '') { return this.pppoe.accounts(search.trim(), Math.max(1, page), status, session); }
   @Get('accounts/:id/installation-photo') @Roles('admin', 'teknisi') installationPhoto(@Param('id') id: string) { return this.pppoe.installationPhoto(id); }
+  @Get('accounts/:id/credentials')
+  @Header('Cache-Control', 'private, no-store')
+  credentials(@Param('id') id: string) { return this.pppoe.credentials(id); }
   @Get('accounts/:id/auth-logs') authLogs(@Param('id') id: string) { return this.customers.authLogs(id); }
   @Get('accounts/:id/invoices') invoices(@Param('id') id: string) { return this.customers.invoices(id); }
   @Post('accounts/:id/invoices/:invoiceId/pay') payInvoice(@Param('id') id: string, @Param('invoiceId') invoiceId: string) { return this.customers.payInvoice(id, invoiceId); }

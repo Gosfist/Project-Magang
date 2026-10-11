@@ -414,7 +414,7 @@
               class="hidden"
               type="file"
               accept="image/jpeg,image/png,image/webp"
-              [disabled]="uploading() || saving()"
+              [disabled]="uploading() || saving() || passwordLoading()"
               (change)="uploadPhoto($event)"
             />
             @if (photoPreview()) {
@@ -423,7 +423,7 @@
                   type="button"
                   class="ktp-image-button"
                   aria-label="Ganti foto KTP"
-                  [disabled]="uploading() || saving()"
+                  [disabled]="uploading() || saving() || passwordLoading()"
                   (click)="photoInput.click()"
                 >
                   <img
@@ -440,7 +440,7 @@
                   type="button"
                   class="ktp-remove"
                   aria-label="Hapus foto KTP"
-                  [disabled]="uploading() || saving()"
+                  [disabled]="uploading() || saving() || passwordLoading()"
                   (click)="removePhoto(); photoInput.value = ''"
                 >
                   <svg lucideX [size]="14"></svg>
@@ -679,6 +679,8 @@
               <div class="relative">
                 <input
                   id="pppoe-password"
+                  [disabled]="passwordLoading()"
+                  [placeholder]="passwordLoading() ? 'Memuat kata sandi...' : ''"
                   [type]="passwordVisible() ? 'text' : 'password'"
                   class="input"
                   style="padding-right: 40px"
@@ -860,7 +862,7 @@
           <button
             type="button"
             class="btn-secondary"
-            [disabled]="uploading() || saving()"
+            [disabled]="uploading() || saving() || passwordLoading()"
             (click)="close()"
           >
             Batal
@@ -878,7 +880,7 @@
             <button
               type="submit"
               class="btn-primary"
-              [disabled]="uploading() || saving()"
+              [disabled]="uploading() || saving() || passwordLoading()"
             >
               {{ saving() ? "Menyimpan..." : "Simpan" }}
             </button>

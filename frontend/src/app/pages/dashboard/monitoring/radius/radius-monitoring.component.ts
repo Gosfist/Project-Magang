@@ -70,6 +70,11 @@ export class RadiusMonitoringComponent implements OnInit {
     return /accept/i.test(reply);
   }
 
+  attemptedPassword(value: string): string {
+    if (/^0x[0-9a-f]{34}$/i.test(value || '')) return 'Tidak tersedia (CHAP)';
+    return value || '-';
+  }
+
   statusLabel(reply: string): string {
     if (/accept/i.test(reply)) return 'Berhasil';
     if (/reject/i.test(reply)) return 'Gagal';

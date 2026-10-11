@@ -73,6 +73,11 @@ export class DataPelangganService {
       discount: Number(item.discount), package: { ...item.package, price: Number(item.package.price), costPrice: Number(item.package.costPrice) } })), meta: pageMeta(page, 5, total), warnings: presence.warnings });
   }
 
+  async credentials(id: string) {
+    const account = await this.findAccount(id);
+    return { username: account.username, password: this.secrets.decrypt(account.password) };
+  }
+
   async installationPhoto(id: string) {
     const account = await this.prisma.pppoeAccount.findUnique({
       where: { id: BigInt(id) },

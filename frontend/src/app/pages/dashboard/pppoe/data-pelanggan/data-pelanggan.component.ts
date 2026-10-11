@@ -191,6 +191,9 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   editing = signal<PppoeAccount | null>(null);
   step = signal(1);
   passwordVisible = signal(false);
+  passwordLoading = signal(false);
+  private storedPassword = '';
+  private passwordRequestId = 0;
   uploading = signal(false);
   saving = signal(false);
   formError = signal('');
@@ -342,7 +345,10 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
 
   show(item?: PppoeAccount): void {
     if (this.uploading() || this.saving()) return;
-    this.passwordVisible.set(false);
+    this.passwordVisible.set(!!item);
+    this.passwordLoading.set(false);
+    this.storedPassword = '';
+    const passwordRequestId = ++this.passwordRequestId;
     this.nasOpen.set(false);
     this.odpOpen.set(false);
     this.odpSearch = '';
@@ -378,6 +384,22 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
           username: '', password: '', routerNasId: '', odp: '', areaId: '',
           expiresAt: '', isActive: true, notes: '', firstInvoice: 'prorate',
         };
+    if (item && this.auth.isAdmin()) {
+      this.passwordLoading.set(true);
+      this.api.get<{ password: string }>(`/pppoe/accounts/${item.id}/credentials`).subscribe({
+        next: result => {
+          if (passwordRequestId !== this.passwordRequestId || this.editing()?.id !== item.id) return;
+          this.storedPassword = result.password;
+          this.form.password = result.password;
+          this.passwordLoading.set(false);
+        },
+        error: err => {
+          if (passwordRequestId !== this.passwordRequestId || this.editing()?.id !== item.id) return;
+          this.passwordLoading.set(false);
+          this.formError.set(err.message || 'Kata sandi tersimpan tidak dapat dimuat.');
+        },
+      });
+    }
     this.calculateProrate();
     this.open.set(true);
     this.loadPhoto();
@@ -470,7 +492,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   }
 
   save(): void {
-    if (this.uploading() || this.saving()) return;
+    if (this.uploading() || this.saving() || this.passwordLoading()) return;
     if (!this.editing() && !this.customerValid()) {
       this.step.set(1);
       this.formError.set('Lengkapi seluruh data pelanggan dan unggah foto KTP.');
@@ -492,7 +514,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     const body = {
       ...this.form,
       firstInvoice: this.editing() ? 'none' : this.form.subscriptionType === 'PREPAID' ? 'full' : this.form.firstInvoice,
-      password: this.form.password || undefined,
+      password: this.editing() && this.form.password === this.storedPassword ? undefined : this.form.password || undefined,
       expiresAt: this.form.expiresAt || undefined,
       billingDay: Number(this.form.billingDay),
       discount: Number(this.form.discount),
