@@ -19,6 +19,7 @@ type StatCard = {
   standalone: true,
   imports: [FormsModule, CommonModule, RouterLink, LucideGitBranch, LucideNetwork, LucideServer, LucideUsers],
   templateUrl: './home.component.html',
+  styleUrl: './home.component.css',
 })
 export class HomeComponent implements OnInit {
   readonly auth = inject(AuthService);

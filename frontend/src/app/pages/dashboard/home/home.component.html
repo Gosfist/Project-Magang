@@ -1,8 +1,8 @@
 <div class="space-y-5">
-  <div class="card flex flex-wrap items-center justify-between gap-4 p-5">
+  <div class="card flex flex-wrap items-center justify-between gap-4 p-5" [class.sales-welcome]="auth.isSales()">
     <h2 class="text-xl font-semibold">Selamat datang, {{ auth.user()?.name }}</h2>
     @if (auth.isSales()) {
-      <div class="ml-auto flex items-center gap-2">
+      <div class="sales-period ml-auto flex items-center gap-2">
         <select id="period-year" aria-label="Tahun" class="input" [(ngModel)]="selectedYear" (ngModelChange)="changeYear()" [disabled]="loading() || !years.length">
           @for (year of years; track year) { <option [ngValue]="year">{{ year }}</option> }
         </select>

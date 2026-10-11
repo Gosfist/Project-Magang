@@ -1,0 +1,22 @@
+@media (max-width: 639px) {
+  .sales-welcome {
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 12px;
+  }
+  .sales-welcome h2 {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .sales-period { flex-shrink: 0; gap: 4px; }
+  .sales-period .input {
+    width: auto;
+    min-height: 32px;
+    height: 32px;
+    padding: 3px;
+    font-size: 11px;
+  }
+  #period-year { width: 58px; }
+  #period-month { width: 82px; }
+}
