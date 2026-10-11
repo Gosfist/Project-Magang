@@ -61,6 +61,7 @@ export class FinanceDepositsComponent implements OnInit {
     depositDate: todayWib(),
   };
   unpaidInvoices = signal<any[]>([]);
+  invoiceEmptyMessage = signal('');
   loadingInvoices = signal(false);
   invoiceSearch = '';
   selectedInvoice: any = null;
@@ -108,15 +109,24 @@ export class FinanceDepositsComponent implements OnInit {
   }
 
   loadUnpaidInvoices() {
+    this.unpaidInvoices.set([]);
+    this.invoiceEmptyMessage.set('');
+    if (!/^\d+$/.test(this.invoiceSearch.trim())) {
+      this.loadingInvoices.set(false);
+      return;
+    }
     this.loadingInvoices.set(true);
+    const searchedNumber = this.invoiceSearch.trim();
     const params = new URLSearchParams();
     if (this.invoiceSearch.trim()) params.set('search', this.invoiceSearch.trim());
-    this.api.get<{ data: any[] }>(`/finance/deposits/unpaid-invoices?${params}`).subscribe({
+    this.api.get<{ data: any[]; emptyMessage?: string }>(`/finance/deposits/unpaid-invoices?${params}`).subscribe({
       next: (res) => {
+        if (this.invoiceSearch.trim() !== searchedNumber) return;
         this.unpaidInvoices.set(res.data);
+        this.invoiceEmptyMessage.set(res.emptyMessage || '');
         this.loadingInvoices.set(false);
       },
-      error: () => this.loadingInvoices.set(false),
+      error: () => { if (this.invoiceSearch.trim() === searchedNumber) this.loadingInvoices.set(false); },
     });
   }
 

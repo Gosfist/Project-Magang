@@ -34,10 +34,10 @@ describe('collector entrusted payments from other areas', () => {
   });
 
   it('only offers invoices from other assigned areas when recording a new Titipan', async () => {
-    const prisma = { invoice: { findMany: vi.fn().mockResolvedValue([]) } };
+    const prisma = { invoice: { findMany: vi.fn().mockResolvedValue([]) }, pppoeAccount: { findFirst: vi.fn().mockResolvedValue(null) } };
     await new FinanceInvoicesService(prisma as any).unpaidInvoices('000002', '7');
     expect(prisma.invoice.findMany.mock.calls[0][0].where).toMatchObject({
-      account: foreignAreaAccount, status: { in: ['PENDING', 'OVERDUE'] }, OR: expect.any(Array),
+      account: foreignAreaAccount, status: { in: ['PENDING', 'OVERDUE'] }, AND: [{ account: { customerNumber: 2n } }],
     });
   });
 });

@@ -28,21 +28,9 @@ export class FinanceInvoicesService {
       where.account = { is: { area: { is: { collectors: { none: { userId: BigInt(outsideAreaCollectorId) } } } } } };
     }
 
-    if (search) {
-      const orConditions: Prisma.InvoiceWhereInput[] = [
-        { invoiceNumber: { contains: search } },
-        { account: { customerName: { contains: search } } },
-        { account: { username: { contains: search } } },
-      ];
-      if (/^\d+$/.test(search)) {
-        try {
-          orConditions.push({ account: { customerNumber: BigInt(search) } });
-        } catch {
-          // ignore invalid bigint
-        }
-      }
-      where.OR = orConditions;
-    }
+    const customerNumber = search.trim();
+    if (!/^\d+$/.test(customerNumber)) return { data: [] };
+    where.AND = [{ account: { customerNumber: BigInt(customerNumber) } }];
 
     const data = await this.prisma.invoice.findMany({
       where,
@@ -62,7 +50,22 @@ export class FinanceInvoicesService {
       take: 25,
     });
 
+    let emptyMessage = '';
+    if (!data.length) {
+      const account = await this.prisma.pppoeAccount.findFirst({
+        where: {
+          customerNumber: BigInt(customerNumber),
+          ...(outsideAreaCollectorId ? { area: { is: { collectors: { none: { userId: BigInt(outsideAreaCollectorId) } } } } } : {}),
+        },
+        select: { customerNumber: true, customerName: true, invoices: { where: { status: { in: ['PENDING', 'OVERDUE'] } }, select: { id: true } } },
+      });
+      const number = (account?.customerNumber ?? BigInt(customerNumber)).toString().padStart(6, '0');
+      emptyMessage = account
+        ? `No Id pelanggan ${number} An ${account.customerName} ${account.invoices.length ? 'memiliki setoran yang sedang menunggu Finance.' : 'tidak ada tagihan / sudah lunas.'}`
+        : `No Id pelanggan ${number} tidak ditemukan pada daftar pelanggan yang dapat dicatat di sini.`;
+    }
     return serialize({
+      emptyMessage,
       data: data.map((inv) => ({
         ...inv,
         amount: Number(inv.amount),

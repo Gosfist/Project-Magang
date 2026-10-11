@@ -180,22 +180,18 @@
     <form (submit)="saveDeposit($event)" class="space-y-4">
       <!-- Unpaid Invoice Picker -->
       <div>
-        <label class="label">Pilih Tagihan Pelanggan *</label>
+        <label class="label">Masukan No pelanggan *</label>
         @if (!selectedInvoice) {
           <div class="space-y-2">
             <div class="relative">
-              <svg
-                lucideSearch
-                [size]="16"
-                class="absolute left-3 top-3 text-slate-400"
-              ></svg>
               <input
                 type="text"
-                placeholder="Ketik nama pelanggan, username, atau no. tagihan..."
+                placeholder="Masukan No pelanggan"
+                inputmode="numeric"
                 [(ngModel)]="invoiceSearch"
                 name="invoiceSearch"
                 (ngModelChange)="loadUnpaidInvoices()"
-                class="input pl-9 text-xs"
+                class="input"
               />
             </div>
             <div
@@ -207,7 +203,7 @@
                 </p>
               } @else if (unpaidInvoices().length === 0) {
                 <p class="p-3 text-center text-xs text-slate-400">
-                  Tidak ada tagihan tertunggak ditemukan.
+                  {{ invoiceSearch.trim() ? invoiceEmptyMessage() : 'Masukan nomor pelanggan untuk mencari tagihan.' }}
                 </p>
               } @else {
                 @for (inv of unpaidInvoices(); track inv.id) {
@@ -220,7 +216,7 @@
                       <p class="text-sm font-semibold text-slate-900">
                         {{ inv.account?.customerName }}
                         <span class="font-normal text-xs text-slate-500"
-                          >({{ inv.account?.username }})</span
+                          >({{ inv.account?.customerNumber?.toString()?.padStart(6, '0') }})</span
                         >
                       </p>
                       <p class="text-xs text-slate-400">
@@ -265,7 +261,7 @@
       </div>
 
       <div>
-        <label class="label">Jumlah Setor (Rp) *</label>
+        <label class="label">Nominal *</label>
         <input
           type="number"
           [(ngModel)]="depositForm.amount"
