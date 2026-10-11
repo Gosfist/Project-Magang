@@ -34,7 +34,7 @@
           [routerLinkActiveOptions]="{ exact: true }"
           class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
           (click)="mobile.set(false)">
-          <svg lucideUsers [size]="20"></svg> {{ link[0] }}
+          <ng-container [ngTemplateOutlet]="menuIcon" [ngTemplateOutletContext]="{ $implicit: link[0] }" /> {{ link[0] }}
         </a>
       }
     }
@@ -189,15 +189,17 @@
         <button type="button" class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
           [attr.aria-expanded]="roleGroupOpen(group.role)" [attr.aria-controls]="'role-menu-' + group.role"
           (click)="toggleRoleGroup(group.role)">
-          <svg lucideUsers [size]="20"></svg><span class="flex-1 text-left">{{ group.label }}</span>
+          <ng-container [ngTemplateOutlet]="menuIcon" [ngTemplateOutletContext]="{ $implicit: group.label }" /><span class="flex-1 text-left">{{ group.label }}</span>
           <svg lucideChevronDown [size]="16" [class]="roleGroupOpen(group.role) ? '' : '-rotate-90'"></svg>
         </button>
         @if (roleGroupOpen(group.role)) {
           <div [id]="'role-menu-' + group.role" class="space-y-1 pl-9 pr-1">
             @for (link of group.links; track link[1]) {
               <a [routerLink]="link[1]" routerLinkActive="bg-white/15 text-white"
-                class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
-                (click)="mobile.set(false)">{{ link[0] }}</a>
+                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+                (click)="mobile.set(false)">
+                <ng-container [ngTemplateOutlet]="menuIcon" [ngTemplateOutletContext]="{ $implicit: link[0] }" />{{ link[0] }}
+              </a>
             }
           </div>
         }
@@ -418,3 +420,28 @@
     (close)="toast.set(null)"
   ></app-toast>
 }
+
+<ng-template #menuIcon let-label>
+  @switch (label) {
+    @case ('Dashboard') { <svg lucideLayoutDashboard [size]="20" aria-hidden="true"></svg> }
+    @case ('Pasang Baru') { <svg lucideWrench [size]="20" aria-hidden="true"></svg> }
+    @case ('Data Pelanggan') { <svg lucideContactRound [size]="20" aria-hidden="true"></svg> }
+    @case ('Telusuri Jalur') { <svg lucideRoute [size]="20" aria-hidden="true"></svg> }
+    @case ('Server') { <svg lucideServer [size]="20" aria-hidden="true"></svg> }
+    @case ('Rasio') { <svg lucideSplit [size]="20" aria-hidden="true"></svg> }
+    @case ('ODC') { <svg lucideWorkflow [size]="20" aria-hidden="true"></svg> }
+    @case ('ODP') { <svg lucideCable [size]="20" aria-hidden="true"></svg> }
+    @case ('Kalkulator Redaman') { <svg lucideCalculator [size]="20" aria-hidden="true"></svg> }
+    @case ('Gaji') { <svg lucideBanknote [size]="20" aria-hidden="true"></svg> }
+    @case ('Tagihan') { <svg lucideReceiptText [size]="20" aria-hidden="true"></svg> }
+    @case ('Transaksi') { <svg lucideArrowLeftRight [size]="20" aria-hidden="true"></svg> }
+    @case ('Setoran Kolektor') { <svg lucideHandCoins [size]="20" aria-hidden="true"></svg> }
+    @case ('Registrasi') { <svg lucideUserPlus [size]="20" aria-hidden="true"></svg> }
+    @case ('Janji Bayar') { <svg lucideCalendarClock [size]="20" aria-hidden="true"></svg> }
+    @case ('Titipan') { <svg lucideWallet [size]="20" aria-hidden="true"></svg> }
+    @case ('Finance') { <svg lucideLandmark [size]="20" aria-hidden="true"></svg> }
+    @case ('Sales') { <svg lucideTrendingUp [size]="20" aria-hidden="true"></svg> }
+    @case ('Kolektor') { <svg lucideBadgeDollarSign [size]="20" aria-hidden="true"></svg> }
+    @case ('Teknisi') { <svg lucideHardHat [size]="20" aria-hidden="true"></svg> }
+  }
+</ng-template>
