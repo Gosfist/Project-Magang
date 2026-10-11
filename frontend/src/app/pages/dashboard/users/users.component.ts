@@ -40,7 +40,7 @@ export class UsersComponent implements OnInit, OnDestroy {
   open = signal(false);
   editing = signal<User | null>(null);
   showPassword = signal(false);
-  form = { name: '', email: '', phone: '', photo: '', password: '', role: 'teknisi', status: 'active' };
+  form = { name: '', email: '', phone: '', photo: '', password: '', role: 'teknisi', status: 'active', additionalRoles: [] as string[] };
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
   ngOnInit(): void {
@@ -102,8 +102,8 @@ export class UsersComponent implements OnInit, OnDestroy {
     this.editing.set(user ?? null);
     this.showPassword.set(false);
     this.form = user
-      ? { name: user.name, email: user.email, phone: user.phone ?? '', photo: user.photo ?? '', password: '', role: user.role, status: user.status }
-      : { name: '', email: '', phone: '', photo: '', password: '', role: 'teknisi', status: 'active' };
+      ? { name: user.name, email: user.email, phone: user.phone ?? '', photo: user.photo ?? '', password: '', role: user.role, status: user.status, additionalRoles: [...(user.additionalRoles ?? [])] }
+      : { name: '', email: '', phone: '', photo: '', password: '', role: 'teknisi', status: 'active', additionalRoles: [] as string[] };
     this.open.set(true);
   }
 
@@ -159,6 +159,17 @@ export class UsersComponent implements OnInit, OnDestroy {
       },
       error: (e) => this.toast.set({ message: e.message, type: 'error' }),
     });
+  }
+
+  readonly accessOptions = ['sales', 'kolektor', 'finance', 'teknisi'];
+  accessChecked(role: string): boolean {
+    return this.form.role === 'admin' || this.form.role === role || this.form.additionalRoles.includes(role);
+  }
+  toggleAccess(role: string, event: Event): void {
+    if (this.form.role === 'admin' || this.form.role === role) return;
+    const checked = (event.target as HTMLInputElement).checked;
+    this.form.additionalRoles = checked ? [...new Set([...this.form.additionalRoles, role])]
+      : this.form.additionalRoles.filter(item => item !== role);
   }
 
   roleLabel(role?: string): string {

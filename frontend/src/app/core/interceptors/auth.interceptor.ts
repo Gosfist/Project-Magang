@@ -2,13 +2,15 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { roleForUrl } from '../access-roles';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const token = localStorage.getItem('unzanet_token');
   if (token) {
+    const accessRole = roleForUrl(router.getCurrentNavigation()?.finalUrl?.toString() ?? router.url);
     req = req.clone({
-      setHeaders: { Authorization: `Bearer ${token}` },
+      setHeaders: { Authorization: `Bearer ${token}`, ...(accessRole ? { 'X-Access-Role': accessRole } : {}) },
     });
   }
   return next(req).pipe(

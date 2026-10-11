@@ -1,4 +1,4 @@
-import { IsEmail, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { ArrayUnique, IsArray, IsEmail, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateUserDto {
   @IsString() @MaxLength(255) name: string;
@@ -7,6 +7,8 @@ export class CreateUserDto {
   @IsOptional() @IsString() photo?: string;
   @IsString() @MinLength(6, { message: 'Kata sandi minimal 6 karakter.' }) password: string;
   @IsIn(['admin', 'teknisi', 'finance', 'sales', 'kolektor']) role: string;
+  @IsOptional() @IsArray() @ArrayUnique() @IsIn(['sales', 'kolektor', 'finance', 'teknisi'], { each: true })
+  additionalRoles?: string[];
   @IsIn(['active', 'inactive']) status: string;
 }
 

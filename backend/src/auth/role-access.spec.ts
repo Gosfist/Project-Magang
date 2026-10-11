@@ -31,11 +31,11 @@ describe('Role access over HTTP', () => {
   for (const currentRole of ['admin', 'finance', 'kolektor', 'sales', 'teknisi']) {
     it(`checks direct API access for ${currentRole}`, async () => {
       role = currentRole;
-      await request(app.getHttpServer()).get('/finance/deposits/invoices').expect(role === 'finance' ? 200 : 403);
-      await request(app.getHttpServer()).get('/finance/deposits').expect(['finance', 'kolektor'].includes(role) ? 200 : 403);
-      await request(app.getHttpServer()).patch('/finance/deposits/1/accept').expect(role === 'finance' ? 200 : 403);
+      await request(app.getHttpServer()).get('/finance/deposits/invoices').expect(['admin', 'finance'].includes(role) ? 200 : 403);
+      await request(app.getHttpServer()).get('/finance/deposits').expect(['admin', 'finance', 'kolektor'].includes(role) ? 200 : 403);
+      await request(app.getHttpServer()).patch('/finance/deposits/1/accept').expect(['admin', 'finance'].includes(role) ? 200 : 403);
       await request(app.getHttpServer()).get('/areas').expect(role === 'admin' ? 200 : 403);
-      await request(app.getHttpServer()).get('/areas/customers').expect(role === 'kolektor' ? 200 : 403);
+      await request(app.getHttpServer()).get('/areas/customers').expect(['admin', 'kolektor'].includes(role) ? 200 : 403);
       await request(app.getHttpServer()).get('/areas/options').expect(['admin', 'sales', 'teknisi'].includes(role) ? 200 : 403);
     });
   }

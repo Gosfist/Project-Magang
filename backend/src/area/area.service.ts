@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { pageMeta, serialize } from '../common/serialize.js';
 import { AssignCollectorDto, SaveAreaDto } from './area.dto.js';
+import { accessRoles } from '../auth/access-roles.js';
 
 @Injectable()
 export class AreaService {
@@ -118,7 +119,7 @@ export class AreaService {
     await this.findArea(areaId);
     const user = await this.prisma.user.findUnique({ where: { id: BigInt(dto.userId) } });
     if (!user) throw new NotFoundException('Pengguna tidak ditemukan.');
-    if (user.role !== 'kolektor') throw new BadRequestException('Hanya pengguna dengan role kolektor yang dapat ditugaskan ke area.');
+    if (!accessRoles(user).includes('kolektor')) throw new BadRequestException('Pengguna harus memiliki hak akses kolektor untuk ditugaskan ke area.');
     try {
       await this.prisma.areaCollector.create({
         data: { areaId: BigInt(areaId), userId: BigInt(dto.userId) },
@@ -142,26 +143,28 @@ export class AreaService {
 
   async collectorOptions() {
     const data = await this.prisma.user.findMany({
-      where: { role: 'kolektor', status: 'active' },
+      where: { status: 'active', OR: [{ role: 'kolektor' }, { additionalRoles: { array_contains: 'kolektor' } }] },
       select: { id: true, name: true, email: true, phone: true },
       orderBy: { name: 'asc' },
     });
     return serialize({ data });
   }
 
-  async getCollectorCustomers(search = '', status = 'ALL', user?: { id: string; role: string }) {
+  async getCollectorCustomers(search = '', status = 'ALL', user?: { id: string; role: string; primaryRole?: string }) {
     if (user?.role !== 'kolektor') {
       throw new BadRequestException('Daftar gabungan pelanggan hanya tersedia untuk kolektor.');
     }
 
-    const assignments = await this.prisma.areaCollector.findMany({
+    const assignments = user.primaryRole === 'admin'
+      ? (await this.prisma.area.findMany({ select: { id: true } })).map(area => ({ areaId: area.id }))
+      : await this.prisma.areaCollector.findMany({
       where: { userId: BigInt(user.id) },
       select: { areaId: true },
     });
 
     const results = await Promise.all(
       assignments.map((assignment) =>
-        this.getAreaCustomers(String(assignment.areaId), search, status, user),
+        this.getAreaCustomers(String(assignment.areaId), search, status, user.primaryRole === 'admin' ? { ...user, role: 'admin' } : user),
       ),
     );
 

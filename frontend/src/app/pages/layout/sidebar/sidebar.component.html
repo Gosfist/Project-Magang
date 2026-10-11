@@ -28,111 +28,33 @@
       <svg lucideLayoutDashboard [size]="20"></svg> Dashboard
     </a>
 
-    @if (auth.isSales()) {
-      <a
-        routerLink="/dashboard/registrasi-pelanggan"
-        routerLinkActive="bg-white/15 text-white"
-        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
-        (click)="mobile.set(false)"
-        ><svg lucideUsers [size]="20"></svg> Registrasi</a
-      >
-    }
-
-    @if (auth.isTeknisi()) {
-      <a
-        routerLink="/dashboard/pasang-baru"
-        routerLinkActive="bg-white/15 text-white"
-        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
-        (click)="mobile.set(false)"
-        ><svg lucideNetwork [size]="20"></svg> Pasang Baru</a
-      >
-      <a
-        routerLink="/dashboard/teknisi/data-pelanggan"
-        routerLinkActive="bg-white/15 text-white"
-        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
-        (click)="mobile.set(false)"
-        ><svg lucideUsers [size]="20"></svg> Data Pelanggan</a
-      >
-    }
-    @if (auth.isTeknisi()) {
-      <button
-        class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
-        (click)="coreOpen.set(!coreOpen())"
-      >
-        <svg lucideGitBranch [size]="20"></svg
-        ><span class="flex-1 text-left">Main Core</span
-        ><svg
-          lucideChevronDown
-          [size]="16"
-          [class]="!coreOpen() ? '-rotate-90' : ''"
-        ></svg>
-      </button>
-      @if (coreOpen()) {
-        <div class="mt-1 space-y-1 pl-11 pr-2">
-          @for (link of coreLinks; track link[1]) {
-            <a
-              [routerLink]="link[1]"
-              routerLinkActive="bg-white/15 text-white"
-              class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
-              (click)="mobile.set(false)"
-              >{{ link[0] }}</a
-            >
-          }
-        </div>
+    @for (group of roleGroups; track group.role) {
+      @if (auth.canAccess(group.role)) {
+        <button type="button" class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
+          [attr.aria-expanded]="roleGroupOpen(group.role)" [attr.aria-controls]="'role-menu-' + group.role"
+          (click)="toggleRoleGroup(group.role)">
+          <svg lucideUsers [size]="20"></svg><span class="flex-1 text-left">{{ group.label }}</span>
+          <svg lucideChevronDown [size]="16" [class]="roleGroupOpen(group.role) ? '' : '-rotate-90'"></svg>
+        </button>
+        @if (roleGroupOpen(group.role)) {
+          <div [id]="'role-menu-' + group.role" class="space-y-1 pl-9 pr-1">
+            @for (link of group.links; track link[1]) {
+              <a [routerLink]="link[1]" routerLinkActive="bg-white/15 text-white"
+                class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+                (click)="mobile.set(false)">{{ link[0] }}</a>
+            }
+          </div>
+        }
       }
     }
-
     @if (auth.isAdmin()) {
-      <a
-        routerLink="/dashboard/users"
-        routerLinkActive="bg-white/15 text-white"
-        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
-        (click)="mobile.set(false)"
-      >
+      <a routerLink="/dashboard/users" routerLinkActive="bg-white/15 text-white" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10" (click)="mobile.set(false)">
         <svg lucideUsers [size]="20"></svg> Akun & Role
       </a>
-
-      <a
-        routerLink="/dashboard/sales"
-        routerLinkActive="bg-white/15 text-white"
-        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
-        (click)="mobile.set(false)"
-      >
-        <svg lucideUsers [size]="20"></svg> Sales
+      <a routerLink="/dashboard/sales" routerLinkActive="bg-white/15 text-white" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10" (click)="mobile.set(false)">
+        <svg lucideUsers [size]="20"></svg> Ringkasan Sales
       </a>
     }
-
-    <!-- Finance -->
-    @if (auth.isFinance()) {
-      @for (link of financeLinks; track link[1]) {
-        <a
-          [routerLink]="link[1]"
-          routerLinkActive="bg-white/15 text-white"
-          class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
-          (click)="mobile.set(false)"
-        >
-          <svg lucideDollarSign [size]="20"></svg>
-          {{ link[0] }}
-        </a>
-      }
-    } @else if (auth.isKolektor()) {
-      <a
-        routerLink="/dashboard/kolektor/tagihan"
-        routerLinkActive="bg-white/15 text-white"
-        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
-        (click)="mobile.set(false)"
-        ><svg lucideDollarSign [size]="20"></svg> Tagihan</a
-      >
-      <a
-        routerLink="/dashboard/kolektor/titipan"
-        routerLinkActive="bg-white/15 text-white"
-        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
-        (click)="mobile.set(false)"
-        ><svg lucideDollarSign [size]="20"></svg> Titipan</a
-      >
-    }
-
-    <!-- Area & Kolektor -->
     @if (auth.isAdmin()) {
       <a
         routerLink="/dashboard/area"

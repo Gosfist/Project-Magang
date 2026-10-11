@@ -33,8 +33,8 @@ export class UsersService {
 
     const [activeSales, inactiveSales, monthRegistrations, sales, monthlyGroups, totalGroups] =
       await this.prisma.$transaction([
-        this.prisma.user.count({ where: { role: 'sales', status: 'active' } }),
-        this.prisma.user.count({ where: { role: 'sales', status: 'inactive' } }),
+        this.prisma.user.count({ where: { OR: [{ role: 'sales' }, { additionalRoles: { array_contains: 'sales' } }], status: 'active' } }),
+        this.prisma.user.count({ where: { OR: [{ role: 'sales' }, { additionalRoles: { array_contains: 'sales' } }], status: 'inactive' } }),
         this.prisma.psbOrder.count({
           where: {
             status: 'COMPLETED',
@@ -42,7 +42,7 @@ export class UsersService {
           },
         }),
         this.prisma.user.findMany({
-          where: { role: 'sales' },
+          where: { OR: [{ role: 'sales' }, { additionalRoles: { array_contains: 'sales' } }] },
           omit: { password: true },
           orderBy: { name: 'asc' },
         }),
@@ -100,7 +100,7 @@ export class UsersService {
   async create(dto: CreateUserDto) {
     try {
       const user = await this.prisma.user.create({
-        data: { ...dto, createdAt: new Date(), photo: null, password: await hash(dto.password, 12) },
+        data: { ...dto, additionalRoles: dto.role === 'admin' ? [] : (dto.additionalRoles ?? []).filter(role => role !== dto.role), createdAt: new Date(), photo: null, password: await hash(dto.password, 12) },
         omit: { password: true },
       });
       const photo = await storeImage(dto.photo, 'profile', String(user.id));
@@ -121,7 +121,7 @@ export class UsersService {
     try {
       const user = await this.prisma.user.update({
         where: { id: BigInt(id) },
-        data: { ...dto, photo, password },
+        data: { ...dto, additionalRoles: dto.role === 'admin' ? [] : dto.additionalRoles?.filter(role => role !== dto.role), photo, password },
         omit: { password: true },
       });
       return serialize({ message: 'Data akun berhasil diperbarui.', user });

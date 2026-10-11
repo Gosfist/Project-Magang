@@ -21,6 +21,9 @@ export const routes: Routes = [
     canActivateChild: [authGuard],
     children: [
       { path: '', component: HomeComponent },
+      ...['finance', 'sales', 'kolektor', 'teknisi'].map(role => ({
+        path: `${role}/dashboard`, component: HomeComponent, canActivate: [roleGuard(role)],
+      })),
       {
         path: 'monitoring/server',
         loadComponent: () =>

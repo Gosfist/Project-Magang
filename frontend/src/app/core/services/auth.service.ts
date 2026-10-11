@@ -1,5 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
+import { roleForUrl, userRoles } from '../access-roles';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { User } from '../../shared/models/types';
@@ -15,14 +16,26 @@ export class AuthService {
   private photoRequest = 0;
   loading = signal<boolean>(true);
   isAdmin = computed(() => this.user()?.role === 'admin');
-  isFinance = computed(() => this.user()?.role === 'finance');
-  isSales = computed(() => this.user()?.role === 'sales');
-  isKolektor = computed(() => this.user()?.role === 'kolektor');
-  isTeknisi = computed(() => this.user()?.role === 'teknisi');
+  accessContext = signal<string | null>(null);
+  activeRole = computed(() => this.accessContext() ?? this.user()?.role);
+  isFinance = computed(() => this.activeRole() === 'finance');
+  isSales = computed(() => this.activeRole() === 'sales');
+  isKolektor = computed(() => this.activeRole() === 'kolektor');
+  isTeknisi = computed(() => this.activeRole() === 'teknisi');
+  canAccess = (...roles: string[]) => {
+    const user = this.user();
+    return !!user && roles.some(role => userRoles(user).includes(role));
+  };
   hasRole = (...roles: string[]) => {
-    const role = this.user()?.role;
+    const role = this.activeRole();
     return role ? roles.includes(role) : false;
   };
+
+  constructor() {
+    this.router.events.subscribe(event => {
+      if (event instanceof NavigationEnd) this.accessContext.set(roleForUrl(event.urlAfterRedirects));
+    });
+  }
 
   async loadUser(): Promise<void> {
     const token = localStorage.getItem('unzanet_token');

@@ -13,6 +13,7 @@ const { PrismaClient } = await import(pathToFileURL(path.join(backendDir, 'node_
 const prisma = new PrismaClient();
 
 const features = new Map([
+  ['20261012_user_additional_roles.sql', 'Hak akses tambahan akun'],
   ['20261011_user_created_at.sql', 'Tanggal pembuatan akun untuk periode dashboard Sales'],
   ['20261001_customer_delete_payments.sql', 'Hapus data operasional pelanggan, pertahankan pembayaran'],
   ['20261001_psb_fee_paid.sql', 'Biaya PSB diterima teknisi terpisah dari tagihan bulanan'],
@@ -72,6 +73,8 @@ async function indexExists(table, indexName) {
 
 async function looksAlreadyApplied(filename) {
   switch (filename) {
+    case '20261012_user_additional_roles.sql':
+      return columnExists('users', 'additional_roles');
     case '20261001_customer_delete_payments.sql':
       return (await columnExists('invoices', 'customer_snapshot')) && (await columnExists('collector_deposits', 'customer_snapshot')) && (await columnExists('activity_logs', 'entity_id')) && (await indexExists('activity_logs', 'activity_logs_entity_idx'));
     case '20261001_psb_fee_paid.sql':

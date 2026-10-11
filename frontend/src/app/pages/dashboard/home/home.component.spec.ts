@@ -17,7 +17,7 @@ describe('Collector dashboard', () => {
       providers: [provideRouter([]),
         { provide: ApiService, useValue: { get } },
         { provide: AuthService, useValue: {
-          user: () => ({ name: 'Kolektor' }), isKolektor: () => true,
+          activeRole: () => 'kolektor', user: () => ({ name: 'Kolektor' }), isKolektor: () => true,
           isAdmin: () => false, isSales: () => false, isTeknisi: () => false, isFinance: () => false,
         } },
       ],
@@ -61,7 +61,7 @@ describe('Sales dashboard periods', () => {
     });
     await TestBed.configureTestingModule({ imports: [HomeComponent], providers: [provideRouter([]),
       { provide: ApiService, useValue: { get } },
-      { provide: AuthService, useValue: { user: () => ({ name: 'Sales' }), isSales: () => true,
+      { provide: AuthService, useValue: { activeRole: () => 'sales', user: () => ({ name: 'Sales' }), isSales: () => true,
         isAdmin: () => false, isTeknisi: () => false, isKolektor: () => false, isFinance: () => false } },
     ] }).compileComponents();
   });

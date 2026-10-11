@@ -22,10 +22,10 @@ export class PsbService {
     private readonly network: PppoeNetworkService,
   ) {}
 
-  async list(user: { id: string; role: string }, search = '', status = '', page = 1) {
+  async list(user: { id: string; role: string; primaryRole?: string }, search = '', status = '', page = 1) {
     if (status && !['PROCESS', 'COMPLETED'].includes(status)) throw new BadRequestException('Filter status tidak valid.');
     const where: Prisma.PsbOrderWhereInput = {
-      ...(user.role === 'sales' ? { salesUserId: BigInt(user.id) } : {}),
+      ...(user.role === 'sales' && user.primaryRole !== 'admin' ? { salesUserId: BigInt(user.id) } : {}),
       ...(status === 'PROCESS' ? { status: { in: ['PROCESS', 'ACTIVATED'] } } : status ? { status } : {}),
       ...(search.trim() ? (/^\d{1,18}$/.test(search.trim()) ? { customerNumber: BigInt(search.trim()) } : { id: { in: [] } }) : {}),
     };
@@ -67,7 +67,7 @@ export class PsbService {
     return serialize({ message: 'Registrasi pelanggan berhasil dan masuk ke antrean teknisi.', order: { ...order, customerId: this.customerId(order.customerNumber), password: undefined } });
   }
 
-  async update(id: string, dto: UpdatePsbOrderDto, user: { id: string; role: string }) {
+  async update(id: string, dto: UpdatePsbOrderDto, user: { id: string; role: string; primaryRole?: string }) {
     const current = await this.find(id);
     this.assertSalesOwner(current, user);
     if (current.status !== 'PROCESS') throw new BadRequestException('Data yang sudah diaktivasi tidak dapat diedit oleh sales.');
@@ -76,7 +76,7 @@ export class PsbService {
     return serialize({ message: 'Registrasi pelanggan berhasil diperbarui.', order });
   }
 
-  async remove(id: string, user: { id: string; role: string }) {
+  async remove(id: string, user: { id: string; role: string; primaryRole?: string }) {
     const current = await this.find(id);
     this.assertSalesOwner(current, user);
     if (current.status !== 'PROCESS') throw new BadRequestException('Data yang sudah diaktivasi tidak dapat dihapus.');
@@ -229,8 +229,8 @@ export class PsbService {
     if (!order) throw new NotFoundException('Registrasi pasang baru tidak ditemukan.');
     return order;
   }
-  private assertSalesOwner(order: { salesUserId: bigint }, user: { id: string; role: string }) {
-    if (user.role !== 'admin' && order.salesUserId !== BigInt(user.id)) throw new BadRequestException('Registrasi ini bukan milik Sales Anda.');
+  private assertSalesOwner(order: { salesUserId: bigint }, user: { id: string; role: string; primaryRole?: string }) {
+    if ((user.primaryRole ?? user.role) !== 'admin' && order.salesUserId !== BigInt(user.id)) throw new BadRequestException('Registrasi ini bukan milik Sales Anda.');
   }
   private customerId(value: bigint) { return value.toString().padStart(6, '0'); }
   private async serializable<T>(fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {

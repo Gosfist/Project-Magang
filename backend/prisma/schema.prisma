@@ -15,6 +15,7 @@ model User {
   photo    String? @db.LongText
   password String
   role     String  @default("teknisi") // admin, teknisi, finance, sales, kolektor
+  additionalRoles Json? @map("additional_roles")
   status   String  @default("active")
   createdAt DateTime? @default(now()) @map("created_at")
 

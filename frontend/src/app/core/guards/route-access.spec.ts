@@ -6,9 +6,10 @@ import { AuthService } from '../services/auth.service';
 
 describe('Dashboard URL access', () => {
   let role: string | null;
+  let additionalRoles: string[] = [];
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [
-      { provide: AuthService, useValue: { user: () => role ? { role } : null, loading: () => false } },
+      { provide: AuthService, useValue: { user: () => role ? { role, additionalRoles } : null, loading: () => false } },
       { provide: Router, useValue: { createUrlTree: (commands: string[]) => commands.join('/') } },
     ] });
   });
@@ -27,7 +28,8 @@ describe('Dashboard URL access', () => {
       if (route.redirectTo !== undefined) continue;
       const path = prefix + route.path;
       const guards = [...inherited, ...(route.canActivate ?? [])] as CanActivateFn[];
-      const allowed = expected[path] ?? (path.startsWith('mainCore/') ? ['admin', 'teknisi'] : path.startsWith('finance/') ? ['finance'] : ['admin']);
+      const dashboardRole = /^(finance|sales|kolektor|teknisi)\/dashboard$/.exec(path)?.[1];
+      const allowed = (dashboardRole ? [dashboardRole] : expected[path]) ?? (path.startsWith('mainCore/') ? ['admin', 'teknisi'] : path.startsWith('finance/') ? ['finance'] : ['admin']);
       for (const currentRole of ['admin', 'finance', 'kolektor', 'sales', 'teknisi', null]) {
         it(`${path || 'home'}: ${currentRole ?? 'anonymous'}`, async () => {
           role = currentRole;
@@ -37,11 +39,24 @@ describe('Dashboard URL access', () => {
             result = await (isObservable(value) ? firstValueFrom(value) : value);
             if (result !== true) break;
           }
-          expect(result === true).toBe(currentRole !== null && allowed.includes(currentRole));
+          expect(result === true).toBe(currentRole !== null && (currentRole === 'admin' || allowed.includes(currentRole)));
         });
       }
       if (route.children) checkRoutes(route.children, [...guards, ...(route.canActivateChild ?? [])] as CanActivateFn[], path + '/');
     }
   }
   checkRoutes(dashboard.children!, dashboard.canActivate as CanActivateFn[]);
+  it('grants added Sales and Kolektor access to Finance without granting administrator access', async () => {
+    role = 'finance'; additionalRoles = ['sales', 'kolektor'];
+    for (const path of ['registrasi-pelanggan', 'kolektor/tagihan', 'users', 'pasang-baru']) {
+      const route = dashboard.children!.find(item => item.path === path)!;
+      let allowed: unknown = true;
+      for (const guard of route.canActivate as CanActivateFn[]) {
+        allowed = await TestBed.runInInjectionContext(() => guard({} as ActivatedRouteSnapshot, { url: '/dashboard/' + path } as RouterStateSnapshot));
+        if (allowed !== true) break;
+      }
+      expect(allowed === true).toBe(['registrasi-pelanggan', 'kolektor/tagihan'].includes(path));
+    }
+    additionalRoles = [];
+  });
 });

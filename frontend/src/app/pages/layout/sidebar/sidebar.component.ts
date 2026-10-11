@@ -13,7 +13,6 @@ import {
   LucideUsers,
   LucideX,
   LucideMessageCircle,
-  LucideDollarSign,
   LucideMapPin,
   LucideEye,
   LucideEyeOff,
@@ -40,8 +39,7 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
     LucideUsers,
     LucideX,
     LucideMessageCircle,
-    LucideDollarSign,
-    LucideMapPin,
+      LucideMapPin,
     LucideEye,
     LucideEyeOff,
     ModalComponent,
@@ -99,6 +97,21 @@ export class SidebarComponent implements OnInit {
     ['Transaksi', '/dashboard/finance/transaksi'],
     ['Setoran Kolektor', '/dashboard/finance/setoran'],
   ];
+
+  readonly roleGroups = [
+    { role: 'finance', label: 'Finance', links: [['Dashboard', '/dashboard/finance/dashboard'], ...this.financeLinks] },
+    { role: 'sales', label: 'Sales', links: [['Dashboard', '/dashboard/sales/dashboard'], ['Registrasi', '/dashboard/registrasi-pelanggan']] },
+    { role: 'kolektor', label: 'Kolektor', links: [['Dashboard', '/dashboard/kolektor/dashboard'], ['Tagihan', '/dashboard/kolektor/tagihan'], ['Janji Bayar', '/dashboard/kolektor/janji-bayar'], ['Titipan', '/dashboard/kolektor/titipan']] },
+    { role: 'teknisi', label: 'Teknisi', links: [['Dashboard', '/dashboard/teknisi/dashboard'], ['Pasang Baru', '/dashboard/pasang-baru'], ['Data Pelanggan', '/dashboard/teknisi/data-pelanggan'], ...this.coreLinks, ['Kalkulator Redaman', '/dashboard/tools/kalkulator-redaman']] },
+  ];
+  private roleMenuState = signal<Record<string, boolean>>({});
+  roleGroupOpen(role: string): boolean {
+    return this.roleMenuState()[role] ?? (this.auth.activeRole() === role);
+  }
+  toggleRoleGroup(role: string): void {
+    const open = this.roleGroupOpen(role);
+    this.roleMenuState.update(state => ({ ...state, [role]: !open }));
+  }
 
   ngOnInit(): void {
     const url = this.router.url;

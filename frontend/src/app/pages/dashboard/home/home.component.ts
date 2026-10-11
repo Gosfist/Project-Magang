@@ -102,7 +102,7 @@ export class HomeComponent implements OnInit {
       { label: 'Total ODP', value: s['totalOdps'], type: 'odp' },
       { label: 'Data Redaman', value: s['totalWithRedaman'], type: 'redaman' },
     ];
-    if (this.auth.isAdmin()) {
+    if (this.auth.activeRole() === 'admin') {
       result.push({ label: 'Total Teknisi', value: s['totalTeknisi'], type: 'users' });
       result.push({ label: 'Total Pengguna', value: s['totalUsers'], type: 'users' });
     } else if (this.auth.isSales()) {
