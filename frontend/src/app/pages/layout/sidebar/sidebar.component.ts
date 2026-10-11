@@ -3,6 +3,15 @@ import { Component, inject, model, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
+  LucideShieldCheck,
+  LucideBellRing,
+  LucideDatabase,
+  LucideBot,
+  LucideActivity,
+  LucideLaptop,
+  LucideFileText,
+  LucideKeyRound,
+  LucideTags,
   LucideContactRound,
   LucideWorkflow,
   LucideBadgeDollarSign,
@@ -44,6 +53,15 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
   standalone: true,
   imports: [
     NgTemplateOutlet,
+    LucideShieldCheck,
+    LucideBellRing,
+    LucideDatabase,
+    LucideBot,
+    LucideActivity,
+    LucideLaptop,
+    LucideFileText,
+    LucideKeyRound,
+    LucideTags,
     LucideHardHat,
     LucideBadgeDollarSign,
     LucideWorkflow,
@@ -144,7 +162,7 @@ export class SidebarComponent implements OnInit {
 
   private roleMenuState = signal<Record<string, boolean>>({});
   roleGroupOpen(role: string): boolean {
-    return this.roleMenuState()[role] ?? (this.auth.activeRole() === role);
+    return this.roleMenuState()[role] ?? (this.auth.activeRole() === role || (role === 'kolektor' && this.router.url.startsWith('/dashboard/area')));
   }
   toggleRoleGroup(role: string): void {
     const open = this.roleGroupOpen(role);

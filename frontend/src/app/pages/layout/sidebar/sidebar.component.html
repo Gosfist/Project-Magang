@@ -60,9 +60,9 @@
             <a
               [routerLink]="link[1]"
               routerLinkActive="bg-white/15 text-white"
-              class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+              class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
               (click)="mobile.set(false)"
-              >{{ link[0] }}</a
+              ><ng-container [ngTemplateOutlet]="menuIcon" [ngTemplateOutletContext]="{ $implicit: link[0] }" />{{ link[0] }}</a
             >
           }
         </div>
@@ -87,9 +87,9 @@
             <a
               [routerLink]="link[1]"
               routerLinkActive="bg-white/15 text-white"
-              class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+              class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
               (click)="mobile.set(false)"
-              >{{ link[0] }}</a
+              ><ng-container [ngTemplateOutlet]="menuIcon" [ngTemplateOutletContext]="{ $implicit: link[0] }" />{{ link[0] }}</a
             >
           }
         </div>
@@ -114,23 +114,23 @@
           <a
             routerLink="/dashboard/monitoring/server"
             routerLinkActive="bg-white/15 text-white"
-            class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+            class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
             (click)="mobile.set(false)"
-            >Server</a
+            ><ng-container [ngTemplateOutlet]="menuIcon" [ngTemplateOutletContext]="{ $implicit: 'Server' }" />Server</a
           >
           <a
             routerLink="/dashboard/monitoring/router"
             routerLinkActive="bg-white/15 text-white"
-            class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+            class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
             (click)="mobile.set(false)"
-            >NAS / Router</a
+            ><ng-container [ngTemplateOutlet]="menuIcon" [ngTemplateOutletContext]="{ $implicit: 'NAS / Router' }" />NAS / Router</a
           >
           <a
             routerLink="/dashboard/monitoring/radius"
             routerLinkActive="bg-white/15 text-white"
-            class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+            class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
             (click)="mobile.set(false)"
-            >FreeRADIUS</a
+            ><ng-container [ngTemplateOutlet]="menuIcon" [ngTemplateOutletContext]="{ $implicit: 'FreeRADIUS' }" />FreeRADIUS</a
           >
         </div>
       }
@@ -158,30 +158,17 @@
             <a
               [routerLink]="link[1]"
               routerLinkActive="bg-white/15 text-white"
-              class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+              class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
               (click)="mobile.set(false)"
-              >{{ link[0] }}</a
+              ><ng-container [ngTemplateOutlet]="menuIcon" [ngTemplateOutletContext]="{ $implicit: link[0] }" />{{ link[0] }}</a
             >
           }
         </div>
       }
     }
 
-    @if (auth.isAdmin()) {
-      <a routerLink="/dashboard/users" routerLinkActive="bg-white/15 text-white" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10" (click)="mobile.set(false)">
-        <svg lucideUsers [size]="20"></svg> Akun & Role
-      </a>
-    }
-    @if (auth.isAdmin()) {
-      <a
-        routerLink="/dashboard/area"
-        routerLinkActive="bg-white/15 text-white"
-        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
-        (click)="mobile.set(false)"
-      >
-        <svg lucideMapPin [size]="20"></svg> Data Area
-      </a>
-    }
+
+
 
 
     @for (group of roleGroups; track group.role) {
@@ -201,9 +188,21 @@
                 <ng-container [ngTemplateOutlet]="menuIcon" [ngTemplateOutletContext]="{ $implicit: link[0] }" />{{ link[0] }}
               </a>
             }
+            @if (auth.isAdmin() && group.role === 'kolektor') {
+              <a routerLink="/dashboard/area" routerLinkActive="bg-white/15 text-white"
+                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+                (click)="mobile.set(false)">
+                <svg lucideMapPin [size]="20" aria-hidden="true"></svg> Data Area
+              </a>
+            }
           </div>
         }
       }
+    }
+    @if (auth.isAdmin()) {
+      <a routerLink="/dashboard/users" routerLinkActive="bg-white/15 text-white" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10" (click)="mobile.set(false)">
+        <svg lucideUsers [size]="20"></svg> Akun & Role
+      </a>
     }
     @if (auth.isAdmin()) {
       <a
@@ -443,5 +442,15 @@
     @case ('Sales') { <svg lucideTrendingUp [size]="20" aria-hidden="true"></svg> }
     @case ('Kolektor') { <svg lucideBadgeDollarSign [size]="20" aria-hidden="true"></svg> }
     @case ('Teknisi') { <svg lucideHardHat [size]="20" aria-hidden="true"></svg> }
+    @case ('Harga Paket') { <svg lucideTags [size]="20" aria-hidden="true"></svg> }
+    @case ('IP Pool') { <svg lucideDatabase [size]="20" aria-hidden="true"></svg> }
+    @case ('Router / NAS') { <svg lucideRouter [size]="20" aria-hidden="true"></svg> }
+    @case ('Server VPN') { <svg lucideShieldCheck [size]="20" aria-hidden="true"></svg> }
+    @case ('Klien VPN') { <svg lucideLaptop [size]="20" aria-hidden="true"></svg> }
+    @case ('NAS / Router') { <svg lucideActivity [size]="20" aria-hidden="true"></svg> }
+    @case ('FreeRADIUS') { <svg lucideKeyRound [size]="20" aria-hidden="true"></svg> }
+    @case ('Login Bot Wa') { <svg lucideBot [size]="20" aria-hidden="true"></svg> }
+    @case ('Template Pesan') { <svg lucideFileText [size]="20" aria-hidden="true"></svg> }
+    @case ('Log Notifikasi') { <svg lucideBellRing [size]="20" aria-hidden="true"></svg> }
   }
 </ng-template>
