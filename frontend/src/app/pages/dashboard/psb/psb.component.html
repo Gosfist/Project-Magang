@@ -336,14 +336,6 @@
     </div>
     @if (activationStep() === 1) {
       <div class="space-y-4">
-        <div>
-          <label class="label">Username PPPoE</label
-          ><input class="input" readonly [(ngModel)]="activation.username" />
-        </div>
-        <div>
-          <label class="label">Password PPPoE</label
-          ><input class="input" type="password" [readonly]="activationViewOnly" [(ngModel)]="activation.password" placeholder="Kosongkan jika tidak ingin mengganti" />
-        </div>
         <div class="relative">
           <label class="label">ODC / ODP *</label
           ><button
@@ -398,6 +390,20 @@
               </div>
             </div>
           }
+        </div>
+        <div>
+          <label class="label" for="activation-username">Username PPPoE</label>
+          <input id="activation-username" class="input" readonly [ngModel]="activation.username" />
+        </div>
+        <div>
+          <label class="label" for="activation-password">Password PPPoE</label>
+          <div class="relative">
+            <input id="activation-password" class="input pr-12" [type]="showActivationPassword() ? 'text' : 'password'" readonly [ngModel]="activation.password" [placeholder]="selected()?.status === 'PROCESS' ? '' : 'Password tersimpan'" />
+            <button type="button" class="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-500 hover:text-slate-900 disabled:opacity-50" [disabled]="!activation.password" [attr.aria-label]="showActivationPassword() ? 'Sembunyikan password' : 'Lihat password'" [attr.aria-pressed]="showActivationPassword()" (click)="showActivationPassword.set(!showActivationPassword())">
+              @if (showActivationPassword()) { <svg lucideEyeOff [size]="18"></svg> }
+              @else { <svg lucideEye [size]="18"></svg> }
+            </button>
+          </div>
         </div>
         <div class="flex justify-end">
           <button

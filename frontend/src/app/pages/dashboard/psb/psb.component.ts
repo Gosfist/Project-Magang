@@ -1,6 +1,6 @@
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { LucideCheck, LucidePencil, LucideTrash2 } from '@lucide/angular';
+import { LucideCheck, LucidePencil, LucideTrash2, LucideEye, LucideEyeOff } from '@lucide/angular';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import {
@@ -19,6 +19,8 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
   standalone: true,
   imports: [
     FormsModule,
+    LucideEye,
+    LucideEyeOff,
     LucideCheck,
     LucidePencil,
     LucideTrash2,
@@ -48,6 +50,7 @@ export class PsbComponent implements OnInit, OnDestroy {
   formOpen = signal(false);
   activationOpen = signal(false);
   activationStep = signal(1);
+  showActivationPassword = signal(false);
   editing = signal<PsbOrder | null>(null);
   selected = signal<PsbOrder | null>(null);
   odpPickerOpen = false;
@@ -180,6 +183,7 @@ export class PsbComponent implements OnInit, OnDestroy {
     this.selected.set(item);
     this.activationViewOnly = viewOnly;
     this.activationStep.set(1);
+    this.showActivationPassword.set(false);
     this.odpPickerOpen = false;
     this.odpSearch = '';
     this.activation = {
