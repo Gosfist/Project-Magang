@@ -404,7 +404,8 @@
           ></svg>
           <input
             class="input input-with-icon text-xs py-2 w-full"
-            placeholder="Cari pelanggan, telepon, username..."
+            [placeholder]="auth.isKolektor() ? 'Cari No pelanggan...' : 'Cari pelanggan, telepon, username...'"
+            [attr.inputmode]="auth.isKolektor() ? 'numeric' : 'text'"
             [(ngModel)]="customerSearch"
             (ngModelChange)="loadAreaCustomers()"
           />

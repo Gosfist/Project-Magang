@@ -206,7 +206,11 @@ export class AreaService {
     };
 
     if (search.trim()) {
-      where.OR = [
+      if (user?.role === 'kolektor') {
+        const number = search.trim();
+        if (/^\d+$/.test(number)) where.customerNumber = BigInt(number);
+        else where.id = { in: [] };
+      } else where.OR = [
         { customerName: { contains: search.trim() } },
         { username: { contains: search.trim() } },
         { phone: { contains: search.trim() } },
