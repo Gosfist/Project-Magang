@@ -62,7 +62,6 @@ export class SidebarComponent implements OnInit {
   toolOpen = signal(false);
   monitoringOpen = signal(false);
   botWaOpen = signal(false);
-  financeOpen = signal(false);
   profileOpen = signal(false);
   savingProfile = signal(false);
   changePassword = signal(false);
@@ -97,7 +96,6 @@ export class SidebarComponent implements OnInit {
   readonly financeLinks = [
     ['Gaji', '/dashboard/finance/gaji'],
     ['Tagihan', '/dashboard/finance/tagihan'],
-    ['Ringkasan', '/dashboard/finance/ringkasan'],
     ['Transaksi', '/dashboard/finance/transaksi'],
     ['Setoran Kolektor', '/dashboard/finance/setoran'],
   ];
@@ -110,7 +108,6 @@ export class SidebarComponent implements OnInit {
     if (url.includes('/monitoring')) this.monitoringOpen.set(true);
     if (url.includes('/tools')) this.toolOpen.set(true);
     if (url.includes('/bot-whatsapp')) this.botWaOpen.set(true);
-    if (url.includes('/finance')) this.financeOpen.set(true);
   }
 
   openProfile(): void {

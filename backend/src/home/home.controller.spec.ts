@@ -21,8 +21,8 @@ describe('monthly salary', () => {
   it('scopes registration and completion counts to the logged-in sales user', async () => {
     const { prisma, controller } = setup();
     const result = await controller.stats({ user: { id: '17', role: 'sales' } } as any);
-    expect(result).toMatchObject({ monthlyRegistrations: 3, monthlyCompletedOrders: 2, monthlySalary: 100000 });
-    expect(prisma.psbOrder.count).toHaveBeenNthCalledWith(1, { where: { salesUserId: 17n, createdAt: { gte: expect.any(Date), lt: expect.any(Date) } } });
+    expect(result).toMatchObject({ monthlyProcessOrders: 3, monthlyCompletedOrders: 2, monthlySalary: 100000 });
+    expect(prisma.psbOrder.count).toHaveBeenNthCalledWith(1, { where: { salesUserId: 17n, status: { in: ['PROCESS', 'ACTIVATED'] }, createdAt: { gte: expect.any(Date), lt: expect.any(Date) } } });
     expect(prisma.psbOrder.count).toHaveBeenNthCalledWith(2, { where: { salesUserId: 17n, status: 'COMPLETED', completedAt: { gte: expect.any(Date), lt: expect.any(Date) } } });
   });
   it('pays only completed installations attributed to the current technician', async () => {
@@ -36,7 +36,7 @@ describe('monthly salary', () => {
     const { prisma, controller } = setup();
     const result = await controller.stats({ user: { id: '17', role: 'sales' } } as any, '2026', '8');
     expect(result).toMatchObject({ year: 2026, month: 8, startYear: 2026, startMonth: 1, monthlySalary: 100000 });
-    expect(prisma.psbOrder.count).toHaveBeenNthCalledWith(1, { where: { salesUserId: 17n, createdAt: { gte: new Date('2026-07-31T17:00:00Z'), lt: new Date('2026-08-31T17:00:00Z') } } });
+    expect(prisma.psbOrder.count).toHaveBeenNthCalledWith(1, { where: { salesUserId: 17n, status: { in: ['PROCESS', 'ACTIVATED'] }, createdAt: { gte: new Date('2026-07-31T17:00:00Z'), lt: new Date('2026-08-31T17:00:00Z') } } });
   });
   it.each([['2025', '12'], ['9999', '1'], ['2026', '13'], ['abc', '1'], ['2026', '1.5']])('rejects unavailable period %s/%s', async (year, month) => {
     const { prisma, controller } = setup();

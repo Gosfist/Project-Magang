@@ -1,3 +1,6 @@
+@if (auth.isFinance()) {
+  <app-finance-summary />
+} @else {
 <div class="space-y-5">
   <div class="card flex flex-wrap items-center justify-between gap-4 p-5" [class.sales-welcome]="auth.isSales()">
     <h2 class="text-xl font-semibold">Selamat datang, {{ auth.user()?.name }}</h2>
@@ -69,3 +72,4 @@
     </section>
   }
 </div>
+}

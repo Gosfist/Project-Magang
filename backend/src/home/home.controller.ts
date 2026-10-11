@@ -71,11 +71,11 @@ export class HomeController {
     }
     const period = salaryMonth(year, month);
     const rates = await this.salary.settings();
-    const [monthlyRegistrations, monthlyCompletedOrders] = await this.prisma.$transaction([
-      this.prisma.psbOrder.count({ where: { salesUserId, createdAt: period } }),
+    const [monthlyProcessOrders, monthlyCompletedOrders] = await this.prisma.$transaction([
+      this.prisma.psbOrder.count({ where: { salesUserId, status: { in: ['PROCESS', 'ACTIVATED'] }, createdAt: period } }),
       this.prisma.psbOrder.count({ where: { salesUserId, status: 'COMPLETED', completedAt: period } }),
     ]);
-    return { monthlyRegistrations, monthlyCompletedOrders, salaryRate: rates.sales,
+    return { monthlyProcessOrders, monthlyCompletedOrders, salaryRate: rates.sales,
       monthlySalary: monthlyCompletedOrders * rates.sales, year, month,
       startYear: start.year, startMonth: start.month, currentYear: current.year, currentMonth: current.month };
   }

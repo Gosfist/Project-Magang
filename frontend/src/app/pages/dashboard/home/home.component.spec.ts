@@ -52,7 +52,7 @@ describe('Collector dashboard', () => {
 
 describe('Sales dashboard periods', () => {
   let get: jasmine.Spy;
-  const response = { monthlyRegistrations: 3, monthlyCompletedOrders: 2, monthlySalary: 100000, salaryRate: 50000,
+  const response = { monthlyProcessOrders: 3, monthlyCompletedOrders: 2, monthlySalary: 100000, salaryRate: 50000,
     year: 2027, month: 2, startYear: 2026, startMonth: 10, currentYear: 2027, currentMonth: 2 };
   beforeEach(async () => {
     get = jasmine.createSpy('get').and.callFake((url: string) => {
@@ -68,7 +68,7 @@ describe('Sales dashboard periods', () => {
   it('shows only the three period totals and defaults to the server current month', () => {
     const fixture = TestBed.createComponent(HomeComponent); fixture.detectChanges();
     const component = fixture.componentInstance;
-    expect(component.cards().map(card => card.label)).toEqual(['Inputan', 'Selesai', 'Gaji']);
+    expect(component.cards().map(card => card.label)).toEqual(['Proses', 'Selesai', 'Gaji']);
     expect(component.selectedYear).toBe(2027); expect(component.selectedMonth).toBe(2);
     expect(component.years).toEqual([2026, 2027]);
     expect(component.months.map(month => month.value)).toEqual([1, 2]);

@@ -104,30 +104,16 @@
 
     <!-- Finance -->
     @if (auth.isFinance()) {
-      <button
-        class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
-        (click)="financeOpen.set(!financeOpen())"
-      >
-        <svg lucideDollarSign [size]="20"></svg>
-        <span class="flex-1 text-left">Finance</span>
-        <svg
-          lucideChevronDown
-          [size]="16"
-          [class]="!financeOpen() ? '-rotate-90' : ''"
-        ></svg>
-      </button>
-      @if (financeOpen()) {
-        <div class="mt-1 space-y-1 pl-11 pr-2">
-          @for (link of financeLinks; track link[1]) {
-            <a
-              [routerLink]="link[1]"
-              routerLinkActive="bg-white/15 text-white"
-              class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
-              (click)="mobile.set(false)"
-              >{{ link[0] }}</a
-            >
-          }
-        </div>
+      @for (link of financeLinks; track link[1]) {
+        <a
+          [routerLink]="link[1]"
+          routerLinkActive="bg-white/15 text-white"
+          class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+          (click)="mobile.set(false)"
+        >
+          <svg lucideDollarSign [size]="20"></svg>
+          {{ link[0] }}
+        </a>
       }
     } @else if (auth.isKolektor()) {
       <a

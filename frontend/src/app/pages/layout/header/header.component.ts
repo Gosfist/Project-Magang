@@ -51,7 +51,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard/tools/kalkulator-redaman': 'Kalkulator Redaman',
     '/dashboard/pengaturan': 'Pengaturan',
     '/dashboard/finance/gaji': 'Gaji',
-    '/dashboard/finance/ringkasan': 'Ringkasan Finance',
+    '/dashboard/finance/ringkasan': 'Dashboard',
     '/dashboard/finance/transaksi': 'Transaksi Finance',
     '/dashboard/finance/setoran': 'Setoran Kolektor',
     '/dashboard/finance/tagihan': 'Tagihan',

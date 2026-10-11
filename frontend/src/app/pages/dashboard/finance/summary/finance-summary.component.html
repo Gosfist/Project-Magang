@@ -5,7 +5,7 @@
       <!-- Title / info -->
       <div class="flex items-center gap-2">
         <div>
-          <h2 class="text-sm font-bold text-slate-900">Ringkasan Finance</h2>
+          <h2 class="text-sm font-bold text-slate-900">Dashboard</h2>
           <p class="text-xs text-slate-500">Laporan pemasukan, pengeluaran, dan saldo kas</p>
         </div>
       </div>
@@ -33,7 +33,7 @@
 
   @if (loading()) {
     <div class="card p-12 text-center text-slate-400">
-      Memuat ringkasan finance...
+      Memuat dashboard...
     </div>
   } @else if (summary()) {
     <!-- Monthly Metrics Grid -->

@@ -1,3 +1,4 @@
+import { FinanceSummaryComponent } from '../finance/summary/finance-summary.component';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { LucideGitBranch, LucideNetwork, LucideServer, LucideUsers } from '@lucide/angular';
 import { ApiService } from '../../../core/services/api.service';
@@ -17,7 +18,7 @@ type StatCard = {
 @Component({
   selector: 'app-dashboard-home',
   standalone: true,
-  imports: [FormsModule, CommonModule, RouterLink, LucideGitBranch, LucideNetwork, LucideServer, LucideUsers],
+  imports: [FinanceSummaryComponent, FormsModule, CommonModule, RouterLink, LucideGitBranch, LucideNetwork, LucideServer, LucideUsers],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })
@@ -40,6 +41,7 @@ export class HomeComponent implements OnInit {
   private monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
   ngOnInit(): void {
+    if (this.auth.isFinance()) return;
     if (this.auth.isKolektor()) {
       this.api.get<{ summary: AreaBillingSummary }>('/areas/customers').subscribe({
         next: (data) => this.billingSummary.set(data.summary),
@@ -105,7 +107,7 @@ export class HomeComponent implements OnInit {
       result.push({ label: 'Total Pengguna', value: s['totalUsers'], type: 'users' });
     } else if (this.auth.isSales()) {
       result = [
-        { label: 'Inputan', value: s['monthlyRegistrations'], type: 'users' },
+        { label: 'Proses', value: s['monthlyProcessOrders'], type: 'users' },
         { label: 'Selesai', value: s['monthlyCompletedOrders'], type: 'odp' },
         { label: 'Gaji', value: s['monthlySalary'], type: 'users', currency: true },
       ];
