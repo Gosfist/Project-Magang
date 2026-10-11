@@ -44,8 +44,10 @@
 .filter-option { display: block; width: 100%; border-radius: 8px; padding: 10px 12px; text-align: left; font-size: 14px; font-weight: 400; color: #334155; }
 .filter-option:hover, .filter-option:focus-visible { background: #f1f5f9; outline: none; }
 .filter-option.active { background: #eef2ff; color: #4338ca; }
-.filter-button { min-width: 120px; flex-direction: column; align-items: center; justify-content: center; gap: 2px; line-height: 1.3; }
-.filter-button small { margin-top: 0; font-size: 12px; font-weight: 400; color: #64748b; }
+.customer-filters .input, .customer-filters > button, .customer-filters .filter-button {
+  height: 42px; min-height: 42px; padding-top: 10px; padding-bottom: 10px; line-height: 20px;
+}
+.filter-button { width: 104px; min-width: 104px; padding-inline: 10px; white-space: nowrap; }
 @media (min-width: 640px) { .account-form .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 639px) { .account-form .input { font-size: 16px; } .step-line { width: 12px; } }
 @media (min-width: 640px) { .edit-tabs { grid-template-columns: repeat(6, minmax(0, 1fr)); } }

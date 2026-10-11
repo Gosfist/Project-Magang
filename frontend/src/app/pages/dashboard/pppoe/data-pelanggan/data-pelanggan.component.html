@@ -1,5 +1,5 @@
 <div class="space-y-4">
-  <div class="card flex flex-wrap gap-3 p-4">
+  <div class="card customer-filters flex flex-wrap items-center gap-3 p-4">
     <div class="relative min-w-0 flex-1 basis-full sm:basis-0">
       <svg
         lucideSearch
@@ -24,8 +24,7 @@
         [attr.aria-expanded]="statusFilterOpen()"
         aria-controls="customer-status-filter"
       >
-        <span>Status</span>
-        <small>{{ filterStatusLabel() }}</small>
+        <span>{{ statusFilter ? filterStatusLabel() : 'Status' }}</span>
       </button>
       @if (statusFilterOpen()) {
         <div
@@ -80,8 +79,7 @@
         [attr.aria-expanded]="sessionFilterOpen()"
         aria-controls="customer-session-filter"
       >
-        <span>Sesi</span>
-        <small>{{ filterSessionLabel() }}</small>
+        <span>{{ sessionFilter ? filterSessionLabel() : 'Sesi' }}</span>
       </button>
       @if (sessionFilterOpen()) {
         <div
@@ -126,7 +124,7 @@
       }
     </div>
     <button
-      class="btn-secondary"
+      class="btn-secondary filter-button"
       [disabled]="refreshing() || (!statusFilter && !sessionFilter)"
       (click)="resetFilters()"
     >
