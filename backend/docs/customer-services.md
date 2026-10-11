@@ -40,3 +40,9 @@ sudo freeradius -XC
 ```
 
 Uji pelanggan percobaan: filter Aktif/Offline, periksa log autentikasi setelah dial PPPoE, buat Add-on dan cek invoice, buat janji lalu catat pembayaran invoice terkait. Verifikasi status aktual lewat `/ppp active print` di MikroTik. Jangan menganggap build atau data browser mock sebagai bukti bahwa router produksi sudah teruji.
+
+## Zona waktu log autentikasi
+
+FreeRADIUS 3 menulis post-auth `authdate` dengan `%S.%M` (waktu lokal proses), sedangkan Prisma membaca field tanggal SQL sebagai UTC. API log pelanggan dan Monitoring RADIUS menafsirkan kembali waktu tersebut sesuai `RADIUS_LOG_TIMEZONE` sebelum mengirim ISO UTC. Default WIB sesuai server lab Asia/Jakarta. Gunakan UTC jika timestamp yang dibaca Prisma memang sudah UTC; WITA/WIT tersedia untuk penyimpanan lokal zona tersebut. Konfigurasi ini hanya memengaruhi authdate, bukan invoice, header, atau waktu sistem. Tidak mengubah log tersimpan.
+
+Verifikasi di server: cocokkan `date`, tanggal SQL authdate terbaru, JSON endpoint auth-logs, dan tampilan WIB setelah autentikasi uji. Jika data SQL/API sudah UTC, gunakan RADIUS_LOG_TIMEZONE=UTC agar tidak dikoreksi dua kali.

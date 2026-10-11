@@ -1,3 +1,4 @@
+import { radiusLogTime } from '../../common/radius-log-time.js';
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
@@ -48,8 +49,9 @@ export class CustomerServicesService implements OnModuleInit, OnModuleDestroy {
   }
   async authLogs(id: string) {
     const account = await this.account(id);
-    return serialize({ data: await this.prisma.radpostauth.findMany({ where: { username: account.username },
-      select: { id: true, reply: true, authdate: true }, orderBy: [{ authdate: 'desc' }, { id: 'desc' }], take: 10 }) });
+    const data = await this.prisma.radpostauth.findMany({ where: { username: account.username },
+      select: { id: true, reply: true, authdate: true }, orderBy: [{ authdate: 'desc' }, { id: 'desc' }], take: 10 });
+    return serialize({ data: data.map(row => ({ ...row, authdate: radiusLogTime(row.authdate) })) });
   }
   async invoices(id: string) {
     const account = await this.account(id);

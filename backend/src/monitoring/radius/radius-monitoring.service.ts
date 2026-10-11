@@ -1,3 +1,4 @@
+import { radiusLogTime } from '../../common/radius-log-time.js';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { pageMeta, serialize } from '../../common/serialize.js';
@@ -38,7 +39,7 @@ export class RadiusMonitoringService {
     ]);
 
     return serialize({
-      data: items,
+      data: items.map(row => ({ ...row, authdate: radiusLogTime(row.authdate) })),
       meta: pageMeta(safePage, perPage, total),
       summary: { total, success, failed },
     });
