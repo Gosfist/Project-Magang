@@ -11,9 +11,10 @@ describe('collector entrusted payments from other areas', () => {
       collectorDeposit: { findMany: vi.fn().mockResolvedValue([]), count: vi.fn().mockResolvedValue(0) },
       $transaction: (requests: Promise<unknown>[]) => Promise.all(requests),
     };
-    await new FinanceDepositsService(prisma as any, {} as any).list('ACCEPTED', '7', '', '', 'Paijo', 2, 15, true);
+    await new FinanceDepositsService(prisma as any, {} as any).list('ACCEPTED', '7', '', '', '000002', 2, 15, true);
     const query = prisma.collectorDeposit.findMany.mock.calls[0][0];
-    expect(query.where).toMatchObject({ collectorUserId: 7n, account: foreignAreaAccount, status: 'ACCEPTED', OR: expect.any(Array) });
+    expect(query.where).toMatchObject({ collectorUserId: 7n, account: foreignAreaAccount, status: 'ACCEPTED', AND: [{ account: { customerNumber: 2n } }] });
+    expect(query.where.OR).toBeUndefined();
     expect(query.skip).toBe(15);
     expect(prisma.collectorDeposit.count).toHaveBeenCalledWith({ where: query.where });
   });

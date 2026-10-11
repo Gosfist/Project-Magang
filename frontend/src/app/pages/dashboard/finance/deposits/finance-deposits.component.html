@@ -10,7 +10,8 @@
         ></svg>
         <input
           class="input pl-10"
-          placeholder="Cari nama pelanggan, username..."
+          [placeholder]="auth.isKolektor() ? 'Cari No pelanggan...' : 'Cari nama pelanggan, username...'"
+          [attr.inputmode]="auth.isKolektor() ? 'numeric' : 'text'"
           [(ngModel)]="search"
           (ngModelChange)="page.set(1); load()"
         />
