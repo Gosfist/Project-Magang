@@ -18,7 +18,7 @@ describe('Dashboard URL access', () => {
     users: ['admin'], sales: ['admin'], mainCore: ['admin', 'teknisi'],
     'teknisi/data-pelanggan': ['teknisi'], 'registrasi-pelanggan': ['sales'],
     'pasang-baru': ['teknisi'], 'kolektor/tagihan': ['kolektor'],
-    'kolektor/titipan': ['kolektor'], area: ['admin'],
+    'kolektor/janji-bayar': ['kolektor'], 'kolektor/titipan': ['kolektor'], area: ['admin'],
     'tools/kalkulator-redaman': ['admin', 'teknisi'],
   };
   const dashboard = routes.find(r => r.path === 'dashboard')!;

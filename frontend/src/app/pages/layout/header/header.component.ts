@@ -56,6 +56,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard/finance/setoran': 'Setoran Kolektor',
     '/dashboard/finance/tagihan': 'Tagihan',
     '/dashboard/kolektor/tagihan': 'Tagihan',
+    '/dashboard/kolektor/janji-bayar': 'Janji Bayar',
     '/dashboard/kolektor/titipan': 'Titipan',
     '/dashboard/area': 'Data Area',
   };

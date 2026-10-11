@@ -175,6 +175,11 @@ export const routes: Routes = [
         canActivate: [roleGuard('kolektor')],
       },
       {
+        path: 'kolektor/janji-bayar',
+        loadComponent: () => import('./pages/dashboard/kolektor/promises/collector-promises.component').then(m => m.CollectorPromisesComponent),
+        canActivate: [roleGuard('kolektor')],
+      },
+      {
         path: 'kolektor/titipan',
         loadComponent: () =>
           import('./pages/dashboard/finance/deposits/finance-deposits.component').then(

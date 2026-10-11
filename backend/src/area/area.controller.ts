@@ -42,6 +42,13 @@ export class AreaController {
     return this.areas.getCollectorCustomers(search.trim(), status, req.user);
   }
 
+  @Get('promises')
+  @Roles('kolektor')
+  collectorPromises(@Req() req: AuthRequest, @Query('search') search = '',
+    @Query('page', new ParseIntPipe({ optional: true })) page = 1) {
+    return this.areas.collectorPromises(req.user.id, search.trim(), Math.max(1, page));
+  }
+
   @Post()
   @Roles('admin')
   create(@Body() dto: SaveAreaDto) {

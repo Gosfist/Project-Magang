@@ -8,6 +8,22 @@ import { AssignCollectorDto, SaveAreaDto } from './area.dto.js';
 export class AreaService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async collectorPromises(userId: string, search = '', page = 1) {
+    const where: Prisma.PaymentPromiseWhereInput = {
+      account: {
+        area: { collectors: { some: { userId: BigInt(userId) } } },
+        ...(search ? { OR: [{ customerName: { contains: search } }, { phone: { contains: search } }, { username: { contains: search } }] } : {}),
+      },
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.paymentPromise.findMany({ where, select: { id: true, promisedDate: true, status: true, notes: true,
+        account: { select: { customerNumber: true, customerName: true, phone: true } } },
+        orderBy: { id: 'desc' }, skip: (page - 1) * 10, take: 10 }),
+      this.prisma.paymentPromise.count({ where }),
+    ]);
+    return serialize({ data, meta: pageMeta(page, 10, total) });
+  }
+
   async list(search = '', page = 1, perPage = 10, user?: { id: string; role: string }) {
     const where: Prisma.AreaWhereInput = {
       ...(search ? { OR: [{ name: { contains: search } }, { description: { contains: search } }] } : {}),
