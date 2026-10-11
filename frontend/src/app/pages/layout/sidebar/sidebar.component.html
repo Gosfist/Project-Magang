@@ -28,47 +28,7 @@
       <svg lucideLayoutDashboard [size]="20"></svg> Dashboard
     </a>
 
-    @for (group of roleGroups; track group.role) {
-      @if (auth.canAccess(group.role)) {
-        <button type="button" class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
-          [attr.aria-expanded]="roleGroupOpen(group.role)" [attr.aria-controls]="'role-menu-' + group.role"
-          (click)="toggleRoleGroup(group.role)">
-          <svg lucideUsers [size]="20"></svg><span class="flex-1 text-left">{{ group.label }}</span>
-          <svg lucideChevronDown [size]="16" [class]="roleGroupOpen(group.role) ? '' : '-rotate-90'"></svg>
-        </button>
-        @if (roleGroupOpen(group.role)) {
-          <div [id]="'role-menu-' + group.role" class="space-y-1 pl-9 pr-1">
-            @for (link of group.links; track link[1]) {
-              <a [routerLink]="link[1]" routerLinkActive="bg-white/15 text-white"
-                class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
-                (click)="mobile.set(false)">{{ link[0] }}</a>
-            }
-          </div>
-        }
-      }
-    }
     @if (auth.isAdmin()) {
-      <a routerLink="/dashboard/users" routerLinkActive="bg-white/15 text-white" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10" (click)="mobile.set(false)">
-        <svg lucideUsers [size]="20"></svg> Akun & Role
-      </a>
-    }
-    @if (auth.isAdmin()) {
-      <a
-        routerLink="/dashboard/area"
-        routerLinkActive="bg-white/15 text-white"
-        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
-        (click)="mobile.set(false)"
-      >
-        <svg lucideMapPin [size]="20"></svg> Data Area
-      </a>
-    }
-
-    @if (auth.isAdmin()) {
-      <p
-        class="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-500"
-      >
-        Data Jaringan
-      </p>
 
       <!-- PPPoE -->
       <button
@@ -196,33 +156,42 @@
       }
     }
 
-    <!-- Tool -->
-    @if (auth.hasRole("admin", "teknisi")) {
-      <button
-        class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
-        (click)="toolOpen.set(!toolOpen())"
+    @if (auth.isAdmin()) {
+      <a routerLink="/dashboard/users" routerLinkActive="bg-white/15 text-white" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10" (click)="mobile.set(false)">
+        <svg lucideUsers [size]="20"></svg> Akun & Role
+      </a>
+    }
+    @if (auth.isAdmin()) {
+      <a
+        routerLink="/dashboard/area"
+        routerLinkActive="bg-white/15 text-white"
+        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+        (click)="mobile.set(false)"
       >
-        <svg lucideCalculator [size]="20"></svg>
-        <span class="flex-1 text-left">Alat</span>
-        <svg
-          lucideChevronDown
-          [size]="16"
-          [class]="!toolOpen() ? '-rotate-90' : ''"
-        ></svg>
-      </button>
-      @if (toolOpen()) {
-        <div class="mt-1 space-y-1 pl-11 pr-2">
-          <a
-            routerLink="/dashboard/tools/kalkulator-redaman"
-            routerLinkActive="bg-white/15 text-white"
-            class="block rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
-            (click)="mobile.set(false)"
-            >Kalkulator Redaman</a
-          >
-        </div>
-      }
+        <svg lucideMapPin [size]="20"></svg> Data Area
+      </a>
     }
 
+
+    @for (group of roleGroups; track group.role) {
+      @if (auth.canAccess(group.role)) {
+        <button type="button" class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
+          [attr.aria-expanded]="roleGroupOpen(group.role)" [attr.aria-controls]="'role-menu-' + group.role"
+          (click)="toggleRoleGroup(group.role)">
+          <svg lucideUsers [size]="20"></svg><span class="flex-1 text-left">{{ group.label }}</span>
+          <svg lucideChevronDown [size]="16" [class]="roleGroupOpen(group.role) ? '' : '-rotate-90'"></svg>
+        </button>
+        @if (roleGroupOpen(group.role)) {
+          <div [id]="'role-menu-' + group.role" class="space-y-1 pl-9 pr-1">
+            @for (link of group.links; track link[1]) {
+              <a [routerLink]="link[1]" routerLinkActive="bg-white/15 text-white"
+                class="block rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+                (click)="mobile.set(false)">{{ link[0] }}</a>
+            }
+          </div>
+        }
+      }
+    }
     @if (auth.isAdmin()) {
       <a
         routerLink="/dashboard/pengaturan"

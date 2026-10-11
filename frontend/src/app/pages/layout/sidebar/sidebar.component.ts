@@ -2,7 +2,6 @@ import { Component, inject, model, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
-  LucideCalculator,
   LucideChevronDown,
   LucideLayoutDashboard,
   LucideLogOut,
@@ -27,7 +26,6 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
     FormsModule,
     RouterLink,
     RouterLinkActive,
-    LucideCalculator,
     LucideChevronDown,
       LucideLayoutDashboard,
     LucideLogOut,
@@ -54,7 +52,6 @@ export class SidebarComponent implements OnInit {
   mobile = model(false);
   routerOpen = signal(false);
   pppoeOpen = signal(false);
-  toolOpen = signal(false);
   monitoringOpen = signal(false);
   botWaOpen = signal(false);
   profileOpen = signal(false);
@@ -115,7 +112,6 @@ export class SidebarComponent implements OnInit {
     if (url.includes('/router')) this.routerOpen.set(true);
     if (url.includes('/pppoe')) this.pppoeOpen.set(true);
     if (url.includes('/monitoring')) this.monitoringOpen.set(true);
-    if (url.includes('/tools')) this.toolOpen.set(true);
     if (url.includes('/bot-whatsapp')) this.botWaOpen.set(true);
   }
 
