@@ -15,12 +15,12 @@ export function salaryMonth(year: number, month: number) {
 export class FinanceSalaryService {
   constructor(private readonly prisma: PrismaService) {}
   async settings() {
-    const rows = await this.prisma.appSetting.findMany({ where: { key: { in: ['gaji_psb', 'gaji_sales'] } } });
+    const rows = await this.prisma.appSetting.findMany({ where: { key: { in: ['biaya_psb', 'gaji_sales'] } } });
     const values = new Map(rows.map(row => [row.key, row.value]));
-    return { psb: Number(values.get('gaji_psb') || 0), sales: Number(values.get('gaji_sales') || 0) };
+    return { psb: Number(values.get('biaya_psb') || 0), sales: Number(values.get('gaji_sales') || 0) };
   }
   async update(dto: SalarySettingsDto) {
-    await this.prisma.$transaction([['gaji_psb', dto.psb], ['gaji_sales', dto.sales]].map(([key, amount]) =>
+    await this.prisma.$transaction([['biaya_psb', dto.psb], ['gaji_sales', dto.sales]].map(([key, amount]) =>
       this.prisma.appSetting.upsert({ where: { key: String(key) }, create: { key: String(key), value: String(amount) }, update: { value: String(amount) } })));
     return { message: 'Pengaturan gaji berhasil disimpan.', data: dto };
   }
