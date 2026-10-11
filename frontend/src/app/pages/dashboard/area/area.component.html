@@ -64,11 +64,6 @@
                       class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-sm font-normal text-slate-800 border border-slate-200"
                     >
                       <span>{{ c.user?.name }}</span>
-                      @if (c.user?.phone) {
-                        <span class="text-slate-500 font-normal text-sm"
-                          >({{ c.user?.phone }})</span
-                        >
-                      }
                       @if (auth.isAdmin()) {
                         <button
                           type="button"
@@ -217,11 +212,6 @@
                     class="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-xs font-semibold text-blue-800"
                   >
                     {{ c.user?.name }}
-                    @if (c.user?.phone) {
-                      <span class="text-blue-500 font-normal"
-                        >({{ c.user?.phone }})</span
-                      >
-                    }
                   </span>
                 }
                 @if (!selectedArea()?.collectors?.length) {

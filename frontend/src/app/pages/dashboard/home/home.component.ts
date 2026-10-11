@@ -1,3 +1,4 @@
+import { SalesComponent } from '../sales/sales.component';
 import { FinanceSummaryComponent } from '../finance/summary/finance-summary.component';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { LucideGitBranch, LucideNetwork, LucideServer, LucideUsers } from '@lucide/angular';
@@ -18,7 +19,7 @@ type StatCard = {
 @Component({
   selector: 'app-dashboard-home',
   standalone: true,
-  imports: [FinanceSummaryComponent, FormsModule, CommonModule, RouterLink, LucideGitBranch, LucideNetwork, LucideServer, LucideUsers],
+  imports: [SalesComponent, FinanceSummaryComponent, FormsModule, CommonModule, RouterLink, LucideGitBranch, LucideNetwork, LucideServer, LucideUsers],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })

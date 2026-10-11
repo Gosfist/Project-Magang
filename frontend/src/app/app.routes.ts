@@ -42,12 +42,7 @@ export const routes: Routes = [
       },
       { path: 'users', loadComponent: () => import('./pages/dashboard/users/users.component').then(m => m.UsersComponent), canActivate: [adminGuard] },
       {
-        path: 'sales',
-        loadComponent: () =>
-          import('./pages/dashboard/sales/sales.component').then(
-            (m) => m.SalesComponent,
-          ),
-        canActivate: [adminGuard],
+        path: 'sales', redirectTo: 'sales/dashboard', pathMatch: 'full',
       },
       {
         path: 'mainCore',

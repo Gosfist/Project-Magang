@@ -6,7 +6,7 @@
         <input class="input pl-10" placeholder="Cari nama atau email..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
       </div>
       <select class="input" [(ngModel)]="role" (ngModelChange)="load()">
-        <option value="">Semua peran</option>
+        <option value="">Semua role</option>
         <option value="admin">Admin</option>
         <option value="teknisi">Teknisi</option>
         <option value="finance">Finance</option>
@@ -28,7 +28,7 @@
     <table>
       <thead>
         <tr>
-          <th>Nama</th><th>Email</th><th>Nomor HP</th><th>Peran</th><th>Status</th><th>Aksi</th>
+          <th>Nama</th><th>Email</th><th>Nomor HP</th><th>Role</th><th>Status</th><th>Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -48,7 +48,7 @@
             </td>
             <td>{{ user.email }}</td>
             <td>{{ user.phone || '-' }}</td>
-            <td>{{ roleLabel(user.role) }}</td>
+            <td>{{ rolesLabel(user) }}</td>
             <td>
               <span [class]="'rounded-full px-2.5 py-1 text-sm font-normal ' + (user.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')">{{ user.status === 'active' ? 'Aktif' : 'Tidak aktif' }}</span>
             </td>
@@ -133,7 +133,7 @@
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="label">Peran</label>
+          <label class="label">Role</label>
           <select class="input" [(ngModel)]="form.role" name="role">
             <option value="admin">Admin</option>
             <option value="teknisi">Teknisi</option>
@@ -152,14 +152,13 @@
       </div>
       <fieldset class="rounded-lg border border-slate-200 p-4">
         <legend class="px-1 text-sm font-semibold">Hak Akses</legend>
-        <p class="mb-3 text-xs text-slate-500">Peran utama otomatis aktif. Pilih akses tambahan untuk akun ini.</p>
+        <p class="mb-3 text-xs text-slate-500">Pilih akses tambahan untuk akun ini.</p>
         <div class="grid gap-3 sm:grid-cols-2">
           @for (role of accessOptions; track role) {
             <label class="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2.5 text-sm">
               <input type="checkbox" class="h-4 w-4 accent-blue-600" [checked]="accessChecked(role)"
                 [disabled]="form.role === role || form.role === 'admin'" (change)="toggleAccess(role, $event)" />
               <span>{{ roleLabel(role) }}</span>
-              @if (form.role === role) { <span class="ml-auto text-xs text-slate-500">Peran utama</span> }
             </label>
           }
         </div>

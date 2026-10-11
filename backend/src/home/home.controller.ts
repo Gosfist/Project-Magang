@@ -28,8 +28,8 @@ export class HomeController {
       const monthlyCompletedOrders = await this.prisma.psbOrder.count({ where: { completedByUserId: BigInt(request.user.id), status: 'COMPLETED', completedAt: currentSalaryMonth() } });
       const [newOrders, activatedOrders, completedOrders] = await this.prisma.$transaction([
         this.prisma.psbOrder.count({ where: { status: 'PROCESS' } }),
-        this.prisma.psbOrder.count({ where: { status: 'ACTIVATED' } }),
-        this.prisma.psbOrder.count({ where: { status: 'COMPLETED' } }),
+        this.prisma.psbOrder.count({ where: { status: 'ACTIVATED', activatedByUserId: BigInt(request.user.id) } }),
+        this.prisma.psbOrder.count({ where: { status: 'COMPLETED', completedByUserId: BigInt(request.user.id) } }),
       ]);
       return { newOrders, activatedOrders, completedOrders, monthlyCompletedOrders, salaryRate: rates.psb, monthlySalary: monthlyCompletedOrders * rates.psb };
     } else if (request.user.role === 'kolektor') {

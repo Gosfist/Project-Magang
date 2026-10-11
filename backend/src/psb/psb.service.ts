@@ -26,6 +26,11 @@ export class PsbService {
     if (status && !['PROCESS', 'COMPLETED'].includes(status)) throw new BadRequestException('Filter status tidak valid.');
     const where: Prisma.PsbOrderWhereInput = {
       ...(user.role === 'sales' && user.primaryRole !== 'admin' ? { salesUserId: BigInt(user.id) } : {}),
+      ...(user.role === 'teknisi' ? { OR: [
+        { status: 'PROCESS' },
+        { status: 'ACTIVATED', activatedByUserId: BigInt(user.id) },
+        { status: 'COMPLETED', completedByUserId: BigInt(user.id) },
+      ] } : {}),
       ...(status === 'PROCESS' ? { status: { in: ['PROCESS', 'ACTIVATED'] } } : status ? { status } : {}),
       ...(search.trim() ? (/^\d{1,18}$/.test(search.trim()) ? { customerNumber: BigInt(search.trim()) } : { id: { in: [] } }) : {}),
     };

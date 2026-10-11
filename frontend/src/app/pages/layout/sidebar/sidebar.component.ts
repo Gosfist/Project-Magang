@@ -4,7 +4,6 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
   LucideCalculator,
   LucideChevronDown,
-  LucideGitBranch,
   LucideLayoutDashboard,
   LucideLogOut,
   LucideNetwork,
@@ -30,8 +29,7 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
     RouterLinkActive,
     LucideCalculator,
     LucideChevronDown,
-    LucideGitBranch,
-    LucideLayoutDashboard,
+      LucideLayoutDashboard,
     LucideLogOut,
     LucideNetwork,
     LucideRouter,
@@ -54,7 +52,6 @@ export class SidebarComponent implements OnInit {
 
   // Sidebar state
   mobile = model(false);
-  coreOpen = signal(false);
   routerOpen = signal(false);
   pppoeOpen = signal(false);
   toolOpen = signal(false);
@@ -115,7 +112,6 @@ export class SidebarComponent implements OnInit {
 
   ngOnInit(): void {
     const url = this.router.url;
-    if (url.includes('/mainCore')) this.coreOpen.set(true);
     if (url.includes('/router')) this.routerOpen.set(true);
     if (url.includes('/pppoe')) this.pppoeOpen.set(true);
     if (url.includes('/monitoring')) this.monitoringOpen.set(true);

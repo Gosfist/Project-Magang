@@ -143,7 +143,7 @@ export class AreaService {
 
   async collectorOptions() {
     const data = await this.prisma.user.findMany({
-      where: { status: 'active', OR: [{ role: 'kolektor' }, { additionalRoles: { array_contains: 'kolektor' } }] },
+      where: { status: 'active', OR: [{ role: 'admin' }, { role: 'kolektor' }, { additionalRoles: { array_contains: 'kolektor' } }] },
       select: { id: true, name: true, email: true, phone: true },
       orderBy: { name: 'asc' },
     });
@@ -155,16 +155,14 @@ export class AreaService {
       throw new BadRequestException('Daftar gabungan pelanggan hanya tersedia untuk kolektor.');
     }
 
-    const assignments = user.primaryRole === 'admin'
-      ? (await this.prisma.area.findMany({ select: { id: true } })).map(area => ({ areaId: area.id }))
-      : await this.prisma.areaCollector.findMany({
+    const assignments = await this.prisma.areaCollector.findMany({
       where: { userId: BigInt(user.id) },
       select: { areaId: true },
     });
 
     const results = await Promise.all(
       assignments.map((assignment) =>
-        this.getAreaCustomers(String(assignment.areaId), search, status, user.primaryRole === 'admin' ? { ...user, role: 'admin' } : user),
+        this.getAreaCustomers(String(assignment.areaId), search, status, user),
       ),
     );
 

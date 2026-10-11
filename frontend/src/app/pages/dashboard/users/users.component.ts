@@ -172,6 +172,11 @@ export class UsersComponent implements OnInit, OnDestroy {
       : this.form.additionalRoles.filter(item => item !== role);
   }
 
+  rolesLabel(user: User): string {
+    return [...new Set([user.role, ...(user.additionalRoles ?? [])])]
+      .map(role => this.roleLabel(role)).join(', ');
+  }
+
   roleLabel(role?: string): string {
     switch (role) {
       case 'admin':
