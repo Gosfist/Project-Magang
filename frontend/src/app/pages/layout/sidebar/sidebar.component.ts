@@ -98,6 +98,10 @@ export class SidebarComponent implements OnInit {
     { role: 'kolektor', label: 'Kolektor', links: [['Dashboard', '/dashboard/kolektor/dashboard'], ['Tagihan', '/dashboard/kolektor/tagihan'], ['Janji Bayar', '/dashboard/kolektor/janji-bayar'], ['Titipan', '/dashboard/kolektor/titipan']] },
     { role: 'teknisi', label: 'Teknisi', links: [['Dashboard', '/dashboard/teknisi/dashboard'], ['Pasang Baru', '/dashboard/pasang-baru'], ['Data Pelanggan', '/dashboard/teknisi/data-pelanggan'], ...this.coreLinks, ['Kalkulator Redaman', '/dashboard/tools/kalkulator-redaman']] },
   ];
+  primaryLinks(): string[][] {
+    return this.roleGroups.find(group => group.role === this.auth.user()?.role)?.links ?? [];
+  }
+
   private roleMenuState = signal<Record<string, boolean>>({});
   roleGroupOpen(role: string): boolean {
     return this.roleMenuState()[role] ?? (this.auth.activeRole() === role);

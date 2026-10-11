@@ -18,6 +18,7 @@
   </div>
 
   <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+    @if (auth.isAdmin()) {
     <a
       routerLink="/dashboard"
       routerLinkActive="bg-white/15 text-white"
@@ -27,6 +28,16 @@
     >
       <svg lucideLayoutDashboard [size]="20"></svg> Dashboard
     </a>
+    } @else {
+      @for (link of primaryLinks(); track link[1]) {
+        <a [routerLink]="link[1]" routerLinkActive="bg-white/15 text-white"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
+          (click)="mobile.set(false)">
+          <svg lucideUsers [size]="20"></svg> {{ link[0] }}
+        </a>
+      }
+    }
 
     @if (auth.isAdmin()) {
 
@@ -174,7 +185,7 @@
 
 
     @for (group of roleGroups; track group.role) {
-      @if (auth.canAccess(group.role)) {
+      @if (auth.canAccess(group.role) && (auth.isAdmin() || group.role !== auth.user()?.role)) {
         <button type="button" class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
           [attr.aria-expanded]="roleGroupOpen(group.role)" [attr.aria-controls]="'role-menu-' + group.role"
           (click)="toggleRoleGroup(group.role)">
