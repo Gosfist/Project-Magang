@@ -251,7 +251,7 @@ export class AreaService {
       const unpaidAmount = unpaidInvoices.reduce((sum, inv) => sum + Number(inv.amount), 0);
 
       const activeInvoice = unpaidInvoices[0] || null;
-      const displayInvoice = activeInvoice || acc.invoices[0] || null;
+      const displayInvoice = activeInvoice || acc.invoices.find(inv => inv.status === 'PAID') || null;
       const latestDeposit = displayInvoice?.deposits?.[0] || null;
       const hasPendingDeposit = latestDeposit?.status === 'PENDING';
 
@@ -291,6 +291,7 @@ export class AreaService {
         promisedDate: acc.paymentPromises[0]?.promisedDate ?? null,
         unpaidAmount,
         unpaidCount: unpaidInvoices.length,
+        displayInvoice: displayInvoice ? { id: displayInvoice.id, amount: Number(displayInvoice.amount), dueDate: displayInvoice.dueDate } : null,
         activeInvoice: activeInvoice
           ? {
               id: activeInvoice.id,

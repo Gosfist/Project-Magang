@@ -60,7 +60,7 @@
         @for (d of deposits(); track d.id) {
           <tr>
             <td>
-              {{ ((meta()?.currentPage || page()) - 1) * (meta()?.perPage || 10) + $index + 1 }}
+              {{ (meta()?.total || 0) - ((meta()?.currentPage || page()) - 1) * (meta()?.perPage || 10) - $index }}
             </td>
             <td>
               {{ d.account?.customerNumber?.padStart(6, '0') || "-" }}

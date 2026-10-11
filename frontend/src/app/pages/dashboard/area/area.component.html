@@ -485,13 +485,13 @@
 
               <!-- Nominal tagihan dan jatuh tempo -->
               <td class="billing-column">
-                @if (c.activeInvoice) {
+                @if (c.displayInvoice) {
                   <div>
                     <p class="text-sm font-black text-slate-900">
-                      {{ formatCurrency(c.activeInvoice.amount) }}
+                      {{ formatCurrency(c.displayInvoice.amount) }}
                     </p>
                     <p class="text-sm text-slate-500 font-normal">
-                      {{ formatDate(c.activeInvoice.dueDate) }}
+                      {{ formatDate(c.displayInvoice.dueDate) }}
                     </p>
                   </div>
                 } @else {

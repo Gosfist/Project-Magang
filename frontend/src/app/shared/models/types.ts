@@ -119,6 +119,7 @@ export type AreaCustomer = {
   promisedDate?: string | null;
   unpaidAmount: number;
   unpaidCount: number;
+  displayInvoice?: { id: string; amount: number; dueDate: string } | null;
   activeInvoice?: {
     id: string;
     invoiceNumber: string;
