@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { pageMeta, serialize } from '../../common/serialize.js';
 import { WhatsappNotifyService } from '../../bot-whatsapp/shared/whatsapp-notify.service.js';
 import { CreateDepositDto, RejectDepositDto } from './finance-deposits.dto.js';
+import { RadiusService } from '../../pppoe/shared/radius.service.js';
 
 @Injectable()
 export class FinanceDepositsService {
@@ -11,6 +12,7 @@ export class FinanceDepositsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly radius: RadiusService,
     private readonly waNotify?: WhatsappNotifyService,
   ) {}
 
@@ -170,14 +172,10 @@ export class FinanceDepositsService {
           transactionDate: new Date(),
         },
       });
-    });
-
-    // Reconcile account (activate if all invoices paid)
-    try {
-      if (deposit.pppoeAccountId !== null) await this.reconcileAfterPayment(deposit.pppoeAccountId);
-    } catch (err) {
-      this.logger.error(`Reconcile error after deposit accept: ${err}`);
-    }
+      // Payment and RADIUS restoration must commit together. A failed sync must
+      // not leave a successful ACC with an active account unable to authenticate.
+      if (deposit.pppoeAccountId !== null) await this.reconcileAfterPayment(tx, deposit.pppoeAccountId);
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     // Send WA notification: deposit accepted by company
     const account = deposit.pppoeAccountId === null ? null : await this.prisma.pppoeAccount.findUnique({
@@ -276,22 +274,34 @@ export class FinanceDepositsService {
     return { message: 'Setoran berhasil dihapus.' };
   }
 
-  private async reconcileAfterPayment(accountId: bigint) {
+  private async reconcileAfterPayment(tx: Prisma.TransactionClient, accountId: bigint) {
     // Check if all pending invoices are paid; if so, reactivate account
-    const pendingInvoices = await this.prisma.invoice.count({
+    const pendingInvoices = await tx.invoice.count({
       where: { pppoeAccountId: accountId, status: { in: ['PENDING', 'OVERDUE'] } },
     });
 
     if (pendingInvoices === 0) {
-      const account = await this.prisma.pppoeAccount.findUnique({
+      const account = await tx.pppoeAccount.findUnique({
         where: { id: accountId },
-        select: { isActive: true },
+        include: { package: { include: { ipPool: true } } },
       });
-      if (account && !account.isActive) {
-        await this.prisma.pppoeAccount.update({
-          where: { id: accountId },
-          data: { isActive: true, updatedAt: new Date() },
+      if (account) {
+        await tx.paymentPromise.updateMany({
+          where: { pppoeAccountId: accountId, status: { in: ['ACTIVE', 'EXPIRED'] } },
+          data: { status: 'FULFILLED', disconnectPending: false },
         });
+        const now = new Date();
+        const expiresAt = account.expiresAt && account.expiresAt.getTime() + 86400000 <= now.getTime()
+          ? new Date(now.getTime() + account.package.validityDays * 86400000)
+          : account.expiresAt;
+        const restored = await tx.pppoeAccount.update({
+          where: { id: accountId },
+          data: { isActive: true, expiresAt, updatedAt: now },
+          include: { package: { include: { ipPool: true } } },
+        });
+        // Always rebuild credentials, including accounts already marked active
+        // by the former ACC flow or with a cancelled promise from simulation.
+        await this.radius.sync(tx, restored);
       }
     }
   }

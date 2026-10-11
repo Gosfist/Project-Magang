@@ -8,7 +8,7 @@ describe('payments for deleted customers', () => {
       collectorDeposit: { findMany: vi.fn().mockResolvedValue([{ amount: 110000n, account: null, customerSnapshot: snapshot, invoice: null }]), count: vi.fn().mockResolvedValue(1) },
       $transaction: (requests: Promise<unknown>[]) => Promise.all(requests),
     };
-    const result = await new FinanceDepositsService(prisma as any).list();
+    const result = await new FinanceDepositsService(prisma as any, {} as any).list();
     expect(result.data[0].account).toEqual(snapshot);
   });
   it('can accept a pending deposit without restoring or notifying a deleted customer', async () => {
@@ -18,7 +18,7 @@ describe('payments for deleted customers', () => {
     const prisma = { collectorDeposit: { findUnique: vi.fn().mockResolvedValue(deposit) },
       pppoeAccount: { findUnique: vi.fn() }, $transaction: (action: (client: typeof tx) => Promise<void>) => action(tx) };
     const wa = { notifyDepositAccepted: vi.fn() };
-    await new FinanceDepositsService(prisma as any, wa as any).accept('8', '1');
+    await new FinanceDepositsService(prisma as any, {} as any, wa as any).accept('8', '1');
     expect(tx.invoice.update).toHaveBeenCalled();
     expect(tx.financeTransaction.create).toHaveBeenCalledWith({ data: expect.objectContaining({ description: 'Setoran dari kolektor Kolektor untuk pelanggan Andi' }) });
     expect(prisma.pppoeAccount.findUnique).not.toHaveBeenCalled();
