@@ -422,6 +422,7 @@
             <th>Paket Internet</th>
             <th>Nama Kolektor</th>
             <th>Tagihan</th>
+            <th>Janji Bayar</th>
             <th>Status</th>
             <th>Aksi Kolektor</th>
           </tr>
@@ -507,6 +508,10 @@
                 }
               </td>
 
+              <td class="whitespace-nowrap">
+                {{ c.promisedDate ? formatDate(c.promisedDate) : '-' }}
+              </td>
+
               <td>
                 <span
                   class="inline-flex rounded-full px-3 py-1 text-sm font-normal"
@@ -560,7 +565,7 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="7" class="text-center py-12 text-slate-400">
+              <td colspan="8" class="text-center py-12 text-slate-400">
                 @if (loadingCustomers()) {
                   Memuat data pelanggan dan status penagihan...
                 } @else {

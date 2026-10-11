@@ -116,6 +116,7 @@ export type AreaCustomer = {
   billingStatus: 'PAID' | 'UNPAID' | 'OVERDUE' | 'PENDING_VERIFICATION';
   collectionStatus: 'TAGIH' | 'PROSES' | 'SELESAI';
   collectorName?: string | null;
+  promisedDate?: string | null;
   unpaidAmount: number;
   unpaidCount: number;
   activeInvoice?: {

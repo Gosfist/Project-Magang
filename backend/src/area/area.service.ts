@@ -218,6 +218,7 @@ export class AreaService {
       where,
       include: {
         package: { select: { id: true, name: true, price: true } },
+        paymentPromises: { select: { promisedDate: true }, orderBy: { id: 'desc' }, take: 1 },
         invoices: {
           select: {
             id: true,
@@ -287,6 +288,7 @@ export class AreaService {
         billingStatus,
         collectionStatus,
         collectorName: latestDeposit?.collector?.name || null,
+        promisedDate: acc.paymentPromises[0]?.promisedDate ?? null,
         unpaidAmount,
         unpaidCount: unpaidInvoices.length,
         activeInvoice: activeInvoice
