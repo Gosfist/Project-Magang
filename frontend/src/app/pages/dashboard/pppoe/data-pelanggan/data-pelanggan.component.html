@@ -8,7 +8,7 @@
       ></svg>
       <input
         class="input input-with-icon"
-        [placeholder]="readOnly() ? 'Cari nomor atau nama pelanggan...' : 'Cari ID, nama pelanggan, atau nomor HP...'"
+        placeholder="Cari No pelanggan / Nama pelanggan..."
         inputmode="text"
         [(ngModel)]="search"
         (ngModelChange)="page.set(1); load()"

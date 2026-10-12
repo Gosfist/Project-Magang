@@ -1,5 +1,5 @@
 <div class="space-y-4">
-  <div class="card p-4"><input class="input" aria-label="Cari pelanggan" placeholder="Cari nomor atau nama pelanggan..." [(ngModel)]="search" (ngModelChange)="load()" /></div>
+  <div class="card p-4"><input class="input" aria-label="Cari pelanggan" placeholder="Cari No pelanggan / Nama pelanggan..." [(ngModel)]="search" (ngModelChange)="load()" /></div>
   @if (error()) { <p role="alert" class="text-sm text-red-600">{{ error() }} <button class="btn-secondary" (click)="load(page)">Coba Lagi</button></p> }
   <div class="table-wrap"><table><thead><tr><th>ID Pelanggan</th><th>Nama</th><th>No. WA</th><th>Tanggal Janji Bayar</th><th>Status</th><th>Catatan</th></tr></thead><tbody>
     @if (loading()) { <tr><td colspan="6" class="py-8 text-center text-slate-400">Memuat janji bayar...</td></tr> }
