@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { serialize } from '../../common/serialize.js';
 import { WhatsappNotifyService } from '../../bot-whatsapp/shared/whatsapp-notify.service.js';
+import { customerSearch } from '../../common/customer-search.js';
 
 @Injectable()
 export class FinanceInvoicesService {
@@ -29,8 +30,8 @@ export class FinanceInvoicesService {
     }
 
     const customerNumber = search.trim();
-    if (!/^\d+$/.test(customerNumber)) return { data: [] };
-    where.AND = [{ account: { customerNumber: BigInt(customerNumber) } }];
+    if (!customerNumber) return { data: [] };
+    where.AND = [{ account: customerSearch(customerNumber) }];
 
     const data = await this.prisma.invoice.findMany({
       where,
@@ -54,15 +55,15 @@ export class FinanceInvoicesService {
     if (!data.length) {
       const account = await this.prisma.pppoeAccount.findFirst({
         where: {
-          customerNumber: BigInt(customerNumber),
+          ...customerSearch(customerNumber),
           ...(outsideAreaCollectorId ? { area: { is: { collectors: { none: { userId: BigInt(outsideAreaCollectorId) } } } } } : {}),
         },
         select: { customerNumber: true, customerName: true, invoices: { where: { status: { in: ['PENDING', 'OVERDUE'] } }, select: { id: true } } },
       });
-      const number = (account?.customerNumber ?? BigInt(customerNumber)).toString().padStart(6, '0');
+      const number = account?.customerNumber.toString().padStart(6, '0') ?? (/^\d{1,18}$/.test(customerNumber) ? BigInt(customerNumber).toString().padStart(6, '0') : '');
       emptyMessage = account
         ? `No Id pelanggan ${number} An ${account.customerName} ${account.invoices.length ? 'memiliki setoran yang sedang menunggu Finance.' : 'tidak ada tagihan / sudah lunas.'}`
-        : `No Id pelanggan ${number} tidak ditemukan pada daftar pelanggan yang dapat dicatat di sini.`;
+        : `Pelanggan ${number || customerNumber} tidak ditemukan pada daftar pelanggan yang dapat dicatat di sini.`;
     }
     return serialize({
       emptyMessage,
@@ -76,12 +77,7 @@ export class FinanceInvoicesService {
   }
 
   async invoiceOverview(search = '', status = '') {
-    const where: Prisma.PppoeAccountWhereInput = {};
-    if (search.trim()) {
-      const number = search.trim();
-      if (/^\d+$/.test(number)) where.customerNumber = BigInt(number);
-      else where.id = { in: [] };
-    }
+    const where: Prisma.PppoeAccountWhereInput = customerSearch(search);
 
     const accounts = await this.prisma.pppoeAccount.findMany({
       where,

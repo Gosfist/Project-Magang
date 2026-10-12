@@ -17,6 +17,7 @@ import {
   LucideAlertCircle,
 } from '@lucide/angular';
 import { ApiService } from '../../../core/services/api.service';
+import { latestRequest } from '../../../core/services/latest-request';
 import { AuthService } from '../../../core/services/auth.service';
 import {
   Area,
@@ -53,6 +54,9 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
   styleUrl: './area.component.css',
 })
 export class AreaComponent implements OnInit {
+  private readonly latestLoad = latestRequest();
+  private readonly latestLoadAreaCustomers = latestRequest();
+  private readonly latestLoadCollectorCustomers = latestRequest();
   private api = inject(ApiService);
   private route = inject(ActivatedRoute);
   auth = inject(AuthService);
@@ -129,7 +133,7 @@ export class AreaComponent implements OnInit {
     if (this.search) params.set('search', this.search);
     params.set('page', String(this.page()));
 
-    this.api.get<{ data: Area[]; meta: PageMeta }>(`/areas?${params}`).subscribe({
+    this.api.get<{ data: Area[]; meta: PageMeta }>(`/areas?${params}`).pipe(this.latestLoad).subscribe({
       next: (res) => {
         this.areas.set(res.data);
         this.meta.set(res.meta);
@@ -285,7 +289,7 @@ export class AreaComponent implements OnInit {
         summary: AreaBillingSummary;
         customers: AreaCustomer[];
       }>(`/areas/${current.id}/customers?${params}`)
-      .subscribe({
+      .pipe(this.latestLoadAreaCustomers).subscribe({
         next: (res) => {
           this.selectedArea.set(res.area);
           this.areaSummary.set(res.summary);
@@ -312,7 +316,7 @@ export class AreaComponent implements OnInit {
         summary: AreaBillingSummary;
         customers: AreaCustomer[];
       }>(`/areas/customers?${params}`)
-      .subscribe({
+      .pipe(this.latestLoadCollectorCustomers).subscribe({
         next: (res) => {
           this.selectedArea.set(res.area);
           this.areaSummary.set(res.summary);

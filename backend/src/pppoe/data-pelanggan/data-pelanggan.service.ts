@@ -13,6 +13,7 @@ import { WhatsappNotifyService } from '../../bot-whatsapp/shared/whatsapp-notify
 import { localBillingDate, serviceInvoiceNumber } from './billing-cycle.js';
 import { PengaturanService } from '../../tools/pengaturan/pengaturan.service.js';
 import { removeCustomerImage } from '../../common/image-storage.js';
+import { customerSearch } from '../../common/customer-search.js';
 
 @Injectable()
 export class DataPelangganService {
@@ -54,11 +55,7 @@ export class DataPelangganService {
   async accounts(search = '', page = 1, status = '', session = '', numberOnly = false) {
     if (!['', 'active', 'isolated'].includes(status) || !['', 'online', 'offline'].includes(session)) throw new BadRequestException('Filter status atau sesi tidak valid.');
     const where: Prisma.PppoeAccountWhereInput = search ? { OR: [{ customerName: { contains: search } }, { username: { contains: search } }, { phone: { contains: search } }, ...(search.startsWith('62') ? [{ phone: { contains: `0${search.slice(2)}` } }] : []), ...(/^\d{1,18}$/.test(search) ? [{ customerNumber: BigInt(search) }] : [])] } : {};
-    if (numberOnly && search) {
-      delete where.OR;
-      if (/^\d{1,18}$/.test(search)) where.customerNumber = BigInt(search);
-      else where.id = { in: [] };
-    }
+    if (numberOnly && search) Object.assign(where, customerSearch(search));
     const active: Prisma.PppoeAccountWhereInput = { isActive: true, package: { isActive: true }, OR: [
       { paymentPromises: { some: { status: 'ACTIVE', deadline: { gt: new Date() } } } },
       { paymentPromises: { none: { status: 'ACTIVE' } }, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date(Date.now() - 86400000) } }] },

@@ -2,15 +2,16 @@ import { describe, expect, it, vi } from 'vitest';
 import { FinanceDepositsService } from './finance-deposits.service.js';
 import { RadiusService } from '../../pppoe/shared/radius.service.js';
 
-function setup(promiseStatus = 'EXPIRED', isActive = false) {
+function setup(promiseStatus = 'EXPIRED', isActive = false, poolIsolation = false) {
   const state = {
     depositStatus: 'PENDING', invoiceStatus: 'PENDING',
     promise: { status: promiseStatus, disconnectPending: true, deadline: new Date('2026-01-01') },
-    account: { id: 2n, username: '000002', password: 'encrypted', isActive, expiresAt: null as Date | null,
+    account: { id: 2n, routerNasId: 3, username: '000002', password: 'encrypted', isActive, expiresAt: null as Date | null,
       package: { isActive: true, validityDays: 30, uploadMbps: 5, downloadMbps: 5, ipPool: { name: 'customers' } } },
     checks: [] as any[], replies: [] as any[], transactions: 0,
   };
   const tx = {
+    appSetting: { findUnique: vi.fn(async () => poolIsolation ? { value: JSON.stringify({ enabled: true, poolName: 'isolir', subnet: '192.168.100.0/24', localAddress: '192.168.100.1', profileName: 'UNZANET-ISOLIR-3' }) } : null) },
     collectorDeposit: { update: vi.fn(async ({ data }) => { state.depositStatus = data.status; }) },
     invoice: { update: vi.fn(async ({ data }) => { state.invoiceStatus = data.status; }),
       count: vi.fn(async () => state.invoiceStatus === 'PAID' ? 0 : 1) },
@@ -37,11 +38,22 @@ function setup(promiseStatus = 'EXPIRED', isActive = false) {
   };
   const wa = { notifyDepositAccepted: vi.fn(async () => {}) };
   const radius = new RadiusService({ decrypt: () => 'test-password' } as any);
-  const service = new FinanceDepositsService(prisma as any, radius, wa as any);
-  return { state, tx, prisma, wa, service };
+  const network = { disconnect: vi.fn(async () => {
+    expect(state.depositStatus).toBe('ACCEPTED'); expect(state.invoiceStatus).toBe('PAID');
+    expect(state.replies).toContainEqual(expect.objectContaining({ attribute: 'Framed-Pool', value: 'customers' }));
+    return { warnings: [] as string[] };
+  }) };
+  const service = new FinanceDepositsService(prisma as any, radius, wa as any, network as any);
+  return { state, tx, prisma, wa, service, network };
 }
 
 describe('Finance ACC restores RADIUS access', () => {
+  it('reconnects once after ACC commits to replace an isolated IP with the package pool', async () => {
+    const { service, network } = setup('EXPIRED', false, true);
+    await service.accept('1', '3');
+    expect(network.disconnect).toHaveBeenCalledOnce();
+    expect(network.disconnect).toHaveBeenCalledWith('000002', 3);
+  });
   it.each(['ACTIVE', 'EXPIRED', 'CANCELLED'])('restores credentials after a %s promise', async (status) => {
     const { state, service } = setup(status);
     await service.accept('1', '3');

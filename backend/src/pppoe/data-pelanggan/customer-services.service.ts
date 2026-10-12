@@ -82,7 +82,7 @@ export class CustomerServicesService implements OnModuleInit, OnModuleDestroy {
     const deadline = promiseDeadline(dto.promisedDate);
     if (deadline.getTime() <= Date.now()) throw new BadRequestException('Tanggal janji bayar minimal hari ini.');
     if (deadline.getTime() / 1000 > 4294967295) throw new BadRequestException('Tanggal janji bayar di luar batas RADIUS.');
-    await this.transaction(async tx => {
+    const restoration = await this.transaction(async tx => {
       const account = await this.account(id, tx);
       if (!account.package.isActive) throw new BadRequestException('Paket pelanggan tidak aktif. Aktifkan paket lebih dahulu.');
       if (await tx.paymentPromise.findFirst({ where: { pppoeAccountId: account.id, status: 'ACTIVE' } }))
@@ -91,9 +91,15 @@ export class CustomerServicesService implements OnModuleInit, OnModuleDestroy {
       if (!invoices.length) throw new BadRequestException('Tidak ada tagihan yang belum dibayar.');
       await tx.paymentPromise.create({ data: { pppoeAccountId: account.id, promisedDate, deadline, notes: dto.notes, invoiceIds: invoices.map(i => String(i.id)), originalExpiresAt: account.expiresAt } });
       const active = await tx.pppoeAccount.update({ where: { id: account.id }, data: { isActive: true, updatedAt: new Date() }, include: { package: { include: { ipPool: true } } } });
-      await this.radius.sync(tx, active);
+      const result = await this.radius.sync(tx, active);
+      return { username: active.username, routerNasId: active.routerNasId, isolationEnabled: result?.isolationEnabled === true };
     });
-    return { message: 'Janji bayar dibuat. Akses dibuka sampai akhir tanggal janji (WIB).', isActive: true };
+    const warnings: string[] = [];
+    if (restoration.isolationEnabled) {
+      try { warnings.push(...(await this.network.disconnect(restoration.username, restoration.routerNasId)).warnings); }
+      catch { warnings.push('Pemindahan IP internet tertunda. Sinkronisasi otomatis akan mencoba kembali.'); }
+    }
+    return { message: `Janji bayar dibuat. Akses dibuka sampai akhir tanggal janji (WIB).${warnings.length ? ` Perhatian: ${warnings.join(' ')}` : ''}`, isActive: true, warnings };
   }
   async payInvoice(id: string, invoiceId: string) {
     await this.transaction(async tx => {
@@ -112,7 +118,7 @@ export class CustomerServicesService implements OnModuleInit, OnModuleDestroy {
     return { message: 'Pembayaran tagihan dicatat.', isActive: (await this.account(id)).isActive };
   }
   async reconcileAccount(accountId: bigint) {
-    await this.transaction(async tx => {
+    const restoration = await this.transaction(async tx => {
       const promise = await tx.paymentPromise.findFirst({ where: { pppoeAccountId: accountId, status: { in: ['ACTIVE', 'EXPIRED'] } }, orderBy: { id: 'desc' } });
       if (!promise) return;
       const account = await this.account(String(accountId), tx);
@@ -125,13 +131,18 @@ export class CustomerServicesService implements OnModuleInit, OnModuleDestroy {
         const expiresAt = account.expiresAt && account.expiresAt.getTime() + 86400000 <= Date.now()
           ? new Date(Date.now() + account.package.validityDays * 86400000) : account.expiresAt;
         const active = await tx.pppoeAccount.update({ where: { id: account.id }, data: { isActive: account.isActive || promise.status === 'EXPIRED', expiresAt }, include: { package: { include: { ipPool: true } } } });
-        await this.radius.sync(tx, active);
+        const result = await this.radius.sync(tx, active);
+        return { username: active.username, routerNasId: active.routerNasId, isolationEnabled: result?.isolationEnabled === true };
       } else if (promise.status === 'ACTIVE' && promise.deadline.getTime() <= Date.now()) {
         await tx.paymentPromise.update({ where: { id: promise.id }, data: { status: 'EXPIRED', disconnectPending: true } });
         const isolated = await tx.pppoeAccount.update({ where: { id: accountId }, data: { isActive: false }, include: { package: { include: { ipPool: true } } } });
         await this.radius.sync(tx, isolated);
       }
     });
+    if (restoration?.isolationEnabled) {
+      const result = await this.network.disconnect(restoration.username, restoration.routerNasId);
+      if (result.warnings.length) this.logger.warn(result.warnings.join(' '));
+    }
     const pending = await this.prisma.paymentPromise.findFirst({ where: { pppoeAccountId: accountId, status: 'EXPIRED', disconnectPending: true } });
     if (pending) {
       const account = await this.account(String(accountId));

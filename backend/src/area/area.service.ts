@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { pageMeta, serialize } from '../common/serialize.js';
 import { AssignCollectorDto, SaveAreaDto } from './area.dto.js';
 import { accessRoles } from '../auth/access-roles.js';
+import { customerSearch } from '../common/customer-search.js';
 
 @Injectable()
 export class AreaService {
@@ -13,7 +14,7 @@ export class AreaService {
     const where: Prisma.PaymentPromiseWhereInput = {
       account: {
         area: { collectors: { some: { userId: BigInt(userId) } } },
-        ...(search ? { OR: [{ customerName: { contains: search } }, { phone: { contains: search } }, { username: { contains: search } }] } : {}),
+        ...customerSearch(search),
       },
     };
     const [data, total] = await this.prisma.$transaction([
@@ -208,14 +209,13 @@ export class AreaService {
 
     if (search.trim()) {
       if (user?.role === 'kolektor') {
-        const number = search.trim();
-        if (/^\d+$/.test(number)) where.customerNumber = BigInt(number);
-        else where.id = { in: [] };
+        Object.assign(where, customerSearch(search));
       } else where.OR = [
         { customerName: { contains: search.trim() } },
         { username: { contains: search.trim() } },
         { phone: { contains: search.trim() } },
         { address: { contains: search.trim() } },
+        ...(/^\d{1,18}$/.test(search.trim()) ? [{ customerNumber: BigInt(search.trim()) }] : []),
       ];
     }
 

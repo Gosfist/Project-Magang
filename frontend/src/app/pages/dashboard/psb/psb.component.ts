@@ -2,6 +2,7 @@ import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideCheck, LucidePencil, LucideTrash2, LucideEye, LucideEyeOff } from '@lucide/angular';
 import { ApiService } from '../../../core/services/api.service';
+import { latestRequest } from '../../../core/services/latest-request';
 import { AuthService } from '../../../core/services/auth.service';
 import {
   Area,
@@ -31,6 +32,7 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
   templateUrl: './psb.component.html',
 })
 export class PsbComponent implements OnInit, OnDestroy {
+  private readonly latestLoad = latestRequest();
   readonly auth = inject(AuthService);
   private readonly api = inject(ApiService);
   items = signal<PsbOrder[]>([]);
@@ -47,6 +49,7 @@ export class PsbComponent implements OnInit, OnDestroy {
   search = '';
   status = 'PROCESS';
   private refreshTimer: ReturnType<typeof setInterval> | null = null;
+  private listLoading = false;
   formOpen = signal(false);
   activationOpen = signal(false);
   activationStep = signal(1);
@@ -88,17 +91,21 @@ export class PsbComponent implements OnInit, OnDestroy {
     if (this.refreshTimer) clearInterval(this.refreshTimer);
   }
   load(silent = false) {
+    if (silent && (document.hidden || this.listLoading)) return;
+    this.listLoading = true;
     this.api
       .get<{
         data: PsbOrder[];
         meta: PageMeta;
       }>(`/psb?search=${encodeURIComponent(this.search)}&status=${this.status}&page=${this.page()}`)
-      .subscribe({
+      .pipe(this.latestLoad).subscribe({
         next: (r) => {
+          this.listLoading = false;
           this.items.set(r.data);
           this.meta.set(r.meta);
         },
         error: (e) => {
+          this.listLoading = false;
           if (!silent) this.error(e);
         },
       });
@@ -241,10 +248,7 @@ export class PsbComponent implements OnInit, OnDestroy {
     reader.readAsDataURL(file);
   }
   activate() {
-    if (this.selected()?.status !== 'PROCESS' && !this.activation.password) {
-      this.activationOpen.set(false);
-      return;
-    }
+    if (this.activationViewOnly || this.saving()) return;
     if (!this.activation.installationPhoto && !this.activationPhotoReference)
       return this.toast.set({
         message: 'Foto instalasi wajib dipilih.',

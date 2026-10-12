@@ -3,9 +3,9 @@
     <div class="grid gap-3 md:grid-cols-[1fr_180px_180px_auto]">
       <div class="relative">
         <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
-        <input class="input pl-10" placeholder="Cari nama atau email..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
+        <input class="input input-with-icon" placeholder="Cari nama atau email..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
       </div>
-      <select class="input" [(ngModel)]="role" (ngModelChange)="load()">
+      <select class="input" [(ngModel)]="role" (ngModelChange)="page.set(1); load()">
         <option value="">Semua role</option>
         <option value="admin">Admin</option>
         <option value="teknisi">Teknisi</option>
@@ -13,7 +13,7 @@
         <option value="sales">Sales</option>
         <option value="kolektor">Kolektor</option>
       </select>
-      <select class="input" [(ngModel)]="status" (ngModelChange)="load()">
+      <select class="input" [(ngModel)]="status" (ngModelChange)="page.set(1); load()">
         <option value="">Semua status</option>
         <option value="active">Aktif</option>
         <option value="inactive">Tidak aktif</option>

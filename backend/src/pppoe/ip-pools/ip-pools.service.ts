@@ -9,6 +9,7 @@ import { SecretService } from '../shared/secret.service.js';
 import { PppoeNetworkService } from '../shared/pppoe-network.service.js';
 
 import { WhatsappNotifyService } from '../../bot-whatsapp/shared/whatsapp-notify.service.js';
+import { isolationPoolInUse } from '../shared/isolation-config.js';
 
 @Injectable()
 export class IpPoolsService {
@@ -42,6 +43,7 @@ export class IpPoolsService {
       const rows = await write('/ip/pool/print', [`?.id=${identity.routerId}`, '=.proplist=.id,name']);
       const pool = rows.find((row) => row['.id'] === identity.routerId);
       if (!pool) throw new NotFoundException('IP Pool tidak ditemukan di MikroTik.');
+      if (await isolationPoolInUse(this.prisma, pool.name, identity.routerNasId)) throw new BadRequestException('Pool isolir sedang aktif. Nonaktifkan mode isolir dan selesaikan sinkronisasi sebelum mengubah pool.');
       if (pool.name !== dto.name) await this.assertPoolUnused(pool.name);
       await write('/ip/pool/set', [`=.id=${identity.routerId}`, `=name=${dto.name}`, `=ranges=${dto.networkStart}-${dto.networkEnd}`]);
     });
@@ -66,6 +68,7 @@ export class IpPoolsService {
       const pool = rows.find((row) => row['.id'] === identity.routerId);
       if (!pool) throw new NotFoundException('IP Pool tidak ditemukan di MikroTik.');
       await this.assertPoolUnused(pool.name);
+      if (await isolationPoolInUse(this.prisma, pool.name, identity.routerNasId)) throw new BadRequestException('Pool isolir sedang aktif dan tidak dapat dihapus.');
       await write('/ip/pool/remove', [`=.id=${identity.routerId}`]);
     });
     return { message: 'IP Pool berhasil dihapus dari MikroTik.' };

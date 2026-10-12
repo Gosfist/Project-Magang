@@ -3,6 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideSearch } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
+import { latestRequest } from '../../../../core/services/latest-request';
 
 type InvoiceRow = {
   id: string;
@@ -24,6 +25,7 @@ type InvoiceRow = {
   templateUrl: './finance-invoices.component.html',
 })
 export class FinanceInvoicesComponent implements OnInit {
+  private readonly latestLoad = latestRequest();
   private readonly api = inject(ApiService);
 
   loading = signal(true);
@@ -40,7 +42,7 @@ export class FinanceInvoicesComponent implements OnInit {
     const params = new URLSearchParams();
     if (this.search.trim()) params.set('search', this.search.trim());
     if (this.status) params.set('status', this.status);
-    this.api.get<{ data: InvoiceRow[] }>(`/finance/deposits/invoices?${params}`).subscribe({
+    this.api.get<{ data: InvoiceRow[] }>(`/finance/deposits/invoices?${params}`).pipe(this.latestLoad).subscribe({
       next: (response) => { this.rows.set(response.data); this.loading.set(false); },
       error: (err) => { this.error.set(err.message || 'Gagal memuat tagihan.'); this.loading.set(false); },
     });

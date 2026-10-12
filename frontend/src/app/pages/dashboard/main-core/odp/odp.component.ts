@@ -2,6 +2,7 @@ import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
+import { latestRequest } from '../../../../core/services/latest-request';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
@@ -34,6 +35,8 @@ const emptyOdpForm = {
   templateUrl: './odp.component.html',
 })
 export class OdpComponent implements OnInit, OnDestroy {
+  private readonly latestLoad = latestRequest();
+  private readonly latestFetchParents = latestRequest();
   private api = inject(ApiService);
   items = signal<MainCoreNode[]>([]);
   meta = signal<PageMeta>({ currentPage: 1, lastPage: 1, perPage: 5, total: 0 });
@@ -81,7 +84,7 @@ export class OdpComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void { if (this.debounceTimer) clearTimeout(this.debounceTimer); }
 
   load(): void {
-    this.api.get<{ data: MainCoreNode[]; meta: PageMeta }>(`/main-core/odp?search=${encodeURIComponent(this.search)}&page=${this.page()}`).subscribe({
+    this.api.get<{ data: MainCoreNode[]; meta: PageMeta }>(`/main-core/odp?search=${encodeURIComponent(this.search)}&page=${this.page()}`).pipe(this.latestLoad).subscribe({
       next: (response) => { this.items.set(response.data); this.meta.set(response.meta); },
       error: (error) => this.toast.set({ message: error.message, type: 'error' }),
     });
@@ -97,7 +100,7 @@ export class OdpComponent implements OnInit, OnDestroy {
     const query = `/main-core/odp/parents?search=${encodeURIComponent(this.parentSearch)}${
       this.parentCategory ? `&category=${encodeURIComponent(this.parentCategory)}` : ''
     }${editing ? `&currentNodeId=${editing.id}&currentParentId=${editing.parentId ?? ''}` : ''}`;
-    this.api.get<{ data: ParentOption[] }>(query).subscribe({
+    this.api.get<{ data: ParentOption[] }>(query).pipe(this.latestFetchParents).subscribe({
       next: (response) => {
         if (requestId === this.parentRequestId) {
           this.parents.set(response.data);

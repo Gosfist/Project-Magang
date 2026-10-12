@@ -9,6 +9,7 @@ import {
   LucideRotateCcw,
 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
+import { latestRequest } from '../../../../core/services/latest-request';
 import { AuthService } from '../../../../core/services/auth.service';
 import { FinanceTransaction, PageMeta } from '../../../../shared/models/types';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
@@ -34,6 +35,7 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
   styleUrl: './finance-transactions.component.css',
 })
 export class FinanceTransactionsComponent implements OnInit {
+  private readonly latestLoad = latestRequest();
   private api = inject(ApiService);
   auth = inject(AuthService);
 
@@ -83,7 +85,7 @@ export class FinanceTransactionsComponent implements OnInit {
 
     this.api
       .get<{ data: FinanceTransaction[]; meta: PageMeta }>(`/finance/transactions?${params}`)
-      .subscribe({
+      .pipe(this.latestLoad).subscribe({
         next: (res) => {
           this.transactions.set(res.data);
           this.meta.set(res.meta);

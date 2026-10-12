@@ -10,6 +10,7 @@ import { ActivatePsbOrderDto, CompletePsbOrderDto, CreatePsbOrderDto, UpdatePsbO
 import { storeImage } from '../common/image-storage.js';
 import { PppoeNetworkService } from '../pppoe/shared/pppoe-network.service.js';
 import { readInstallationPhoto } from '../pppoe/data-pelanggan/installation-photo.js';
+import { customerSearch } from '../common/customer-search.js';
 
 @Injectable()
 export class PsbService {
@@ -32,7 +33,7 @@ export class PsbService {
         { status: 'COMPLETED', completedByUserId: BigInt(user.id) },
       ] } : {}),
       ...(status === 'PROCESS' ? { status: { in: ['PROCESS', 'ACTIVATED'] } } : status ? { status } : {}),
-      ...(search.trim() ? (/^\d{1,18}$/.test(search.trim()) ? { customerNumber: BigInt(search.trim()) } : { id: { in: [] } }) : {}),
+      AND: [customerSearch(search)],
     };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.psbOrder.findMany({
@@ -101,8 +102,9 @@ export class PsbService {
       if (!order.pppoeAccountId || !['ACTIVATED', 'COMPLETED'].includes(order.status)) {
         throw new BadRequestException('Pesanan ini tidak dapat diedit.');
       }
-      const updated = await this.prisma.$transaction(async tx => {
-        const currentAccount = await tx.pppoeAccount.findUnique({ where: { id: order.pppoeAccountId! }, select: { username: true } });
+      const result = await this.prisma.$transaction(async tx => {
+        const currentAccount = await tx.pppoeAccount.findUnique({ where: { id: order.pppoeAccountId! }, select: { username: true, routerNasId: true } });
+        if (!currentAccount) throw new NotFoundException('Akun PPPoE tidak ditemukan.');
         const account = await tx.pppoeAccount.update({
           where: { id: order.pppoeAccountId! },
           data: {
@@ -113,8 +115,13 @@ export class PsbService {
           },
           include: { package: { include: { ipPool: true } } },
         });
-        await this.radius.sync(tx, account);
-        return tx.psbOrder.update({
+        const credentialsChanged = currentAccount.username !== account.username || !!dto.password;
+        if (credentialsChanged) await tx.radacct.updateMany({
+          where: { username: { in: [...new Set([currentAccount.username, account.username])] }, acctstoptime: null },
+          data: { acctstoptime: new Date(), acctterminatecause: 'Admin-Reset' },
+        });
+        await this.radius.sync(tx, account, currentAccount.username);
+        const updated = await tx.psbOrder.update({
           where: { id: order.id },
           data: {
             odp: dto.odp,
@@ -124,8 +131,13 @@ export class PsbService {
             ...(dto.password ? { password: this.secrets.encrypt(dto.password) } : {}),
           },
         });
+        return { updated, currentAccount, reconnect: credentialsChanged || currentAccount.routerNasId !== routerNasId };
+      }).catch(error => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') throw new ConflictException('Username PPPoE sudah digunakan.');
+        throw error;
       });
-      return serialize({ message: 'Data aktivasi berhasil diperbarui.', order: updated });
+      const warnings = result.reconnect ? (await this.network.disconnect(result.currentAccount.username, result.currentAccount.routerNasId)).warnings : [];
+      return serialize({ message: `Data aktivasi berhasil diperbarui.${warnings.length ? ` Perhatian: ${warnings.join(' ')}` : ''}`, order: { ...result.updated, password: undefined }, warnings });
     }
     try {
       const result = await this.prisma.$transaction(async tx => {

@@ -13,7 +13,7 @@ describe('collector entrusted payments from other areas', () => {
     };
     await new FinanceDepositsService(prisma as any, {} as any).list('ACCEPTED', '7', '', '', '000002', 2, 15, true);
     const query = prisma.collectorDeposit.findMany.mock.calls[0][0];
-    expect(query.where).toMatchObject({ collectorUserId: 7n, account: foreignAreaAccount, status: 'ACCEPTED', AND: [{ account: { customerNumber: 2n } }] });
+    expect(query.where).toMatchObject({ collectorUserId: 7n, account: foreignAreaAccount, status: 'ACCEPTED', AND: [{ OR: [{ account: { OR: [{ customerName: { contains: '000002' } }, { customerNumber: 2n }] } }] }] });
     expect(query.where.OR).toBeUndefined();
     expect(query.skip).toBe(15);
     expect(prisma.collectorDeposit.count).toHaveBeenCalledWith({ where: query.where });
@@ -38,7 +38,7 @@ describe('collector entrusted payments from other areas', () => {
     const prisma = { invoice: { findMany: vi.fn().mockResolvedValue([]) }, pppoeAccount: { findFirst: vi.fn().mockResolvedValue(null) } };
     await new FinanceInvoicesService(prisma as any).unpaidInvoices('000002', '7');
     expect(prisma.invoice.findMany.mock.calls[0][0].where).toMatchObject({
-      account: foreignAreaAccount, status: { in: ['PENDING', 'OVERDUE'] }, AND: [{ account: { customerNumber: 2n } }],
+      account: foreignAreaAccount, status: { in: ['PENDING', 'OVERDUE'] }, AND: [{ account: { OR: [{ customerName: { contains: '000002' } }, { customerNumber: 2n }] } }],
     });
   });
 });

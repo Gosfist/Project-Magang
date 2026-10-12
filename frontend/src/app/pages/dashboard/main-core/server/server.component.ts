@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
+import { latestRequest } from '../../../../core/services/latest-request';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
@@ -25,6 +26,7 @@ const emptyServerForm = { namaTitik: '', redamanIn: '', routerNasId: '' };
   templateUrl: './server.component.html',
 })
 export class ServerComponent implements OnInit {
+  private readonly latestLoad = latestRequest();
   private api = inject(ApiService);
 
   items = signal<MainCoreNode[]>([]);
@@ -50,7 +52,7 @@ export class ServerComponent implements OnInit {
       .get<{ data: MainCoreNode[]; meta: PageMeta }>(
         `/main-core/server?search=${encodeURIComponent(this.search)}&page=${this.page()}`
       )
-      .subscribe({
+      .pipe(this.latestLoad).subscribe({
         next: (response) => {
           this.items.set(response.data);
           this.meta.set(response.meta);

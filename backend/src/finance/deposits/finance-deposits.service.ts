@@ -5,6 +5,8 @@ import { pageMeta, serialize } from '../../common/serialize.js';
 import { WhatsappNotifyService } from '../../bot-whatsapp/shared/whatsapp-notify.service.js';
 import { CreateDepositDto, RejectDepositDto } from './finance-deposits.dto.js';
 import { RadiusService } from '../../pppoe/shared/radius.service.js';
+import { customerSearch } from '../../common/customer-search.js';
+import { PppoeNetworkService } from '../../pppoe/shared/pppoe-network.service.js';
 
 @Injectable()
 export class FinanceDepositsService {
@@ -14,6 +16,7 @@ export class FinanceDepositsService {
     private readonly prisma: PrismaService,
     private readonly radius: RadiusService,
     private readonly waNotify?: WhatsappNotifyService,
+    private readonly network?: PppoeNetworkService,
   ) {}
 
   async list(
@@ -44,14 +47,16 @@ export class FinanceDepositsService {
     }
     if (search.trim()) {
       const number = search.trim();
-      if (/^\d+$/.test(number)) {
-        const customerNumber = BigInt(number);
-        where.AND = [outsideOwnAreas ? { account: { customerNumber } } : { OR: [
-          { account: { customerNumber } },
-          { customerSnapshot: { path: '$.customerNumber', equals: customerNumber.toString() } },
-          { customerSnapshot: { path: '$.customerNumber', equals: Number(customerNumber) } },
-        ] }];
-      } else where.id = { in: [] };
+      const matches: Prisma.CollectorDepositWhereInput[] = [{ account: customerSearch(number) }];
+      if (!outsideOwnAreas) {
+        matches.push({ customerSnapshot: { path: '$.customerName', string_contains: number } });
+        if (/^\d{1,18}$/.test(number)) {
+          const customerNumber = BigInt(number);
+          matches.push({ customerSnapshot: { path: '$.customerNumber', equals: customerNumber.toString() } });
+          if (customerNumber <= BigInt(Number.MAX_SAFE_INTEGER)) matches.push({ customerSnapshot: { path: '$.customerNumber', equals: Number(customerNumber) } });
+        }
+      }
+      where.AND = [{ OR: matches }];
     }
 
     const [data, total] = await this.prisma.$transaction([
@@ -151,7 +156,7 @@ export class FinanceDepositsService {
     if (deposit.status !== 'PENDING') throw new BadRequestException('Hanya setoran dengan status pending yang dapat di-ACC.');
 
     // Transaction: accept deposit + pay invoice + create finance transaction
-    await this.prisma.$transaction(async (tx) => {
+    const restoration = await this.prisma.$transaction(async (tx) => {
       // Accept the deposit
       await tx.collectorDeposit.update({
         where: { id: deposit.id },
@@ -179,8 +184,14 @@ export class FinanceDepositsService {
       });
       // Payment and RADIUS restoration must commit together. A failed sync must
       // not leave a successful ACC with an active account unable to authenticate.
-      if (deposit.pppoeAccountId !== null) await this.reconcileAfterPayment(tx, deposit.pppoeAccountId);
+      if (deposit.pppoeAccountId !== null) return this.reconcileAfterPayment(tx, deposit.pppoeAccountId);
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+    const warnings: string[] = [];
+    if (restoration?.isolationEnabled && this.network) {
+      try { warnings.push(...(await this.network.disconnect(restoration.username, restoration.routerNasId)).warnings); }
+      catch { warnings.push('Pemindahan IP internet belum berhasil. Sambungkan ulang sesi PPPoE pelanggan.'); }
+    }
 
     // Send WA notification: deposit accepted by company
     const account = deposit.pppoeAccountId === null ? null : await this.prisma.pppoeAccount.findUnique({
@@ -207,7 +218,7 @@ export class FinanceDepositsService {
       });
     }
 
-    return { message: 'Setoran berhasil di-ACC. Tagihan dilunasi dan transaksi pemasukan tercatat.' };
+    return { message: `Setoran berhasil di-ACC. Tagihan dilunasi dan transaksi pemasukan tercatat.${warnings.length ? ` Perhatian: ${warnings.join(' ')}` : ''}`, warnings };
   }
 
   async reject(id: string, dto: RejectDepositDto) {
@@ -306,7 +317,8 @@ export class FinanceDepositsService {
         });
         // Always rebuild credentials, including accounts already marked active
         // by the former ACC flow or with a cancelled promise from simulation.
-        await this.radius.sync(tx, restored);
+        const result = await this.radius.sync(tx, restored);
+        return { username: restored.username, routerNasId: restored.routerNasId, isolationEnabled: result?.isolationEnabled === true };
       }
     }
   }

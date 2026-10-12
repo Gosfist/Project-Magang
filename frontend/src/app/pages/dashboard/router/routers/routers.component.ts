@@ -12,6 +12,7 @@ import {
   LucideWifi,
 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
+import { latestRequest } from '../../../../core/services/latest-request';
 import { PageMeta, RouterItem, RouterScriptData, VpnClient } from '../../../../shared/models/types';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
@@ -38,6 +39,7 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
   templateUrl: './routers.component.html',
 })
 export class RoutersComponent implements OnInit {
+  private readonly latestLoad = latestRequest();
   private api = inject(ApiService);
 
   items = signal<RouterItem[]>([]);
@@ -85,7 +87,7 @@ export class RoutersComponent implements OnInit {
       .get<{ data: RouterItem[]; meta: PageMeta }>(
         `/router/nas?search=${encodeURIComponent(this.search)}&page=${this.page()}`,
       )
-      .subscribe({
+      .pipe(this.latestLoad).subscribe({
         next: (r) => {
           this.items.set(r.data);
           this.meta.set(r.meta);

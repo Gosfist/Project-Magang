@@ -2,6 +2,7 @@ import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
+import { latestRequest } from '../../../../core/services/latest-request';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
@@ -45,6 +46,8 @@ const emptyRasioForm = {
   templateUrl: './rasio.component.html',
 })
 export class RasioComponent implements OnInit, OnDestroy {
+  private readonly latestLoad = latestRequest();
+  private readonly latestFetchParents = latestRequest();
   private api = inject(ApiService);
 
   items = signal<MainCoreNode[]>([]);
@@ -101,7 +104,7 @@ export class RasioComponent implements OnInit, OnDestroy {
       .get<{ data: MainCoreNode[]; meta: PageMeta }>(
         `/main-core/rasio?search=${encodeURIComponent(this.search)}&page=${this.page()}`
       )
-      .subscribe({
+      .pipe(this.latestLoad).subscribe({
         next: (response) => {
           this.items.set(response.data);
           this.meta.set(response.meta);
@@ -120,7 +123,7 @@ export class RasioComponent implements OnInit, OnDestroy {
     const query = `/main-core/rasio/parents?search=${encodeURIComponent(this.parentSearch)}${
       this.parentCategory ? `&category=${encodeURIComponent(this.parentCategory)}` : ''
     }${editing ? `&currentNodeId=${editing.id}&currentParentId=${editing.parentId ?? ''}` : ''}`;
-    this.api.get<{ data: ParentOption[] }>(query).subscribe({
+    this.api.get<{ data: ParentOption[] }>(query).pipe(this.latestFetchParents).subscribe({
       next: (response) => {
         if (requestId === this.parentRequestId) {
           this.parents.set(response.data);

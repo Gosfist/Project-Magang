@@ -8,14 +8,20 @@ import { FinanceDepositsController } from '../finance/deposits/finance-deposits.
 import { FinanceDepositsService } from '../finance/deposits/finance-deposits.service.js';
 import { AreaController } from '../area/area.controller.js';
 import { AreaService } from '../area/area.service.js';
+import { FirewallController } from '../router/firewall/firewall.controller.js';
+import { FirewallService } from '../router/firewall/firewall.service.js';
+import { IsolationController } from '../pppoe/isolation/isolation.controller.js';
+import { IsolationService } from '../pppoe/isolation/isolation.service.js';
 
 describe('Role access over HTTP', () => {
   let app: INestApplication;
   let role = 'admin';
   beforeAll(async () => {
     const module = await Test.createTestingModule({
-      controllers: [FinanceInvoicesController, FinanceDepositsController, AreaController],
+      controllers: [FinanceInvoicesController, FinanceDepositsController, AreaController, FirewallController, IsolationController],
       providers: [
+        { provide: FirewallService, useValue: { list: () => ({}), create: () => ({}), update: () => ({}), remove: () => ({}), move: () => ({}) } },
+        { provide: IsolationService, useValue: { get: () => ({}), save: () => ({}), sync: () => ({}), status: () => ({}) } },
         { provide: FinanceInvoicesService, useValue: { invoiceOverview: () => ({}), unpaidInvoices: () => ({}) } },
         { provide: FinanceDepositsService, useValue: { list: () => ({}), accept: () => ({}) } },
         { provide: AreaService, useValue: { list: () => ({}), options: () => ({}), getCollectorCustomers: () => ({}) } },
@@ -37,6 +43,11 @@ describe('Role access over HTTP', () => {
       await request(app.getHttpServer()).get('/areas').expect(role === 'admin' ? 200 : 403);
       await request(app.getHttpServer()).get('/areas/customers').expect(['admin', 'kolektor'].includes(role) ? 200 : 403);
       await request(app.getHttpServer()).get('/areas/options').expect(['admin', 'sales', 'teknisi'].includes(role) ? 200 : 403);
+      await request(app.getHttpServer()).get('/router/firewall/3/ip/filter').expect(role === 'admin' ? 200 : 403);
+      await request(app.getHttpServer()).post('/router/firewall/3/ip/filter').send({ fields: { chain: 'forward', action: 'drop' } }).expect(role === 'admin' ? 201 : 403);
+      await request(app.getHttpServer()).delete('/router/firewall/3/ip/filter/*A').expect(role === 'admin' ? 200 : 403);
+      await request(app.getHttpServer()).get('/pppoe/isolation/3').expect(role === 'admin' ? 200 : 403);
+      await request(app.getHttpServer()).post('/pppoe/isolation/3/sync').expect(role === 'admin' ? 201 : 403);
     });
   }
 });

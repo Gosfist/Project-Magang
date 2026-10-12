@@ -10,6 +10,7 @@ import {
   LucideTrash2,
 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
+import { latestRequest } from '../../../../core/services/latest-request';
 import { AuthService } from '../../../../core/services/auth.service';
 import { CollectorDeposit, PageMeta } from '../../../../shared/models/types';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
@@ -34,6 +35,8 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
   templateUrl: './finance-deposits.component.html',
 })
 export class FinanceDepositsComponent implements OnInit {
+  private readonly latestLoad = latestRequest();
+  private readonly latestLoadUnpaidInvoices = latestRequest();
   private api = inject(ApiService);
   auth = inject(AuthService);
 
@@ -82,7 +85,7 @@ export class FinanceDepositsComponent implements OnInit {
 
     this.api
       .get<{ data: CollectorDeposit[]; meta: PageMeta }>(`/finance/deposits?${params}`)
-      .subscribe({
+      .pipe(this.latestLoad).subscribe({
         next: (res) => {
           this.deposits.set(res.data);
           this.meta.set(res.meta);
@@ -111,7 +114,7 @@ export class FinanceDepositsComponent implements OnInit {
   loadUnpaidInvoices() {
     this.unpaidInvoices.set([]);
     this.invoiceEmptyMessage.set('');
-    if (!/^\d+$/.test(this.invoiceSearch.trim())) {
+    if (!this.invoiceSearch.trim()) {
       this.loadingInvoices.set(false);
       return;
     }
@@ -119,7 +122,7 @@ export class FinanceDepositsComponent implements OnInit {
     const searchedNumber = this.invoiceSearch.trim();
     const params = new URLSearchParams();
     if (this.invoiceSearch.trim()) params.set('search', this.invoiceSearch.trim());
-    this.api.get<{ data: any[]; emptyMessage?: string }>(`/finance/deposits/unpaid-invoices?${params}`).subscribe({
+    this.api.get<{ data: any[]; emptyMessage?: string }>(`/finance/deposits/unpaid-invoices?${params}`).pipe(this.latestLoadUnpaidInvoices).subscribe({
       next: (res) => {
         if (this.invoiceSearch.trim() !== searchedNumber) return;
         this.unpaidInvoices.set(res.data);

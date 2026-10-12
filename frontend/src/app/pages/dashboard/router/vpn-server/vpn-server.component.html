@@ -3,7 +3,7 @@
     <div class="relative flex-1">
       <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
       <input
-        class="input pl-10"
+        class="input input-with-icon"
         placeholder="Cari server WireGuard, host, atau subnet..."
         [(ngModel)]="search"
         (ngModelChange)="page.set(1); load()"

@@ -7,7 +7,7 @@ describe('collector promise list', () => {
     const service = new AreaService(prisma as any);
     const result = await service.collectorPromises('7', 'Andi', 2);
     const where = { account: { area: { collectors: { some: { userId: 7n } } },
-      OR: [{ customerName: { contains: 'Andi' } }, { phone: { contains: 'Andi' } }, { username: { contains: 'Andi' } }] } };
+      OR: [{ customerName: { contains: 'Andi' } }] } };
     expect(prisma.paymentPromise.findMany).toHaveBeenCalledWith(expect.objectContaining({ where, skip: 10, take: 10, orderBy: { id: 'desc' } }));
     expect(prisma.paymentPromise.count).toHaveBeenCalledWith({ where });
     expect(result).toMatchObject({ data: [], meta: { total: 12, currentPage: 2 } });

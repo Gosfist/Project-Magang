@@ -9,6 +9,7 @@ import {
   LucideTrash2,
 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
+import { latestRequest } from '../../../../core/services/latest-request';
 import { PageMeta, VpnServer } from '../../../../shared/models/types';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
@@ -32,6 +33,7 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
   templateUrl: './vpn-server.component.html',
 })
 export class VpnServerComponent implements OnInit {
+  private readonly latestLoad = latestRequest();
   private api = inject(ApiService);
 
   items = signal<VpnServer[]>([]);
@@ -66,7 +68,7 @@ export class VpnServerComponent implements OnInit {
       .get<{ data: VpnServer[]; meta: PageMeta }>(
         `/router/vpn-server?search=${encodeURIComponent(this.search)}&page=${this.page()}`,
       )
-      .subscribe({
+      .pipe(this.latestLoad).subscribe({
         next: (r) => {
           this.items.set(r.data);
           this.meta.set(r.meta);

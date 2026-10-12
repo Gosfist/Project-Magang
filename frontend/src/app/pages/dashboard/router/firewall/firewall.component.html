@@ -1,0 +1,38 @@
+<div class="space-y-4">
+  <div class="card p-4 space-y-3">
+    <div class="flex flex-wrap items-end gap-3">
+      <div class="min-w-48 flex-1"><label class="label" for="fw-router">Router / NAS</label><select id="fw-router" class="input" [(ngModel)]="routerId" (ngModelChange)="load()" [disabled]="saving()">@for (router of routers(); track router.id) { <option [ngValue]="router.id">{{ router.displayName }}</option> }</select></div>
+      <div><label class="label" for="fw-family">Protokol IP</label><select id="fw-family" class="input" [(ngModel)]="family" (ngModelChange)="load()" [disabled]="saving()"><option value="ip">IPv4</option><option value="ipv6">IPv6</option></select></div>
+      <button class="btn-secondary" (click)="load()" [disabled]="loading() || saving() || !routerId">Muat Ulang</button>
+      <a class="btn-secondary" routerLink="/dashboard/pppoe/isolation">Isolir PPPoE</a>
+    </div>
+    <p class="text-xs text-slate-500">Perubahan langsung berlaku pada router terpilih. Rule dinamis hanya dapat dilihat; rule isolir dikelola melalui Isolir PPPoE.</p>
+    <div class="flex flex-wrap gap-2" role="tablist" aria-label="Tabel firewall">@for (item of tables; track item.id) { <button role="tab" class="btn-secondary" [class.bg-slate-200]="table === item.id" [attr.aria-selected]="table === item.id" [disabled]="saving()" (click)="table = item.id; load()">{{ item.label }}</button> }</div>
+  </div>
+  <div class="flex flex-wrap gap-3"><input class="input flex-1" aria-label="Cari rule firewall" placeholder="Cari rule, alamat, interface, komentar..." [(ngModel)]="search" (ngModelChange)="page = 1" /><button class="btn-primary" [disabled]="!routerId || loading() || saving()" (click)="show()">Tambah Rule</button></div>
+  @if (error()) { <p role="alert" class="card p-4 text-red-600">{{ error() }}</p> }
+  <div class="table-wrap"><table><thead><tr><th>No</th><th>{{ table === 'address-list' ? 'List' : 'Chain' }}</th><th>{{ table === 'address-list' ? 'Alamat' : 'Action' }}</th><th>Parameter</th><th>Komentar</th><th>Status</th><th>Packets / Bytes</th><th>Aksi</th></tr></thead><tbody>
+    @for (row of visible(); track row['.id']) {
+      <tr><td>{{ rowNumber(row) }}</td><td>{{ row['chain'] || row['list'] || '-' }}</td><td>{{ row['action'] || row['address'] || '-' }}</td><td class="max-w-md break-words">{{ summary(row) || '-' }}</td><td>{{ row['comment'] || '-' }}</td><td>{{ row['dynamic'] === 'true' ? 'Dinamis' : disabled(row) ? 'Nonaktif' : row['invalid'] === 'true' ? 'Invalid' : 'Aktif' }}</td><td>{{ row['packets'] || '0' }} / {{ row['bytes'] || '0' }}</td>
+        <td><div class="flex flex-wrap gap-2">@if (!locked(row)) {
+          <button class="btn-secondary table-action" [disabled]="saving()" (click)="show(row)">Edit</button>
+          <button class="btn-secondary table-action" [disabled]="saving()" (click)="toggle(row)">{{ disabled(row) ? 'Aktifkan' : 'Nonaktifkan' }}</button>
+          @if (table !== 'address-list') { <button class="btn-secondary table-action" [disabled]="saving()" (click)="moveTarget.set(row); beforeId = 'end'">Urutan</button> }
+          <button class="btn-danger table-action" [disabled]="saving()" (click)="confirm.set(row)">Hapus</button>
+        } @else { <span class="table-meta">{{ (row['comment'] || '').startsWith('UNZANET-ISOLIR:') ? 'Isolir PPPoE' : 'Dikelola router' }}</span> }</div></td></tr>
+    }
+    @if (!visible().length) { <tr><td colspan="8" class="py-8 text-center text-slate-400">{{ loading() ? 'Memuat firewall...' : 'Rule tidak ditemukan.' }}</td></tr> }
+  </tbody></table></div>
+  <app-pagination [meta]="meta()" (pageChange)="page = $event" />
+  <app-modal [open]="editorOpen()" [title]="editing ? 'Edit Rule Firewall' : 'Tambah Rule Firewall'" [wide]="true" (closeModal)="!saving() && editorOpen.set(false)">
+    <form (ngSubmit)="save()" class="space-y-4">
+      <p class="text-xs text-slate-500">Isi parameter sesuai tabel {{ table }} MikroTik. Tambahkan properti untuk pengaturan seperti port, interface, connection-state, jump-target, atau to-addresses.</p>
+      @for (field of fields; track $index) { <div class="flex gap-2"><input class="input flex-1" aria-label="Nama properti" required [(ngModel)]="field.key" [name]="'key' + $index" placeholder="src-address" /><input class="input flex-1" [attr.aria-label]="field.key || 'Nilai properti'" [(ngModel)]="field.value" [name]="'value' + $index" placeholder="Nilai" /><button type="button" class="btn-danger" (click)="fields.splice($index, 1)" [disabled]="saving()">Hapus</button></div> }
+      <button type="button" class="btn-secondary" (click)="fields.push({ key: '', value: '' })" [disabled]="saving()">Tambah Properti</button>
+      <div class="flex justify-end gap-3"><button type="button" class="btn-secondary" (click)="editorOpen.set(false)" [disabled]="saving()">Batal</button><button class="btn-primary" [disabled]="saving()">{{ saving() ? 'Menyimpan...' : 'Simpan ke MikroTik' }}</button></div>
+    </form>
+  </app-modal>
+  <app-modal [open]="confirm() !== null" title="Hapus Rule Firewall" (closeModal)="!saving() && confirm.set(null)"><p>Hapus rule {{ confirm()?.['comment'] || confirm()?.['.id'] }} dari router terpilih?</p><div class="mt-4 flex justify-end gap-3"><button class="btn-secondary" (click)="confirm.set(null)" [disabled]="saving()">Batal</button><button class="btn-danger" (click)="remove()" [disabled]="saving()">Hapus Rule</button></div></app-modal>
+  <app-modal [open]="moveTarget() !== null" title="Pindahkan Rule" (closeModal)="!saving() && moveTarget.set(null)"><label class="label" for="fw-before">Letakkan sebelum</label><select id="fw-before" class="input" [(ngModel)]="beforeId"><option value="end">Paling bawah</option>@for (row of rows(); track row['.id']) { @if (!locked(row) && row !== moveTarget()) { <option [value]="row['.id']">{{ rowNumber(row) }} · {{ row['comment'] || row['chain'] || row['.id'] }}</option> } }</select><div class="mt-4 flex justify-end gap-3"><button class="btn-secondary" (click)="moveTarget.set(null)" [disabled]="saving()">Batal</button><button class="btn-primary" (click)="move()" [disabled]="saving()">Pindahkan</button></div></app-modal>
+  @if (toast()) { <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)" /> }
+</div>

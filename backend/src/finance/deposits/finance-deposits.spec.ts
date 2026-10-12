@@ -11,7 +11,7 @@ describe('payments for deleted customers', () => {
     const where = prisma.collectorDeposit.count.mock.calls[0][0].where;
     expect(where.collectorUserId).toBe(5n);
     expect(where.account.is.area.is.collectors.none.userId).toBe(5n);
-    expect(where.AND[0]).toEqual({ account: { customerNumber: 42n } });
+    expect(where.AND[0]).toEqual({ OR: [{ account: { OR: [{ customerName: { contains: '000042' } }, { customerNumber: 42n }] } }] });
     await new FinanceDepositsService(prisma as any, {} as any).list('', '', '', '', '000042');
     const archiveWhere = prisma.collectorDeposit.count.mock.calls[1][0].where;
     expect(archiveWhere.AND[0].OR).toContainEqual({ customerSnapshot: { path: '$.customerNumber', equals: '42' } });

@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
+import { latestRequest } from '../../../../core/services/latest-request';
 import { PppoePackage, PageMeta, IpPool } from '../../../../shared/models/types';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
@@ -23,6 +24,7 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
   templateUrl: './paket-layanan.component.html',
 })
 export class PaketLayananComponent implements OnInit {
+  private readonly latestLoad = latestRequest();
   private api = inject(ApiService);
 
   items = signal<PppoePackage[]>([]);
@@ -56,7 +58,7 @@ export class PaketLayananComponent implements OnInit {
       .get<{ data: PppoePackage[]; meta: PageMeta }>(
         `/pppoe/packages?search=${encodeURIComponent(this.search)}&page=${this.page()}`
       )
-      .subscribe({
+      .pipe(this.latestLoad).subscribe({
         next: (r) => {
           this.items.set(r.data);
           this.meta.set(r.meta);

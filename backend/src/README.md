@@ -13,9 +13,11 @@ pppoe/
   data-pelanggan/           akun, billing, foto, layanan pelanggan
   paket-layanan/           paket internet
   ip-pools/                pool IP
+  isolation/               pool/profil isolir dan sinkronisasi sesi
   shared/                  RADIUS, secret, jaringan PPPoE
 router/
   routers/                 router NAS
+  firewall/                rule Filter, NAT, Mangle, Raw, Address List
   vpn-server/
   vpn-client/
   shared/                  koneksi MikroTik/RouterOS

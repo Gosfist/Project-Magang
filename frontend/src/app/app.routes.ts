@@ -119,6 +119,8 @@ export const routes: Routes = [
           ),
         canActivate: [roleGuard('admin')],
       },
+      { path: 'router/firewall', loadComponent: () => import('./pages/dashboard/router/firewall/firewall.component').then(m => m.FirewallComponent), canActivate: [roleGuard('admin')] },
+      { path: 'pppoe/isolation', loadComponent: () => import('./pages/dashboard/pppoe/isolation/isolation.component').then(m => m.IsolationComponent), canActivate: [roleGuard('admin')] },
       {
         path: 'router/vpn-server',
         loadComponent: () =>

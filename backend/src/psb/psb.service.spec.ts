@@ -40,3 +40,40 @@ describe('PSB fee paid to technician', () => {
     expect(wa.notifyPsbCompleted).not.toHaveBeenCalled();
   });
 });
+
+describe('manual technician credential changes', () => {
+  it.each(['', 'new-password'])('saves a username change with password %s and removes old RADIUS credentials', async password => {
+    const order = { id: 1n, status: 'ACTIVATED', pppoeAccountId: 2n, installationPhoto: '/uploads/instalasi/1.png' };
+    const current = { username: 'old.username', routerNasId: 3 };
+    const account = { ...current, id: 2n, username: 'new.username' };
+    const tx = {
+      pppoeAccount: { findUnique: vi.fn().mockResolvedValue(current), update: vi.fn().mockResolvedValue(account) },
+      radacct: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      psbOrder: { update: vi.fn().mockResolvedValue({ ...order, username: 'new.username' }) },
+    };
+    let committed = false;
+    const prisma = {
+      psbOrder: { findUnique: vi.fn().mockResolvedValue(order) },
+      mainCore: { findFirst: vi.fn().mockResolvedValue({ id: 4n }), findMany: vi.fn().mockResolvedValue([
+        { id: 4n, parentId: 5n, tipeTitik: 'odp' }, { id: 5n, parentId: null, tipeTitik: 'server', routerNasId: 3 },
+      ]) },
+      nas: { findFirst: vi.fn().mockResolvedValue({ id: 3 }) },
+      $transaction: async (action: (client: typeof tx) => Promise<unknown>) => { const result = await action(tx); committed = true; return result; },
+    };
+    const radius = { sync: vi.fn().mockResolvedValue(undefined) };
+    const secrets = { encrypt: vi.fn().mockReturnValue('encrypted-new') };
+    const network = { disconnect: vi.fn().mockImplementation(async () => {
+      expect(committed).toBe(true);
+      return { warnings: [] };
+    }) };
+    await new PsbService(prisma as any, radius as any, secrets as any, {} as any, {} as any, network as any)
+      .activate('1', { username: 'new.username', password: password || undefined, odp: '4' }, '7');
+    const data = tx.pppoeAccount.update.mock.calls[0][0].data;
+    expect(data.username).toBe('new.username');
+    if (password) expect(data.password).toBe('encrypted-new');
+    else expect(data).not.toHaveProperty('password');
+    expect(radius.sync).toHaveBeenCalledWith(tx, account, 'old.username');
+    expect(network.disconnect).toHaveBeenCalledWith('old.username', 3);
+    expect(tx.radacct.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: { username: { in: ['old.username', 'new.username'] }, acctstoptime: null } }));
+  });
+});

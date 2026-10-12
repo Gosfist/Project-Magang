@@ -10,6 +10,7 @@ import { SecretService } from '../shared/secret.service.js';
 import { PppoeNetworkService } from '../shared/pppoe-network.service.js';
 
 import { WhatsappNotifyService } from '../../bot-whatsapp/shared/whatsapp-notify.service.js';
+import { isolationPoolInUse } from '../shared/isolation-config.js';
 
 @Injectable()
 export class PaketLayananService {
@@ -32,6 +33,7 @@ export class PaketLayananService {
   }
 
   async createPackage(dto: SavePackageDto) {
+    if (dto.addressPool && await isolationPoolInUse(this.prisma, dto.addressPool.trim())) throw new BadRequestException('Pool isolir tidak boleh digunakan sebagai pool internet paket.');
     try {
       const now = new Date();
       const item = await this.prisma.pppoePackage.create({
@@ -53,6 +55,7 @@ export class PaketLayananService {
   }
 
   async updatePackage(id: string, dto: SavePackageDto) {
+    if (dto.addressPool && await isolationPoolInUse(this.prisma, dto.addressPool.trim())) throw new BadRequestException('Pool isolir tidak boleh digunakan sebagai pool internet paket.');
     const current = await this.findPackage(id);
     const networkChanged = current.downloadMbps !== dto.downloadMbps
       || current.uploadMbps !== dto.uploadMbps

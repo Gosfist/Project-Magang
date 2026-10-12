@@ -130,6 +130,7 @@ export class SidebarComponent implements OnInit {
   ];
   readonly routerLinks = [
     ['Router / NAS', '/dashboard/router/routers'],
+    ['Firewall MikroTik', '/dashboard/router/firewall'],
     ['Server VPN', '/dashboard/router/vpn-server'],
     ['Klien VPN', '/dashboard/router/vpn-client'],
   ];
@@ -137,6 +138,7 @@ export class SidebarComponent implements OnInit {
     ['Data Pelanggan', '/dashboard/pppoe/data-pelanggan'],
     ['Harga Paket', '/dashboard/pppoe/harga-paket'],
     ['IP Pool', '/dashboard/pppoe/ip-pools'],
+    ['Isolir PPPoE', '/dashboard/pppoe/isolation'],
   ];
   readonly botWaLinks = [
     ['Login Bot Wa', '/dashboard/bot-whatsapp/status'],
@@ -153,7 +155,7 @@ export class SidebarComponent implements OnInit {
   readonly roleGroups = [
     { role: 'finance', label: 'Finance', links: [['Dashboard', '/dashboard/finance/dashboard'], ...this.financeLinks] },
     { role: 'sales', label: 'Sales', links: [['Dashboard', '/dashboard/sales/dashboard'], ['Registrasi', '/dashboard/registrasi-pelanggan']] },
-    { role: 'kolektor', label: 'Kolektor', links: [['Dashboard', '/dashboard/kolektor/dashboard'], ['Tagihan', '/dashboard/kolektor/tagihan'], ['Janji Bayar', '/dashboard/kolektor/janji-bayar'], ['Titipan', '/dashboard/kolektor/titipan']] },
+    { role: 'kolektor', label: 'Kolektor', links: [['Dashboard', '/dashboard/kolektor/dashboard'], ['Tagihan', '/dashboard/kolektor/tagihan'], ['Titipan', '/dashboard/kolektor/titipan']] },
     { role: 'teknisi', label: 'Teknisi', links: [['Dashboard', '/dashboard/teknisi/dashboard'], ['Pasang Baru', '/dashboard/pasang-baru'], ['Data Pelanggan', '/dashboard/teknisi/data-pelanggan'], ...this.coreLinks, ['Kalkulator Redaman', '/dashboard/tools/kalkulator-redaman']] },
   ];
   primaryLinks(): string[][] {

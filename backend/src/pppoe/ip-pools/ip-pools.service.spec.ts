@@ -10,6 +10,7 @@ describe('Direct MikroTik pool management', () => {
     const write = vi.fn().mockResolvedValue([]);
     const router = { id: 3, isActive: true };
     const prisma = {
+      appSetting: { findMany: vi.fn().mockResolvedValue([]) },
       nas: { findUnique: vi.fn().mockResolvedValue(router) },
       pppoePackage: { count: vi.fn().mockResolvedValue(0) },
       ipPool: { create: vi.fn(), update: vi.fn(), delete: vi.fn() },

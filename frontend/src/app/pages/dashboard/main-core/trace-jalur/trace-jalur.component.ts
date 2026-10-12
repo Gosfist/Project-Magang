@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideArrowRight, LucideGitBranch, LucideSearch } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
@@ -27,12 +27,12 @@ export class TraceJalurComponent implements OnInit {
   } | null>(null);
   toast = signal<{ message: string; type: 'error' } | null>(null);
 
-  filteredOptions = computed(() => {
-    const query = this.search.toLowerCase();
+  filteredOptions() {
+    const query = this.search.trim().toLowerCase();
     return this.options().filter(
       (node) => node.tipeTitik === this.category && node.namaTitik.toLowerCase().includes(query)
     );
-  });
+  }
 
   ngOnInit(): void {
     this.api.get<{ data: TraceOption[] }>('/main-core/options').subscribe({

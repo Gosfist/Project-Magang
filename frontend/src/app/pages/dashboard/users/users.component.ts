@@ -3,6 +3,7 @@ import { Subscription } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { LucideEye, LucideEyeOff, LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
 import { ApiService } from '../../../core/services/api.service';
+import { latestRequest } from '../../../core/services/latest-request';
 import { User, PageMeta } from '../../../shared/models/types';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
@@ -26,6 +27,7 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
   templateUrl: './users.component.html',
 })
 export class UsersComponent implements OnInit, OnDestroy {
+  private readonly latestLoad = latestRequest();
   private api = inject(ApiService);
 
   items = signal<User[]>([]);
@@ -53,7 +55,7 @@ export class UsersComponent implements OnInit, OnDestroy {
       .get<{ data: User[]; meta: PageMeta }>(
         `/users?search=${encodeURIComponent(this.search)}&role=${this.role}&status=${this.status}&page=${this.page()}`
       )
-      .subscribe({
+      .pipe(this.latestLoad).subscribe({
         next: (r) => {
           this.items.set(r.data);
           this.meta.set(r.meta);

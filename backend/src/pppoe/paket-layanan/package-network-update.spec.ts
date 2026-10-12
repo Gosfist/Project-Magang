@@ -9,6 +9,7 @@ function setup() {
   const accounts = [{ id: 2n, username: '000002', routerNasId: 3, isActive: true, password: 'encrypted', expiresAt: null }];
   let updatedPackage = current;
   const tx = {
+    appSetting: { findUnique: vi.fn().mockResolvedValue(null) },
     pppoePackage: { update: vi.fn(async ({ data }) => { updatedPackage = { ...current, ...data }; return updatedPackage; }) },
     pppoeAccount: { findMany: vi.fn(async () => accounts.map(account => ({ ...account, package: updatedPackage }))) },
     paymentPromise: { findFirst: vi.fn(async () => null) },
@@ -16,6 +17,7 @@ function setup() {
     radreply: { deleteMany: vi.fn(), createMany: vi.fn() },
   };
   const prisma = {
+    appSetting: { findMany: vi.fn().mockResolvedValue([]) },
     pppoePackage: { findUnique: vi.fn(async () => current) },
     $transaction: vi.fn(async action => { const result = await action(tx); committed = true; return result; }),
   };
