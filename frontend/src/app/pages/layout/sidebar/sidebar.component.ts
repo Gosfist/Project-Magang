@@ -130,7 +130,6 @@ export class SidebarComponent implements OnInit {
   ];
   readonly routerLinks = [
     ['Router / NAS', '/dashboard/router/routers'],
-    ['Firewall MikroTik', '/dashboard/router/firewall'],
     ['Server VPN', '/dashboard/router/vpn-server'],
     ['Klien VPN', '/dashboard/router/vpn-client'],
   ];

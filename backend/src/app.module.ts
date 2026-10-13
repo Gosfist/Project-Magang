@@ -12,6 +12,7 @@ import { PengaturanModule } from './tools/pengaturan/pengaturan.module.js';
 import { AreaModule } from './area/area.module.js';
 import { FinanceModule } from './finance/finance.module.js';
 import { PsbModule } from './psb/psb.module.js';
+import { BackupModule } from './tools/backup/backup.module.js';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { PsbModule } from './psb/psb.module.js';
     AreaModule,
     FinanceModule,
     PsbModule,
+    BackupModule,
   ],
 })
 export class AppModule {}

@@ -1,4 +1,4 @@
-# Isolir PPPoE dengan pool khusus dan Firewall MikroTik
+# Isolir PPPoE dengan pool khusus dan firewall otomatis
 
 Mode ini diaktifkan per Router/NAS. Akun isolir tetap menerima Access-Accept dengan
 kredensial PPPoE yang benar, tetapi memakai pool khusus dan profil PPP isolir.
@@ -57,19 +57,13 @@ menambahkan subnet isolir sebagai jaringan interface sebelum menerapkan konfigur
   Status siap memeriksa pool, profil, dan posisi rule; sinkronisasi akun bukan
   pengganti penerapan ulang konfigurasi router yang diubah dari luar aplikasi.
 
-## Firewall MikroTik
+## Firewall otomatis
 
-**Router > Firewall MikroTik** khusus administrator, mencakup IPv4/IPv6 untuk
-Filter, NAT, Mangle, Raw, dan Address List. Dukungan tabel IPv6 mengikuti versi
-RouterOS; tabel yang tidak tersedia mengembalikan pesan API. Daftar dibaca langsung
-dari router. Administrator dapat menambah, mengedit properti, menonaktifkan/
-mengaktifkan, menghapus, dan memindahkan rule statis (Address List tidak berurutan).
-Parameter lanjutan dapat ditambahkan pada form properti sesuai nama RouterOS.
-Penyimpanan langsung mengubah router terpilih.
-
-Mutasi menggunakan ID RouterOS stabil, bukan nomor tampilan. Rule dinamis/bawaan
-hanya dibaca. Rule isolir dikelola dari Isolir PPPoE; editor umum tidak dapat
-menghapus/mengubahnya atau memindahkan rule biasa mendahului rule isolir.
+Rule drop dibuat dan ditata otomatis melalui **PPPoE > Isolir PPPoE** ketika
+menekan **Terapkan ke MikroTik**. Administrator tidak perlu membuat rule isolir
+secara manual. Daftar rule terkelola tetap ditampilkan pada halaman Isolir PPPoE.
+Menu, halaman, dan API pengelolaan firewall umum telah dihapus. Penghapusan fitur
+editor ini tidak menghapus rule yang sudah terpasang di router.
 
 ## Batas validasi
 

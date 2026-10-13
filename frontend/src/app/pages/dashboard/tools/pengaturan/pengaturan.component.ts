@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../core/services/api.service';
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
+import { BackupComponent } from '../backup/backup.component';
 
 type BillingSettings = {
   billingStartDay: number;
@@ -14,10 +15,11 @@ type BillingSettings = {
 @Component({
   selector: 'app-pengaturan',
   standalone: true,
-  imports: [FormsModule, ToastComponent],
+  imports: [FormsModule, ToastComponent, BackupComponent],
   templateUrl: './pengaturan.component.html',
 })
 export class PengaturanComponent implements OnInit {
+  activeTab: 'billing' | 'backup' = 'billing';
   private readonly api = inject(ApiService);
   loading = signal(false);
   saving = signal(false);

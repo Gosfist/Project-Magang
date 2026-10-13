@@ -17,7 +17,6 @@ pppoe/
   shared/                  RADIUS, secret, jaringan PPPoE
 router/
   routers/                 router NAS
-  firewall/                rule Filter, NAT, Mangle, Raw, Address List
   vpn-server/
   vpn-client/
   shared/                  koneksi MikroTik/RouterOS
@@ -39,6 +38,7 @@ main-core/
   trace-jalur/
   shared/                  validasi dan pohon jaringan bersama
 tools/pengaturan/
+tools/backup/              script lokal/RADIUS dan backup/impor Excel PPPoE
 bot-whatsapp/shared/       pengirim notifikasi dari backend
 ```
 
