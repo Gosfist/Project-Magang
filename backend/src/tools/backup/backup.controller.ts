@@ -6,6 +6,10 @@ import { BackupService } from './backup.service.js';
 import { BackupImportDto, BackupRouterDto, BackupScriptDto } from './backup.dto.js';
 import { MAX_IMPORT_BYTES } from './backup-workbook.js';
 
+// files + fields already cap the form at three parts. Busboy emits partsLimit
+// when the configured count is reached, rejecting a valid file + mode + token.
+const uploadOptions = { limits: { fileSize: MAX_IMPORT_BYTES, files: 1, fields: 2, fieldSize: 2048 } };
+
 @Controller('settings/backup')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class BackupController {
@@ -17,10 +21,10 @@ export class BackupController {
   @Get('excel') @Header('Cache-Control', 'private, no-store') excel(@Query('routerId', new ParseIntPipe({ optional: true })) routerId?: number) { return this.backup.workbook(false, routerId); }
   @Post('preview')
   @Header('Cache-Control', 'private, no-store')
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_IMPORT_BYTES, files: 1, fields: 2, fieldSize: 2048, parts: 3 } }))
+  @UseInterceptors(FileInterceptor('file', uploadOptions))
   preview(@UploadedFile() file: { buffer: Buffer } | undefined, @Body() dto: BackupImportDto, @Req() req: { user: { id: string } }) { return this.backup.preview(file?.buffer, dto.mode, req.user.id); }
   @Post('import')
   @Header('Cache-Control', 'private, no-store')
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_IMPORT_BYTES, files: 1, fields: 2, fieldSize: 2048, parts: 3 } }))
+  @UseInterceptors(FileInterceptor('file', uploadOptions))
   import(@UploadedFile() file: { buffer: Buffer } | undefined, @Body() dto: BackupImportDto, @Req() req: { user: { id: string } }) { return this.backup.import(file?.buffer, dto, req.user.id); }
 }

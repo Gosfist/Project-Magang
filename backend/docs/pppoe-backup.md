@@ -82,6 +82,8 @@ di Monitoring RADIUS, IP/pool, queue, dan status `/ppp active print`.
 - Tekan Periksa File untuk melihat baris/tambah/perbarui/konflik. Password tidak
   dikirim dalam pratinjau. Formula, objek, arsip berlebihan, referensi tidak valid,
   dan nomor/username/WA/KTP duplikat ditolak.
+- Upload menerima satu file dan hingga dua kolom formulir (mode dan token).
+  Pesan `Too many parts` terkait batas multipart HTTP, bukan jumlah baris Excel.
 - Tiket pratinjau berlaku 10 menit, terikat file/mode/admin dan keadaan data server.
   Jika file/mode/data berubah, ulangi Periksa File.
 - Import memvalidasi ulang dalam transaksi Serializable lalu mengenkripsi password
