@@ -111,4 +111,14 @@ describe('PPPoE backup Excel and restoration', () => {
     const stream = (await service.script(3, 'local', false)).getStream(); const parts: Buffer[] = []; for await (const part of stream) parts.push(Buffer.from(part));
     expect(Buffer.concat(parts).toString()).toContain('remote-address="internet"');
   });
+  it('downloads complete RADIUS cleanup without accounts/settings and always reconnects backup sessions', async () => {
+    const { service, prisma } = setup();
+    const stream = (await service.script(3, 'radius', false)).getStream();
+    const parts: Buffer[] = []; for await (const part of stream) parts.push(Buffer.from(part));
+    const script = Buffer.concat(parts).toString();
+    for (const menu of ['/ppp secret', '/ppp profile', '/ip firewall filter', '/ppp active']) expect(script).toContain(menu + ' remove');
+    expect(prisma.appSetting.findUnique).not.toHaveBeenCalled();
+    expect(prisma.pppoeAccount.findMany).not.toHaveBeenCalled();
+    expect(script).not.toContain('password=');
+  });
 });

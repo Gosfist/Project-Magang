@@ -38,7 +38,9 @@ RADIUS global tidak dimatikan: autentikasi pelanggan dengan secret lokal aktif
 memakai data lokal. Akun tanpa Router/NAS tidak masuk script router.
 
 Jika mode pool isolir aktif, akun isolir tetap aktif dengan profil lokal isolir,
-pool isolir, tanpa IPv6, dan tiga drop terkelola sebelum rule biasa/FastTrack.
+pool isolir, tanpa IPv6, dan tiga drop khusus backup sebelum rule biasa/FastTrack.
+Rule backup memakai komentar `UNZANET-BACKUP:{router}:FIREWALL:ROUTER/IN/OUT`;
+script lokal tidak mengganti atau menghapus rule `UNZANET-ISOLIR` utama.
 Pool isolir harus sudah tersedia. Tanpa mode pool isolir, akun isolir dalam
 snapshot memakai secret nonaktif. Masa berlaku, paket nonaktif, dan janji bayar
 yang kedaluwarsa diperiksa saat pembuatan file.
@@ -47,8 +49,8 @@ Ini snapshot, bukan pengganti billing otomatis. Pembayaran/perubahan web setelah
 file diunduh tidak memperbarui file maupun secret lokal. Tidak ada scheduler
 yang otomatis mendeteksi RADIUS mati atau otomatis mengaktifkan secrets.
 
-Checkbox Sambungkan ulang sesi menentukan apakah script menghapus sesi PPPoE
-akun cadangan satu kali. Default tidak dicentang agar sesi aktif tetap berjalan.
+Checkbox Sambungkan ulang sesi saat import lokal menentukan apakah script lokal
+menghapus sesi PPPoE akun cadangan satu kali. Default tidak dicentang agar sesi aktif tetap berjalan.
 Centang jika perubahan mode/pool harus langsung berlaku pada sesi yang sudah
 terhubung. Script tetap memerlukan uji dial pada RouterOS yang digunakan.
 
@@ -57,13 +59,37 @@ terhubung. Script tetap memerlukan uji dial pada RouterOS yang digunakan.
 Setelah server sehat, pastikan autentikasi dan accounting RADIUS berfungsi.
 Jalankan Script Kembali ke RADIUS. Script mengaktifkan `use-radius=yes`, lalu
 menghapus seluruh secrets PPPoE dengan marker backup router tersebut, termasuk
-cadangan lama yang sudah nonaktif. Akun pada database web tetap tersimpan.
-Pool, profil, dan rule isolir dipertahankan. Secret lokal lain tidak diubah.
-Jika checkbox reconnect aktif saat unduhan, sesi terkait disambungkan ulang;
-jika tidak, sesi aktif beralih pada login berikutnya. Periksa autentikasi baru
-di Monitoring RADIUS, IP/pool, queue, dan status `/ppp active print`.
-Unduh ulang Script Kembali ke RADIUS setelah pembaruan fitur ini. File yang
-diunduh sebelumnya masih memakai perintah disable dan tidak berubah otomatis.
+cadangan lama yang sudah nonaktif. Sesi PPPoE setiap akun backup selalu diputus
+satu kali setelah secret dihapus agar autentikasi berikutnya memakai RADIUS dan
+resource dinamis sesi lokal (interface/queue) dilepas oleh RouterOS. Tidak ada
+penghapusan queue atau interface secara global. Akun pada database web tetap tersimpan.
+Setelah itu script menghapus profil cadangan normal dan isolir dengan nama
+`UNZANET-BACKUP-{router}-PKG/ISOLIR-*` dan komentar kepemilikan lengkap yang cocok.
+Profil lama yang secrets-nya sudah dihapus juga dibersihkan; tidak bergantung
+pada daftar akun saat ini. Profil yang masih direferensikan secret lain atau
+default-profile server PPPoE dilewati dengan pesan terminal. Jika router menolak
+penghapusan, kegagalan dilaporkan dan profil berikutnya tetap diproses. Jumlah
+profil dihapus/dilewati ditampilkan di akhir; periksa pesan jika ada yang tersisa.
+Terakhir script menghapus semua rule firewall dengan tiga komentar backup persis
+di atas, termasuk duplikat dari import lama. Jika masih ada profil cadangan yang
+belum dapat dihapus, firewall cadangan dipertahankan dan dilaporkan agar proteksi
+isolir sesi yang masih memakai cadangan tidak dilepas. Kegagalan penghapusan rule
+dilaporkan; script tidak menyatakan pembersihan selesai jika ada yang dilewati.
+Profil asli/default/paket, pool, profil `UNZANET-ISOLIR-{router}` dan rule isolir
+utama tetap diperlukan oleh RADIUS dan dipertahankan. Secret lokal lain tidak diubah.
+Periksa autentikasi baru di Monitoring RADIUS, IP/pool, queue, dan status
+`/ppp active print`. Import lokal berikutnya akan membuat konfigurasi cadangan
+baru dari data terbaru. Unduh ulang kedua script setelah pembaruan fitur ini;
+file lama tidak berubah otomatis.
+
+Cakupan perubahan script lokal adalah secrets, profil, tiga rule firewall backup
+dan reconnect opsional. Script tidak membuat pool, profil dasar, queue statis,
+NAT, address-list, scheduler, repository script, ataupun file pada router.
+Pool/profil dasar adalah prasyarat, sehingga tidak menjadi objek pembersihan.
+Script lokal versi lama mengganti rule dengan marker `UNZANET-ISOLIR` yang sama
+dengan konfigurasi RADIUS; asal rule tersebut tidak dapat dibedakan. Rule bersama
+itu dipertahankan agar isolir RADIUS tetap bekerja. Versi baru memisahkan marker
+rule backup sehingga seluruh konfigurasi khusus backup dapat dibersihkan.
 
 ## Excel
 

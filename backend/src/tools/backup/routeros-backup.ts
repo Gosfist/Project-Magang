@@ -22,22 +22,67 @@ function ownership(path: string, name: string, tag: string) {
   return `:foreach item in=[${path} find where name=${q(name)}] do={ :if ([${path} get $item comment] != ${q(tag)}) do={ :error ${q(`Nama ${name} sudah dipakai konfigurasi lain. Tidak ditimpa.`)}; }; };`;
 }
 
-export function radiusScript(routerId: number, reconnect: boolean) {
-  const prefix = `^${backupPrefix(routerId)}ACCOUNT:`;
+export function radiusScript(routerId: number) {
+  const prefix = backupPrefix(routerId);
   return [
     '# UNZANET - KEMBALI KE RADIUS',
     `# Router/NAS ID ${routerId}. Jalankan setelah RADIUS telah diuji normal.`,
-    '# Menghapus seluruh secrets PPPoE cadangan aplikasi pada router ini. Akun di web tetap ada.',
+    '# Menghapus seluruh konfigurasi khusus backup: secrets, profil dan firewall cadangan.',
+    '# Sesi akun backup disambungkan ulang sekali agar memakai RADIUS dan melepas queue dinamis lokal.',
+    '# Profil asli, pool dan konfigurasi isolir utama tetap ada. Profil yang masih direferensikan dilewati.',
     '{',
     '/ppp aaa set use-radius=yes;',
-    `:foreach item in=[/ppp secret find where comment~${q(prefix)}] do={`,
+    `:foreach item in=[/ppp secret find where comment~${q('^' + prefix + 'ACCOUNT:')}] do={`,
     '  :if ([/ppp secret get $item service] = "pppoe") do={',
     '    :local user [/ppp secret get $item name];',
     '    /ppp secret remove $item;',
-    ...(reconnect ? ['    /ppp active remove [/ppp active find where name=$user and service="pppoe"];'] : []),
+    '    /ppp active remove [/ppp active find where name=$user and service="pppoe"];',
     '  };',
     '};',
-    `:put ${q(reconnect ? 'Secrets cadangan dihapus. Sesi terkait disambungkan ulang ke RADIUS.' : 'Secrets cadangan dihapus. Sesi aktif beralih ke RADIUS pada login berikutnya.')};`,
+    ':local removedProfiles 0;',
+    ':local keptProfiles 0;',
+    // Both the generated name and exact ownership tag must match. This also
+    // finds obsolete profiles after an earlier return script removed secrets.
+    `:foreach backupProfile in=[/ppp profile find where comment~${q('^' + prefix + 'PROFILE:')} and name~${q(`^UNZANET-BACKUP-${routerId}-(PKG|ISOLIR)-`)}] do={`,
+    '  :local backupProfileName [/ppp profile get $backupProfile name];',
+    `  :if ([/ppp profile get $backupProfile comment] = (${q(prefix + 'PROFILE:')} . $backupProfileName)) do={`,
+    '    :if (([:len [/ppp secret find where profile=$backupProfileName]] > 0) || ([:len [/interface pppoe-server server find where default-profile=$backupProfileName]] > 0)) do={',
+    '      :set keptProfiles ($keptProfiles + 1);',
+    '      :put ("Profil cadangan dilewati karena masih direferensikan: " . $backupProfileName);',
+    '    } else={',
+    '      :do {',
+    '        /ppp profile remove $backupProfile;',
+    '        :set removedProfiles ($removedProfiles + 1);',
+    '      } on-error={',
+    '        :set keptProfiles ($keptProfiles + 1);',
+    '        :put ("Profil cadangan belum dapat dihapus oleh router: " . $backupProfileName);',
+    '      };',
+    '    };',
+    '  };',
+    '};',
+    ':local removedRules 0;',
+    ':local keptRules 0;',
+    // Never remove the shared UNZANET-ISOLIR rules used by live RADIUS.
+    ...['ROUTER', 'IN', 'OUT'].flatMap(suffix => [
+      `:foreach backupRule in=[/ip firewall filter find where comment=${q(prefix + 'FIREWALL:' + suffix)}] do={`,
+      '  :if ($keptProfiles > 0) do={',
+      '    :set keptRules ($keptRules + 1);',
+      '    :put "Firewall cadangan belum dihapus karena masih ada profil cadangan yang belum bersih.";',
+      '  } else={',
+      '    :do {',
+      '      /ip firewall filter remove $backupRule;',
+      '      :set removedRules ($removedRules + 1);',
+      '    } on-error={',
+      '      :set keptRules ($keptRules + 1);',
+      '      :put "Firewall cadangan belum dapat dihapus oleh router.";',
+      '    };',
+      '  };',
+      '};',
+    ]),
+    ':put "Secrets cadangan dihapus. Sesi terkait disambungkan ulang ke RADIUS.";',
+    ':put ("Profil cadangan dihapus: " . $removedProfiles . "; dilewati: " . $keptProfiles . ".");',
+    ':put ("Firewall cadangan dihapus: " . $removedRules . "; dilewati: " . $keptRules . ".");',
+    ':if (($keptProfiles = 0) && ($keptRules = 0)) do={ :put "Pembersihan konfigurasi backup selesai."; } else={ :put "Pembersihan backup belum lengkap. Periksa pesan di atas, perbaiki referensi/penyebabnya lalu jalankan ulang script."; };',
     '}', '',
   ].join('\r\n');
 }
@@ -64,11 +109,12 @@ export function localScript(routerId: number, accounts: LocalAccount[], settings
   for (const [name] of profiles) lines.push(ownership('/ppp profile', name, prefix + 'PROFILE:' + name));
   for (const account of accounts) lines.push(ownership('/ppp secret', account.username, prefix + 'ACCOUNT:' + account.customerNumber));
   if (isolation.enabled) {
-    // Replace managed rules only after placing the new canonical drop at the top.
+    // Backup-only rules have separate ownership. Do not replace or modify the
+    // shared isolation rules that RADIUS still needs after this backup is gone.
     for (const spec of [
       ['input', 'src-address', 'ROUTER'], ['forward', 'dst-address', 'IN'], ['forward', 'src-address', 'OUT'],
     ]) {
-      const comment = `UNZANET-ISOLIR:${routerId}:${spec[2]}`;
+      const comment = `${prefix}FIREWALL:${spec[2]}`;
       lines.push(`{ :local old [/ip firewall filter find where comment=${q(comment)}]; :local added [/ip firewall filter add chain=${spec[0]} action=drop ${spec[1]}=${q(isolation.subnet)} disabled=no comment=${q(comment)}]; :local first [:pick [/ip firewall filter find where dynamic=no] 0]; :if ($first != $added) do={ /ip firewall filter move $added destination=$first; }; /ip firewall filter remove $old; };`);
     }
   }

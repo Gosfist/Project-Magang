@@ -51,7 +51,7 @@ export class BackupService {
   async script(routerId: number, mode: 'local' | 'radius', reconnect: boolean) {
     await this.router(routerId);
     let script: string;
-    if (mode === 'radius') script = radiusScript(routerId, reconnect);
+    if (mode === 'radius') script = radiusScript(routerId);
     else {
       const row = await this.prisma.appSetting.findUnique({ where: { key: key(routerId) } });
       if (!row) throw new BadRequestException('Simpan gateway dan profil dasar backup untuk router ini terlebih dahulu.');
