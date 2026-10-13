@@ -27,17 +27,17 @@ export function radiusScript(routerId: number, reconnect: boolean) {
   return [
     '# UNZANET - KEMBALI KE RADIUS',
     `# Router/NAS ID ${routerId}. Jalankan setelah RADIUS telah diuji normal.`,
-    '# Hanya menonaktifkan secrets PPPoE cadangan milik aplikasi; tidak menghapus akun.',
+    '# Menghapus seluruh secrets PPPoE cadangan aplikasi pada router ini. Akun di web tetap ada.',
     '{',
     '/ppp aaa set use-radius=yes;',
     `:foreach item in=[/ppp secret find where comment~${q(prefix)}] do={`,
     '  :if ([/ppp secret get $item service] = "pppoe") do={',
     '    :local user [/ppp secret get $item name];',
-    '    /ppp secret set $item disabled=yes;',
+    '    /ppp secret remove $item;',
     ...(reconnect ? ['    /ppp active remove [/ppp active find where name=$user and service="pppoe"];'] : []),
     '  };',
     '};',
-    `:put ${q(reconnect ? 'Secrets cadangan nonaktif. Sesi terkait disambungkan ulang ke RADIUS.' : 'Secrets cadangan nonaktif. Sesi aktif beralih ke RADIUS pada login berikutnya.')};`,
+    `:put ${q(reconnect ? 'Secrets cadangan dihapus. Sesi terkait disambungkan ulang ke RADIUS.' : 'Secrets cadangan dihapus. Sesi aktif beralih ke RADIUS pada login berikutnya.')};`,
     '}', '',
   ].join('\r\n');
 }

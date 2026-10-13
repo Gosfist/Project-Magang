@@ -32,14 +32,19 @@ describe('offline PPPoE backup scripts', () => {
     const disabled = localScript(3, [{ ...account, isolated: true }], settings, emptyIsolation(), false);
     expect(disabled).toContain('profile="UNZANET-BACKUP-3-PKG-2" disabled=yes');
   });
-  it('returns to RADIUS by disabling only managed PPPoE secrets and optionally reconnecting their sessions', () => {
+  it('returns to RADIUS by deleting only managed PPPoE secrets before reconnecting their sessions', () => {
     const script = radiusScript(3, true);
     expect(script).toContain('/ppp aaa set use-radius=yes');
     expect(script).toContain('comment~"^UNZANET-BACKUP:3:ACCOUNT:"');
     expect(script).toContain('service] = "pppoe"');
-    expect(script).toContain('/ppp secret set $item disabled=yes');
-    expect(script).not.toContain('/ppp secret remove');
+    expect(script).toContain('/ppp secret remove $item');
+    expect(script).not.toContain('disabled=yes');
+    expect(script.indexOf('/ppp secret remove $item')).toBeLessThan(script.indexOf('/ppp active remove'));
+    expect(script).toContain('Secrets cadangan dihapus.');
     expect(script).not.toContain('password=');
-    expect(radiusScript(3, false)).not.toContain('/ppp active remove');
+    const withoutReconnect = radiusScript(3, false);
+    expect(withoutReconnect).not.toContain('/ppp active remove');
+    expect(withoutReconnect).toContain('/ppp secret remove $item');
+    expect(withoutReconnect).toContain('pada login berikutnya');
   });
 });

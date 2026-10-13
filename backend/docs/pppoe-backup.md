@@ -56,11 +56,14 @@ terhubung. Script tetap memerlukan uji dial pada RouterOS yang digunakan.
 
 Setelah server sehat, pastikan autentikasi dan accounting RADIUS berfungsi.
 Jalankan Script Kembali ke RADIUS. Script mengaktifkan `use-radius=yes`, lalu
-menonaktifkan hanya secrets PPPoE dengan marker backup router tersebut. Tidak
-menghapus secret, pool, profil, atau rule isolir. Secret lokal lain tidak diubah.
+menghapus seluruh secrets PPPoE dengan marker backup router tersebut, termasuk
+cadangan lama yang sudah nonaktif. Akun pada database web tetap tersimpan.
+Pool, profil, dan rule isolir dipertahankan. Secret lokal lain tidak diubah.
 Jika checkbox reconnect aktif saat unduhan, sesi terkait disambungkan ulang;
 jika tidak, sesi aktif beralih pada login berikutnya. Periksa autentikasi baru
 di Monitoring RADIUS, IP/pool, queue, dan status `/ppp active print`.
+Unduh ulang Script Kembali ke RADIUS setelah pembaruan fitur ini. File yang
+diunduh sebelumnya masih memakai perintah disable dan tidak berubah otomatis.
 
 ## Excel
 
