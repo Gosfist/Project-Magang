@@ -61,7 +61,7 @@ export class VpnClientService {
         if (isRadiusServer && others.some(member => member.isRadiusServer)) throw new BadRequestException('Hanya boleh ada satu perangkat server RADIUS.');
         const used = others.length + 1 + (isRadiusServer || others.some(member => member.isRadiusServer) ? 0 : 1);
         if (used > 10) throw new BadRequestException('Batas 10 perangkat termasuk server RADIUS sudah penuh. Perangkat nonaktif tetap dihitung sampai dikeluarkan dari ZeroTier Central.');
-        if (nodeId && others.some(member => member.nodeId === nodeId)) throw new ConflictException('Node ID ZeroTier sudah terdaftar.');
+        if (nodeId && others.some(member => member.nodeId === nodeId)) throw new ConflictException('Device ID ZeroTier sudah terdaftar.');
         if (vpnIp && others.some(member => member.vpnIp === vpnIp)) throw new ConflictException('IP ZeroTier sudah terdaftar.');
         if (current?.routers.length && (current.vpnIp !== vpnIp || current.networkId !== networkId || current.nodeId !== nodeId
           || dto.deviceType !== 'mikrotik' || isRadiusServer || dto.isActive === false)) {

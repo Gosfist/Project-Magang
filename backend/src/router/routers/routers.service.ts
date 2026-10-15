@@ -194,13 +194,13 @@ export class RoutersService {
     if (router.vpnClient) {
       const client = router.vpnClient;
       if (!client.networkId || !client.vpnIp || !client.nodeId || !client.isActive || client.isRadiusServer || client.deviceType !== 'mikrotik') {
-        throw new BadRequestException('Klien ZeroTier MikroTik belum lengkap/aktif. Perbarui data Node ID dan IP di Klien VPN.');
+        throw new BadRequestException('Klien ZeroTier MikroTik belum lengkap/aktif. Perbarui data Device ID dan IP di Klien VPN.');
       }
       const server = await this.prisma.vpnClient.findFirst({
         where: { networkId: client.networkId, isRadiusServer: true, isActive: true },
         select: { vpnIp: true, nodeId: true },
       });
-      if (!server?.vpnIp || !server.nodeId) throw new BadRequestException('Catat IP ZeroTier dan Node ID Ubuntu RADIUS pada Klien VPN terlebih dahulu.');
+      if (!server?.vpnIp || !server.nodeId) throw new BadRequestException('Catat IP ZeroTier dan Device ID Ubuntu RADIUS pada Klien VPN terlebih dahulu.');
       if (router.nasname !== client.vpnIp || router.ipAddress !== client.vpnIp) {
         throw new BadRequestException('Simpan ulang Router / NAS dengan klien ZeroTier terpilih agar IP API dan IP NAS sesuai.');
       }
@@ -228,7 +228,7 @@ export class RoutersService {
     if (!/^[1-9][0-9]*$/.test(id)) throw new BadRequestException('ID klien VPN tidak valid.');
     const client = await this.prisma.vpnClient.findUnique({ where: { id: BigInt(id) } });
     if (!client?.networkId || !client.vpnIp || !client.nodeId || !client.isActive || client.isRadiusServer || client.deviceType !== 'mikrotik') {
-      throw new BadRequestException('Pilih klien ZeroTier MikroTik aktif dengan Node ID dan IP yang sudah dicatat.');
+      throw new BadRequestException('Pilih klien ZeroTier MikroTik aktif dengan Device ID dan IP yang sudah dicatat.');
     }
     return client.vpnIp;
   }

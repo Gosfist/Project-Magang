@@ -13,7 +13,7 @@ export function zeroTierJoinScript(client: { id: bigint; networkId: string; devi
       `sudo zerotier-cli set ${client.networkId} allowGlobal=0`,
       'sudo zerotier-cli info',
       'sudo zerotier-cli listnetworks',
-      '# Authorize node di ZeroTier Central. Catat Node ID dan Managed IP ke form web.',
+      '# Authorize node di ZeroTier Central. Catat Device ID dan Managed IP ke form web.',
       '# Perangkat Windows/macOS/HP: join Network ID yang sama lewat aplikasi ZeroTier.',
     ].join('\n');
   }
@@ -52,7 +52,7 @@ export function zeroTierJoinScript(client: { id: bigint; networkId: string; devi
     lines.push('# Simpan IP ZeroTier Ubuntu RADIUS di web, lalu unduh ulang untuk membuat rule API/CoA khusus server.');
   }
   lines.push('}', '/zerotier interface print', '/ip address print',
-    '# Authorize node di ZeroTier Central dan catat Managed IP + Node ID ke web.',
+    '# Authorize node di ZeroTier Central dan catat Managed IP + Device ID ke web.',
     '# Jika layanan API memiliki address whitelist, tambahkan IP ZeroTier Ubuntu /32 pada whitelist yang ada.',
     '# Sesudah join: pilih klien ini pada Router / NAS, lalu gunakan Skrip RADIUS pada halaman tersebut.');
   return lines.join('\n');

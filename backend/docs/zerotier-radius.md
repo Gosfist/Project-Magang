@@ -49,7 +49,7 @@ sudo bash /tmp/zerotier-install.sh
 sudo systemctl enable --now zerotier-one
 ```
 
-Di web buka Router > Klien VPN > Tambah. Isi nama Ubuntu RADIUS, jenis Ubuntu/Linux, Network ID, dan centang Server RADIUS. Node ID/IP boleh kosong saat awal. Setelah disimpan, buka **Script Setup**, lalu jalankan perintah join di Ubuntu. Contoh, ganti Network ID dengan milik Anda:
+Di web buka Router > Klien VPN > Tambah. Isi nama Ubuntu RADIUS, jenis Ubuntu/Linux, Network ID, dan centang Server RADIUS. Device ID/IP boleh kosong saat awal. Setelah disimpan, buka **Script Setup**, lalu jalankan perintah join di Ubuntu. Contoh, ganti Network ID dengan milik Anda:
 
 ```bash
 sudo zerotier-cli join NETWORK_ID_ANDA
@@ -57,7 +57,7 @@ sudo zerotier-cli info
 sudo zerotier-cli listnetworks
 ```
 
-Authorize anggota Ubuntu di Central. Catat Node ID 10 karakter dari `info`, Managed IP dan nama interface `zt...` dari `listnetworks`. Edit catatan Ubuntu di web dengan Node ID/IP tersebut. Jangan memasukkan identity secret atau token lokal ZeroTier ke web.
+Authorize anggota Ubuntu di Central. Catat Device ID 10 karakter dari `info`, Managed IP dan nama interface `zt...` dari `listnetworks`. Edit catatan Ubuntu di web dengan Device ID/IP tersebut. Jangan memasukkan identity secret atau token lokal ZeroTier ke web.
 
 PC host dan VM harus tetap menyala, Ubuntu tidak boleh sleep, dan service `zerotier-one` serta `freeradius` harus berjalan agar cabang dapat memakai RADIUS. Jika VM diklon, jangan menjalankan dua salinan dengan identitas ZeroTier yang sama.
 
@@ -66,14 +66,14 @@ PC host dan VM harus tetap menyala, Ubuntu tidak boleh sleep, dan service `zerot
 1. Periksa `/system resource print` dan `/system package print` untuk versi/arsitektur. Instal paket tambahan **zerotier** dengan versi yang sama persis dengan RouterOS; reboot saat diperlukan. Periksa apakah device-mode mengizinkan ZeroTier. Aktivasi device-mode dapat memerlukan konfirmasi fisik menurut perangkat/versinya.
 2. Tambah klien MikroTik pada web dengan Network ID yang sama. Buka Script Setup dan tempel di Terminal/WinBox lokal sekali. Jangan menempel script Linux ke MikroTik.
 3. Script menggunakan instance `zt1`, meminta managed address, menolak default route/global route, dan memakai interface yang sudah join network bila ada. Script tidak membuat NAT atau forward trafik pelanggan.
-4. Authorize anggota di Central dan berikan Managed IP tetap. Isi Node ID dan IP ke catatan web. Node ID terlihat di anggota Central; IP perangkat dapat dilihat melalui `/ip address print`.
+4. Authorize anggota di Central dan berikan Managed IP tetap. Isi Device ID dan IP ke catatan web. Device ID terlihat di anggota Central; IP perangkat dapat dilihat melalui `/ip address print`.
 5. Pastikan IP Ubuntu telah disimpan di web, lalu ambil ulang script MikroTik. Script menambahkan/memperbarui rule input khusus interface ZeroTier, bersumber dari IP Ubuntu saja: port API (default TCP 8728), CoA UDP 3799, dan ICMP. Rule terkelola ditempatkan sebelum rule lain; script dapat dijalankan ulang tanpa membuat rule baru dengan marker yang sama.
 6. Jika `/ip service` untuk API memiliki whitelist, tambahkan IP ZeroTier Ubuntu `/32` ke whitelist yang ada. Script tidak menimpa whitelist, membuat akun API, atau membuka WinBox ke semua anggota jaringan.
 7. Jaga konektivitas UDP keluar untuk ZeroTier. UDP 9993 penting, tetapi peer juga dapat memakai port UDP lain; mengizinkan hanya satu port dapat membuat jalur peer gagal/beralih relay.
 
 ## 4. Hubungkan Router / NAS dan FreeRADIUS
 
-Di Router / NAS, pilih klien ZeroTier MikroTik yang Node ID dan IP-nya sudah dicatat. IP API dan `nasname` otomatis menggunakan IP tersebut. Isi akun API yang sudah ada pada MikroTik dan secret RADIUS yang kuat. Ubuntu RADIUS tidak ditawarkan sebagai klien router.
+Di Router / NAS, pilih klien ZeroTier MikroTik yang Device ID dan IP-nya sudah dicatat. IP API dan `nasname` otomatis menggunakan IP tersebut. Isi akun API yang sudah ada pada MikroTik dan secret RADIUS yang kuat. Ubuntu RADIUS tidak ditawarkan sebagai klien router.
 
 Unduh **Script RADIUS** dari Router / NAS. Targetnya IP ZeroTier anggota Ubuntu dalam network yang sama, dan `src-address` adalah IP ZeroTier MikroTik. Jika anggota Ubuntu belum lengkap, aplikasi menolak membuat script daripada memilih IP LAN secara otomatis.
 
@@ -130,7 +130,7 @@ Klien yang sedang dipakai NAS tidak dapat dihapus, diganti identitasnya, atau di
 
 - Harga/batas dan akses API Central: https://www.zerotier.com/pricing/
 - Instalasi Linux: https://www.zerotier.com/download/
-- Join, authorize, Node ID: https://docs.zerotier.com/start/
+- Join, authorize, Device ID: https://docs.zerotier.com/start/
 - MikroTik ZeroTier dan ARM/ARM64: https://help.mikrotik.com/docs/spaces/ROS/pages/83755083/ZeroTier
 - Jaringan VirtualBox: https://docs.oracle.com/en/virtualization/virtualbox/7.2/user/networkingdetails.html
 - SQL clients FreeRADIUS 3.2: https://github.com/FreeRADIUS/freeradius-server/blob/v3.2.x/raddb/mods-available/sql

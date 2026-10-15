@@ -91,7 +91,7 @@ describe('ZeroTier client management', () => {
     await addRouter(1);
     await expect(service.createVpnClient({ ...dto, networkId: 'fedcba9876543210' })).rejects.toThrow('satu Network ID');
     await expect(service.createVpnClient({ ...dto, vpnIp: '10.88.0.2' })).rejects.toThrow('IP ZeroTier');
-    await expect(service.createVpnClient({ ...dto, nodeId: '0000000001' })).rejects.toThrow('Node ID');
+    await expect(service.createVpnClient({ ...dto, nodeId: '0000000001' })).rejects.toThrow('Device ID');
     await expect(service.createVpnClient({ ...dto, isRadiusServer: true })).rejects.toThrow('Ubuntu / Linux');
   });
 

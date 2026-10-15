@@ -25,7 +25,7 @@ describe('ZeroTier VPN flow', () => {
     const { element, api } = setup();
     expect(element.textContent).toContain('3 / 10 perangkat tercatat');
     expect([...element.querySelectorAll('thead th')].map(cell => cell.textContent?.trim())).toEqual([
-      'Nama Klien', 'Network ID', 'Node ID', 'IP ZeroTier', 'Perangkat', 'Pencatatan', 'Aksi',
+      'Nama Klien', 'Network ID', 'Device ID', 'IP ZeroTier', 'Perangkat', 'Pencatatan', 'Aksi',
     ]);
     const rows = [...element.querySelectorAll('tbody tr')];
     expect([...rows[0].querySelectorAll('td')].slice(0, 6).map(cell => cell.textContent?.trim())).toEqual([
