@@ -126,50 +126,75 @@
             Pilih paket internet bulanan yang sesuai dengan kebutuhan Anda.
           </p>
         </div>
-        <div class="mx-auto grid max-w-5xl gap-7 md:grid-cols-3">
-          @for (pkg of packages; track pkg.name) {
-            <article
-              [class]="
-                'relative flex flex-col rounded-2xl border bg-white p-7 shadow-sm ' +
-                (pkg.popular
-                  ? 'border-blue-600 ring-2 ring-blue-600/10'
-                  : 'border-slate-200')
-              "
-            >
-              @if (pkg.popular) {
-                <span
-                  class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-blue-700 px-4 py-1 text-xs font-bold uppercase tracking-wider text-white"
-                  >Paling Populer</span
-                >
-              }
-              <h3 class="text-xl font-bold">{{ pkg.name }}</h3>
-              <p class="mt-2 min-h-12 text-sm text-slate-500">{{ pkg.desc }}</p>
-              <div class="my-7">
-                <span class="font-semibold">Rp </span>
-                <span class="text-4xl font-extrabold">{{ pkg.price }}</span>
-                <span class="text-sm text-slate-500"> /bulan</span>
+        @if (loading()) {
+          <p class="text-center text-slate-500" role="status">Memuat paket internet...</p>
+        } @else if (loadError()) {
+          <div class="text-center" role="alert">
+            <p class="text-slate-600">Paket internet belum dapat dimuat.</p>
+            <button type="button" class="mt-3 rounded-lg border border-blue-600 px-5 py-2 text-blue-700" (click)="loadPackages()">Coba lagi</button>
+          </div>
+        } @else if (packages().length === 0) {
+          <p class="text-center text-slate-500">Paket internet belum tersedia.</p>
+        } @else {
+          <div class="mx-auto max-w-5xl">
+            @if (packages().length > 3) {
+              <div class="mb-3 flex justify-end gap-2" aria-label="Navigasi paket internet">
+                <button type="button" class="package-arrow" aria-label="Geser paket ke kiri" [disabled]="!canScrollLeft()" (click)="scrollPackages(packageTrack, -1)">&#8592;</button>
+                <button type="button" class="package-arrow" aria-label="Geser paket ke kanan" [disabled]="!canScrollRight()" (click)="scrollPackages(packageTrack, 1)">&#8594;</button>
               </div>
-              <dl class="mb-7 divide-y divide-slate-100 text-sm">
-                @for (detail of pkg.details; track detail[0]) {
-                  <div class="flex justify-between py-3">
-                    <dt class="text-slate-500">{{ detail[0] }}</dt>
-                    <dd class="font-semibold">{{ detail[1] }}</dd>
+            }
+            <div #packageTrack class="package-track" tabindex="0" role="region" aria-label="Pilihan paket internet, geser untuk melihat paket lainnya" (scroll)="updateScroll(packageTrack)" (window:resize)="updateScroll(packageTrack)">
+              @for (pkg of packages(); track pkg.id) {
+                <article
+                  [class]="
+                    'package-card relative flex flex-col rounded-2xl border bg-white p-7 shadow-sm ' +
+                    (pkg.isPopular
+                      ? 'border-blue-600 ring-2 ring-blue-600/10'
+                      : 'border-slate-200')
+                  "
+                >
+                  @if (pkg.isPopular) {
+                    <span
+                      class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-blue-700 px-4 py-1 text-xs font-bold uppercase tracking-wider text-white"
+                      >Paling Populer</span
+                    >
+                  }
+                  <h3 class="text-xl font-bold">{{ pkg.name }}</h3>
+                  <p class="mt-2 min-h-12 text-sm text-slate-500">Internet fiber optik untuk kebutuhan harian Anda.</p>
+                  <div class="my-7">
+                    <span class="font-semibold">Rp </span>
+                    <span class="text-4xl font-extrabold">{{ formatPrice(pkg.price) }}</span>
+                    <span class="text-sm text-slate-500"> /bulan</span>
                   </div>
-                }
-              </dl>
-              <a
-                href="#kontak"
-                [class]="
-                  'mt-auto rounded-lg px-5 py-3 text-center text-sm font-semibold ' +
-                  (pkg.popular
-                    ? 'bg-blue-700 text-white'
-                    : 'border border-slate-300')
-                "
-                >Pilih Paket</a
-              >
-            </article>
-          }
-        </div>
+                  <dl class="mb-7 divide-y divide-slate-100 text-sm">
+                    <div class="flex justify-between gap-3 py-3">
+                      <dt class="text-slate-500">Kecepatan</dt>
+                      <dd class="font-semibold">{{ pkg.downloadMbps }} Mbps</dd>
+                    </div>
+                    <div class="flex justify-between gap-3 py-3">
+                      <dt class="text-slate-500">Batas data</dt>
+                      <dd class="font-semibold">Tanpa batas</dd>
+                    </div>
+                    <div class="flex justify-between gap-3 py-3">
+                      <dt class="text-slate-500">Dukungan</dt>
+                      <dd class="font-semibold">Teknis responsif</dd>
+                    </div>
+                  </dl>
+                  <a
+                    href="#kontak"
+                    [class]="
+                      'mt-auto rounded-lg px-5 py-3 text-center text-sm font-semibold ' +
+                      (pkg.isPopular
+                        ? 'bg-blue-700 text-white'
+                        : 'border border-slate-300')
+                    "
+                    >Pilih Paket</a
+                  >
+                </article>
+              }
+            </div>
+          </div>
+        }
       </div>
     </section>
 

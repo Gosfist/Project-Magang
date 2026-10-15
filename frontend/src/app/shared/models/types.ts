@@ -13,7 +13,7 @@ export type NasOption = { id: string; nasname: string; shortname: string | null;
 export type OdpOption = { id: string; namaTitik: string; alamat: string | null; tipeTitik: 'odc' | 'odp'; routerNasId: number | null; routerName: string | null };
 export type Invoice = { id: string; pppoeAccountId: string; invoiceNumber: string; amount: number; baseAmount: number; discount: number; invoiceType: 'PRORATE' | 'MONTHLY'; status: 'PENDING' | 'PAID' | 'CANCELLED'; dueDate: string; paidAt: string | null; notes: string | null };
 
-export type PppoePackage = { id: string; name: string; downloadMbps: number; uploadMbps: number; price: number; costPrice: number; addressPool: string | null; ipPool: IpPool | null; validityDays: number; isActive: boolean; accountsCount?: number; rateLimit?: string };
+export type PppoePackage = { id: string; name: string; downloadMbps: number; uploadMbps: number; price: number; costPrice: number; addressPool: string | null; ipPool: IpPool | null; validityDays: number; isActive: boolean; accountsCount?: number; rateLimit?: string; isPopular?: boolean };
 export type PppoeAccount = { id: string; pppoePackageId: string; customerName: string; username: string; phone: string | null; address: string | null; expiresAt: string | null; isActive: boolean; notes: string | null; idCardNumber: string | null; idCardPhoto: string | null; subscriptionType: string; billingDay: number; discount: number; odp: string | null; routerNasId: number | null; routerNas: NasOption | null; uptime?: string | null; package: PppoePackage; areaId?: string | null; area?: { id: string; name: string } | null };
 
 export type RouterItem = {
@@ -36,34 +36,21 @@ export type RouterItem = {
   vpnClient?: { id: string; name: string; vpnIp: string } | null;
 };
 
-export type VpnServer = {
-  id: string;
-  name: string;
-  host: string;
-  subnet: string;
-  wgPort: number;
-  wgPublicKey: string;
-  wgPrivateKey?: string | null;
-  poolStart: number;
-  poolEnd: number;
-  gateway?: string | null;
-  isActive: boolean;
-  clientsCount?: number;
-};
-
 export type VpnClient = {
   id: string;
   name: string;
-  vpnServerId: string;
+  networkId: string | null;
+  nodeId: string | null;
+  deviceType: 'mikrotik' | 'linux' | 'other';
   vpnIp: string;
-  clientPublicKey: string;
-  clientPrivateKey?: string | null;
-  allowedIps: string;
   description?: string | null;
   isRadiusServer: boolean;
   isActive: boolean;
-  vpnServer?: { id: string; name: string; host: string; wgPort: number; wgPublicKey: string };
+  routers?: { id: number; name: string | null }[];
 };
+
+export type VpnCapacity = { used: number; limit: number; remaining: number; serverRegistered: boolean; networkId: string };
+export type ZeroTierScriptData = { clientName: string; deviceType: string; networkId: string; script: string };
 
 export type RouterScriptData = {
   routerName: string;
@@ -73,16 +60,6 @@ export type RouterScriptData = {
   authPort: number;
   scriptRos7: string;
   scriptRos6: string;
-};
-
-export type WireguardScriptData = {
-  clientName: string;
-  vpnIp: string;
-  serverHost: string;
-  serverPort: number;
-  serverPublicKey: string;
-  clientPublicKey: string;
-  script: string;
 };
 
 // === Finance & Area Types ===
@@ -196,3 +173,5 @@ export type PsbOrder = {
   internetOnline?: boolean | null; installationPhoto?: string | null; createdAt: string; completedAt?: string | null;
   package: { id: string; name: string; price: number }; area?: { id: string; name: string } | null; sales?: { id: string; name: string };
 };
+
+export type PublicPackage = Pick<PppoePackage, 'id' | 'name' | 'price' | 'downloadMbps'> & { isPopular: boolean };

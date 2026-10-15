@@ -13,6 +13,7 @@ const { PrismaClient } = await import(pathToFileURL(path.join(backendDir, 'node_
 const prisma = new PrismaClient();
 
 const features = new Map([
+  ['20261015_zerotier_clients.sql', 'Klien VPN ZeroTier tanpa server WireGuard'],
   ['20261012_user_additional_roles.sql', 'Hak akses tambahan akun'],
   ['20261011_user_created_at.sql', 'Tanggal pembuatan akun untuk periode dashboard Sales'],
   ['20261001_customer_delete_payments.sql', 'Hapus data operasional pelanggan, pertahankan pembayaran'],

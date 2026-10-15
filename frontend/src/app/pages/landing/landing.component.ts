@@ -1,4 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ApiService } from '../../core/services/api.service';
+import { PublicPackage } from '../../shared/models/types';
 import { LucideCheck } from '@lucide/angular';
 
 @Component({
@@ -6,8 +9,16 @@ import { LucideCheck } from '@lucide/angular';
   standalone: true,
   imports: [LucideCheck],
   templateUrl: './landing.component.html',
+  styleUrl: './landing.component.css',
 })
-export class LandingComponent {
+export class LandingComponent implements OnInit {
+  private readonly api = inject(ApiService);
+  private readonly untilDestroyed = takeUntilDestroyed<{ data: PublicPackage[] }>();
+  readonly packages = signal<PublicPackage[]>([]);
+  readonly loading = signal(true);
+  readonly loadError = signal(false);
+  readonly canScrollLeft = signal(false);
+  readonly canScrollRight = signal(true);
   readonly currentYear = new Date().getFullYear();
   readonly navLinks = [
     ['Beranda', 'beranda'],
@@ -20,39 +31,39 @@ export class LandingComponent {
     ['Aman', 'Jaringan terkelola dengan pemantauan dan perawatan rutin.'],
     ['Responsif', 'Tim teknis siap membantu saat Anda membutuhkan dukungan.'],
   ];
-  readonly packages = [
-    {
-      name: 'Fiber Pemula',
-      price: '50.000',
-      desc: 'Untuk menjelajah internet, belajar, dan penggunaan harian.',
-      popular: false,
-      details: [
-        ['Kecepatan', '10 Mbps'],
-        ['Batas data', 'Tanpa batas'],
-        ['Dukungan', 'Teknis responsif'],
-      ],
-    },
-    {
-      name: 'Fiber Keluarga',
-      price: '100.000',
-      desc: 'Nyaman untuk menonton video, bekerja, dan banyak perangkat.',
-      popular: true,
-      details: [
-        ['Kecepatan', '20 Mbps'],
-        ['Batas data', 'Tanpa batas'],
-        ['Dukungan', 'Teknis responsif'],
-      ],
-    },
-    {
-      name: 'Fiber Usaha',
-      price: '150.000',
-      desc: 'Koneksi andal untuk usaha dan kebutuhan lebih intensif.',
-      popular: false,
-      details: [
-        ['Kecepatan', '30 Mbps'],
-        ['Batas data', 'Tanpa batas'],
-        ['Dukungan', 'Teknis responsif'],
-      ],
-    },
-  ];
+  ngOnInit(): void {
+    this.loadPackages();
+  }
+
+  loadPackages(): void {
+    this.loading.set(true);
+    this.loadError.set(false);
+    this.api.get<{ data: PublicPackage[] }>('/public/packages').pipe(this.untilDestroyed).subscribe({
+      next: response => {
+        this.packages.set(response.data);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loadError.set(true);
+        this.loading.set(false);
+      },
+    });
+  }
+
+  formatPrice(price: number): string {
+    return price.toLocaleString('id-ID');
+  }
+
+  updateScroll(track: HTMLElement): void {
+    this.canScrollLeft.set(track.scrollLeft > 1);
+    this.canScrollRight.set(track.scrollLeft + track.clientWidth < track.scrollWidth - 1);
+  }
+
+  scrollPackages(track: HTMLElement, direction: number): void {
+    const card = track.querySelector<HTMLElement>('article');
+    if (!card) return;
+    const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+    track.scrollBy({ left: direction * (card.offsetWidth + gap),
+      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }
 }

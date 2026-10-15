@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard.js';
 import { AdminGuard } from '../../auth/roles.guard.js';
 import { RoutersService } from './routers.service.js';
@@ -47,6 +47,7 @@ export class RoutersController {
   }
 
   @Get('nas/:id/script')
+  @Header('Cache-Control', 'private, no-store')
   getRouterScript(@Param('id') id: string) {
     return this.routerService.getRouterScript(id);
   }

@@ -7,6 +7,7 @@ import { SaveRouterDto } from './routers.dto.js';
 import crypto from 'crypto';
 import { MikrotikService } from '../shared/mikrotik.service.js';
 import os from 'os';
+import { radiusSetupScript } from '../shared/radius-setup-script.js';
 
 @Injectable()
 export class RoutersService {
@@ -72,6 +73,7 @@ export class RoutersService {
   }
 
   async createRouter(dto: SaveRouterDto) {
+    const vpnAddress = await this.vpnAddress(dto.vpnClientId);
     const shortname =
       dto.shortname?.trim() ||
       dto.name
@@ -87,11 +89,11 @@ export class RoutersService {
       const item = await this.prisma.nas.create({
         data: {
           name: dto.name.trim(),
-          nasname: dto.nasname.trim(),
+          nasname: vpnAddress || dto.nasname.trim(),
           shortname,
           type: dto.type?.trim() || 'mikrotik',
           authMode: 'radius', // Router ini hanya memakai autentikasi RADIUS.
-          ipAddress: dto.ipAddress?.trim() || dto.nasname.trim(),
+          ipAddress: vpnAddress || dto.ipAddress?.trim() || dto.nasname.trim(),
           username: dto.username?.trim() || null,
           password: dto.password || null,
           port,
@@ -113,6 +115,7 @@ export class RoutersService {
 
   async updateRouter(id: string, dto: SaveRouterDto) {
     const current = await this.findRouter(id);
+    const vpnAddress = await this.vpnAddress(dto.vpnClientId);
     const shortname =
       dto.shortname?.trim() ||
       dto.name
@@ -125,11 +128,11 @@ export class RoutersService {
         where: { id: current.id },
         data: {
           name: dto.name.trim(),
-          nasname: dto.nasname.trim(),
+          nasname: vpnAddress || dto.nasname.trim(),
           shortname,
           type: dto.type?.trim() || current.type,
           authMode: 'radius', // Router ini selalu memakai autentikasi RADIUS.
-          ipAddress: dto.ipAddress?.trim() || dto.nasname.trim(),
+          ipAddress: vpnAddress || dto.ipAddress?.trim() || dto.nasname.trim(),
           username: dto.username?.trim() || null,
           password: dto.password !== undefined ? dto.password : current.password,
           port: dto.port ?? current.port,
@@ -182,78 +185,32 @@ export class RoutersService {
     const router = await this.prisma.nas.findUnique({
       where: { id: Number(id) },
       include: {
-        vpnClient: {
-          include: { vpnServer: true },
-        },
+        vpnClient: true,
       },
     });
     if (!router) throw new NotFoundException('Router tidak ditemukan.');
 
-    const radiusServerIp = this.detectServerIp();
+    let radiusServerIp = this.detectServerIp();
+    if (router.vpnClient) {
+      const client = router.vpnClient;
+      if (!client.networkId || !client.vpnIp || !client.nodeId || !client.isActive || client.isRadiusServer || client.deviceType !== 'mikrotik') {
+        throw new BadRequestException('Klien ZeroTier MikroTik belum lengkap/aktif. Perbarui data Node ID dan IP di Klien VPN.');
+      }
+      const server = await this.prisma.vpnClient.findFirst({
+        where: { networkId: client.networkId, isRadiusServer: true, isActive: true },
+        select: { vpnIp: true, nodeId: true },
+      });
+      if (!server?.vpnIp || !server.nodeId) throw new BadRequestException('Catat IP ZeroTier dan Node ID Ubuntu RADIUS pada Klien VPN terlebih dahulu.');
+      if (router.nasname !== client.vpnIp || router.ipAddress !== client.vpnIp) {
+        throw new BadRequestException('Simpan ulang Router / NAS dengan klien ZeroTier terpilih agar IP API dan IP NAS sesuai.');
+      }
+      radiusServerIp = server.vpnIp;
+    }
     const nasSrcAddress = router.vpnClient?.vpnIp || router.nasname;
     const secret = router.secret || 'secret';
     const authPort = router.ports || 1812;
-    const comment = `UNZANET RADIUS - ${router.name || router.nasname}`;
-
-    const srcParam = nasSrcAddress ? ` src-address=${nasSrcAddress}` : '';
-
-    const scriptRos7 = `
-# ============================================
-# Skrip Pengaturan RADIUS UNZANET (RouterOS 7.x)
-# Router: ${router.name || router.nasname}
-# IP NAS (Sumber): ${nasSrcAddress}
-# Server RADIUS: ${radiusServerIp}
-# Mode Autentikasi: HANYA RADIUS
-# ============================================
-
-# 1. Hapus konfigurasi RADIUS lama (jika ada)
-/radius remove [find where comment~"UNZANET" || comment~"Auto Setup"]
-
-# 2. Tambahkan Server RADIUS (Autentikasi & Akuntansi)
-/radius add address=${radiusServerIp} secret="${secret}"${srcParam} service=ppp,hotspot,login authentication-port=${authPort} accounting-port=1813 timeout=3s require-message-auth=no comment="${comment}"
-
-# 3. Aktifkan RADIUS untuk PPP dan pembaruan sementara setiap 5 menit
-/ppp aaa set use-radius=yes accounting=yes interim-update=5m
-
-# 4. Aktifkan RADIUS masuk (CoA / pemutusan sesi pada port 3799)
-/radius incoming set accept=yes port=3799
-
-# 5. Aktifkan RADIUS untuk profil server Hotspot (opsional jika ada Hotspot)
-/ip hotspot profile set [find] use-radius=yes
-
-# 6. Izinkan lalu lintas RADIUS dan CoA pada firewall
-/ip firewall filter add chain=input protocol=udp src-address=${radiusServerIp} dst-port=3799 action=accept comment="UNZANET-RADIUS CoA Disconnect"
-/ip firewall filter add chain=input protocol=udp src-address=${radiusServerIp} dst-port=${authPort},1813 action=accept comment="UNZANET-RADIUS Auth Acct"
-`.trim();
-
-    const scriptRos6 = `
-# ============================================
-# Skrip Pengaturan RADIUS UNZANET (RouterOS 6.x)
-# Router: ${router.name || router.nasname}
-# IP NAS (Sumber): ${nasSrcAddress}
-# Server RADIUS: ${radiusServerIp}
-# Mode Autentikasi: HANYA RADIUS
-# ============================================
-
-# 1. Hapus konfigurasi RADIUS lama (jika ada)
-/radius remove [find where comment~"UNZANET" || comment~"Auto Setup"]
-
-# 2. Tambahkan Server RADIUS (Autentikasi & Akuntansi)
-/radius add address=${radiusServerIp} secret="${secret}"${srcParam} service=ppp,hotspot,login authentication-port=${authPort} accounting-port=1813 timeout=3s comment="${comment}"
-
-# 3. Aktifkan RADIUS untuk PPP dan pembaruan sementara setiap 5 menit
-/ppp aaa set use-radius=yes accounting=yes interim-update=5m
-
-# 4. Aktifkan RADIUS masuk (CoA / pemutusan sesi pada port 3799)
-/radius incoming set accept=yes port=3799
-
-# 5. Aktifkan RADIUS untuk profil server Hotspot
-/ip hotspot profile set [find] use-radius=yes
-
-# 6. Izinkan lalu lintas RADIUS dan CoA pada firewall
-/ip firewall filter add chain=input protocol=udp src-address=${radiusServerIp} dst-port=3799 action=accept comment="UNZANET-RADIUS CoA Disconnect"
-/ip firewall filter add chain=input protocol=udp src-address=${radiusServerIp} dst-port=${authPort},1813 action=accept comment="UNZANET-RADIUS Auth Acct"
-`.trim();
+    const scriptRos7 = radiusSetupScript(router, radiusServerIp, nasSrcAddress, true);
+    const scriptRos6 = radiusSetupScript(router, radiusServerIp, nasSrcAddress, false);
 
     return serialize({
       routerName: router.name,
@@ -264,6 +221,16 @@ export class RoutersService {
       scriptRos7,
       scriptRos6,
     });
+  }
+
+  private async vpnAddress(id?: string): Promise<string | null> {
+    if (!id) return null;
+    if (!/^[1-9][0-9]*$/.test(id)) throw new BadRequestException('ID klien VPN tidak valid.');
+    const client = await this.prisma.vpnClient.findUnique({ where: { id: BigInt(id) } });
+    if (!client?.networkId || !client.vpnIp || !client.nodeId || !client.isActive || client.isRadiusServer || client.deviceType !== 'mikrotik') {
+      throw new BadRequestException('Pilih klien ZeroTier MikroTik aktif dengan Node ID dan IP yang sudah dicatat.');
+    }
+    return client.vpnIp;
   }
 
   private detectServerIp(): string {

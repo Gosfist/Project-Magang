@@ -3,6 +3,7 @@ import { IpPoolsController } from './ip-pools/ip-pools.controller.js';
 import { IpPoolsService } from './ip-pools/ip-pools.service.js';
 import { PaketLayananController } from './paket-layanan/paket-layanan.controller.js';
 import { PaketLayananService } from './paket-layanan/paket-layanan.service.js';
+import { PublicPackagesController } from './paket-layanan/public-packages.controller.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { DataPelangganController } from './data-pelanggan/data-pelanggan.controller.js';
 import { DataPelangganService } from './data-pelanggan/data-pelanggan.service.js';
@@ -17,5 +18,5 @@ import { WhatsappNotifyService } from '../bot-whatsapp/shared/whatsapp-notify.se
 import { IsolationController } from './isolation/isolation.controller.js';
 import { IsolationService } from './isolation/isolation.service.js';
 
-@Module({ imports: [AuthModule, RouterModule, PengaturanModule], controllers: [DataPelangganController, IpPoolsController, PaketLayananController, IsolationController], providers: [DataPelangganService, IpPoolsService, PaketLayananService, RadiusService, SecretService, PppoeNetworkService, CustomerServicesService, BillingIsolationService, WhatsappNotifyService, IsolationService], exports: [WhatsappNotifyService, RadiusService, SecretService, PppoeNetworkService] })
+@Module({ imports: [AuthModule, RouterModule, PengaturanModule], controllers: [DataPelangganController, IpPoolsController, PaketLayananController, PublicPackagesController, IsolationController], providers: [DataPelangganService, IpPoolsService, PaketLayananService, RadiusService, SecretService, PppoeNetworkService, CustomerServicesService, BillingIsolationService, WhatsappNotifyService, IsolationService], exports: [WhatsappNotifyService, RadiusService, SecretService, PppoeNetworkService] })
 export class PppoeModule { }

@@ -121,14 +121,6 @@ export const routes: Routes = [
       },
       { path: 'pppoe/isolation', loadComponent: () => import('./pages/dashboard/pppoe/isolation/isolation.component').then(m => m.IsolationComponent), canActivate: [roleGuard('admin')] },
       {
-        path: 'router/vpn-server',
-        loadComponent: () =>
-          import('./pages/dashboard/router/vpn-server/vpn-server.component').then(
-            (m) => m.VpnServerComponent,
-          ),
-        canActivate: [roleGuard('admin')],
-      },
-      {
         path: 'router/vpn-client',
         loadComponent: () =>
           import('./pages/dashboard/router/vpn-client/vpn-client.component').then(

@@ -11,17 +11,12 @@ export class VpnClientController {
   constructor(private readonly routerService: VpnClientService) {}
 
   // ==========================================
-  // 3. Klien VPN WireGuard.
+  // 3. Klien VPN ZeroTier.
   // ==========================================
 
   @Get('vpn-client/options')
   vpnClientOptions() {
     return this.routerService.vpnClientOptions();
-  }
-
-  @Get('vpn-client/keypair')
-  generateClientKeypair() {
-    return this.routerService.generateWireguardKeyPair();
   }
 
   @Get('vpn-client')
@@ -46,6 +41,9 @@ export class VpnClientController {
   removeVpnClient(@Param('id') id: string) {
     return this.routerService.removeVpnClient(id);
   }
+
+  @Post('vpn-client/:id/check')
+  checkVpnClient(@Param('id') id: string) { return this.routerService.checkVpnClient(id); }
 
   @Get('vpn-client/:id/script')
   getVpnClientScript(@Param('id') id: string) {

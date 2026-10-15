@@ -12,6 +12,8 @@ import { PppoeNetworkService } from '../shared/pppoe-network.service.js';
 import { WhatsappNotifyService } from '../../bot-whatsapp/shared/whatsapp-notify.service.js';
 import { isolationPoolInUse } from '../shared/isolation-config.js';
 
+const popularPackageKey = 'landing_popular_package_id';
+
 @Injectable()
 export class PaketLayananService {
   private readonly logger = new Logger(PaketLayananService.name);
@@ -20,11 +22,37 @@ export class PaketLayananService {
 
   async packages(search = '', page = 1) {
     const where = search ? { name: { contains: search } } : {};
-    const [items, total] = await this.prisma.$transaction([
+    const [items, total, popular] = await this.prisma.$transaction([
       this.prisma.pppoePackage.findMany({ where, include: { _count: { select: { accounts: true } }, ipPool: true }, orderBy: { name: 'asc' }, skip: (page - 1) * 5, take: 5 }),
       this.prisma.pppoePackage.count({ where }),
+      this.prisma.appSetting.findUnique({ where: { key: popularPackageKey } }),
     ]);
-    return serialize({ data: items.map((item) => ({ ...item, price: Number(item.price), costPrice: Number(item.costPrice), accountsCount: item._count.accounts, rateLimit: `${item.uploadMbps}M/${item.downloadMbps}M` })), meta: pageMeta(page, 5, total) });
+    return serialize({ data: items.map((item) => ({ ...item, isPopular: String(item.id) === popular?.value, price: Number(item.price), costPrice: Number(item.costPrice), accountsCount: item._count.accounts, rateLimit: `${item.uploadMbps}M/${item.downloadMbps}M` })), meta: pageMeta(page, 5, total) });
+  }
+
+  async publicPackages() {
+    const [items, popular] = await this.prisma.$transaction([
+      this.prisma.pppoePackage.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true, price: true, downloadMbps: true },
+        orderBy: [{ price: 'asc' }, { id: 'asc' }],
+      }),
+      this.prisma.appSetting.findUnique({ where: { key: popularPackageKey } }),
+    ]);
+    return serialize({ data: items.map(item => ({
+      id: item.id, name: item.name, price: Number(item.price), downloadMbps: item.downloadMbps,
+      isPopular: String(item.id) === popular?.value,
+    })) });
+  }
+
+  // One setting stores one package ID, including when two admins save concurrently.
+  private async savePopular(tx: Prisma.TransactionClient, id: bigint, selected?: boolean) {
+    if (selected === true) {
+      await tx.appSetting.upsert({ where: { key: popularPackageKey },
+        create: { key: popularPackageKey, value: String(id) }, update: { value: String(id) } });
+    } else if (selected === false) {
+      await tx.appSetting.deleteMany({ where: { key: popularPackageKey, value: String(id) } });
+    }
   }
 
   async packageOptions() {
@@ -36,19 +64,24 @@ export class PaketLayananService {
     if (dto.addressPool && await isolationPoolInUse(this.prisma, dto.addressPool.trim())) throw new BadRequestException('Pool isolir tidak boleh digunakan sebagai pool internet paket.');
     try {
       const now = new Date();
-      const item = await this.prisma.pppoePackage.create({
-        data: {
-          ...dto,
-          addressPool: dto.addressPool?.trim() || null,
-          price: BigInt(dto.price),
-          costPrice: BigInt(dto.costPrice || 0),
-          ipPoolId: null,
-          validityDays: dto.validityDays ?? 30,
-          isActive: true,
-          createdAt: now,
-          updatedAt: now
-        },
-        include: { ipPool: true }
+      const { isPopular, ...data } = dto;
+      const item = await this.prisma.$transaction(async tx => {
+        const created = await tx.pppoePackage.create({
+          data: {
+            ...data,
+            addressPool: dto.addressPool?.trim() || null,
+            price: BigInt(dto.price),
+            costPrice: BigInt(dto.costPrice || 0),
+            ipPoolId: null,
+            validityDays: dto.validityDays ?? 30,
+            isActive: true,
+            createdAt: now,
+            updatedAt: now
+          },
+          include: { ipPool: true }
+        });
+        await this.savePopular(tx, created.id, isPopular);
+        return created;
       });
       return serialize({ message: 'Harga paket berhasil ditambahkan.', package: { ...item, price: Number(item.price), costPrice: Number(item.costPrice) } });
     } catch (error) { this.unique(error, 'Nama paket sudah digunakan.'); }
@@ -61,11 +94,12 @@ export class PaketLayananService {
       || current.uploadMbps !== dto.uploadMbps
       || (current.ipPool?.name || current.addressPool || '') !== (dto.addressPool?.trim() || '');
     try {
+      const { isPopular, ...data } = dto;
       const { item, accounts } = await this.prisma.$transaction(async (tx) => {
         const updated = await tx.pppoePackage.update({
           where: { id: BigInt(id) },
           data: {
-            ...dto,
+            ...data,
             addressPool: dto.addressPool?.trim() || null,
             price: BigInt(dto.price),
             costPrice: BigInt(dto.costPrice || 0),
@@ -77,6 +111,7 @@ export class PaketLayananService {
         });
         const accounts = await tx.pppoeAccount.findMany({ where: { pppoePackageId: updated.id }, include: { package: { include: { ipPool: true } } } });
         for (const account of accounts) await this.radius.sync(tx, account);
+        await this.savePopular(tx, updated.id, isPopular);
         return { item: updated, accounts };
       });
       const warnings: string[] = [];
@@ -117,7 +152,10 @@ export class PaketLayananService {
   async removePackage(id: string) {
     const item = await this.findPackage(id);
     if (await this.prisma.pppoeAccount.count({ where: { pppoePackageId: item.id } })) throw new BadRequestException('Paket masih digunakan akun PPPoE dan tidak dapat dihapus.');
-    await this.prisma.pppoePackage.delete({ where: { id: item.id } });
+    await this.prisma.$transaction(async tx => {
+      await tx.pppoePackage.delete({ where: { id: item.id } });
+      await this.savePopular(tx, item.id, false);
+    });
     return { message: 'Harga paket berhasil dihapus.' };
   }
 

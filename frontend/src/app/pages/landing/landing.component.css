@@ -1,0 +1,42 @@
+.package-track {
+  display: flex;
+  gap: 1.75rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  padding: 1rem 0.25rem 0.5rem;
+}
+
+.package-card {
+  flex: 0 0 100%;
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+.package-arrow {
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 9999px;
+  background: white;
+  color: #1d4ed8;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.package-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+@media (min-width: 640px) {
+  .package-card { flex-basis: calc((100% - 1.75rem) / 2); }
+}
+
+@media (min-width: 768px) {
+  .package-card { flex-basis: calc((100% - 3.5rem) / 3); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .package-track { scroll-behavior: auto; }
+}

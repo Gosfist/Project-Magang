@@ -17,7 +17,6 @@ pppoe/
   shared/                  RADIUS, secret, jaringan PPPoE
 router/
   routers/                 router NAS
-  vpn-server/
   vpn-client/
   shared/                  koneksi MikroTik/RouterOS
 finance/

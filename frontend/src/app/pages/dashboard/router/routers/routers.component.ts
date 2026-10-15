@@ -154,6 +154,14 @@ export class RoutersComponent implements OnInit {
     this.open.set(true);
   }
 
+  onVpnClientChange(): void {
+    const client = this.vpnClients().find(item => item.id === this.form.vpnClientId);
+    if (client) {
+      this.form.ipAddress = client.vpnIp;
+      this.form.nasname = client.vpnIp;
+    }
+  }
+
   onIpAddressChange(): void {
     if (!this.editing() && !this.form.nasname) {
       this.form.nasname = this.form.ipAddress;

@@ -1,215 +1,95 @@
 <div class="space-y-4">
-  <div class="card flex gap-3 p-4">
-    <div class="relative flex-1">
-      <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
-      <input
-        class="input input-with-icon"
-        placeholder="Cari klien WireGuard, IP, atau server..."
-        [(ngModel)]="search"
-        (ngModelChange)="page.set(1); load()"
-      />
+  <div class="card space-y-3 p-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 class="text-lg font-semibold">Klien VPN ZeroTier</h2>
+      @if (capacity(); as cap) {
+        <span class="rounded-full bg-blue-50 px-3 py-1 text-sm text-blue-700">{{ cap.used }} / {{ cap.limit }} perangkat tercatat{{ !cap.serverRegistered ? ' (1 slot Ubuntu disediakan)' : '' }}</span>
+      }
     </div>
-    <button class="btn-primary" (click)="show()">
-      <svg lucidePlus [size]="18"></svg> Tambah Klien WireGuard
-    </button>
+    <p class="text-sm text-slate-600">Ubuntu RADIUS dan semua MikroTik memakai satu Network ID. Maksimal 10 perangkat: satu Ubuntu dan hingga sembilan perangkat lain. Pelanggan PPPoE tidak memakai slot ZeroTier bila tidak ikut jaringan ini.</p>
+    <p class="text-sm text-slate-600">Hitungan ini berdasarkan pencatatan web. Catat juga laptop/HP yang ikut jaringan, dan cocokkan dengan anggota di ZeroTier Central. Menonaktifkan atau menghapus catatan tidak mencabut otorisasi jaringan.</p>
+    <details class="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+      <summary class="cursor-pointer font-medium text-blue-900">Panduan setup Ubuntu VirtualBox dan MikroTik</summary>
+      <ol class="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-700">
+        <li>Buat jaringan Private di <a class="text-blue-700 underline" href="https://central.zerotier.com/" target="_blank" rel="noopener noreferrer">ZeroTier Central</a>. Pilih subnet yang tidak bertabrakan dengan LAN atau pool PPPoE. Catat Network ID 16 karakter.</li>
+        <li>Pasang ZeroTier di dalam VM Ubuntu. Pertahankan Bridged Adapter bila web tetap diakses lewat IP LAN; VM harus bisa mengakses internet. Menjalankan ZeroTier di host Windows saja belum menghubungkan Ubuntu.</li>
+        <li>Tambah klien jenis Ubuntu / Linux dan centang Server RADIUS. Buka Script Setup untuk perintah join. Authorize node di Central, tetapkan Managed IP tetap, lalu isi Node ID dan IP ZeroTier ke form ini.</li>
+        <li>Untuk setiap MikroTik RouterOS 7 ARM/ARM64, pasang paket zerotier dengan versi yang sama dengan RouterOS dan periksa device-mode. Tambah klien MikroTik, jalankan Script Setup lewat WinBox/Terminal lokal sekali, lalu authorize node dan catat IP serta Node ID di web.</li>
+        <li>Setelah IP Ubuntu tersimpan, unduh ulang script MikroTik untuk rule API/CoA khusus server. Jika API memakai address whitelist, tambahkan IP ZeroTier Ubuntu /32 pada whitelist yang ada.</li>
+        <li>Di Router / NAS, pilih klien ZeroTier MikroTik. IP API dan IP NAS otomatis memakai IP klien tersebut. Isi akun API dan secret RADIUS, lalu jalankan Script RADIUS dari halaman Router / NAS.</li>
+        <li>Di Ubuntu, izinkan UDP 1812/1813 dari IP ZeroTier tiap MikroTik pada interface ZeroTier. Pastikan FreeRADIUS mendengarkan alamat itu dan membaca NAS dari SQL; validasi konfigurasi lalu reload/restart FreeRADIUS setelah perubahan NAS sesuai konfigurasi server.</li>
+        <li>Gunakan Cek Router untuk memeriksa API/network/IP. Lakukan dial PPPoE sungguhan untuk memastikan RADIUS, accounting dan pemutusan sesi bekerja. Data aktif di tabel bukan status online perangkat.</li>
+      </ol>
+      <p class="mt-3 text-sm text-slate-600">Paket Personal gratis Central saat ini tidak menyediakan API. Join awal dan persetujuan anggota dilakukan di perangkat/Central; konfigurasi penuh sekali klik dari web memerlukan API Central pada paket yang mendukungnya.</p>
+      <p class="mt-2 text-sm"><a class="text-blue-700 underline" href="https://www.zerotier.com/pricing/" target="_blank" rel="noopener noreferrer">Paket resmi ZeroTier</a> ? <a class="text-blue-700 underline" href="https://help.mikrotik.com/docs/spaces/ROS/pages/83755083/ZeroTier" target="_blank" rel="noopener noreferrer">Panduan MikroTik</a> ? <a class="text-blue-700 underline" href="https://www.zerotier.com/download/" target="_blank" rel="noopener noreferrer">Installer Ubuntu</a></p>
+    </details>
+  </div>
+
+  <div class="card flex flex-wrap gap-3 p-4">
+    <div class="relative min-w-48 flex-1">
+      <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
+      <input class="input input-with-icon" placeholder="Cari nama / IP / Node ID..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
+    </div>
+    <button type="button" class="btn-secondary" (click)="load()"><svg lucideRefreshCw [size]="16"></svg> Muat Ulang</button>
+    <button type="button" class="btn-primary" (click)="show()"><svg lucidePlus [size]="18"></svg> Tambah Klien VPN</button>
   </div>
 
   <div class="table-wrap">
     <table>
-      <thead>
-        <tr>
-          <th>Nama Klien</th>
-          <th>Server WireGuard</th>
-          <th>IP WireGuard Tunnel</th>
-          <th>Kunci Publik</th>
-          <th>Allowed IPs</th>
-          <th>RADIUS Gateway</th>
-          <th>Status</th>
-          <th>Aksi</th>
-        </tr>
-      </thead>
+      <thead><tr><th>Nama Klien</th><th>Network ID</th><th>Node ID</th><th>IP ZeroTier</th><th>Perangkat</th><th>Pencatatan</th><th>Aksi</th></tr></thead>
       <tbody>
         @for (item of items(); track item.id) {
           <tr>
-            <td>
-              <p class="font-normal text-slate-900">{{ item.name }}</p>
-              <p class="table-meta text-sm text-slate-500">{{ item.description || '—' }}</p>
-            </td>
-            <td>
-              <span class="text-sm font-normal text-slate-800">{{ item.vpnServer?.name || '—' }}</span>
-              <p class="font-normal text-sm text-slate-500">{{ item.vpnServer?.host }}:{{ item.vpnServer?.wgPort }}</p>
-            </td>
-            <td>
-              <span class="font-normal text-sm text-sky-700 bg-sky-50 px-2 py-0.5 rounded">
-                {{ item.vpnIp }}
-              </span>
-            </td>
-            <td>
-              <code class="rounded bg-slate-100 px-2 py-1 font-normal text-sm text-slate-700" [title]="item.clientPublicKey">
-                {{ item.clientPublicKey.slice(0, 14) }}...
-              </code>
-            </td>
-            <td>
-              <span class="font-normal text-sm text-slate-600">{{ item.allowedIps }}</span>
-            </td>
-            <td>
-              @if (item.isRadiusServer) {
-                <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-sm font-normal text-amber-800">
-                  ★ RADIUS
-                </span>
-              } @else {
-                <span class="table-meta text-sm text-slate-400">—</span>
+            <td>{{ item.name }}@if (item.description) { <p class="table-meta">{{ item.description }}</p> }</td>
+            <td>{{ item.networkId || 'WireGuard lama: ubah ke ZeroTier' }}</td>
+            <td>{{ item.nodeId || 'Belum dicatat' }}</td>
+            <td>{{ item.vpnIp || 'Belum dicatat' }}</td>
+            <td>{{ item.isRadiusServer ? 'Ubuntu RADIUS' : item.deviceType === 'mikrotik' ? 'MikroTik' : item.deviceType === 'linux' ? 'Ubuntu / Linux' : 'Perangkat lain' }}</td>
+            <td><span [class]="'rounded-full px-2 py-1 ' + (item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600')">{{ item.isActive ? 'Aktif' : 'Nonaktif' }}</span></td>
+            <td><div class="flex gap-2">
+              @if (item.networkId) {
+                <button type="button" class="btn-secondary table-action table-action-icon" (click)="openScript(item)" title="Script Setup"><svg lucideTerminal [size]="14"></svg></button>
+                @if (item.deviceType === 'mikrotik' && item.routers?.length) {
+                  <button type="button" class="btn-secondary table-action table-action-icon" [disabled]="checking() !== null" (click)="check(item)" title="Cek Router"><svg lucideRefreshCw [size]="14"></svg></button>
+                }
               }
-            </td>
-            <td>
-              <span
-                [class]="'rounded-full px-2.5 py-1 text-sm font-normal ' + (item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')"
-              >
-                {{ item.isActive ? 'Aktif' : 'Tidak aktif' }}
-              </span>
-            </td>
-            <td>
-              <div class="flex gap-2">
-                <button
-                  class="btn-secondary px-2.5 py-1.5 text-sm text-indigo-700 table-action table-action-icon"
-                  (click)="openScript(item)"
-                  title="Skrip MikroTik ROS 7"
-                >
-                  <svg lucideTerminal [size]="14"></svg>
-                </button>
-                <button class="btn-secondary px-2.5 py-1.5 text-sm table-action table-action-icon" (click)="show(item)" title="Edit">
-                  <svg lucidePencil [size]="14"></svg>
-                </button>
-                <button class="btn-danger px-2.5 py-1.5 text-sm table-action table-action-icon" (click)="remove(item)" title="Hapus">
-                  <svg lucideTrash2 [size]="14"></svg>
-                </button>
-              </div>
-            </td>
+              <button type="button" class="btn-secondary table-action table-action-icon" (click)="show(item)" title="Edit"><svg lucidePencil [size]="14"></svg></button>
+              <button type="button" class="btn-danger table-action table-action-icon" (click)="remove(item)" title="Hapus pencatatan"><svg lucideTrash2 [size]="14"></svg></button>
+            </div></td>
           </tr>
-        }
-        @if (items().length === 0) {
-          <tr>
-            <td colspan="8" class="py-8 text-center text-slate-400">Klien WireGuard belum tersedia.</td>
-          </tr>
-        }
+        } @empty { <tr><td colspan="7" class="py-8 text-center text-slate-400">Klien VPN belum tersedia. Tambahkan Ubuntu RADIUS terlebih dahulu.</td></tr> }
       </tbody>
     </table>
   </div>
-
   <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
 
-  <!-- Modal untuk menambah atau mengubah klien WireGuard. -->
-  <app-modal
-    [open]="open()"
-    [title]="(editing() ? 'Ubah' : 'Tambah') + ' Klien WireGuard'"
-    (closeModal)="open.set(false)"
-  >
+  <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Klien ZeroTier'" (closeModal)="open.set(false)">
     <form (ngSubmit)="save()" class="space-y-4">
       <div class="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label class="label">Nama Klien / Router *</label>
-          <input class="input" required [(ngModel)]="form.name" name="name" placeholder="Contoh: MikroTik ODP 1" />
-        </div>
-        <div>
-          <label class="label">Pilih Server WireGuard *</label>
-          <select class="input" required [(ngModel)]="form.vpnServerId" name="vpnServerId">
-            <option value="">-- Pilih Server --</option>
-            @for (srv of servers(); track srv.id) {
-              <option [value]="srv.id">{{ srv.name }} ({{ srv.host }}:{{ srv.wgPort }})</option>
-            }
-          </select>
-        </div>
+        <div><label class="label">Nama Klien *</label><input class="input" name="name" required maxlength="100" [(ngModel)]="form.name" placeholder="Ubuntu RADIUS / MikroTik Cabang A" /></div>
+        <div><label class="label">Jenis Perangkat *</label><select class="input" name="deviceType" [(ngModel)]="form.deviceType" [disabled]="form.isRadiusServer"><option value="mikrotik">MikroTik RouterOS 7 ARM/ARM64</option><option value="linux">Ubuntu / Linux</option><option value="other">Perangkat lain (laptop/HP)</option></select></div>
       </div>
-
+      <div><label class="label">Network ID ZeroTier *</label><input class="input" name="networkId" required pattern="[0-9a-fA-F]{16}" maxlength="16" [(ngModel)]="form.networkId" placeholder="16 karakter dari ZeroTier Central" /></div>
       <div class="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label class="label">IP Klien WireGuard *</label>
-          <input class="input font-mono" required [(ngModel)]="form.vpnIp" name="vpnIp" placeholder="10.200.0.2" />
-        </div>
-        <div>
-          <label class="label">Allowed IPs</label>
-          <input class="input font-mono" [(ngModel)]="form.allowedIps" name="allowedIps" placeholder="10.200.0.0/24" />
-        </div>
+        <div><label class="label">Node ID ZeroTier</label><input class="input" name="nodeId" pattern="[0-9a-fA-F]{10}" maxlength="10" [(ngModel)]="form.nodeId" placeholder="10 karakter setelah join" /></div>
+        <div><label class="label">IP ZeroTier</label><input class="input" name="vpnIp" [(ngModel)]="form.vpnIp" placeholder="Managed IP dari Central" /></div>
       </div>
-
-      <div>
-        <div class="flex items-center justify-between mb-1">
-          <label class="label mb-0">Kunci Publik Klien *</label>
-          <button type="button" class="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium" (click)="generateKeypair()">
-            <svg lucideRefreshCw [size]="13"></svg> Buat Pasangan Kunci Baru
-          </button>
-        </div>
-        <input class="input font-mono text-xs" required [(ngModel)]="form.clientPublicKey" name="clientPublicKey" />
-      </div>
-
-      <div>
-        <label class="label">Kunci Privat Klien</label>
-        <input type="password" class="input font-mono text-xs" [(ngModel)]="form.clientPrivateKey" name="clientPrivateKey" placeholder="Digunakan untuk skrip MikroTik" />
-      </div>
-
-      <label class="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50/50 p-3 cursor-pointer">
-        <input type="checkbox" [(ngModel)]="form.isRadiusServer" name="isRadiusServer" class="rounded" />
-        <div>
-          <b class="block text-sm text-amber-900">Tandai sebagai Gateway RADIUS Server</b>
-          <small class="text-amber-700">Gunakan IP client ini sebagai target server RADIUS pada router lain di jaringan VPN.</small>
-        </div>
-      </label>
-
-      <div>
-        <label class="label">Deskripsi / Lokasi</label>
-        <textarea class="input" rows="2" [(ngModel)]="form.description" name="description"></textarea>
-      </div>
-
-      @if (editing()) {
-        <label class="flex items-center gap-3 rounded-lg border p-3">
-          <input type="checkbox" [(ngModel)]="form.isActive" name="isActive" />
-          <span>
-            <b class="block text-sm">Klien Aktif</b>
-            <small class="text-slate-500">Nonaktifkan jika client ditangguhkan.</small>
-          </span>
-        </label>
-      }
-
-      <div class="flex justify-end gap-3 pt-2">
-        <button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button>
-        <button class="btn-primary">Simpan Klien</button>
-      </div>
+      <p class="text-sm text-slate-500">Node ID dan IP boleh diisi setelah join serta authorize. Keduanya diperlukan sebelum klien MikroTik dapat dipilih pada Router / NAS. IP mengikuti Managed IP di Central; form ini tidak menetapkan IP pada perangkat.</p>
+      <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 p-3"><input type="checkbox" name="isRadiusServer" [(ngModel)]="form.isRadiusServer" (ngModelChange)="radiusChanged()" />Server RADIUS (Ubuntu, hanya satu)</label>
+      <div><label class="label">Deskripsi / Lokasi</label><textarea class="input" name="description" rows="2" maxlength="500" [(ngModel)]="form.description"></textarea></div>
+      <label class="flex items-center gap-2"><input type="checkbox" name="isActive" [(ngModel)]="form.isActive" />Pencatatan aktif (tidak mengubah otorisasi di Central)</label>
+      <div class="flex justify-end gap-3"><button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button><button class="btn-primary" [disabled]="saving()">{{ saving() ? 'Menyimpan...' : 'Simpan Klien' }}</button></div>
     </form>
   </app-modal>
 
-  <!-- Modal berisi skrip koneksi WireGuard untuk MikroTik. -->
-  <app-modal
-    [open]="scriptModalOpen()"
-    [title]="'Skrip WireGuard MikroTik ROS 7 — ' + (scriptData()?.clientName || '')"
-    (closeModal)="scriptModalOpen.set(false)"
-  >
-    @if (scriptData()) {
-      <div class="space-y-4">
-        <div class="relative">
-          <pre class="max-h-[380px] overflow-x-auto rounded-xl bg-slate-950 p-4 font-mono text-xs text-slate-100 leading-relaxed">{{ scriptData()!.script }}</pre>
-          <button
-            type="button"
-            class="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/25 transition-all"
-            (click)="copyScript()"
-          >
-            @if (copied()) {
-              <svg lucideCheck [size]="14" class="text-green-400"></svg>
-              <span>Tersalin!</span>
-            } @else {
-              <svg lucideCopy [size]="14"></svg>
-              <span>Salin Skrip</span>
-            }
-          </button>
-        </div>
-
-        <div class="rounded-lg bg-sky-50 p-3 border border-sky-200 text-xs text-sky-800">
-          <b>Petunjuk:</b> Buka <b>Terminal</b> MikroTik (RouterOS v7+), tempel (paste) script di atas untuk membuat interface WireGuard dan menghubungkan MikroTik ke server VPN tunnel.
-        </div>
+  <app-modal [open]="scriptModalOpen()" [title]="'Script Setup ZeroTier ? ' + (scriptData()?.clientName || '')" (closeModal)="scriptModalOpen.set(false)">
+    @if (scriptData(); as data) {
+      <div class="space-y-3">
+        <p class="text-sm text-slate-600">{{ data.deviceType === 'mikrotik' ? 'Jalankan di Terminal MikroTik setelah paket ZeroTier terpasang.' : data.deviceType === 'linux' ? 'Jalankan di terminal Ubuntu setelah ZeroTier terpasang.' : 'Untuk laptop/HP, join Network ID melalui aplikasi ZeroTier; perintah berikut untuk Linux.' }} Setelah join, authorize perangkat dan tetapkan IP di Central.</p>
+        <button type="button" class="btn-secondary" (click)="copyScript()"><svg lucideCopy [size]="16"></svg>{{ copied() ? 'Tersalin' : 'Salin Script' }}</button>
+        <pre class="max-h-96 overflow-auto whitespace-pre rounded-lg bg-slate-950 p-4 font-mono text-xs text-slate-100">{{ data.script }}</pre>
       </div>
     }
   </app-modal>
-
-  @if (toast()) {
-    <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast>
-  }
+  @if (toast()) { <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast> }
 </div>

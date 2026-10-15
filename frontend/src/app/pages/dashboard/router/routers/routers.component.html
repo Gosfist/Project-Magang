@@ -49,7 +49,7 @@
               <p class="table-meta font-normal text-sm text-slate-500">NAS: {{ item.nasname }}</p>
               @if (item.vpnClient) {
                 <span class="inline-block mt-0.5 rounded bg-sky-50 px-1.5 py-0.5 text-sm font-normal text-sky-700">
-                  WG: {{ item.vpnClient.vpnIp }}
+                  ZeroTier: {{ item.vpnClient.vpnIp }}
                 </span>
               }
             </td>
@@ -157,8 +157,8 @@
             required
             [(ngModel)]="form.ipAddress"
             (ngModelChange)="onIpAddressChange()"
-            name="ipAddress"
-            placeholder="192.168.88.1 atau IP WireGuard"
+            name="ipAddress" [readonly]="!!form.vpnClientId"
+            placeholder="192.168.88.1 atau IP ZeroTier"
           />
         </div>
         <div>
@@ -167,7 +167,7 @@
             class="input"
             required
             [(ngModel)]="form.nasname"
-            name="nasname"
+            name="nasname" [readonly]="!!form.vpnClientId"
             placeholder="IP sumber RADIUS request"
           />
         </div>
@@ -207,17 +207,17 @@
         </div>
       </div>
 
-      @if (vpnClients().length > 0) {
-        <div>
-          <label class="label">Hubungkan ke Klien VPN WireGuard (Opsional)</label>
-          <select class="input" [(ngModel)]="form.vpnClientId" name="vpnClientId">
-            <option value="">-- Tanpa Tunnel WireGuard (Koneksi Langsung/Publik) --</option>
-            @for (vc of vpnClients(); track vc.id) {
-              <option [value]="vc.id">{{ vc.name }} ({{ vc.vpnIp }})</option>
-            }
-          </select>
-        </div>
-      }
+      <div>
+        <label class="label">Klien VPN ZeroTier (Opsional)</label>
+        <select class="input" [(ngModel)]="form.vpnClientId" (ngModelChange)="onVpnClientChange()" name="vpnClientId">
+          <option value="">-- Koneksi langsung / LAN --</option>
+          @for (vc of vpnClients(); track vc.id) {
+            <option [value]="vc.id">{{ vc.name }} ({{ vc.vpnIp }})</option>
+          }
+        </select>
+      </div>
+
+      <p class="text-sm text-slate-500">Pilihan ZeroTier tersedia setelah Node ID dan IP MikroTik dicatat. Pilihan ini mengisi IP API dan IP NAS otomatis. Setelah menyimpan NAS, muat ulang daftar klien FreeRADIUS sesuai konfigurasi server.</p>
 
       <div>
         <label class="label">Deskripsi / Catatan</label>
