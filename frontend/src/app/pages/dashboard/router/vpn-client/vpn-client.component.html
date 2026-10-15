@@ -40,7 +40,7 @@
       <tbody>
         @for (item of items(); track item.id) {
           <tr>
-            <td>{{ item.name }}@if (item.description) { <p class="table-meta">{{ item.description }}</p> }</td>
+            <td>{{ item.name }}</td>
             <td>{{ item.networkId || 'WireGuard lama: ubah ke ZeroTier' }}</td>
             <td>{{ item.nodeId || 'Belum dicatat' }}</td>
             <td>{{ item.vpnIp || 'Belum dicatat' }}</td>
@@ -76,7 +76,6 @@
       </div>
       <p class="text-sm text-slate-500">Node ID dan IP boleh diisi setelah join serta authorize. Keduanya diperlukan sebelum klien MikroTik dapat dipilih pada Router / NAS. IP mengikuti Managed IP di Central; form ini tidak menetapkan IP pada perangkat.</p>
       <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 p-3"><input type="checkbox" name="isRadiusServer" [(ngModel)]="form.isRadiusServer" (ngModelChange)="radiusChanged()" />Server RADIUS (Ubuntu, hanya satu)</label>
-      <div><label class="label">Deskripsi / Lokasi</label><textarea class="input" name="description" rows="2" maxlength="500" [(ngModel)]="form.description"></textarea></div>
       <label class="flex items-center gap-2"><input type="checkbox" name="isActive" [(ngModel)]="form.isActive" />Pencatatan aktif (tidak mengubah otorisasi di Central)</label>
       <div class="flex justify-end gap-3"><button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button><button class="btn-primary" [disabled]="saving()">{{ saving() ? 'Menyimpan...' : 'Simpan Klien' }}</button></div>
     </form>

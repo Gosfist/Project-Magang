@@ -5,7 +5,7 @@ import { LandingComponent } from './landing.component';
 
 describe('Landing pricing cards', () => {
   const packages = Array.from({ length: 4 }, (_, i) => ({
-    id: String(i + 1), name: `Paket ${i + 1}`, price: (i + 1) * 50000,
+    id: String(i + 1), name: `Paket ${i + 1}`, title: `Fiber ${i + 1}`, description: `Untuk kebutuhan paket ${i + 1}.`, price: (i + 1) * 50000,
     downloadMbps: (i + 1) * 10, uploadMbps: 999, isPopular: i === 1,
   }));
 
@@ -23,7 +23,8 @@ describe('Landing pricing cards', () => {
     const cards = [...element.querySelectorAll('.package-card')];
     expect(cards.length).toBe(4);
     cards.forEach((card, index) => {
-      expect(card.querySelector('h3')?.textContent).toContain(packages[index].name);
+      expect(card.querySelector('h3')?.textContent).toContain(packages[index].title);
+      expect(card.querySelector('p')?.textContent).toContain(packages[index].description);
       expect(card.textContent).toContain(packages[index].price.toLocaleString('id-ID'));
       expect([...card.querySelectorAll('dd')].map(dd => dd.textContent?.trim())).toEqual([
         `${packages[index].downloadMbps} Mbps`, 'Tanpa batas', 'Teknis responsif',
@@ -61,6 +62,12 @@ describe('Landing pricing cards', () => {
   it('hides navigation when there are only three packages', () => {
     const { element } = setup(packages.slice(0, 3));
     expect(element.querySelector('.package-arrow')).toBeNull();
+  });
+
+  it('keeps existing packages readable before a title and description are filled', () => {
+    const { element } = setup([{ ...packages[0], title: '', description: '' }]);
+    expect(element.querySelector('.package-card h3')?.textContent).toContain('Paket 1');
+    expect(element.querySelector('.package-card p')?.textContent).toContain('Internet fiber optik untuk kebutuhan harian Anda.');
   });
 
   it('shows an empty state without example prices', () => {

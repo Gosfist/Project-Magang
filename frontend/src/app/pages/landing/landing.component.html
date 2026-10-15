@@ -159,8 +159,8 @@
                       >Paling Populer</span
                     >
                   }
-                  <h3 class="text-xl font-bold">{{ pkg.name }}</h3>
-                  <p class="mt-2 min-h-12 text-sm text-slate-500">Internet fiber optik untuk kebutuhan harian Anda.</p>
+                  <h3 class="break-words text-xl font-bold">{{ pkg.title || pkg.name }}</h3>
+                  <p class="mt-2 min-h-12 whitespace-pre-line break-words text-sm text-slate-500">{{ pkg.description || 'Internet fiber optik untuk kebutuhan harian Anda.' }}</p>
                   <div class="my-7">
                     <span class="font-semibold">Rp </span>
                     <span class="text-4xl font-extrabold">{{ formatPrice(pkg.price) }}</span>

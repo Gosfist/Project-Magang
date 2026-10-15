@@ -34,13 +34,14 @@ export class PaketLayananService {
     const [items, popular] = await this.prisma.$transaction([
       this.prisma.pppoePackage.findMany({
         where: { isActive: true },
-        select: { id: true, name: true, price: true, downloadMbps: true },
+        select: { id: true, name: true, title: true, description: true, price: true, downloadMbps: true },
         orderBy: [{ price: 'asc' }, { id: 'asc' }],
       }),
       this.prisma.appSetting.findUnique({ where: { key: popularPackageKey } }),
     ]);
     return serialize({ data: items.map(item => ({
       id: item.id, name: item.name, price: Number(item.price), downloadMbps: item.downloadMbps,
+      title: item.title ?? null, description: item.description ?? null,
       isPopular: String(item.id) === popular?.value,
     })) });
   }
@@ -69,6 +70,8 @@ export class PaketLayananService {
         const created = await tx.pppoePackage.create({
           data: {
             ...data,
+            title: dto.title?.trim() || null,
+            description: dto.description?.trim() || null,
             addressPool: dto.addressPool?.trim() || null,
             price: BigInt(dto.price),
             costPrice: BigInt(dto.costPrice || 0),
@@ -100,6 +103,8 @@ export class PaketLayananService {
           where: { id: BigInt(id) },
           data: {
             ...data,
+            ...(dto.title !== undefined ? { title: dto.title?.trim() || null } : {}),
+            ...(dto.description !== undefined ? { description: dto.description?.trim() || null } : {}),
             addressPool: dto.addressPool?.trim() || null,
             price: BigInt(dto.price),
             costPrice: BigInt(dto.costPrice || 0),

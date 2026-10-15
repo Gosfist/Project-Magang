@@ -59,6 +59,8 @@ model MainCore {
 model PppoePackage {
   id           BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
   name         String         @unique
+  title        String?        @db.VarChar(100)
+  description  String?        @db.VarChar(500)
   downloadMbps Int            @map("download_mbps") @db.UnsignedInt
   uploadMbps   Int            @map("upload_mbps") @db.UnsignedInt
   price        BigInt         @default(0) @db.UnsignedBigInt

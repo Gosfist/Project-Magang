@@ -66,6 +66,14 @@
           <input class="input" type="number" min="0" required [(ngModel)]="form.price" name="price" />
         </div>
       </div>
+      <div>
+        <label class="label">Judul</label>
+        <input class="input" maxlength="100" [(ngModel)]="form.title" name="title" placeholder="Contoh: Fiber Pemula" />
+      </div>
+      <div>
+        <label class="label">Deskripsi</label>
+        <textarea class="input" rows="3" maxlength="500" [(ngModel)]="form.description" name="description" placeholder="Untuk menjelajah internet, belajar, dan penggunaan harian."></textarea>
+      </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="label">Kecepatan Unduh (Mbps) *</label>
@@ -97,7 +105,6 @@
           <input type="checkbox" class="h-4 w-4 accent-blue-700" [(ngModel)]="form.isPopular" name="isPopular" />
           Populer
         </label>
-        <p class="mt-1 text-sm text-slate-500">Hanya satu paket populer. Mencentang paket ini akan mengganti paket populer sebelumnya saat disimpan.</p>
       </div>
       <div class="flex justify-end gap-3">
         <button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button>

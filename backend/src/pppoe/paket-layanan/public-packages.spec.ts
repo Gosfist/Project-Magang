@@ -97,7 +97,7 @@ describe('Public pricing and the single popular package', () => {
     const result = await request(app.getHttpServer()).get('/public/packages').expect(200);
     expect(result.headers['cache-control']).toBe('no-store');
     expect(result.body.data).toHaveLength(3);
-    expect(result.body.data[0]).toEqual({ id: '1', name: 'Paket 1', price: 50000, downloadMbps: 10, isPopular: false });
+    expect(result.body.data[0]).toEqual({ id: '1', name: 'Paket 1', title: null, description: null, price: 50000, downloadMbps: 10, isPopular: false });
     await request(app.getHttpServer()).post('/public/packages').send({ isPopular: true }).expect(404);
   });
 
@@ -105,5 +105,29 @@ describe('Public pricing and the single popular package', () => {
     const { dto } = setup();
     const errors = await validate(Object.assign(new SavePackageDto(), dto, { isPopular: 'false' }));
     expect(errors.map(error => error.property)).toContain('isPopular');
+  });
+
+  it('saves and edits card text separately from the package name, including clearing it', async () => {
+    const { service, network, dto } = setup();
+    await service.createPackage({ ...dto, name: '20 Mb', title: ' Fiber Pemula ', description: ' Untuk menjelajah internet, belajar, dan penggunaan harian. ' });
+    expect((await service.publicPackages()).data.find(row => row.id === '5')).toMatchObject({
+      name: '20 Mb', title: 'Fiber Pemula', description: 'Untuk menjelajah internet, belajar, dan penggunaan harian.',
+    });
+    await service.updatePackage('5', { ...dto, name: '20 Mb', title: 'Fiber Keluarga', description: 'Nyaman untuk banyak perangkat.' });
+    await service.updatePackage('5', { ...dto, name: '20 Mb', price: 120000 });
+    expect((await service.publicPackages()).data.find(row => row.id === '5')).toMatchObject({
+      title: 'Fiber Keluarga', description: 'Nyaman untuk banyak perangkat.', price: 120000,
+    });
+    expect(network.disconnect).not.toHaveBeenCalled();
+    await service.updatePackage('5', { ...dto, name: '20 Mb', title: '', description: '  ' });
+    expect((await service.publicPackages()).data.find(row => row.id === '5')).toMatchObject({ title: null, description: null });
+  });
+
+  it('limits card text length and rejects non-text values', async () => {
+    const { dto } = setup();
+    const errors = await validate(Object.assign(new SavePackageDto(), dto, { title: 'x'.repeat(101), description: 'x'.repeat(501) }));
+    expect(errors.map(error => error.property)).toEqual(expect.arrayContaining(['title', 'description']));
+    expect((await validate(Object.assign(new SavePackageDto(), dto, { title: 123, description: {} }))).map(error => error.property))
+      .toEqual(expect.arrayContaining(['title', 'description']));
   });
 });

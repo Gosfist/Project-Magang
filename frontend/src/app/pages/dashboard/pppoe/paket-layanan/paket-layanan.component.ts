@@ -33,7 +33,7 @@ export class PaketLayananComponent implements OnInit {
   page = signal(1);
   open = signal(false);
   editing = signal<PppoePackage | null>(null);
-  form = { name: '', downloadMbps: '', uploadMbps: '', price: '', addressPool: '', ipPoolId: '', validityDays: '30', isPopular: false };
+  form = { name: '', title: '', description: '', downloadMbps: '', uploadMbps: '', price: '', addressPool: '', ipPoolId: '', validityDays: '30', isPopular: false };
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
   ipPools = signal<IpPool[]>([]);
 
@@ -72,6 +72,8 @@ export class PaketLayananComponent implements OnInit {
     this.form = item
       ? {
           name: item.name,
+          title: item.title || '',
+          description: item.description || '',
           downloadMbps: String(item.downloadMbps),
           uploadMbps: String(item.uploadMbps),
           price: String(item.price),
@@ -80,13 +82,15 @@ export class PaketLayananComponent implements OnInit {
           validityDays: String(item.validityDays ?? 30),
           isPopular: item.isPopular ?? false,
         }
-      : { name: '', downloadMbps: '', uploadMbps: '', price: '', addressPool: '', ipPoolId: '', validityDays: '30', isPopular: false };
+      : { name: '', title: '', description: '', downloadMbps: '', uploadMbps: '', price: '', addressPool: '', ipPoolId: '', validityDays: '30', isPopular: false };
     this.open.set(true);
   }
 
   save(): void {
     const body = {
       name: this.form.name,
+      title: this.form.title,
+      description: this.form.description,
       downloadMbps: Number(this.form.downloadMbps),
       uploadMbps: Number(this.form.uploadMbps),
       price: Number(this.form.price),

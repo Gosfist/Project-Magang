@@ -4,6 +4,8 @@ import { IsBoolean, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'cla
 export class SavePackageDto {
   @IsOptional() @IsBoolean() isPopular?: boolean;
   @IsString() @MaxLength(100) name: string;
+  @IsOptional() @IsString() @MaxLength(100) title?: string;
+  @IsOptional() @IsString() @MaxLength(500) description?: string;
   @Type(() => Number) @IsInt() @Min(1) @Max(100000) downloadMbps: number;
   @Type(() => Number) @IsInt() @Min(1) @Max(100000) uploadMbps: number;
   @Type(() => Number) @IsInt() @Min(0) price: number;

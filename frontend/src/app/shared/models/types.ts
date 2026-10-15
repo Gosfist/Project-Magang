@@ -13,7 +13,7 @@ export type NasOption = { id: string; nasname: string; shortname: string | null;
 export type OdpOption = { id: string; namaTitik: string; alamat: string | null; tipeTitik: 'odc' | 'odp'; routerNasId: number | null; routerName: string | null };
 export type Invoice = { id: string; pppoeAccountId: string; invoiceNumber: string; amount: number; baseAmount: number; discount: number; invoiceType: 'PRORATE' | 'MONTHLY'; status: 'PENDING' | 'PAID' | 'CANCELLED'; dueDate: string; paidAt: string | null; notes: string | null };
 
-export type PppoePackage = { id: string; name: string; downloadMbps: number; uploadMbps: number; price: number; costPrice: number; addressPool: string | null; ipPool: IpPool | null; validityDays: number; isActive: boolean; accountsCount?: number; rateLimit?: string; isPopular?: boolean };
+export type PppoePackage = { id: string; name: string; title?: string | null; description?: string | null; downloadMbps: number; uploadMbps: number; price: number; costPrice: number; addressPool: string | null; ipPool: IpPool | null; validityDays: number; isActive: boolean; accountsCount?: number; rateLimit?: string; isPopular?: boolean };
 export type PppoeAccount = { id: string; pppoePackageId: string; customerName: string; username: string; phone: string | null; address: string | null; expiresAt: string | null; isActive: boolean; notes: string | null; idCardNumber: string | null; idCardPhoto: string | null; subscriptionType: string; billingDay: number; discount: number; odp: string | null; routerNasId: number | null; routerNas: NasOption | null; uptime?: string | null; package: PppoePackage; areaId?: string | null; area?: { id: string; name: string } | null };
 
 export type RouterItem = {
@@ -174,4 +174,4 @@ export type PsbOrder = {
   package: { id: string; name: string; price: number }; area?: { id: string; name: string } | null; sales?: { id: string; name: string };
 };
 
-export type PublicPackage = Pick<PppoePackage, 'id' | 'name' | 'price' | 'downloadMbps'> & { isPopular: boolean };
+export type PublicPackage = Pick<PppoePackage, 'id' | 'name' | 'title' | 'description' | 'price' | 'downloadMbps'> & { isPopular: boolean };

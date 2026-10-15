@@ -8,7 +8,8 @@ describe('Package popular checkbox', () => {
   it('loads the saved checkbox and submits checked and unchecked values', async () => {
     const item: PppoePackage = { id: '2', name: 'Paket', price: 100000, costPrice: 0,
       downloadMbps: 20, uploadMbps: 5, addressPool: null, ipPool: null,
-      validityDays: 30, isActive: true, isPopular: true };
+      validityDays: 30, isActive: true, isPopular: true,
+      title: 'Fiber Pemula', description: 'Untuk menjelajah internet, belajar, dan penggunaan harian.' };
     const api = {
       get: jasmine.createSpy('get').and.callFake((path: string) => of(path.includes('ip-pools') ? { data: [] } : {
         data: [item], meta: { currentPage: 1, lastPage: 1, perPage: 5, total: 1 },
@@ -21,12 +22,22 @@ describe('Package popular checkbox', () => {
     fixture.componentInstance.show(item);
     fixture.detectChanges();
     await fixture.whenStable();
+    const title = fixture.nativeElement.querySelector('input[name="title"]') as HTMLInputElement;
+    const description = fixture.nativeElement.querySelector('textarea[name="description"]') as HTMLTextAreaElement;
+    expect(title.value).toBe(item.title!);
+    expect(description.value).toBe(item.description!);
+    title.value = 'Fiber Keluarga';
+    title.dispatchEvent(new Event('input'));
+    description.value = 'Nyaman untuk menonton video dan bekerja.';
+    description.dispatchEvent(new Event('input'));
     const checkbox = fixture.nativeElement.querySelector('input[name="isPopular"]') as HTMLInputElement;
     expect(checkbox.checked).toBeTrue();
     checkbox.click();
     fixture.detectChanges();
     fixture.componentInstance.save();
-    expect(api.patch).toHaveBeenCalledWith('/pppoe/packages/2', jasmine.objectContaining({ isPopular: false }));
+    expect(api.patch).toHaveBeenCalledWith('/pppoe/packages/2', jasmine.objectContaining({
+      isPopular: false, name: 'Paket', title: 'Fiber Keluarga', description: 'Nyaman untuk menonton video dan bekerja.',
+    }));
     fixture.componentInstance.show({ ...item, isPopular: false });
     fixture.detectChanges();
     await fixture.whenStable();
@@ -34,5 +45,8 @@ describe('Package popular checkbox', () => {
     fixture.detectChanges();
     fixture.componentInstance.save();
     expect(api.patch).toHaveBeenCalledWith('/pppoe/packages/2', jasmine.objectContaining({ isPopular: true }));
+    fixture.componentInstance.show();
+    expect(fixture.componentInstance.form.title).toBe('');
+    expect(fixture.componentInstance.form.description).toBe('');
   });
 });
