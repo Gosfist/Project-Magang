@@ -1,7 +1,6 @@
 <div class="space-y-4">
   <div class="card space-y-3 p-4">
     <h2 class="text-lg font-semibold">Klien VPN WireGuard</h2>
-    <p class="text-sm text-slate-600">Tambahkan IP VPN Server RADIUS dan MikroTik yang sudah terhubung melalui WireGuard. Server RADIUS dapat berada di VPS atau server lokal; VPN dapat dibuat sendiri atau dari penyedia.</p>
     <details class="rounded-lg border border-slate-200 p-3">
       <summary class="cursor-pointer font-medium">Cara menggunakan</summary>
       <ol class="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-700">
@@ -13,8 +12,6 @@
       </ol>
       <p class="mt-3 text-sm text-slate-600">Penyedia VPN perlu mengizinkan komunikasi antarperangkat. VPN untuk akses internet saja belum tentu menyediakan akses Server RADIUS ke MikroTik.</p>
     </details>
-    <p class="text-sm text-slate-500">Halaman ini mencatat IP VPN yang sudah dikonfigurasi. Status Aktif berlaku pada pencatatan web; tidak mengubah peer WireGuard atau menunjukkan status online.</p>
-    @if (legacyCount()) { <p class="text-sm text-amber-700">Ada {{ legacyCount() }} catatan VPN lama. Tambahkan IP WireGuard baru dan ganti pilihan VPN pada Router / NAS yang masih memakai catatan lama.</p> }
   </div>
 
   <div class="card flex flex-wrap gap-3 p-4">
