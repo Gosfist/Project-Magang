@@ -64,10 +64,6 @@ if [[ "$MODE" == "all" || "$MODE" == "be" ]]; then
   log "Build backend"
   npm run build
 
-  log "Jalankan migrasi SQL sebelum backend dinyalakan"
-  cd "$ROOT_DIR"
-  npm run migrate:updates
-
   log "Reload dan start backend"
   sudo systemctl daemon-reload
   sudo systemctl start "$SERVICE_NAME"
@@ -127,12 +123,6 @@ if [[ "$MODE" == "all" || "$MODE" == "bot" ]]; then
   sudo chown -R "$BOTWA_USER:$BOTWA_GROUP" "$BOTWA_DIR/auth_info"
   sudo systemctl daemon-reload
   sudo systemctl restart "$BOTWA_SERVICE" || true
-fi
-
-if [[ "$MODE" != "all" && "$MODE" != "be" ]]; then
-  log "Cek dan jalankan migrasi SQL yang belum pernah dijalankan"
-  cd "$ROOT_DIR"
-  npm run migrate:updates
 fi
 
 if [[ "$MODE" == "all" || "$MODE" == "be" ]]; then

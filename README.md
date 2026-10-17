@@ -38,21 +38,35 @@ Frontend tersedia di `http://localhost:3000`, REST API di `http://localhost:3001
 
 ## Database
 
-Untuk database `unzanet` lama, isi `backend/.env` dengan koneksi yang sama lalu jalankan `npm run prisma:generate`. Jangan menjalankan `db:push` pada database produksi sebelum membuat backup dan meninjau perubahan skema.
+Satu-satunya file SQL untuk **instalasi baru** adalah [`backend/prisma/database.sql`](backend/prisma/database.sql). File ini berisi skema terbaru dan pengaturan awal. Cukup impor file ini sekali ke database MySQL kosong. File pembaruan SQL bertahap dan script migrasi lamanya sudah dihapus.
 
-Untuk database MySQL baru:
+Setelah membuat database kosong dan mengisi `backend/.env`, jalankan:
 
 ```powershell
 cd backend
-npm run db:push
+npx prisma db execute --file prisma/database.sql --schema prisma/schema.prisma
+npm run prisma:generate
 npm run db:seed
 ```
+
+Alternatif: pilih database kosong di phpMyAdmin lalu impor `backend/prisma/database.sql`. Pembuatan akun awal tetap menggunakan `npm run db:seed` dari folder `backend`.
+
+`npm run update` / `npm run updatebe` memperbarui kode, build, dan service; perintah tersebut tidak mengimpor ulang database. Untuk pengujian dari awal di VirtualBox, gunakan database kosong pada VM baru. Database yang sudah berisi data memerlukan peninjauan perubahan skema tersendiri; jangan mengimpor ulang `database.sql` ke database tersebut.
+
+Setiap skema Prisma berubah, perbarui file SQL lengkap dari root project:
+
+```powershell
+npm run database:generate
+npm run database:check
+```
+
+Kedua perintah tersebut menghasilkan/memeriksa file SQL tanpa menghubungi database. Tabel VPN legacy masih ada untuk kompatibilitas; fitur Klien VPN di aplikasi sudah dihapus.
 
 Akun seed pengembangan:
 
 - Admin: `admin@unzanet.com` / `123`
-- Petugas: `petugas@unzanet.com` / `password`
+- Teknisi: `teknisi@unzanet.com` / `password`
 
 Jika data akun PPPoE berasal dari Laravel, salin nilai `APP_KEY` lama ke `LARAVEL_APP_KEY` agar backend NestJS dapat mendekripsi password lama dan menyinkronkannya ke FreeRADIUS. Satu akun selalu dibatasi satu sesi melalui `Simultaneous-Use := 1`.
 
-Dokumentasi PPPoE/FreeRADIUS dan panduan WireGuard berada di `backend/docs`.
+Dokumentasi PPPoE/FreeRADIUS berada di `backend/docs`.

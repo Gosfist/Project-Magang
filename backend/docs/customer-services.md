@@ -1,24 +1,22 @@
 # Update Data Pelanggan: filter, log, invoice, Add-ons, Janji Bayar
 
-Frontend dan backend perlu diperbarui bersama. Migrasi ini menambahkan dua tabel tanpa menghapus pelanggan atau invoice. Pastikan migrasi `20260917_customer_number.sql` sebelumnya sudah diterapkan.
+Frontend dan backend perlu diperbarui bersama. Seluruh tabel pelanggan, invoice, add-on, dan janji bayar sudah tercakup dalam [`../prisma/database.sql`](../prisma/database.sql). File pembaruan SQL bertahap sudah dihapus.
 
-Sesudah kode terbaru tersedia di `/var/www/Project-Magang`, jalankan di Ubuntu:
+Untuk instalasi baru, sesudah membuat database kosong dan mengisi `backend/.env`, jalankan di Ubuntu:
 
 ```bash
 cd /var/www/Project-Magang/backend
 npm ci
-sudo systemctl stop unzanet-backend
-npx prisma db execute --file prisma/updates/20260917_customer_services.sql --schema prisma/schema.prisma
+npx prisma db execute --file prisma/database.sql --schema prisma/schema.prisma
 npm run prisma:generate
+npm run db:seed
 npm run build
-sudo systemctl start unzanet-backend
-sudo systemctl status unzanet-backend --no-pager
 cd ../frontend
 npm ci
-npm run build
+npm run build -- --delete-output-path=false
 ```
 
-Jalankan perintah berurutan dan lanjut hanya jika perintah sebelumnya berhasil. `prisma db execute` memakai DATABASE_URL dari `backend/.env`; tidak perlu menampilkan password atau menyalin URL ke terminal. Apache tetap melayani `frontend/dist/frontend/browser`. Setelah build, lakukan hard refresh browser. Jangan memakai `db push --force-reset`.
+Jalankan perintah berurutan dan lanjut hanya jika perintah sebelumnya berhasil. `prisma db execute` memakai DATABASE_URL dari `backend/.env`; tidak perlu menampilkan password atau menyalin URL ke terminal. Setelah build, konfigurasikan service backend, bot WhatsApp, Apache, dan FreeRADIUS sesuai VM baru; Apache melayani `frontend/dist/frontend/browser`. Lihat [panduan database](../../README.md#database). Untuk update kode pada instalasi yang sudah berjalan, jangan mengimpor ulang SQL instalasi.
 
 ## Perilaku
 

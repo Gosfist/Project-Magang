@@ -4,19 +4,8 @@ Nomor tampilan berasal dari `customer_number`, diformat minimal enam digit. Saat
 
 Pembuatan akun, nomor, invoice, dan data RADIUS memakai satu transaksi Serializable. Konflik transaksi/nomor dicoba ulang maksimal lima kali, dengan unique index sebagai pengaman.
 
-## Update database yang sudah berisi data
+## Instalasi database
 
-Hentikan penulisan akun (service backend) dan simpan backup database sebelum menjalankan `prisma/updates/20260917_customer_number.sql` **satu kali**. SQL menambahkan kolom, mengisi nomor akun lama dari ID saat ini agar nomor tampilan lama tetap sama, lalu menambahkan unique index. Jangan memakai `db:push` sebagai pengganti backfill untuk database lama.
+Kolom `customer_number` dan unique index sudah tercakup dalam [`../prisma/database.sql`](../prisma/database.sql). Pada instalasi baru, impor file tersebut sekali ke database kosong, lalu jalankan `npm run prisma:generate` dan `npm run db:seed` dari folder backend. Ikuti [panduan instalasi database](../../README.md#database).
 
-Contoh di Ubuntu dengan database `unzanet`, dari folder backend:
-
-```bash
-sudo systemctl stop unzanet-backend
-sudo mysqldump --single-transaction unzanet > "$HOME/unzanet-before-customer-number-$(date +%Y%m%d-%H%M%S).sql"
-sudo mysql unzanet < prisma/updates/20260917_customer_number.sql
-npm run prisma:generate
-npm run build
-sudo systemctl start unzanet-backend
-```
-
-Jalankan perintah satu per satu; jangan lanjut bila backup, SQL, atau build gagal. Sesuaikan user MySQL/database bila berbeda. Update SQL ini tidak dijalankan otomatis oleh build.
+File pembaruan bertahap sudah dihapus. Impor SQL lengkap ini bukan langkah upgrade database lama yang berisi pelanggan; database lama memerlukan peninjauan dan backfill nomor tersendiri agar identitas pelanggan tetap terjaga.

@@ -6,7 +6,8 @@
     "runupdate": "bash scripts/server-update.sh all",
     "updatebe": "bash scripts/server-update.sh be",
     "updatefe": "bash scripts/server-update.sh fe",
-    "migrate:updates": "node scripts/run-sql-updates.mjs",
+    "database:generate": "node scripts/generate-database-sql.mjs",
+    "database:check": "node scripts/generate-database-sql.mjs --check",
     "updatebot": "bash scripts/server-update.sh bot"
   }
 }
