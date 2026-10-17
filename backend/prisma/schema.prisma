@@ -373,9 +373,7 @@ model VpnClient {
   createdAt        DateTime? @default(now()) @map("created_at")
   updatedAt        DateTime? @default(now()) @updatedAt @map("updated_at")
   // Nullable legacy WireGuard fields preserve existing records during conversion.
-  networkId        String?   @map("zerotier_network_id") @db.VarChar(16)
-  nodeId           String?   @map("zerotier_node_id") @db.VarChar(10)
-  deviceType       String    @default("mikrotik") @map("device_type") @db.VarChar(20)
+  vpnType          String    @default("legacy") @map("vpn_type") @db.VarChar(20)
   vpnServer        VpnServer? @relation(fields: [vpnServerId], references: [id], onDelete: Cascade)
   routers          Nas[]
 

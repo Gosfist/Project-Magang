@@ -49,7 +49,7 @@
               <p class="table-meta font-normal text-sm text-slate-500">NAS: {{ item.nasname }}</p>
               @if (item.vpnClient) {
                 <span class="inline-block mt-0.5 rounded bg-sky-50 px-1.5 py-0.5 text-sm font-normal text-sky-700">
-                  ZeroTier: {{ item.vpnClient.vpnIp }}
+                  {{ item.vpnClient.vpnType === 'wireguard' ? 'WireGuard' : 'VPN lama (ganti klien)' }}: {{ item.vpnClient.vpnIp }}
                 </span>
               }
             </td>
@@ -158,7 +158,7 @@
             [(ngModel)]="form.ipAddress"
             (ngModelChange)="onIpAddressChange()"
             name="ipAddress" [readonly]="!!form.vpnClientId"
-            placeholder="192.168.88.1 atau IP ZeroTier"
+            placeholder="192.168.88.1 atau IP WireGuard"
           />
         </div>
         <div>
@@ -208,16 +208,19 @@
       </div>
 
       <div>
-        <label class="label">Klien VPN ZeroTier (Opsional)</label>
+        <label class="label">Klien VPN WireGuard (Opsional)</label>
         <select class="input" [(ngModel)]="form.vpnClientId" (ngModelChange)="onVpnClientChange()" name="vpnClientId">
           <option value="">-- Koneksi langsung / LAN --</option>
+          @if (editing()?.vpnClient && editing()?.vpnClient?.vpnType !== 'wireguard') {
+            <option [value]="editing()!.vpnClient!.id" disabled>VPN lama — pilih klien WireGuard baru</option>
+          }
           @for (vc of vpnClients(); track vc.id) {
-            <option [value]="vc.id">{{ vc.name }} ({{ vc.vpnIp }})</option>
+            <option [value]="vc.id">{{ vc.name }}</option>
           }
         </select>
       </div>
 
-      <p class="text-sm text-slate-500">Pilihan ZeroTier tersedia setelah Device ID dan IP MikroTik dicatat. Pilihan ini mengisi IP API dan IP NAS otomatis. Setelah menyimpan NAS, muat ulang daftar klien FreeRADIUS sesuai konfigurasi server.</p>
+      <p class="text-sm text-slate-500">Pilihan WireGuard menampilkan IP VPN MikroTik aktif. IP VPN Server RADIUS dicatat terpisah pada Klien VPN. Pilihan ini mengisi IP API dan IP NAS otomatis. Setelah menyimpan NAS, muat ulang daftar klien FreeRADIUS sesuai konfigurasi server.</p>
 
       <div>
         <label class="label">Deskripsi / Catatan</label>

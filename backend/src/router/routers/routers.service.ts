@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import { MikrotikService } from '../shared/mikrotik.service.js';
 import os from 'os';
 import { radiusSetupScript } from '../shared/radius-setup-script.js';
+import { radiusVpnClient } from '../vpn-client/wireguard-client.js';
 
 @Injectable()
 export class RoutersService {
@@ -33,7 +34,7 @@ export class RoutersService {
       this.prisma.nas.findMany({
         where,
         include: {
-          vpnClient: { select: { id: true, name: true, vpnIp: true } },
+          vpnClient: { select: { id: true, name: true, vpnIp: true, vpnType: true } },
           _count: { select: { accounts: true } },
         },
         orderBy: { id: 'desc' },
@@ -105,7 +106,7 @@ export class RoutersService {
           createdAt: now,
           updatedAt: now,
         },
-        include: { vpnClient: true },
+        include: { vpnClient: { select: { id: true, name: true, vpnIp: true, vpnType: true, isActive: true } } },
       });
       return serialize({ message: 'Router NAS berhasil ditambahkan.', router: item });
     } catch (error) {
@@ -143,7 +144,7 @@ export class RoutersService {
           isActive: dto.isActive ?? current.isActive,
           updatedAt: new Date(),
         },
-        include: { vpnClient: true },
+        include: { vpnClient: { select: { id: true, name: true, vpnIp: true, vpnType: true, isActive: true } } },
       });
       return serialize({ message: 'Router NAS berhasil diperbarui.', router: item });
     } catch (error) {
@@ -193,16 +194,13 @@ export class RoutersService {
     let radiusServerIp = this.detectServerIp();
     if (router.vpnClient) {
       const client = router.vpnClient;
-      if (!client.networkId || !client.vpnIp || !client.nodeId || !client.isActive || client.isRadiusServer || client.deviceType !== 'mikrotik') {
-        throw new BadRequestException('Klien ZeroTier MikroTik belum lengkap/aktif. Perbarui data Device ID dan IP di Klien VPN.');
+      if (client.vpnType !== 'wireguard' || client.isRadiusServer || !client.vpnIp || !client.isActive) {
+        throw new BadRequestException('Pilih klien WireGuard MikroTik aktif di Router / NAS. Hubungan VPN lama perlu diganti secara manual.');
       }
-      const server = await this.prisma.vpnClient.findFirst({
-        where: { networkId: client.networkId, isRadiusServer: true, isActive: true },
-        select: { vpnIp: true, nodeId: true },
-      });
-      if (!server?.vpnIp || !server.nodeId) throw new BadRequestException('Catat IP ZeroTier dan Device ID Ubuntu RADIUS pada Klien VPN terlebih dahulu.');
+      const server = await this.prisma.vpnClient.findFirst({ where: radiusVpnClient, select: { vpnIp: true } });
+      if (!server) throw new BadRequestException('Tambahkan IP VPN Server RADIUS yang aktif pada Klien VPN terlebih dahulu.');
       if (router.nasname !== client.vpnIp || router.ipAddress !== client.vpnIp) {
-        throw new BadRequestException('Simpan ulang Router / NAS dengan klien ZeroTier terpilih agar IP API dan IP NAS sesuai.');
+        throw new BadRequestException('Simpan ulang Router / NAS dengan klien WireGuard terpilih agar IP API dan IP NAS sesuai.');
       }
       radiusServerIp = server.vpnIp;
     }
@@ -227,8 +225,11 @@ export class RoutersService {
     if (!id) return null;
     if (!/^[1-9][0-9]*$/.test(id)) throw new BadRequestException('ID klien VPN tidak valid.');
     const client = await this.prisma.vpnClient.findUnique({ where: { id: BigInt(id) } });
-    if (!client?.networkId || !client.vpnIp || !client.nodeId || !client.isActive || client.isRadiusServer || client.deviceType !== 'mikrotik') {
-      throw new BadRequestException('Pilih klien ZeroTier MikroTik aktif dengan Device ID dan IP yang sudah dicatat.');
+    if (client?.vpnType !== 'wireguard' || client.isRadiusServer || !client.vpnIp || !client.isActive) {
+      throw new BadRequestException('Pilih klien WireGuard MikroTik aktif dengan IP VPN yang sudah dicatat.');
+    }
+    if (!await this.prisma.vpnClient.findFirst({ where: radiusVpnClient, select: { id: true } })) {
+      throw new BadRequestException('Tambahkan IP VPN Server RADIUS yang aktif pada Klien VPN terlebih dahulu.');
     }
     return client.vpnIp;
   }

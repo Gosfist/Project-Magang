@@ -1,94 +1,54 @@
 <div class="space-y-4">
   <div class="card space-y-3 p-4">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <h2 class="text-lg font-semibold">Klien VPN ZeroTier</h2>
-      @if (capacity(); as cap) {
-        <span class="rounded-full bg-blue-50 px-3 py-1 text-sm text-blue-700">{{ cap.used }} / {{ cap.limit }} perangkat tercatat{{ !cap.serverRegistered ? ' (1 slot Ubuntu disediakan)' : '' }}</span>
-      }
-    </div>
-    <p class="text-sm text-slate-600">Ubuntu RADIUS dan semua MikroTik memakai satu Network ID. Maksimal 10 perangkat: satu Ubuntu dan hingga sembilan perangkat lain. Pelanggan PPPoE tidak memakai slot ZeroTier bila tidak ikut jaringan ini.</p>
-    <p class="text-sm text-slate-600">Hitungan ini berdasarkan pencatatan web. Catat juga laptop/HP yang ikut jaringan, dan cocokkan dengan anggota di ZeroTier Central. Menonaktifkan atau menghapus catatan tidak mencabut otorisasi jaringan.</p>
-    <details class="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
-      <summary class="cursor-pointer font-medium text-blue-900">Panduan setup Ubuntu VirtualBox dan MikroTik</summary>
+    <h2 class="text-lg font-semibold">Klien VPN WireGuard</h2>
+    <p class="text-sm text-slate-600">Tambahkan IP VPN Server RADIUS dan MikroTik yang sudah terhubung melalui WireGuard. Server RADIUS dapat berada di VPS atau server lokal; VPN dapat dibuat sendiri atau dari penyedia.</p>
+    <details class="rounded-lg border border-slate-200 p-3">
+      <summary class="cursor-pointer font-medium">Cara menggunakan</summary>
       <ol class="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-700">
-        <li>Buat jaringan Private di <a class="text-blue-700 underline" href="https://central.zerotier.com/" target="_blank" rel="noopener noreferrer">ZeroTier Central</a>. Pilih subnet yang tidak bertabrakan dengan LAN atau pool PPPoE. Catat Network ID 16 karakter.</li>
-        <li>Pasang ZeroTier di dalam VM Ubuntu. Pertahankan Bridged Adapter bila web tetap diakses lewat IP LAN; VM harus bisa mengakses internet. Menjalankan ZeroTier di host Windows saja belum menghubungkan Ubuntu.</li>
-        <li>Tambah klien jenis Ubuntu / Linux dan centang Server RADIUS. Buka Script Setup untuk perintah join. Authorize node di Central, tetapkan Managed IP tetap, lalu isi Device ID dan IP ZeroTier ke form ini.</li>
-        <li>Untuk setiap MikroTik RouterOS 7 ARM/ARM64, pasang paket zerotier dengan versi yang sama dengan RouterOS dan periksa device-mode. Tambah klien MikroTik, jalankan Script Setup lewat WinBox/Terminal lokal sekali, lalu authorize node dan catat IP serta Device ID di web.</li>
-        <li>Setelah IP Ubuntu tersimpan, unduh ulang script MikroTik untuk rule API/CoA khusus server. Jika API memakai address whitelist, tambahkan IP ZeroTier Ubuntu /32 pada whitelist yang ada.</li>
-        <li>Di Router / NAS, pilih klien ZeroTier MikroTik. IP API dan IP NAS otomatis memakai IP klien tersebut. Isi akun API dan secret RADIUS, lalu jalankan Script RADIUS dari halaman Router / NAS.</li>
-        <li>Di Ubuntu, izinkan UDP 1812/1813 dari IP ZeroTier tiap MikroTik pada interface ZeroTier. Pastikan FreeRADIUS mendengarkan alamat itu dan membaca NAS dari SQL; validasi konfigurasi lalu reload/restart FreeRADIUS setelah perubahan NAS sesuai konfigurasi server.</li>
-        <li>Gunakan Cek Router untuk memeriksa API/network/IP. Lakukan dial PPPoE sungguhan untuk memastikan RADIUS, accounting dan pemutusan sesi bekerja. Data aktif di tabel bukan status online perangkat.</li>
+        <li>Pasang konfigurasi WireGuard dari VPS / penyedia pada server RADIUS dan MikroTik RouterOS 7. Pastikan kedua perangkat bisa saling menjangkau melalui IP VPN.</li>
+        <li>Tambahkan perangkat Server RADIUS dengan IP VPN server. Kemudian tambahkan setiap MikroTik dengan IP VPN masing-masing. Gunakan IP perangkat, tanpa subnet / CIDR.</li>
+        <li>Di Router / NAS pilih klien WireGuard MikroTik. IP API dan IP NAS terisi otomatis. Isi akun API dan secret RADIUS, lalu simpan.</li>
+        <li>Jalankan Script RADIUS dari Router / NAS. Alamat tujuan memakai IP VPN Server RADIUS yang dicatat di sini.</li>
+        <li>Izinkan API MikroTik, RADIUS, dan CoA melalui VPN. Gunakan Cek Router, lalu uji dial PPPoE untuk memastikan autentikasi dan accounting bekerja.</li>
       </ol>
-      <p class="mt-3 text-sm text-slate-600">Paket Personal gratis Central saat ini tidak menyediakan API. Join awal dan persetujuan anggota dilakukan di perangkat/Central; konfigurasi penuh sekali klik dari web memerlukan API Central pada paket yang mendukungnya.</p>
-      <p class="mt-2 text-sm"><a class="text-blue-700 underline" href="https://www.zerotier.com/pricing/" target="_blank" rel="noopener noreferrer">Paket resmi ZeroTier</a> ? <a class="text-blue-700 underline" href="https://help.mikrotik.com/docs/spaces/ROS/pages/83755083/ZeroTier" target="_blank" rel="noopener noreferrer">Panduan MikroTik</a> ? <a class="text-blue-700 underline" href="https://www.zerotier.com/download/" target="_blank" rel="noopener noreferrer">Installer Ubuntu</a></p>
+      <p class="mt-3 text-sm text-slate-600">Penyedia VPN perlu mengizinkan komunikasi antarperangkat. VPN untuk akses internet saja belum tentu menyediakan akses Server RADIUS ke MikroTik.</p>
     </details>
+    <p class="text-sm text-slate-500">Halaman ini mencatat IP VPN yang sudah dikonfigurasi. Status Aktif berlaku pada pencatatan web; tidak mengubah peer WireGuard atau menunjukkan status online.</p>
+    @if (legacyCount()) { <p class="text-sm text-amber-700">Ada {{ legacyCount() }} catatan VPN lama. Tambahkan IP WireGuard baru dan ganti pilihan VPN pada Router / NAS yang masih memakai catatan lama.</p> }
   </div>
 
   <div class="card flex flex-wrap gap-3 p-4">
-    <div class="relative min-w-48 flex-1">
-      <svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg>
-      <input class="input input-with-icon" placeholder="Cari nama / IP / Device ID..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" />
-    </div>
+    <div class="relative min-w-48 flex-1"><svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg><input class="input input-with-icon" placeholder="Cari perangkat / IP VPN..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" /></div>
     <button type="button" class="btn-secondary" (click)="load()"><svg lucideRefreshCw [size]="16"></svg> Muat Ulang</button>
     <button type="button" class="btn-primary" (click)="show()"><svg lucidePlus [size]="18"></svg> Tambah Klien VPN</button>
   </div>
-
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Nama Klien</th><th>Network ID</th><th>Device ID</th><th>IP ZeroTier</th><th>Perangkat</th><th>Pencatatan</th><th>Aksi</th></tr></thead>
-      <tbody>
-        @for (item of items(); track item.id) {
-          <tr>
-            <td>{{ item.name }}</td>
-            <td>{{ item.networkId || 'WireGuard lama: ubah ke ZeroTier' }}</td>
-            <td>{{ item.nodeId || 'Belum dicatat' }}</td>
-            <td>{{ item.vpnIp || 'Belum dicatat' }}</td>
-            <td>{{ item.isRadiusServer ? 'Ubuntu RADIUS' : item.deviceType === 'mikrotik' ? 'MikroTik' : item.deviceType === 'linux' ? 'Ubuntu / Linux' : 'Perangkat lain' }}</td>
-            <td><span [class]="'rounded-full px-2 py-1 ' + (item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600')">{{ item.isActive ? 'Aktif' : 'Nonaktif' }}</span></td>
-            <td><div class="flex gap-2">
-              @if (item.networkId) {
-                <button type="button" class="btn-secondary table-action table-action-icon" (click)="openScript(item)" title="Script Setup"><svg lucideTerminal [size]="14"></svg></button>
-                @if (item.deviceType === 'mikrotik' && item.routers?.length) {
-                  <button type="button" class="btn-secondary table-action table-action-icon" [disabled]="checking() !== null" (click)="check(item)" title="Cek Router"><svg lucideRefreshCw [size]="14"></svg></button>
-                }
-              }
-              <button type="button" class="btn-secondary table-action table-action-icon" (click)="show(item)" title="Edit"><svg lucidePencil [size]="14"></svg></button>
-              <button type="button" class="btn-danger table-action table-action-icon" (click)="remove(item)" title="Hapus pencatatan"><svg lucideTrash2 [size]="14"></svg></button>
-            </div></td>
-          </tr>
-        } @empty { <tr><td colspan="7" class="py-8 text-center text-slate-400">Klien VPN belum tersedia. Tambahkan Ubuntu RADIUS terlebih dahulu.</td></tr> }
-      </tbody>
-    </table>
-  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Perangkat</th><th>IP VPN</th><th>Status</th><th>Router / NAS</th><th>Aksi</th></tr></thead>
+    <tbody>
+      @for (item of items(); track item.id) {
+        <tr>
+          <td>{{ item.deviceType === 'radius' ? 'Server RADIUS' : 'MikroTik' }}</td><td>{{ item.vpnIp }}</td>
+          <td><span [class]="'rounded-full px-2 py-1 ' + (item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600')">{{ item.isActive ? 'Aktif' : 'Nonaktif' }}</span></td>
+          <td>@if (item.deviceType === 'radius') { — } @else { @for (router of item.routers; track router.id) { <div>{{ router.name || router.id }}</div> } @empty { Belum dihubungkan } }</td>
+          <td><div class="flex gap-2">
+            @if (item.deviceType === 'mikrotik' && item.isActive && item.routers?.length) {
+              <button type="button" class="btn-secondary table-action table-action-icon" [disabled]="checking() !== null" (click)="check(item)" title="Cek Router"><svg lucideRefreshCw [size]="14"></svg></button>
+            }
+            <button type="button" class="btn-secondary table-action table-action-icon" (click)="show(item)" title="Edit"><svg lucidePencil [size]="14"></svg></button>
+            <button type="button" class="btn-danger table-action table-action-icon" (click)="remove(item)" title="Hapus"><svg lucideTrash2 [size]="14"></svg></button>
+          </div></td>
+        </tr>
+      } @empty { <tr><td colspan="5" class="py-8 text-center text-slate-400">Belum ada IP VPN WireGuard yang tercatat.</td></tr> }
+    </tbody>
+  </table></div>
   <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
-
-  <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Klien ZeroTier'" (closeModal)="open.set(false)">
+  <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Klien VPN WireGuard'" (closeModal)="open.set(false)">
     <form (ngSubmit)="save()" class="space-y-4">
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div><label class="label">Nama Klien *</label><input class="input" name="name" required maxlength="100" [(ngModel)]="form.name" placeholder="Ubuntu RADIUS / MikroTik Cabang A" /></div>
-        <div><label class="label">Jenis Perangkat *</label><select class="input" name="deviceType" [(ngModel)]="form.deviceType" [disabled]="form.isRadiusServer"><option value="mikrotik">MikroTik RouterOS 7 ARM/ARM64</option><option value="linux">Ubuntu / Linux</option><option value="other">Perangkat lain (laptop/HP)</option></select></div>
-      </div>
-      <div><label class="label">Network ID ZeroTier *</label><input class="input" name="networkId" required pattern="[0-9a-fA-F]{16}" maxlength="16" [(ngModel)]="form.networkId" placeholder="16 karakter dari ZeroTier Central" /></div>
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div><label class="label">Device ID</label><input class="input" name="nodeId" pattern="[0-9a-fA-F]{10}" maxlength="10" [(ngModel)]="form.nodeId" placeholder="10 karakter setelah join" /></div>
-        <div><label class="label">IP ZeroTier</label><input class="input" name="vpnIp" [(ngModel)]="form.vpnIp" placeholder="Managed IP dari Central" /></div>
-      </div>
-      <p class="text-sm text-slate-500">Device ID dan IP boleh diisi setelah join serta authorize. Keduanya diperlukan sebelum klien MikroTik dapat dipilih pada Router / NAS. IP mengikuti Managed IP di Central; form ini tidak menetapkan IP pada perangkat.</p>
-      <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 p-3"><input type="checkbox" name="isRadiusServer" [(ngModel)]="form.isRadiusServer" (ngModelChange)="radiusChanged()" />Server RADIUS (Ubuntu, hanya satu)</label>
-      <label class="flex items-center gap-2"><input type="checkbox" name="isActive" [(ngModel)]="form.isActive" />Pencatatan aktif (tidak mengubah otorisasi di Central)</label>
-      <div class="flex justify-end gap-3"><button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button><button class="btn-primary" [disabled]="saving()">{{ saving() ? 'Menyimpan...' : 'Simpan Klien' }}</button></div>
+      <div><label class="label">Jenis Perangkat *</label><select class="input" name="deviceType" [(ngModel)]="form.deviceType"><option value="radius">Server RADIUS</option><option value="mikrotik">MikroTik</option></select></div>
+      <div><label class="label">IP VPN *</label><input class="input" name="vpnIp" required [(ngModel)]="form.vpnIp" placeholder="Contoh: 10.66.66.2" /><p class="mt-1 text-sm text-slate-500">IP WireGuard yang sudah terpasang pada perangkat, tanpa /24 atau /32.</p></div>
+      @if (editing()) { <label class="flex items-center gap-2"><input type="checkbox" name="isActive" [(ngModel)]="form.isActive" />Aktif</label> }
+      <div class="flex justify-end gap-3"><button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button><button class="btn-primary" [disabled]="saving()">{{ saving() ? 'Menyimpan...' : 'Simpan' }}</button></div>
     </form>
-  </app-modal>
-
-  <app-modal [open]="scriptModalOpen()" [title]="'Script Setup ZeroTier ? ' + (scriptData()?.clientName || '')" (closeModal)="scriptModalOpen.set(false)">
-    @if (scriptData(); as data) {
-      <div class="space-y-3">
-        <p class="text-sm text-slate-600">{{ data.deviceType === 'mikrotik' ? 'Jalankan di Terminal MikroTik setelah paket ZeroTier terpasang.' : data.deviceType === 'linux' ? 'Jalankan di terminal Ubuntu setelah ZeroTier terpasang.' : 'Untuk laptop/HP, join Network ID melalui aplikasi ZeroTier; perintah berikut untuk Linux.' }} Setelah join, authorize perangkat dan tetapkan IP di Central.</p>
-        <button type="button" class="btn-secondary" (click)="copyScript()"><svg lucideCopy [size]="16"></svg>{{ copied() ? 'Tersalin' : 'Salin Script' }}</button>
-        <pre class="max-h-96 overflow-auto whitespace-pre rounded-lg bg-slate-950 p-4 font-mono text-xs text-slate-100">{{ data.script }}</pre>
-      </div>
-    }
   </app-modal>
   @if (toast()) { <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast> }
 </div>

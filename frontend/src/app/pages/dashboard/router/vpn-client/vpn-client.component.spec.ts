@@ -5,69 +5,75 @@ import { VpnClientComponent } from './vpn-client.component';
 import { RoutersComponent } from '../routers/routers.component';
 import { routes } from '../../../../app.routes';
 
-describe('ZeroTier VPN flow', () => {
+describe('External WireGuard VPN IP flow', () => {
   function setup() {
     const api = {
       get: jasmine.createSpy('get').and.returnValue(of({ data: [
-        { id: '1', name: 'Ubuntu', networkId: '0123456789abcdef', nodeId: 'abcdef1234', vpnIp: '10.88.0.1', deviceType: 'linux', isRadiusServer: true, isActive: true, routers: [] },
-        { id: '2', name: 'Cabang A', networkId: '0123456789abcdef', nodeId: 'abcdef1235', vpnIp: '10.88.0.2', deviceType: 'mikrotik', isRadiusServer: false, isActive: false, routers: [] },
-      ], meta: { currentPage: 1, lastPage: 1, perPage: 10, total: 2 },
-      capacity: { used: 3, limit: 10, remaining: 7, serverRegistered: true, networkId: '0123456789abcdef' } })),
+        { id: '1', name: 'Server RADIUS 10.99.25.7', vpnType: 'wireguard', deviceType: 'radius', vpnIp: '10.99.25.7', isActive: true, routers: [] },
+        { id: '2', name: 'MikroTik 10.66.0.44', vpnType: 'wireguard', deviceType: 'mikrotik', vpnIp: '10.66.0.44', isActive: true, routers: [{ id: 1, name: 'NAS A' }] },
+        { id: '3', name: 'MikroTik 10.66.0.45', vpnType: 'wireguard', deviceType: 'mikrotik', vpnIp: '10.66.0.45', isActive: false, routers: [] },
+      ], meta: { currentPage: 1, lastPage: 1, perPage: 10, total: 3 }, legacyCount: 1 })),
       post: jasmine.createSpy('post').and.returnValue(of({ message: 'Disimpan' })),
+      patch: jasmine.createSpy('patch').and.returnValue(of({ message: 'Disimpan' })),
     };
     TestBed.configureTestingModule({ imports: [VpnClientComponent], providers: [{ provide: ApiService, useValue: api }] });
     const fixture = TestBed.createComponent(VpnClientComponent);
     fixture.detectChanges();
     return { api, fixture, element: fixture.nativeElement as HTMLElement };
   }
-
-  it('renders all ZeroTier columns, reserved capacity, and clear recording status', () => {
+  it('renders exact device/IP/status/NAS rows and only checks an active linked MikroTik', () => {
     const { element, api } = setup();
-    expect(element.textContent).toContain('3 / 10 perangkat tercatat');
     expect([...element.querySelectorAll('thead th')].map(cell => cell.textContent?.trim())).toEqual([
-      'Nama Klien', 'Network ID', 'Device ID', 'IP ZeroTier', 'Perangkat', 'Pencatatan', 'Aksi',
+      'Perangkat', 'IP VPN', 'Status', 'Router / NAS', 'Aksi',
     ]);
     const rows = [...element.querySelectorAll('tbody tr')];
-    expect([...rows[0].querySelectorAll('td')].slice(0, 6).map(cell => cell.textContent?.trim())).toEqual([
-      'Ubuntu', '0123456789abcdef', 'abcdef1234', '10.88.0.1', 'Ubuntu RADIUS', 'Aktif',
+    const cells = rows.map(row => [...row.querySelectorAll('td')].slice(0, 4).map(cell => cell.textContent?.trim()));
+    expect(cells).toEqual([
+      ['Server RADIUS', '10.99.25.7', 'Aktif', '—'],
+      ['MikroTik', '10.66.0.44', 'Aktif', 'NAS A'],
+      ['MikroTik', '10.66.0.45', 'Nonaktif', 'Belum dihubungkan'],
     ]);
-    expect([...rows[1].querySelectorAll('td')].slice(0, 6).map(cell => cell.textContent?.trim())).toEqual([
-      'Cabang A', '0123456789abcdef', 'abcdef1235', '10.88.0.2', 'MikroTik', 'Nonaktif',
-    ]);
-    expect(api.get.calls.allArgs().flat().some(url => String(url).includes('vpn-server'))).toBeFalse();
-    expect(element.textContent).toContain('Data aktif di tabel bukan status online perangkat.');
+    expect(rows[0].querySelector('[title="Cek Router"]')).toBeNull();
+    expect(rows[1].querySelector('[title="Cek Router"]')).not.toBeNull();
+    expect(rows[2].querySelector('[title="Cek Router"]')).toBeNull();
+    for (const removed of ['OpenVPN', 'Portmap', 'ZeroTier', '.ovpn', '10 perangkat', 'Unduh Setup']) {
+      expect(element.textContent).not.toContain(removed);
+    }
+    expect(api.get.calls.allArgs()).toEqual([['/router/vpn-client?search=&page=1']]);
   });
-
-  it('defaults to the current network, marks Ubuntu, and submits without WireGuard fields', async () => {
+  it('requires only device type and VPN IP, and submits a RADIUS peer without keys or provisioning fields', async () => {
     const { fixture, element, api } = setup();
-    fixture.componentInstance.show();
-    fixture.detectChanges();
-    await fixture.whenStable();
-    expect(fixture.componentInstance.form.networkId).toBe('0123456789abcdef');
-    expect(element.querySelector('[name="clientPrivateKey"]')).toBeNull();
-    expect(element.querySelector('[name="vpnServerId"]')).toBeNull();
-    const checkbox = element.querySelector<HTMLInputElement>('[name="isRadiusServer"]')!;
-    checkbox.click();
-    fixture.detectChanges();
-    expect(fixture.componentInstance.form.deviceType).toBe('linux');
-    fixture.componentInstance.form.name = 'Ubuntu RADIUS';
-    fixture.componentInstance.save();
-    const body = api.post.calls.mostRecent().args[1];
-    expect(body).toEqual(jasmine.objectContaining({ isRadiusServer: true, deviceType: 'linux', networkId: '0123456789abcdef' }));
-    expect(Object.keys(body)).not.toContain('clientPrivateKey');
+    const component = fixture.componentInstance;
+    component.show(); fixture.detectChanges(); await fixture.whenStable();
+    for (const name of ['name', 'nodeId', 'networkId', 'description', 'publicHost', 'publicPort', 'subnet', 'clientPrivateKey', 'clientPublicKey', 'isActive']) {
+      expect(element.querySelector(`[name="${name}"]`)).toBeNull();
+    }
+    expect(element.querySelector('[name="deviceType"]')).not.toBeNull();
+    expect(element.querySelector('[name="vpnIp"]')).not.toBeNull();
+    component.form = { deviceType: 'radius', vpnIp: ' 10.99.25.7 ', isActive: true };
+    component.save();
+    expect(api.post).toHaveBeenCalledWith('/router/vpn-client', { deviceType: 'radius', vpnIp: '10.99.25.7', isActive: true });
   });
-
-  it('sets both API and NAS addresses from the selected ZeroTier client', () => {
+  it('edits the existing device type/IP/state and checks a linked router via the API', async () => {
+    const { fixture, element, api } = setup();
+    const component = fixture.componentInstance;
+    component.show(component.items()[2]); fixture.detectChanges(); await fixture.whenStable();
+    expect(component.form).toEqual({ deviceType: 'mikrotik', vpnIp: '10.66.0.45', isActive: false });
+    expect(element.querySelector('[name="isActive"]')).not.toBeNull();
+    component.form.isActive = true; component.save();
+    expect(api.patch).toHaveBeenCalledWith('/router/vpn-client/3', { deviceType: 'mikrotik', vpnIp: '10.66.0.45', isActive: true });
+    component.check(component.items()[1]);
+    expect(api.post).toHaveBeenCalledWith('/router/vpn-client/2/check', {});
+  });
+  it('sets API and NAS addresses from the selected WireGuard client', () => {
     TestBed.configureTestingModule({ providers: [{ provide: ApiService, useValue: {} }] });
     const component = TestBed.runInInjectionContext(() => new RoutersComponent());
-    component.vpnClients.set([{ id: '2', name: 'Cabang', vpnIp: '10.88.0.2' } as any]);
-    component.form.vpnClientId = '2';
-    component.onVpnClientChange();
-    expect(component.form.ipAddress).toBe('10.88.0.2');
-    expect(component.form.nasname).toBe('10.88.0.2');
+    component.vpnClients.set([{ id: '2', name: 'MikroTik', vpnIp: '10.66.0.44' } as any]);
+    component.form.vpnClientId = '2'; component.onVpnClientChange();
+    expect(component.form.ipAddress).toBe('10.66.0.44');
+    expect(component.form.nasname).toBe('10.66.0.44');
   });
-
-  it('removes the VPN server page and keeps VPN clients protected', () => {
+  it('keeps VPN clients guarded and does not restore a Server VPN menu', () => {
     const children = routes.find(route => route.path === 'dashboard')!.children!;
     expect(children.some(route => route.path === 'router/vpn-server')).toBeFalse();
     expect(children.find(route => route.path === 'router/vpn-client')?.canActivate?.length).toBeGreaterThan(0);

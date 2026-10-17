@@ -13,6 +13,7 @@ const { PrismaClient } = await import(pathToFileURL(path.join(backendDir, 'node_
 const prisma = new PrismaClient();
 
 const features = new Map([
+  ['20261017_wireguard_clients.sql', 'Pencatatan IP VPN WireGuard RADIUS dan MikroTik'],
   ['20261015_package_card_text.sql', 'Judul dan deskripsi kartu Harga Paket'],
   ['20261015_zerotier_clients.sql', 'Klien VPN ZeroTier tanpa server WireGuard'],
   ['20261012_user_additional_roles.sql', 'Hak akses tambahan akun'],

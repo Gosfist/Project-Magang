@@ -15,7 +15,7 @@ export function radiusSetupScript(router: Nas, serverIp: string, sourceIp: strin
   const params = `address=${quote(serverIp)} secret=${quote(router.secret || '')} src-address=${quote(sourceIp)} service=ppp,hotspot,login authentication-port=${router.ports || 1812} accounting-port=1813 timeout=3s${ros7 ? ' require-message-auth=no' : ''}`;
   return [
     `# UNZANET RADIUS - NAS ${router.id}, RouterOS ${ros7 ? '7' : '6'}`,
-    '# Jalankan setelah IP ZeroTier sudah diberikan Central dan dapat saling terhubung.',
+    '# Jalankan setelah router dapat menjangkau IP server RADIUS melalui LAN atau tunnel VPN.',
     '# Hanya entri bertanda NAS ini yang dibuat/diperbarui; entri RADIUS lain tetap ada.',
     '{',
     `:local entry [/radius find where comment="${tag}"];`,

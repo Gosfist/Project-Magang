@@ -8,17 +8,17 @@ import { VpnClientService } from './vpn-client.service.js';
 import { VpnClientController } from './vpn-client.controller.js';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard.js';
 import { RoutersService } from '../routers/routers.service.js';
-import { zeroTierJoinScript } from './zerotier-script.js';
 import { radiusSetupScript } from '../shared/radius-setup-script.js';
 
-const networkId = '0123456789abcdef';
 function setup() {
   const rows = new Map<bigint, any>();
   const nasRows = new Map<number, any>();
   let nextId = 1n;
   function matches(row: any, where: any = {}): boolean {
     return Object.entries(where).every(([key, value]: [string, any]) => {
+      if (key === 'OR') return value.some((item: any) => matches(row, item));
       if (value && typeof value === 'object' && 'not' in value) return row[key] !== value.not;
+      if (value && typeof value === 'object' && 'contains' in value) return row[key]?.includes(value.contains);
       return row[key] === value;
     });
   }
@@ -29,7 +29,11 @@ function setup() {
     ])) : row;
   }
   const vpnClient = {
-    findMany: vi.fn(async (args: any) => [...rows.values()].filter(row => matches(row, args?.where)).map(row => select(row, args?.select))),
+    findMany: vi.fn(async (args: any) => {
+      const items = [...rows.values()].filter(row => matches(row, args?.where));
+      if (args?.orderBy?.id) items.sort((a, b) => Number(b.id - a.id));
+      return items.slice(args?.skip || 0, args?.take ? (args.skip || 0) + args.take : undefined).map(row => select(row, args?.select));
+    }),
     findFirst: vi.fn(async (args: any) => select([...rows.values()].find(row => matches(row, args.where)), args.select)),
     findUnique: vi.fn(async (args: any) => select(rows.get(args.where.id), args.select)),
     count: vi.fn(async (args: any) => [...rows.values()].filter(row => matches(row, args?.where)).length),
@@ -40,128 +44,160 @@ function setup() {
   const nas = {
     findUnique: vi.fn(async (args: any) => {
       const row = nasRows.get(args.where.id);
-      if (row && args.include?.vpnClient) return { ...row, vpnClient: rows.get(row.vpnClientId) };
-      return row;
+      return row && args.include?.vpnClient ? { ...row, vpnClient: rows.get(row.vpnClientId) } : row;
     }),
-    count: vi.fn(async (args: any) => [...nasRows.values()].filter(row => rows.get(row.vpnClientId)?.networkId === args.where.vpnClient.networkId).length),
+    count: vi.fn(async (args: any) => [...nasRows.values()].filter(nas => {
+      const client = rows.get(nas.vpnClientId);
+      return client && matches(client, args.where.vpnClient);
+    }).length),
     create: vi.fn(async (args: any) => { const row = { id: nasRows.size + 1, ...args.data }; nasRows.set(row.id, row); return row; }),
+    update: vi.fn(async (args: any) => { const row = { ...nasRows.get(args.where.id), ...args.data }; nasRows.set(row.id, row); return row; }),
   };
-  const prisma: any = { vpnClient, nas };
+  const prisma: any = { vpnClient, nas, appSetting: { findUnique: vi.fn(() => { throw new Error('Old VPN settings must not be read'); }) } };
   prisma.$transaction = vi.fn(async (action: any) => Array.isArray(action) ? Promise.all(action) : action(prisma));
-  const write = vi.fn(async (command: string) => command === '/zerotier/interface/print'
-    ? [{ name: 'zt1', network: networkId, status: 'OK' }] : [{ interface: 'zt1', address: '10.88.0.2/24' }]);
+  const write = vi.fn(async (command: string, _params?: string[]) => {
+    if (command === '/system/identity/print') return [{ name: 'hEX cabang' }];
+    if (command === '/interface/wireguard/print') return [{ name: 'wg-provider', disabled: 'false' }];
+    if (command === '/ip/address/print') return [{ interface: 'wg-provider', address: '10.66.0.44/32', disabled: 'false' }];
+    throw new Error('Unexpected command');
+  });
   const mikrotik = { withRouter: vi.fn(async (_router: any, action: any) => action(write)), errorMessage: () => 'Koneksi gagal.' };
   const service = new VpnClientService(prisma, mikrotik as any);
   const routers = new RoutersService(prisma, mikrotik as any);
-  const dto = { name: 'Router', networkId, deviceType: 'mikrotik', vpnIp: '', nodeId: '', isActive: true };
-  const addRouter = (index: number) => service.createVpnClient({ ...dto, name: `Cabang ${index}`, vpnIp: `10.88.0.${index + 1}`, nodeId: index.toString(16).padStart(10, '0') });
-  const addServer = () => service.createVpnClient({ ...dto, name: 'Ubuntu', deviceType: 'linux', isRadiusServer: true, vpnIp: '10.88.0.1', nodeId: 'abcdef1234' });
-  return { service, routers, prisma, rows, nasRows, dto, addRouter, addServer, write, mikrotik };
+  const dto = { deviceType: 'mikrotik' as const, vpnIp: '10.66.0.44', isActive: true };
+  const addServer = () => service.createVpnClient({ deviceType: 'radius', vpnIp: '10.99.25.7' });
+  return { service, routers, prisma, rows, nasRows, dto, write, mikrotik, addServer };
 }
 
-describe('ZeroTier client management', () => {
-  it('reserves Ubuntu before registration, allows nine routers plus Ubuntu and rejects an eleventh device', async () => {
-    const { service, addRouter, addServer, dto } = setup();
-    for (let index = 1; index <= 9; index++) await addRouter(index);
-    expect((await service.vpnClients()).capacity).toMatchObject({ used: 10, remaining: 0, serverRegistered: false });
-    await expect(service.createVpnClient({ ...dto, isActive: false })).rejects.toThrow('Batas 10');
-    await addServer();
-    expect((await service.vpnClients()).capacity).toMatchObject({ used: 10, serverRegistered: true });
-    await expect(service.createVpnClient(dto)).rejects.toThrow('Batas 10');
+describe('External WireGuard IP registry', () => {
+  it('accepts provider-assigned IPs without endpoint/key/subnet settings and derives device names', async () => {
+    const { service, dto, addServer, prisma } = setup();
+    const server = await addServer();
+    const client = await service.createVpnClient(dto);
+    expect(server.client).toMatchObject({ name: 'Server RADIUS 10.99.25.7', deviceType: 'radius', vpnType: 'wireguard', vpnIp: '10.99.25.7', isActive: true });
+    expect(client.client).toMatchObject({ name: 'MikroTik 10.66.0.44', deviceType: 'mikrotik', vpnIp: dto.vpnIp });
+    expect(prisma.appSetting.findUnique).not.toHaveBeenCalled();
+    expect(prisma.vpnClient.create.mock.calls.every(([args]) => !('clientPrivateKey' in args.data) && !('clientPublicKey' in args.data))).toBe(true);
+    // Assigned .1 and addresses from other networks are valid; no global /24 restriction.
+    await expect(service.createVpnClient({ ...dto, vpnIp: '100.70.80.1' })).resolves.toHaveProperty('client');
   });
 
-  it('counts inactive clients and devices other than routers', async () => {
+  it('rejects non-unicast, invalid and CIDR addresses', async () => {
     const { service, dto } = setup();
-    await service.createVpnClient({ ...dto, deviceType: 'other', isActive: false });
-    expect((await service.vpnClients()).capacity.used).toBe(2);
+    for (const vpnIp of ['0.0.0.0', '127.0.0.1', '224.0.0.1', '255.255.255.255', 'bad', '10.0.0.2/32']) {
+      await expect(service.createVpnClient({ ...dto, vpnIp })).rejects.toThrow('IPv4');
+    }
   });
 
-  it('uses serializable transactions and retries a serialization conflict', async () => {
+  it('permits only one RADIUS record and unique IPs across roles, including inactive records', async () => {
+    const { service, dto, addServer } = setup();
+    await addServer();
+    await expect(service.createVpnClient({ deviceType: 'radius', vpnIp: '10.99.25.8', isActive: false })).rejects.toThrow('Server RADIUS sudah terdaftar');
+    await expect(service.createVpnClient({ ...dto, vpnIp: '10.99.25.7' })).rejects.toThrow('sudah digunakan');
+    await service.createVpnClient({ ...dto, isActive: false });
+    await expect(service.createVpnClient(dto)).rejects.toThrow('sudah digunakan');
+  });
+
+  it('supports more than ten devices, paginates and searches without including legacy secrets', async () => {
+    const { service, dto, rows, addServer } = setup();
+    rows.set(100n, { id: 100n, vpnType: 'openvpn', name: 'Old', vpnIp: '10.250.0.2', isRadiusServer: false, clientPrivateKey: 'NEVER-RETURN' });
+    await addServer();
+    for (let ip = 2; ip <= 13; ip++) await service.createVpnClient({ ...dto, vpnIp: `10.66.0.${ip}`, isActive: false });
+    const page1 = await service.vpnClients();
+    expect(page1.meta.total).toBe(13);
+    expect(page1.data).toHaveLength(10);
+    expect(page1.legacyCount).toBe(1);
+    expect((await service.vpnClients('', 2)).data).toHaveLength(3);
+    const search = await service.vpnClients('10.66.0.2');
+    expect(search.data.map(row => row.vpnIp)).toEqual(['10.66.0.2']);
+    expect(JSON.stringify(page1)).not.toContain('NEVER-RETURN');
+    expect(JSON.stringify(page1)).not.toContain('clientPrivateKey');
+    expect((await service.vpnClientOptions()).data).toEqual([]); // RADIUS is never an NAS option.
+    await service.updateVpnClient('2', { ...dto, vpnIp: '10.66.0.2' });
+    expect((await service.vpnClientOptions()).data).toEqual([{ id: '2', name: 'MikroTik 10.66.0.2', vpnIp: '10.66.0.2' }]);
+    await expect(service.updateVpnClient('100', dto)).rejects.toThrow('tidak ditemukan');
+  });
+
+  it('retries serializable conflicts for concurrent uniqueness checks', async () => {
     const { service, prisma, dto } = setup();
-    prisma.$transaction.mockRejectedValueOnce(new Prisma.PrismaClientKnownRequestError('retry', { code: 'P2034', clientVersion: '6.12.0' }));
+    prisma.$transaction.mockRejectedValueOnce(new Prisma.PrismaClientKnownRequestError('retry', { code: 'P2034', clientVersion: 'test' }));
     await service.createVpnClient(dto);
     expect(prisma.$transaction).toHaveBeenCalledTimes(2);
-    expect(prisma.$transaction).toHaveBeenLastCalledWith(expect.any(Function), { isolationLevel: 'Serializable' });
+    expect(prisma.$transaction.mock.calls[1][1].isolationLevel).toBe('Serializable');
   });
 
-  it('rejects a second server, a different network, duplicate IPs and duplicate node IDs', async () => {
-    const { service, addServer, addRouter, dto } = setup();
-    await addServer();
-    await expect(addServer()).rejects.toThrow('satu perangkat server RADIUS');
-    await addRouter(1);
-    await expect(service.createVpnClient({ ...dto, networkId: 'fedcba9876543210' })).rejects.toThrow('satu Network ID');
-    await expect(service.createVpnClient({ ...dto, vpnIp: '10.88.0.2' })).rejects.toThrow('IP ZeroTier');
-    await expect(service.createVpnClient({ ...dto, nodeId: '0000000001' })).rejects.toThrow('Device ID');
-    await expect(service.createVpnClient({ ...dto, isRadiusServer: true })).rejects.toThrow('Ubuntu / Linux');
-  });
-
-  it('does not offer incomplete clients or Ubuntu as a MikroTik NAS option', async () => {
-    const { service, addServer, addRouter, dto } = setup();
-    await addServer();
-    await addRouter(1);
+  it('requires an active RADIUS IP before linking NAS and only permits MikroTik clients', async () => {
+    const { service, routers, dto, addServer, rows } = setup();
     await service.createVpnClient(dto);
-    expect((await service.vpnClientOptions()).data.map(row => row.name)).toEqual(['Cabang 1']);
+    await expect(routers.createRouter({ name: 'NAS', nasname: dto.vpnIp, vpnClientId: '1' })).rejects.toThrow('Server RADIUS');
+    await addServer();
+    await expect(routers.createRouter({ name: 'NAS', nasname: dto.vpnIp, vpnClientId: '2' })).rejects.toThrow('MikroTik');
+    rows.get(2n).isActive = false;
+    await expect(routers.createRouter({ name: 'NAS', nasname: dto.vpnIp, vpnClientId: '1' })).rejects.toThrow('Server RADIUS');
   });
 
-  it('does not expose legacy private keys and can convert a detached legacy record', async () => {
-    const { service, rows, dto } = setup();
-    rows.set(99n, { id: 99n, name: 'Lama', networkId: null, clientPrivateKey: 'DO-NOT-EXPOSE', clientPublicKey: 'OLD', deviceType: 'mikrotik', vpnIp: '10.2.0.2' });
-    const result = await service.vpnClients();
-    expect(JSON.stringify(result)).not.toContain('DO-NOT-EXPOSE');
-    expect(result.capacity.used).toBe(1);
-    await expect(service.getVpnClientScript('99')).rejects.toThrow('WireGuard lama');
-    await service.updateVpnClient('99', dto);
-    expect(rows.get(99n)).toMatchObject({ networkId, vpnServerId: null, clientPrivateKey: null });
+  it('sets NAS/API to the chosen router IP and RADIUS target to the separately registered server IP', async () => {
+    const { service, routers, dto, addServer, rows } = setup();
+    await addServer(); await service.createVpnClient(dto);
+    await routers.createRouter({ name: 'NAS', nasname: '192.168.1.1', ipAddress: '192.168.1.1', vpnClientId: '2', secret: 'my-secret' });
+    const script = await routers.getRouterScript('1');
+    expect(script.nasSrcAddress).toBe('10.66.0.44');
+    expect(script.radiusServerIp).toBe('10.99.25.7');
+    expect(script.scriptRos7).toContain('address="10.99.25.7"');
+    expect(script.scriptRos7).toContain('src-address="10.66.0.44"');
+    expect(script.scriptRos7).not.toContain('portmap');
+    rows.get(2n).vpnType = 'legacy';
+    await expect(routers.getRouterScript('1')).rejects.toThrow('WireGuard');
+    await expect(routers.createRouter({ name: 'NAS', nasname: dto.vpnIp, vpnClientId: '2' })).rejects.toThrow('WireGuard');
   });
 
-  it('protects linked router identity, deletion, and the RADIUS server address', async () => {
-    const { service, addRouter, addServer, nasRows, dto } = setup();
-    await addServer(); await addRouter(1);
-    nasRows.set(1, { id: 1, vpnClientId: 2n, name: 'NAS' });
-    await expect(service.removeVpnClient('2')).rejects.toThrow('digunakan Router');
-    await expect(service.updateVpnClient('2', { ...dto, vpnIp: '10.88.0.99' })).rejects.toThrow('Lepaskan hubungan');
-    await expect(service.removeVpnClient('1')).rejects.toThrow('digunakan Router');
-    await expect(service.updateVpnClient('1', { ...dto, deviceType: 'linux', isRadiusServer: true, vpnIp: '10.88.0.99' })).rejects.toThrow('masih digunakan');
+  it('preserves direct LAN connections without requiring VPN records', async () => {
+    const { routers } = setup();
+    vi.stubEnv('RADIUS_SERVER_IP', '192.168.10.3');
+    try {
+      await routers.createRouter({ name: 'Local', nasname: '192.168.10.1', secret: 'test' });
+      const script = await routers.getRouterScript('1');
+      expect(script.radiusServerIp).toBe('192.168.10.3');
+      expect(script.nasSrcAddress).toBe('192.168.10.1');
+    } finally { vi.unstubAllEnvs(); }
   });
 
-  it('uses the selected MikroTik IP for API/NAS and Ubuntu ZeroTier IP for the RADIUS script', async () => {
-    const { routers, addRouter, addServer, dto } = setup();
-    await addServer(); await addRouter(1);
-    const result = await routers.createRouter({ name: 'NAS A', nasname: '192.168.10.1', ipAddress: '192.168.10.1', vpnClientId: '2', secret: 'test-only', username: 'api', password: 'test-only' });
-    expect(result.router).toMatchObject({ nasname: '10.88.0.2', ipAddress: '10.88.0.2' });
-    const scripts = await routers.getRouterScript('1');
-    expect(scripts).toMatchObject({ radiusServerIp: '10.88.0.1', nasSrcAddress: '10.88.0.2' });
-    expect(scripts.scriptRos7).toContain('address="10.88.0.1"');
-    expect(scripts.scriptRos7).toContain('src-address="10.88.0.2"');
-    await expect(routers.createRouter({ name: 'Wrong', nasname: '192.168.1.1', vpnClientId: '1' })).rejects.toThrow('MikroTik aktif');
-  });
-
-  it('checks only network/IP via API and reports failures without claiming RADIUS proof', async () => {
-    const { service, addServer, addRouter, nasRows, write } = setup();
-    await addServer(); await addRouter(1);
-    nasRows.set(1, { id: 1, vpnClientId: 2n, ipAddress: '10.88.0.2' });
-    expect(await service.checkVpnClient('2')).toMatchObject({ success: true });
-    expect(write.mock.calls.every(([command]) => command.endsWith('/print'))).toBe(true);
-    write.mockResolvedValueOnce([{ name: 'zt1', network: networkId, status: 'ACCESS_DENIED' }] as any);
-    expect(await service.checkVpnClient('2')).toMatchObject({ success: false });
-  });
-
-  it('produces join scripts without sending mutations to devices', async () => {
-    const { service, addServer, addRouter, mikrotik } = setup();
-    await addServer(); await addRouter(1);
-    expect((await service.getVpnClientScript('1')).script).toContain(`sudo zerotier-cli join ${networkId}`);
-    const script = (await service.getVpnClientScript('2')).script;
-    expect(script).toContain('allow-default=no');
-    expect(script).toContain('src-address=10.88.0.1');
-    expect(script).not.toContain('chain=forward');
-    expect(script).not.toContain('private-key');
+  it('protects linked router/server identity and states without modifying external peers', async () => {
+    const { service, routers, dto, addServer, nasRows, mikrotik } = setup();
+    await addServer(); await service.createVpnClient(dto);
+    await routers.createRouter({ name: 'NAS', nasname: dto.vpnIp, vpnClientId: '2' });
+    for (const change of [{ vpnIp: '10.66.0.45' }, { isActive: false }, { deviceType: 'radius' as const }]) {
+      await expect(service.updateVpnClient('2', { ...dto, ...change })).rejects.toThrow('Router / NAS');
+    }
+    for (const change of [{ vpnIp: '10.99.25.8' }, { isActive: false }, { deviceType: 'mikrotik' as const }]) {
+      await expect(service.updateVpnClient('1', { deviceType: 'radius', vpnIp: '10.99.25.7', ...change })).rejects.toThrow('Server RADIUS masih digunakan');
+    }
+    await expect(service.removeVpnClient('2')).rejects.toThrow('Router / NAS');
+    await expect(service.removeVpnClient('1')).rejects.toThrow('Server RADIUS masih digunakan');
+    nasRows.clear();
+    expect((await service.removeVpnClient('2')).message).toContain('Peer WireGuard tetap dikelola');
+    await expect(service.removeVpnClient('1')).resolves.toHaveProperty('message');
     expect(mikrotik.withRouter).not.toHaveBeenCalled();
   });
 
-  it('rejects injected script fields and escapes RADIUS secrets', () => {
-    expect(() => zeroTierJoinScript({ id: 1n, networkId: 'bad; /system reboot', deviceType: 'mikrotik' }, '', 8728)).toThrow('Network ID');
-    expect(() => zeroTierJoinScript({ id: 1n, networkId, deviceType: 'mikrotik' }, '1.2.3.4;evil', 8728)).toThrow('IP server');
-    const script = radiusSetupScript({ id: 1, secret: 'abc"$test\\def' } as any, '10.88.0.1', '10.88.0.2', true);
+  it('checks API identity and a user-named WireGuard interface without reading keys or mutating the router', async () => {
+    const { service, routers, dto, addServer, write, mikrotik } = setup();
+    await addServer(); await service.createVpnClient(dto);
+    await expect(service.checkVpnClient('2')).rejects.toThrow('Router / NAS');
+    await expect(service.checkVpnClient('1')).rejects.toThrow('MikroTik');
+    await routers.createRouter({ name: 'NAS', nasname: dto.vpnIp, vpnClientId: '2' });
+    expect((await service.checkVpnClient('2')).success).toBe(true);
+    expect(mikrotik.withRouter.mock.calls[0][0].ipAddress).toBe(dto.vpnIp);
+    expect(write.mock.calls.every(([command, params]) => command.endsWith('/print') && params?.[0].startsWith('=.proplist='))).toBe(true);
+    expect(JSON.stringify(write.mock.calls)).not.toMatch(/private-key|preshared-key/);
+    write.mockResolvedValueOnce([{ name: 'hEX' }]).mockResolvedValueOnce([{ name: 'wg-provider', disabled: 'true' }]);
+    expect((await service.checkVpnClient('2')).success).toBe(false);
+    mikrotik.withRouter.mockRejectedValueOnce(new Error('raw-sensitive-error'));
+    expect(await service.checkVpnClient('2')).toEqual({ success: false, message: 'Koneksi gagal.' });
+  });
+
+  it('escapes RADIUS secrets and does not overwrite other RADIUS entries', () => {
+    const script = radiusSetupScript({ id: 1, secret: 'abc"$test\\def' } as any, '10.99.25.7', '10.66.0.44', true);
     expect(script).toContain('secret="abc\\"\\$test\\\\def"');
     expect(script).not.toContain('/radius remove');
   });
@@ -170,7 +206,7 @@ describe('ZeroTier client management', () => {
 describe('VPN HTTP access and validation', () => {
   let app: INestApplication | undefined;
   afterEach(async () => { await app?.close(); app = undefined; });
-  it('keeps management admin-only, validates ZeroTier IDs, and removes old server/keypair routes', async () => {
+  it('protects management and checks, validates IP/role, and removes all provisioning endpoints', async () => {
     const { service, dto } = setup();
     let role = 'admin';
     const module = await Test.createTestingModule({ controllers: [VpnClientController],
@@ -185,17 +221,28 @@ describe('VPN HTTP access and validation', () => {
     const http = request(app.getHttpServer());
     for (const value of ['', 'sales', 'teknisi', 'finance', 'kolektor']) {
       role = value;
-      await http.get('/router/vpn-client').expect(value ? 403 : 401);
-      await http.post('/router/vpn-client').send(dto).expect(value ? 403 : 401);
-      await http.post('/router/vpn-client/1/check').expect(value ? 403 : 401);
+      const status = value ? 403 : 401;
+      await http.get('/router/vpn-client').expect(status);
+      await http.get('/router/vpn-client/options').expect(status);
+      await http.post('/router/vpn-client').send(dto).expect(status);
+      await http.patch('/router/vpn-client/1').send(dto).expect(status);
+      await http.delete('/router/vpn-client/1').expect(status);
+      await http.post('/router/vpn-client/1/check').expect(status);
     }
     role = 'admin';
-    await http.get('/router/vpn-server').expect(404);
-    await http.get('/router/vpn-client/keypair').expect(404);
-    for (const invalid of [{ networkId: 'bad' }, { nodeId: 'nothex' }, { vpnIp: 'bad' }, { isRadiusServer: 'false' }, { name: ' ' }]) {
+    for (const path of ['vpn-server', 'vpn-client/settings', 'vpn-client/ubuntu-script', 'vpn-client/1/profile', 'vpn-client/1/script', 'vpn-client/keypair']) {
+      await http.get('/router/' + path).expect(404);
+    }
+    for (const invalid of [{ vpnIp: 'bad' }, { vpnIp: '10.1.2.3/32' }, { deviceType: 'linux' }, { isActive: 'false' }]) {
       await http.post('/router/vpn-client').send({ ...dto, ...invalid }).expect(400);
     }
-    await http.post('/router/vpn-client').send({ ...dto, networkId: networkId.toUpperCase() }).expect(201);
-    await http.get('/router/vpn-client/invalid/script').expect(400);
+    await http.post('/router/vpn-client').send({ vpnIp: '10.1.2.3' }).expect(400);
+    await http.post('/router/vpn-client').send({ ...dto, vpnIp: ' 10.66.0.44 ', clientPrivateKey: 'IGNORED', endpoint: 'IGNORED' }).expect(201);
+    const list = await http.get('/router/vpn-client').expect(200);
+    expect(list.body.data[0]).toMatchObject({ deviceType: 'mikrotik', vpnIp: '10.66.0.44' });
+    expect(JSON.stringify(list.body)).not.toContain('IGNORED');
+    expect(list.body).not.toHaveProperty('settings');
+    await http.post('/router/vpn-client/invalid/check').expect(400);
+    await http.get('/router/vpn-client?page=bad').expect(400);
   });
 });

@@ -33,24 +33,18 @@ export type RouterItem = {
   vpnClientId?: string | null;
   isActive: boolean;
   accountsCount?: number;
-  vpnClient?: { id: string; name: string; vpnIp: string } | null;
+  vpnClient?: { id: string; name: string; vpnIp: string; vpnType?: string } | null;
 };
 
 export type VpnClient = {
   id: string;
   name: string;
-  networkId: string | null;
-  nodeId: string | null;
-  deviceType: 'mikrotik' | 'linux' | 'other';
+  vpnType: 'wireguard';
+  deviceType: 'radius' | 'mikrotik';
   vpnIp: string;
-  description?: string | null;
-  isRadiusServer: boolean;
   isActive: boolean;
   routers?: { id: number; name: string | null }[];
 };
-
-export type VpnCapacity = { used: number; limit: number; remaining: number; serverRegistered: boolean; networkId: string };
-export type ZeroTierScriptData = { clientName: string; deviceType: string; networkId: string; script: string };
 
 export type RouterScriptData = {
   routerName: string;
