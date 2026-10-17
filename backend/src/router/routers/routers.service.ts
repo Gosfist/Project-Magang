@@ -8,7 +8,6 @@ import crypto from 'crypto';
 import { MikrotikService } from '../shared/mikrotik.service.js';
 import os from 'os';
 import { radiusSetupScript } from '../shared/radius-setup-script.js';
-import { radiusVpnClient } from '../vpn-client/wireguard-client.js';
 
 @Injectable()
 export class RoutersService {
@@ -34,7 +33,6 @@ export class RoutersService {
       this.prisma.nas.findMany({
         where,
         include: {
-          vpnClient: { select: { id: true, name: true, vpnIp: true, vpnType: true } },
           _count: { select: { accounts: true } },
         },
         orderBy: { id: 'desc' },
@@ -74,7 +72,6 @@ export class RoutersService {
   }
 
   async createRouter(dto: SaveRouterDto) {
-    const vpnAddress = await this.vpnAddress(dto.vpnClientId);
     const shortname =
       dto.shortname?.trim() ||
       dto.name
@@ -90,23 +87,21 @@ export class RoutersService {
       const item = await this.prisma.nas.create({
         data: {
           name: dto.name.trim(),
-          nasname: vpnAddress || dto.nasname.trim(),
+          nasname: dto.nasname.trim(),
           shortname,
           type: dto.type?.trim() || 'mikrotik',
           authMode: 'radius', // Router ini hanya memakai autentikasi RADIUS.
-          ipAddress: vpnAddress || dto.ipAddress?.trim() || dto.nasname.trim(),
+          ipAddress: dto.ipAddress?.trim() || dto.nasname.trim(),
           username: dto.username?.trim() || null,
           password: dto.password || null,
           port,
           ports,
           secret: finalSecret,
-          vpnClientId: dto.vpnClientId ? BigInt(dto.vpnClientId) : null,
           description: dto.description?.trim() || 'MikroTik Router NAS',
           isActive: dto.isActive ?? true,
           createdAt: now,
           updatedAt: now,
         },
-        include: { vpnClient: { select: { id: true, name: true, vpnIp: true, vpnType: true, isActive: true } } },
       });
       return serialize({ message: 'Router NAS berhasil ditambahkan.', router: item });
     } catch (error) {
@@ -116,7 +111,6 @@ export class RoutersService {
 
   async updateRouter(id: string, dto: SaveRouterDto) {
     const current = await this.findRouter(id);
-    const vpnAddress = await this.vpnAddress(dto.vpnClientId);
     const shortname =
       dto.shortname?.trim() ||
       dto.name
@@ -129,22 +123,20 @@ export class RoutersService {
         where: { id: current.id },
         data: {
           name: dto.name.trim(),
-          nasname: vpnAddress || dto.nasname.trim(),
+          nasname: dto.nasname.trim(),
           shortname,
           type: dto.type?.trim() || current.type,
           authMode: 'radius', // Router ini selalu memakai autentikasi RADIUS.
-          ipAddress: vpnAddress || dto.ipAddress?.trim() || dto.nasname.trim(),
+          ipAddress: dto.ipAddress?.trim() || dto.nasname.trim(),
           username: dto.username?.trim() || null,
           password: dto.password !== undefined ? dto.password : current.password,
           port: dto.port ?? current.port,
           ports: dto.ports ?? current.ports,
           secret: dto.secret?.trim() || current.secret,
-          vpnClientId: dto.vpnClientId ? BigInt(dto.vpnClientId) : null,
           description: dto.description?.trim() || null,
           isActive: dto.isActive ?? current.isActive,
           updatedAt: new Date(),
         },
-        include: { vpnClient: { select: { id: true, name: true, vpnIp: true, vpnType: true, isActive: true } } },
       });
       return serialize({ message: 'Router NAS berhasil diperbarui.', router: item });
     } catch (error) {
@@ -185,26 +177,11 @@ export class RoutersService {
   async getRouterScript(id: string) {
     const router = await this.prisma.nas.findUnique({
       where: { id: Number(id) },
-      include: {
-        vpnClient: true,
-      },
     });
     if (!router) throw new NotFoundException('Router tidak ditemukan.');
 
-    let radiusServerIp = this.detectServerIp();
-    if (router.vpnClient) {
-      const client = router.vpnClient;
-      if (client.vpnType !== 'wireguard' || client.isRadiusServer || !client.vpnIp || !client.isActive) {
-        throw new BadRequestException('Pilih klien WireGuard MikroTik aktif di Router / NAS. Hubungan VPN lama perlu diganti secara manual.');
-      }
-      const server = await this.prisma.vpnClient.findFirst({ where: radiusVpnClient, select: { vpnIp: true } });
-      if (!server) throw new BadRequestException('Tambahkan IP VPN Server RADIUS yang aktif pada Klien VPN terlebih dahulu.');
-      if (router.nasname !== client.vpnIp || router.ipAddress !== client.vpnIp) {
-        throw new BadRequestException('Simpan ulang Router / NAS dengan klien WireGuard terpilih agar IP API dan IP NAS sesuai.');
-      }
-      radiusServerIp = server.vpnIp;
-    }
-    const nasSrcAddress = router.vpnClient?.vpnIp || router.nasname;
+    const radiusServerIp = this.detectServerIp();
+    const nasSrcAddress = router.nasname;
     const secret = router.secret || 'secret';
     const authPort = router.ports || 1812;
     const scriptRos7 = radiusSetupScript(router, radiusServerIp, nasSrcAddress, true);
@@ -219,19 +196,6 @@ export class RoutersService {
       scriptRos7,
       scriptRos6,
     });
-  }
-
-  private async vpnAddress(id?: string): Promise<string | null> {
-    if (!id) return null;
-    if (!/^[1-9][0-9]*$/.test(id)) throw new BadRequestException('ID klien VPN tidak valid.');
-    const client = await this.prisma.vpnClient.findUnique({ where: { id: BigInt(id) } });
-    if (client?.vpnType !== 'wireguard' || client.isRadiusServer || !client.vpnIp || !client.isActive) {
-      throw new BadRequestException('Pilih klien WireGuard MikroTik aktif dengan IP VPN yang sudah dicatat.');
-    }
-    if (!await this.prisma.vpnClient.findFirst({ where: radiusVpnClient, select: { id: true } })) {
-      throw new BadRequestException('Tambahkan IP VPN Server RADIUS yang aktif pada Klien VPN terlebih dahulu.');
-    }
-    return client.vpnIp;
   }
 
   private detectServerIp(): string {

@@ -13,7 +13,6 @@ export class SaveRouterDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(65535) port?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(65535) ports?: number;
   @IsOptional() @IsString() @MaxLength(60) secret?: string;
-  @IsOptional() @IsString() vpnClientId?: string;
   @IsOptional() @IsString() @MaxLength(200) description?: string;
   @IsOptional() @IsBoolean() isActive?: boolean;
 }

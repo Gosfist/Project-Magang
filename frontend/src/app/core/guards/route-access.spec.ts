@@ -23,6 +23,10 @@ describe('Dashboard URL access', () => {
     'tools/kalkulator-redaman': ['admin', 'teknisi'],
   };
   const dashboard = routes.find(r => r.path === 'dashboard')!;
+  it('removes the VPN client URL while keeping Router / NAS available', () => {
+    expect(dashboard.children!.some(route => route.path === 'router/vpn-client')).toBeFalse();
+    expect(dashboard.children!.some(route => route.path === 'router/routers')).toBeTrue();
+  });
   function checkRoutes(children: Routes, inherited: CanActivateFn[] = [], prefix = ''): void {
     for (const route of children) {
       if (route.redirectTo !== undefined) continue;

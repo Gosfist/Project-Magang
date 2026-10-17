@@ -47,11 +47,6 @@
             <td>
               <p class="font-normal text-sm text-slate-800">API: {{ item.ipAddress || '—' }}</p>
               <p class="table-meta font-normal text-sm text-slate-500">NAS: {{ item.nasname }}</p>
-              @if (item.vpnClient) {
-                <span class="inline-block mt-0.5 rounded bg-sky-50 px-1.5 py-0.5 text-sm font-normal text-sky-700">
-                  {{ item.vpnClient.vpnType === 'wireguard' ? 'WireGuard' : 'VPN lama (ganti klien)' }}: {{ item.vpnClient.vpnIp }}
-                </span>
-              }
             </td>
             <td>
               <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-sm font-normal text-indigo-700">
@@ -157,8 +152,8 @@
             required
             [(ngModel)]="form.ipAddress"
             (ngModelChange)="onIpAddressChange()"
-            name="ipAddress" [readonly]="!!form.vpnClientId"
-            placeholder="192.168.88.1 atau IP WireGuard"
+            name="ipAddress"
+            placeholder="192.168.88.1 atau IP VPN"
           />
         </div>
         <div>
@@ -167,7 +162,7 @@
             class="input"
             required
             [(ngModel)]="form.nasname"
-            name="nasname" [readonly]="!!form.vpnClientId"
+            name="nasname"
             placeholder="IP sumber RADIUS request"
           />
         </div>
@@ -206,21 +201,6 @@
           </button>
         </div>
       </div>
-
-      <div>
-        <label class="label">Klien VPN WireGuard (Opsional)</label>
-        <select class="input" [(ngModel)]="form.vpnClientId" (ngModelChange)="onVpnClientChange()" name="vpnClientId">
-          <option value="">-- Koneksi langsung / LAN --</option>
-          @if (editing()?.vpnClient && editing()?.vpnClient?.vpnType !== 'wireguard') {
-            <option [value]="editing()!.vpnClient!.id" disabled>VPN lama — pilih klien WireGuard baru</option>
-          }
-          @for (vc of vpnClients(); track vc.id) {
-            <option [value]="vc.id">{{ vc.name }}</option>
-          }
-        </select>
-      </div>
-
-      <p class="text-sm text-slate-500">Pilihan WireGuard menampilkan IP VPN MikroTik aktif. IP VPN Server RADIUS dicatat terpisah pada Klien VPN. Pilihan ini mengisi IP API dan IP NAS otomatis. Setelah menyimpan NAS, muat ulang daftar klien FreeRADIUS sesuai konfigurasi server.</p>
 
       <div>
         <label class="label">Deskripsi / Catatan</label>

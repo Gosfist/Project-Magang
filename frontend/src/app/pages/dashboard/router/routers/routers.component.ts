@@ -13,7 +13,7 @@ import {
 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
 import { latestRequest } from '../../../../core/services/latest-request';
-import { PageMeta, RouterItem, RouterScriptData, VpnClient } from '../../../../shared/models/types';
+import { PageMeta, RouterItem, RouterScriptData } from '../../../../shared/models/types';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
@@ -43,7 +43,6 @@ export class RoutersComponent implements OnInit {
   private api = inject(ApiService);
 
   items = signal<RouterItem[]>([]);
-  vpnClients = signal<VpnClient[]>([]);
   meta = signal<PageMeta>({ currentPage: 1, lastPage: 1, perPage: 10, total: 0 });
   search = '';
   page = signal(1);
@@ -72,14 +71,12 @@ export class RoutersComponent implements OnInit {
     port: 8728,
     ports: 1812,
     secret: '',
-    vpnClientId: '',
     description: '',
     isActive: true,
   };
 
   ngOnInit(): void {
     this.load();
-    this.loadVpnClients();
   }
 
   load(): void {
@@ -93,15 +90,6 @@ export class RoutersComponent implements OnInit {
           this.meta.set(r.meta);
         },
         error: (e) => this.toast.set({ message: e.message, type: 'error' }),
-      });
-  }
-
-  loadVpnClients(): void {
-    this.api
-      .get<{ data: VpnClient[] }>('/router/vpn-client/options')
-      .subscribe({
-        next: (r) => this.vpnClients.set(r.data),
-        error: () => {},
       });
   }
 
@@ -132,7 +120,6 @@ export class RoutersComponent implements OnInit {
           port: item.port ?? 8728,
           ports: item.ports ?? 1812,
           secret: item.secret,
-          vpnClientId: item.vpnClientId ?? '',
           description: item.description ?? '',
           isActive: item.isActive,
         }
@@ -147,19 +134,10 @@ export class RoutersComponent implements OnInit {
           port: 8728,
           ports: 1812,
           secret: this.generateSecret(),
-          vpnClientId: '',
           description: '',
           isActive: true,
         };
     this.open.set(true);
-  }
-
-  onVpnClientChange(): void {
-    const client = this.vpnClients().find(item => item.id === this.form.vpnClientId);
-    if (client) {
-      this.form.ipAddress = client.vpnIp;
-      this.form.nasname = client.vpnIp;
-    }
   }
 
   onIpAddressChange(): void {
@@ -173,7 +151,6 @@ export class RoutersComponent implements OnInit {
       ...this.form,
       port: Number(this.form.port) || 8728,
       ports: Number(this.form.ports) || 1812,
-      vpnClientId: this.form.vpnClientId || undefined,
       password: this.form.password || undefined,
     };
 

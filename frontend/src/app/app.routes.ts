@@ -121,14 +121,6 @@ export const routes: Routes = [
       },
       { path: 'pppoe/isolation', loadComponent: () => import('./pages/dashboard/pppoe/isolation/isolation.component').then(m => m.IsolationComponent), canActivate: [roleGuard('admin')] },
       {
-        path: 'router/vpn-client',
-        loadComponent: () =>
-          import('./pages/dashboard/router/vpn-client/vpn-client.component').then(
-            (m) => m.VpnClientComponent,
-          ),
-        canActivate: [roleGuard('admin')],
-      },
-      {
         path: 'tools/kalkulator-redaman',
         loadComponent: () => import('./pages/dashboard/tools/kalkulator-redaman/kalkulator-redaman.component').then(m => m.KalkulatorRedamanComponent),
         canActivate: [roleGuard('admin', 'teknisi')],

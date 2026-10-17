@@ -30,20 +30,8 @@ export type RouterItem = {
   ports: number | null;
   secret: string;
   description?: string | null;
-  vpnClientId?: string | null;
   isActive: boolean;
   accountsCount?: number;
-  vpnClient?: { id: string; name: string; vpnIp: string; vpnType?: string } | null;
-};
-
-export type VpnClient = {
-  id: string;
-  name: string;
-  vpnType: 'wireguard';
-  deviceType: 'radius' | 'mikrotik';
-  vpnIp: string;
-  isActive: boolean;
-  routers?: { id: number; name: string | null }[];
 };
 
 export type RouterScriptData = {

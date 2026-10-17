@@ -8,7 +8,6 @@ import {
   LucideDatabase,
   LucideBot,
   LucideActivity,
-  LucideLaptop,
   LucideFileText,
   LucideKeyRound,
   LucideTags,
@@ -58,7 +57,6 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
     LucideDatabase,
     LucideBot,
     LucideActivity,
-    LucideLaptop,
     LucideFileText,
     LucideKeyRound,
     LucideTags,
@@ -130,7 +128,6 @@ export class SidebarComponent implements OnInit {
   ];
   readonly routerLinks = [
     ['Router / NAS', '/dashboard/router/routers'],
-    ['Klien VPN', '/dashboard/router/vpn-client'],
   ];
   readonly pppoeLinks = [
     ['Data Pelanggan', '/dashboard/pppoe/data-pelanggan'],

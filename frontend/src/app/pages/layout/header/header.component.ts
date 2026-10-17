@@ -48,7 +48,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard/pppoe/ip-pools': 'IP Pool',
     '/dashboard/pppoe/isolation': 'Isolir PPPoE',
     '/dashboard/router/routers': 'Router / NAS',
-    '/dashboard/router/vpn-client': 'Klien VPN',
     '/dashboard/bot-whatsapp/status': 'Login Bot Wa',
     '/dashboard/bot-whatsapp/template': 'Template Pesan WhatsApp',
     '/dashboard/bot-whatsapp/logs': 'Log Notifikasi Bot WhatsApp',
