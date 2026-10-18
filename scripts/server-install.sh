@@ -174,12 +174,7 @@ SQL
   ln -sfn ../sites-available/unzanet /etc/freeradius/3.0/sites-enabled/unzanet
 
   log 'Memasang dependency dan membangun aplikasi'
-  for folder in backend frontend bot_whatsapp; do
-    log "Memasang dependency $folder"
-    (cd "$ROOT_DIR/$folder" && umask 022 && npm ci)
-  done
-  (cd "$ROOT_DIR/backend" && umask 022 && npm run prisma:generate)
-  (cd "$ROOT_DIR" && npm run database:check)
+  bash "$ROOT_DIR/scripts/build-install-phase.sh"
   export UNZANET_ADMIN_EMAIL="$(setting ADMIN_EMAIL)"
   export UNZANET_ADMIN_PASSWORD="$(setting ADMIN_PASSWORD)"
   (cd "$ROOT_DIR/backend" && node --env-file=.env --input-type=module <<'JS'
@@ -195,8 +190,6 @@ try {
 JS
   )
   unset UNZANET_ADMIN_EMAIL UNZANET_ADMIN_PASSWORD
-  (cd "$ROOT_DIR/backend" && umask 022 && npm run build)
-  (cd "$ROOT_DIR/frontend" && umask 022 && npm run build -- --delete-output-path=false)
   [[ -f "$ROOT_DIR/frontend/dist/frontend/browser/index.html" ]] || die 'Build frontend tidak menghasilkan index.html.'
 
   log 'Memeriksa FreeRADIUS dan Apache'

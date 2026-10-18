@@ -87,7 +87,7 @@ if [[ "$MODE" == "all" || "$MODE" == "fe" ]]; then
   log "Build frontend"
   cd "$FRONTEND_DIR"
   # Keep hashed assets referenced by browser tabs opened before this update.
-  npm run build -- --delete-output-path=false
+  bash "$ROOT_DIR/scripts/build-frontend.sh"
 fi
 
 if [[ "$MODE" == "all" || "$MODE" == "bot" ]]; then
