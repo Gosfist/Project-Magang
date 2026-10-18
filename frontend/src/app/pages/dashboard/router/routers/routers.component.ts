@@ -9,7 +9,6 @@ import {
   LucideSearch,
   LucideTerminal,
   LucideTrash2,
-  LucideWifi,
 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
 import { latestRequest } from '../../../../core/services/latest-request';
@@ -31,7 +30,6 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
     LucideSearch,
     LucideTerminal,
     LucideTrash2,
-    LucideWifi,
     ModalComponent,
     PaginationComponent,
     ToastComponent,
@@ -55,25 +53,17 @@ export class RoutersComponent implements OnInit {
   scriptTab = signal<'ros7' | 'ros6'>('ros7');
   copied = signal(false);
 
-  testingId = signal<string | null>(null);
-  testResults = signal<Record<string, { success: boolean; message: string }>>({});
+  saving = signal(false);
 
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  form: any = {
-    name: '',
-    nasname: '',
-    ipAddress: '',
-    type: 'mikrotik',
-    authMode: 'radius',
-    username: '',
-    password: '',
-    port: 8728,
-    ports: 1812,
-    secret: '',
-    description: '',
-    isActive: true,
-  };
+  form = this.emptyForm();
+
+  private emptyForm() {
+    return { name: '', nasname: '', ipAddress: '', type: 'mikrotik', ports: 1812,
+      coaPort: 3799, radiusServerIp: '', secret: '', vpnHost: '', vpnUsername: '',
+      vpnPassword: '', description: '', isActive: true };
+  }
 
   ngOnInit(): void {
     this.load();
@@ -95,11 +85,7 @@ export class RoutersComponent implements OnInit {
 
   generateSecret(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let s = '';
-    for (let i = 0; i < 16; i++) {
-      s += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return s;
+    return Array.from(crypto.getRandomValues(new Uint8Array(32)), value => chars[value % chars.length]).join('');
   }
 
   randomizeSecret(): void {
@@ -114,57 +100,48 @@ export class RoutersComponent implements OnInit {
           nasname: item.nasname,
           ipAddress: item.ipAddress ?? item.nasname,
           type: item.type || 'mikrotik',
-          authMode: 'radius',
-          username: item.username ?? '',
-          password: '',
-          port: item.port ?? 8728,
           ports: item.ports ?? 1812,
-          secret: item.secret,
+          coaPort: item.coaPort ?? 3799,
+          radiusServerIp: item.radiusServerIp ?? '',
+          secret: '',
+          vpnHost: item.vpnHost ?? '',
+          vpnUsername: item.vpnUsername ?? '',
+          vpnPassword: '',
           description: item.description ?? '',
           isActive: item.isActive,
         }
-      : {
-          name: '',
-          nasname: '',
-          ipAddress: '',
-          type: 'mikrotik',
-          authMode: 'radius',
-          username: '',
-          password: '',
-          port: 8728,
-          ports: 1812,
-          secret: this.generateSecret(),
-          description: '',
-          isActive: true,
-        };
+      : this.emptyForm();
     this.open.set(true);
   }
 
-  onIpAddressChange(): void {
-    if (!this.editing() && !this.form.nasname) {
-      this.form.nasname = this.form.ipAddress;
-    }
-  }
-
   save(): void {
+    if (this.saving()) return;
+    this.saving.set(true);
     const body = {
       ...this.form,
-      port: Number(this.form.port) || 8728,
+      ipAddress: this.form.ipAddress || undefined,
+      radiusServerIp: this.form.radiusServerIp || undefined,
       ports: Number(this.form.ports) || 1812,
-      password: this.form.password || undefined,
+      coaPort: Number(this.form.coaPort) || 3799,
+      secret: this.form.secret || undefined,
+      vpnPassword: this.form.vpnPassword || undefined,
     };
 
     const req = this.editing()
-      ? this.api.patch<{ message: string }>(`/router/nas/${this.editing()!.id}`, body)
-      : this.api.post<{ message: string }>('/router/nas', body);
+      ? this.api.patch<{ message: string; setup: RouterScriptData }>(`/router/nas/${this.editing()!.id}`, body)
+      : this.api.post<{ message: string; setup: RouterScriptData }>('/router/nas', body);
 
     req.subscribe({
       next: (r) => {
+        this.saving.set(false);
+        this.form.vpnPassword = '';
+        this.form.secret = '';
         this.open.set(false);
         this.toast.set({ message: r.message, type: 'success' });
+        this.showScript(r.setup);
         this.load();
       },
-      error: (e) => this.toast.set({ message: e.message, type: 'error' }),
+      error: (e) => { this.saving.set(false); this.toast.set({ message: e.message, type: 'error' }); },
     });
   }
 
@@ -179,51 +156,44 @@ export class RoutersComponent implements OnInit {
     });
   }
 
-  testConnection(item: RouterItem): void {
-    this.testingId.set(item.id);
-    this.api
-      .post<{ success: boolean; message: string }>(`/router/nas/${item.id}/test`, {})
-      .subscribe({
-        next: (r) => {
-          this.testingId.set(null);
-          this.testResults.update((prev) => ({ ...prev, [item.id]: r }));
-          this.toast.set({
-            message: r.message,
-            type: r.success ? 'success' : 'error',
-          });
-        },
-        error: (e) => {
-          this.testingId.set(null);
-          this.testResults.update((prev) => ({
-            ...prev,
-            [item.id]: { success: false, message: e.message },
-          }));
-          this.toast.set({ message: e.message, type: 'error' });
-        },
-      });
-  }
-
   openScript(item: RouterItem): void {
     this.api
       .get<RouterScriptData>(`/router/nas/${item.id}/script`)
       .subscribe({
-        next: (r) => {
-          this.scriptData.set(r);
-          this.scriptTab.set('ros7');
-          this.copied.set(false);
-          this.scriptModalOpen.set(true);
-        },
+        next: (r) => this.showScript(r),
         error: (e) => this.toast.set({ message: e.message, type: 'error' }),
       });
+  }
+
+  private showScript(data: RouterScriptData): void {
+    this.scriptData.set(data);
+    this.scriptTab.set('ros7');
+    this.copied.set(false);
+    this.scriptModalOpen.set(true);
+  }
+
+  closeForm(): void {
+    this.open.set(false);
+    this.form.vpnPassword = '';
+    this.form.secret = '';
+  }
+
+  closeScript(): void {
+    this.scriptModalOpen.set(false);
+    this.scriptData.set(null);
   }
 
   copyScript(): void {
     const data = this.scriptData();
     if (!data) return;
+    if (!navigator.clipboard) {
+      this.toast.set({ message: 'Pilih dan salin script secara manual, atau buka aplikasi melalui HTTPS untuk penyalinan otomatis.', type: 'error' });
+      return;
+    }
     const text = this.scriptTab() === 'ros7' ? data.scriptRos7 : data.scriptRos6;
     navigator.clipboard.writeText(text).then(() => {
       this.copied.set(true);
       setTimeout(() => this.copied.set(false), 2000);
-    });
+    }).catch(() => this.toast.set({ message: 'Penyalinan otomatis tidak tersedia. Pilih dan salin script secara manual.', type: 'error' }));
   }
 }

@@ -27,6 +27,11 @@ describe('Dashboard URL access', () => {
     expect(dashboard.children!.some(route => route.path === 'router/vpn-client')).toBeFalse();
     expect(dashboard.children!.some(route => route.path === 'router/routers')).toBeTrue();
   });
+  it('removes router monitoring while retaining server and RADIUS monitoring', () => {
+    expect(dashboard.children!.some(route => route.path === 'monitoring/router')).toBeFalse();
+    expect(dashboard.children!.some(route => route.path === 'monitoring/server')).toBeTrue();
+    expect(dashboard.children!.some(route => route.path === 'monitoring/radius')).toBeTrue();
+  });
   function checkRoutes(children: Routes, inherited: CanActivateFn[] = [], prefix = ''): void {
     for (const route of children) {
       if (route.redirectTo !== undefined) continue;

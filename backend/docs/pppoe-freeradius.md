@@ -1,49 +1,31 @@
-# Rancangan PPPoE Laravel, FreeRADIUS, dan MikroTik
+# PPPoE dengan FreeRADIUS tanpa API MikroTik
 
-## Alur sistem
+NestJS mengelola paket, pelanggan, billing, dan atribut RADIUS di database MySQL. MikroTik mengirim autentikasi UDP 1812 dan accounting UDP 1813. Backend mengirim Disconnect Request UDP 3799 setelah perubahan status/atribut berhasil disimpan. RFC 2865/2866 mengatur autentikasi dan accounting; RFC 5176 menggantikan RFC 3576 untuk Dynamic Authorization. Tidak ada login RouterOS API dan tidak ada polling SNMP.
 
-1. Laravel mengelola paket dan akun PPPoE di MySQL.
-2. Laravel menyinkronkan akun aktif ke `radcheck` dan `radreply` dalam transaksi yang sama.
-3. CHR mengirim permintaan autentikasi PPPoE ke FreeRADIUS melalui UDP 1812 dan accounting ke UDP 1813.
-4. FreeRADIUS membaca kredensial dan atribut paket dari MySQL.
-5. CHR menerapkan `Mikrotik-Rate-Limit`, `Framed-Pool`, dan mengirim sesi ke `radacct`.
+## Instalasi dan pendaftaran NAS
 
-Kecepatan disimpan sebagai upload/download dari sudut pandang pelanggan, lalu dikirim ke RouterOS sebagai `uploadM/downloadM` karena RX/TX pada atribut MikroTik dibaca dari sisi router.
+Ikuti [panduan instalasi](instalasi-ubuntu-vpn.md), mulai dari VirtualBox/Bridged Ethernet hingga ping, aplikasi, serta uji PPPoE nyata. Pilih LAN untuk lab atau SSTP terverifikasi untuk cloud. Tambah Router lalu Simpan menghasilkan script RADIUS dan SSTP opsional. Host dan username VPN menjadi metadata; password VPN router hanya untuk script kali ini. Secret RADIUS tetap disimpan agar FreeRADIUS/Disconnect berfungsi.
 
-## Tahap lab VM
+Aktifkan modul SQL pada authorize, accounting, session, dan post auth. Modul memakai `read_clients = yes`, tabel `nas`, dan query client dengan `WHERE is_active = 1`. Daftar client dibaca saat startup. Installer memasang worker root yang membandingkan fingerprint client setiap sekitar 60 detik, validasi `freeradius -XC`, lalu restart saat berubah. Worker tidak memberi sudo kepada web dan tidak mencetak secret.
 
-- VM Ubuntu: Laravel, Nginx, PHP, MySQL, dan FreeRADIUS.
-- CHR server: PPPoE server dan RADIUS client.
-- CHR modem/client: PPPoE client untuk pengujian.
-- Gunakan jaringan management terpisah dari jaringan pelanggan bila memungkinkan.
-- Pastikan waktu semua VM sinkron dengan NTP.
+Untuk instalasi manual, salin query MySQL bawaan melalui `scripts/installer-config.py queries --source PATH_QUERY_ASLI`, tinjau hasil, gunakan file terpisah `queries-unzanet.conf`, dan arahkan include modul SQL ke file itu. Akun SQL radius perlu SELECT pada radcheck/radreply/grup/nas/website_settings, SELECT/INSERT/UPDATE pada radacct/nasreload, serta SELECT/INSERT pada radpostauth. Akun itu tidak memerlukan hak DDL. Jalur update membantu memasang konfigurasi ini dan berhenti jika format custom tidak dikenali.
 
-Setelah migrasi Laravel dijalankan, arahkan modul SQL FreeRADIUS ke database Laravel yang sama. Aktifkan modul `sql` pada site FreeRADIUS, lalu daftarkan alamat CHR sebagai RADIUS client. Secret RADIUS harus panjang, acak, sama di kedua sisi, dan tidak dimasukkan ke Git.
+## Accounting dan satu sesi
 
-Contoh inti di RouterOS (ganti nilai contoh):
+Akun tetap memakai `Simultaneous-Use := 1`. Query session menghitung hanya accounting yang segar (awal 900 detik, cocok dengan Interim Update 5 menit). `simul_verify_query = ""` menonaktifkan verifikasi checkrad/SNMP. Kehilangan accounting berarti status tidak pasti; ketepatan pembatasan sesi bergantung pada Start/Stop/Interim Update yang benar.
 
-```routeros
-/radius add service=ppp address=IP_UBUNTU secret=SECRET_YANG_KUAT authentication-port=1812 accounting-port=1813
-/ppp aaa set use-radius=yes accounting=yes interim-update=5m
-```
+Disconnect bertanda tangan yang mendapat ACK atau NAK 503 membuat penanda aplikasi per username/NAS/session ID pada website_settings. Query session mengecualikan masa sesi yang diakui sudah tidak ada, tanpa mengarang Accounting Stop. Penanda hanya berlaku jika waktu mulai sesi tidak lebih baru daripada ACK. Accounting tetap menyimpan bukti dari NAS.
 
-Pastikan username uji tidak terdapat di `/ppp secret`, karena RouterOS memeriksa database lokal sebelum RADIUS. Nama IP pool yang diisi pada Paket PPPoE juga harus sudah ada di `/ip pool` pada CHR.
+Gunakan `RADIUS_ACCOUNTING_TIMEZONE=WIB` untuk query MySQL yang menyimpan DATETIME lokal Jakarta, seperti installer baru. Jika database accounting benar benar menyimpan UTC, isi UTC. Nilai ini berbeda dari timezone log post auth. `RADIUS_ACCOUNTING_STALE_SECONDS=900` mengatur batas backend; bila diubah, sesuaikan interval 900 detik pada simul_count_query agar penilaian SQL dan backend tetap selaras. Tolak timestamp jauh di masa depan dan pastikan NTP benar.
 
-## Keamanan sebelum produksi
+## Paket dan perangkat
 
-- Batasi UDP 1812/1813 di firewall Ubuntu hanya dari IP CHR.
-- Buat user MySQL khusus FreeRADIUS dengan hak minimum: baca tabel otorisasi, tulis tabel accounting/post-auth.
-- Jangan membuka MySQL ke internet publik; gunakan private network atau tunnel saat Ubuntu dipindah ke VPS.
-- Simpan backup database dan `APP_KEY`. Kolom password di tabel aplikasi dienkripsi dengan `APP_KEY`.
-- `radcheck` berisi `Cleartext-Password` agar autentikasi PPP/CHAP dapat bekerja; lindungi akses database dan backup dengan ketat.
-- Uji dengan `freeradius -X` atau mode debug yang sesuai sebelum menjadikannya service produksi.
+Rate limit disimpan dari sisi pelanggan upload/download, lalu dikirim sebagai atribut MikroTik sesuai konvensi router. Framed-Pool mengacu nama pool yang harus benar benar tersedia pada NAS. IP Pool di web adalah metadata/rencana plus script pemasangan, bukan pembacaan RouterOS. PPPoE Server, profil dasar dengan local address, firewall dan NAT awal dipilih operator sesuai jaringan fisik.
 
-## Urutan pengujian
+Jangan membuat PPP secret lokal untuk username RADIUS yang sama: RouterOS mendahulukan akun lokal. Backup darurat lokal tetap berupa script unduhan yang dijalankan operator, tanpa koneksi API.
 
-1. Tambah Paket PPPoE dan Akun PPPoE dari dashboard.
-2. Pastikan baris akun muncul di `radcheck` dan atribut paket muncul di `radreply`.
-3. Jalankan tes autentikasi lokal FreeRADIUS.
-4. Tes login dari CHR client ke CHR PPPoE server.
-5. Pastikan sesi masuk ke `radacct` dan limit upload/download sesuai.
-6. Nonaktifkan akun dari Laravel dan pastikan login baru ditolak.
-7. Baru setelah lab stabil, pindahkan Ubuntu ke VPS dan konfigurasi ulang hanya IP, firewall, DNS/TLS, dan RADIUS client.
+## Bukti pengujian
+
+Uji login pelanggan dari dial PPPoE nyata, accounting Start/Interim/Stop, batas kecepatan, Putus Sesi, isolir pool, serta pemulihan sesudah ACC. Ping dan config check hanya membuktikan sebagian jalur. Tes lokal yang memakai socket UDP dan database tiruan belum membuktikan MikroTik nyata atau kapasitas produksi.
+
+Sumber resmi: [MikroTik RADIUS](https://help.mikrotik.com/docs/spaces/ROS/pages/328097/RADIUS), [FreeRADIUS SQL](https://github.com/FreeRADIUS/freeradius-server/blob/v3.2.x/raddb/mods-available/sql), [query MySQL](https://github.com/FreeRADIUS/freeradius-server/blob/v3.2.x/raddb/mods-config/sql/main/mysql/queries.conf), [RFC 5176](https://www.rfc-editor.org/rfc/rfc5176).

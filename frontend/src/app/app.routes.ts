@@ -25,14 +25,6 @@ export const routes: Routes = [
         canActivate: [roleGuard('admin')],
       },
       {
-        path: 'monitoring/router',
-        loadComponent: () =>
-          import('./pages/dashboard/monitoring/router/router-monitoring.component').then(
-            (m) => m.RouterMonitoringComponent,
-          ),
-        canActivate: [roleGuard('admin')],
-      },
-      {
         path: 'monitoring/radius',
         loadComponent: () =>
           import('./pages/dashboard/monitoring/radius/radius-monitoring.component').then(

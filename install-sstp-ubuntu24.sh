@@ -131,7 +131,7 @@ ppp-max-mtu=1400
 ifname=sstp%d
 
 [client-ip-range]
-10.88.0.0/24
+disable
 
 [log]
 log-file=/var/log/accel-ppp/accel-ppp.log
@@ -153,11 +153,19 @@ After=network-online.target ufw.service
 
 [Service]
 Type=simple
-ExecStartPre=$IPTABLES -w -I FORWARD -i sstp+ -o sstp+ -s 10.88.0.2/32 -d 10.88.0.3/32 -j ACCEPT
-ExecStartPre=$IPTABLES -w -I FORWARD -i sstp+ -o sstp+ -s 10.88.0.3/32 -d 10.88.0.2/32 -j ACCEPT
+ExecStartPre=$IPTABLES -w -I FORWARD -i sstp+ -o sstp+ -j DROP
+ExecStartPre=$IPTABLES -w -I FORWARD -i sstp+ -o sstp+ -s 10.88.0.3/32 -d 10.88.0.2/32 -p udp -m multiport --dports 1812,1813 -j ACCEPT
+ExecStartPre=$IPTABLES -w -I FORWARD -i sstp+ -o sstp+ -s 10.88.0.2/32 -d 10.88.0.3/32 -p udp --dport 3799 -j ACCEPT
+ExecStartPre=$IPTABLES -w -I FORWARD -i sstp+ -o sstp+ -s 10.88.0.2/32 -d 10.88.0.3/32 -p icmp -j ACCEPT
+ExecStartPre=$IPTABLES -w -I FORWARD -i sstp+ -o sstp+ -s 10.88.0.3/32 -d 10.88.0.2/32 -p icmp -j ACCEPT
+ExecStartPre=$IPTABLES -w -I FORWARD -i sstp+ -o sstp+ -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 ExecStart=/usr/sbin/accel-pppd -c /etc/accel-ppp.conf
-ExecStopPost=-$IPTABLES -w -D FORWARD -i sstp+ -o sstp+ -s 10.88.0.2/32 -d 10.88.0.3/32 -j ACCEPT
-ExecStopPost=-$IPTABLES -w -D FORWARD -i sstp+ -o sstp+ -s 10.88.0.3/32 -d 10.88.0.2/32 -j ACCEPT
+ExecStopPost=-$IPTABLES -w -D FORWARD -i sstp+ -o sstp+ -s 10.88.0.3/32 -d 10.88.0.2/32 -p udp -m multiport --dports 1812,1813 -j ACCEPT
+ExecStopPost=-$IPTABLES -w -D FORWARD -i sstp+ -o sstp+ -s 10.88.0.2/32 -d 10.88.0.3/32 -p udp --dport 3799 -j ACCEPT
+ExecStopPost=-$IPTABLES -w -D FORWARD -i sstp+ -o sstp+ -s 10.88.0.2/32 -d 10.88.0.3/32 -p icmp -j ACCEPT
+ExecStopPost=-$IPTABLES -w -D FORWARD -i sstp+ -o sstp+ -s 10.88.0.3/32 -d 10.88.0.2/32 -p icmp -j ACCEPT
+ExecStopPost=-$IPTABLES -w -D FORWARD -i sstp+ -o sstp+ -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+ExecStopPost=-$IPTABLES -w -D FORWARD -i sstp+ -o sstp+ -j DROP
 Restart=on-failure
 RestartSec=5
 
@@ -167,8 +175,8 @@ EOF
 
 if command -v ufw >/dev/null 2>&1; then
     ufw allow 443/tcp
-    ufw route allow from 10.88.0.2 to 10.88.0.3
-    ufw route allow from 10.88.0.3 to 10.88.0.2
+    ufw route allow proto udp from 10.88.0.3 to 10.88.0.2 port 1812,1813
+    ufw route allow proto udp from 10.88.0.2 to 10.88.0.3 port 3799
 fi
 systemctl daemon-reload
 systemctl enable --now accel-ppp.service

@@ -14,10 +14,10 @@ pppoe/
   paket-layanan/           paket internet
   ip-pools/                pool IP
   isolation/               pool/profil isolir dan sinkronisasi sesi
-  shared/                  RADIUS, secret, jaringan PPPoE
+  shared/                  RADIUS, Disconnect UDP, accounting, script PPPoE
 router/
   routers/                 router NAS
-  shared/                  koneksi MikroTik/RouterOS
+  shared/                  pembuat script setup NAS tanpa koneksi API router
 finance/
   transactions/
   summary/
@@ -25,7 +25,6 @@ finance/
   invoices/
 monitoring/
   server/
-  router/
   radius/
   shared/                  pengumpulan statistik
 main-core/
@@ -50,5 +49,9 @@ Contoh: `pppoe/data-pelanggan/data-pelanggan.service.ts` menggantikan
 service akun lama `pppoe/pppoe.service.ts`. Tes billing berada di
 `pppoe/data-pelanggan/billing-cycle.spec.ts`.
 
-Pemindahan ini tidak memerlukan migrasi database dan tidak mengganti URL API.
+Arsitektur tanpa API MikroTik menghapus endpoint monitoring router dan tes login
+API. Pemutusan sesi melalui RADIUS Disconnect UDP 3799; status sesi menggunakan
+accounting yang masih segar. Metadata pool dan konfigurasi perangkat menghasilkan
+script yang dipasang operator. Instalasi lama memerlukan migrasi
+`prisma/updates/20261018_zero_mikrotik_api.sql` melalui jalur update dengan backup.
 Jalankan `npm run build` dan `npm test` dari folder `backend` untuk verifikasi.

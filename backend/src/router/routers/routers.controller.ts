@@ -27,11 +27,13 @@ export class RoutersController {
   }
 
   @Post('nas')
+  @Header('Cache-Control', 'private, no-store')
   createRouter(@Body() dto: SaveRouterDto) {
     return this.routerService.createRouter(dto);
   }
 
   @Patch('nas/:id')
+  @Header('Cache-Control', 'private, no-store')
   updateRouter(@Param('id') id: string, @Body() dto: SaveRouterDto) {
     return this.routerService.updateRouter(id, dto);
   }
@@ -39,11 +41,6 @@ export class RoutersController {
   @Delete('nas/:id')
   removeRouter(@Param('id') id: string) {
     return this.routerService.removeRouter(id);
-  }
-
-  @Post('nas/:id/test')
-  testConnection(@Param('id') id: string) {
-    return this.routerService.testConnection(id);
   }
 
   @Get('nas/:id/script')

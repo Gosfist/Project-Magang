@@ -27,12 +27,16 @@ describe('customer deletion', () => {
       psbOrder: { count: vi.fn().mockResolvedValue(0) },
       $transaction: vi.fn(async (action: (client: typeof tx) => Promise<void>) => { await action(tx); committed = true; }),
     };
-    const network = { disconnect: vi.fn(async () => { expect(committed).toBe(true); return { warnings: [] as string[] }; }) };
+    const sessions = [{ username: account.username, nasipaddress: '10.255.0.3', acctsessionid: 'original-session-id' }];
+    const network = {
+      openSessions: vi.fn(async () => { expect(committed).toBe(false); expect(tx.radacct.deleteMany).not.toHaveBeenCalled(); return sessions; }),
+      disconnect: vi.fn(async () => { expect(committed).toBe(true); expect(tx.radacct.deleteMany).toHaveBeenCalled(); return { warnings: [] as string[] }; }),
+    };
     const service = new DataPelangganService(prisma as any, {} as any, {} as any, network as any);
-    return { service, tx, prisma, network, account };
+    return { service, tx, prisma, network, account, sessions };
   }
   it('purges only the target customer and detaches payment history before deleting the account', async () => {
-    const { service, tx, network } = setup();
+    const { service, tx, network, sessions } = setup();
     await service.removeAccount('7');
     for (const model of [tx.radcheck, tx.radreply, tx.radusergroup, tx.radpostauth, tx.radacct]) {
       expect(model.deleteMany).toHaveBeenCalledWith({ where: { username: 'andi' } });
@@ -49,7 +53,11 @@ describe('customer deletion', () => {
     expect(tx.invoice.updateMany.mock.invocationCallOrder[0]).toBeLessThan(tx.pppoeAccount.delete.mock.invocationCallOrder[0]);
     expect(tx.psbOrder.deleteMany).toHaveBeenCalledWith({ where: { pppoeAccountId: 7n } });
     expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
-    expect(network.disconnect).toHaveBeenCalledWith('andi', 3);
+    expect(network.openSessions).toHaveBeenCalledWith('andi');
+    expect(network.openSessions.mock.invocationCallOrder[0]).toBeLessThan(tx.radacct.deleteMany.mock.invocationCallOrder[0]);
+    expect(network.disconnect).toHaveBeenCalledWith('andi', 3, sessions);
+    expect(network.disconnect.mock.invocationCallOrder[0]).toBeGreaterThan(tx.pppoeAccount.delete.mock.invocationCallOrder[0]);
+    expect(sessions).toEqual([{ username: 'andi', nasipaddress: '10.255.0.3', acctsessionid: 'original-session-id' }]);
     expect(removeCustomerImage).toHaveBeenCalledWith('/uploads/ktp/a.jpg');
     expect(removeCustomerImage).toHaveBeenCalledWith('/uploads/instalasi/9.jpg');
     expect(vi.mocked(removeCustomerImage).mock.calls.filter(([path]) => path === '/uploads/ktp/a.jpg')).toHaveLength(1);
@@ -73,6 +81,15 @@ describe('customer deletion', () => {
     expect(removeCustomerImage).not.toHaveBeenCalled();
     expect(network.disconnect).not.toHaveBeenCalled();
     expect(tx.pppoeAccount.delete).not.toHaveBeenCalled();
+  });
+  it('does not delete accounting or customers when capturing the Disconnect target fails', async () => {
+    const { service, tx, network, prisma } = setup();
+    network.openSessions.mockRejectedValue(new Error('accounting unavailable'));
+    await expect(service.removeAccount('7')).rejects.toThrow('accounting unavailable');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(tx.radacct.deleteMany).not.toHaveBeenCalled();
+    expect(network.disconnect).not.toHaveBeenCalled();
+    expect(removeCustomerImage).not.toHaveBeenCalled();
   });
   it('continues photo cleanup if router disconnect fails and returns a warning', async () => {
     const { service, network } = setup();

@@ -8,7 +8,7 @@ export type MainCoreNode = {
   jenisSplitter: string | null; jumlahOutput: number | null; rasioRedaman: string | null;
   rasioRedamanPorts: Record<string, string>; parent?: MainCoreNode | null;
 };
-export type IpPool = { totalIps: number | null; usedIps: number | null; freeIps: number | null; routerNasId: number; routerName: string; ranges: string; id: string; name: string; networkStart: string; networkEnd: string };
+export type IpPool = { totalIps: number | null; usedIps: number | null; freeIps: number | null; routerNasId: number | null; routerName: string; ranges: string; id: string; name: string; networkStart: string; networkEnd: string };
 export type NasOption = { id: string; nasname: string; shortname: string | null; description: string };
 export type OdpOption = { id: string; namaTitik: string; alamat: string | null; tipeTitik: 'odc' | 'odp'; routerNasId: number | null; routerName: string | null };
 export type Invoice = { id: string; pppoeAccountId: string; invoiceNumber: string; amount: number; baseAmount: number; discount: number; invoiceType: 'PRORATE' | 'MONTHLY'; status: 'PENDING' | 'PAID' | 'CANCELLED'; dueDate: string; paidAt: string | null; notes: string | null };
@@ -22,13 +22,12 @@ export type RouterItem = {
   nasname: string;
   shortname: string | null;
   type: string;
-  authMode: string;
   ipAddress: string | null;
-  username?: string | null;
-  password?: string | null;
-  port: number | null;
   ports: number | null;
-  secret: string;
+  coaPort: number;
+  radiusServerIp?: string | null;
+  vpnHost?: string | null;
+  vpnUsername?: string | null;
   description?: string | null;
   isActive: boolean;
   accountsCount?: number;
@@ -38,8 +37,8 @@ export type RouterScriptData = {
   routerName: string;
   radiusServerIp: string;
   nasSrcAddress: string;
-  secret: string;
   authPort: number;
+  coaPort: number;
   scriptRos7: string;
   scriptRos6: string;
 };

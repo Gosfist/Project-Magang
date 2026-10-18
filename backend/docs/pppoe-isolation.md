@@ -1,78 +1,27 @@
-# Isolir PPPoE dengan pool khusus dan firewall otomatis
+# Isolir PPPoE dengan RADIUS Disconnect dan script perangkat
 
-Mode ini diaktifkan per Router/NAS. Akun isolir tetap menerima Access-Accept dengan
-kredensial PPPoE yang benar, tetapi memakai pool khusus dan profil PPP isolir.
-Firewall memblokir trafik berdasarkan subnet tersebut. Akun normal tetap memakai
-pool internet Harga Paket. Mode bawaan tetap perilaku lama sampai administrator
-menekan **Terapkan ke MikroTik**.
+Mode pool isolir diaktifkan per NAS. Pelanggan isolir tetap menerima Access Accept dengan kredensial yang benar, lalu memperoleh pool/profil khusus; firewall pada router memblokir trafik subnet isolir. Tidak ada login API, pembacaan konfigurasi router, atau pembuatan rule otomatis melalui jaringan.
 
-## Pengaturan melalui web
+## Pemasangan
 
-1. Pastikan Router/NAS aktif dan koneksi API MikroTik berhasil. Akun API harus
-   mempunyai izin membaca/mengubah pool, profil PPP, firewall, dan sesi PPP aktif.
-   Pelanggan harus menggunakan autentikasi RADIUS yang terhubung ke database aplikasi.
-2. Buka **PPPoE > IP Pool**, pilih router, lalu buat pool terpisah, misalnya
-   `pool-isolir` dengan rentang `192.168.100.2-192.168.100.254`. Jangan gunakan pool
-   tersebut pada Harga Paket. Pool internet contoh tetap `192.168.75.2-192.168.75.254`.
-3. Buka **PPPoE > Isolir PPPoE**, pilih router yang sama, aktifkan mode, pilih
-   `pool-isolir`, isi subnet `192.168.100.0/24` dan gateway PPP `192.168.100.1`.
-   Tekan **Terapkan ke MikroTik**, lalu tunggu sinkronisasi selesai.
-4. Periksa tiga rule drop dan status konfigurasi. Uji pelanggan isolir memakai
-   IP subnet isolir, tetap terhubung PPPoE, dan tidak dapat mengakses internet
-   maupun layanan router. Uji ACC Finance/janji bayar mengembalikan IP pool internet.
+1. Pastikan RADIUS 1812/1813 dan jalur server ke NAS pada UDP 3799 berfungsi. Daftarkan pool isolir terpisah pada IP Pool untuk NAS tersebut.
+2. Buka Isolir PPPoE, pilih router, pool, subnet, dan gateway PPP. Contoh rentang 192.168.100.2 sampai 192.168.100.254, subnet 192.168.100.0/24, gateway 192.168.100.1. Jangan gunakan sebagai pool Harga Paket.
+3. Buat script pemasangan dari web. Rencana ini belum mengaktifkan atribut RADIUS. Salin seluruh script ke Terminal NAS yang benar.
+4. Periksa pool, profil UNZANET ISOLIR, dan tiga rule drop sebelum accept/FastTrack pada router. Setelah benar, konfirmasikan pemasangan script di web untuk mengaktifkan mode dan sinkronisasi.
+5. Uji dial pelanggan isolir, IP subnet isolir, blok internet dan akses router. Uji ACC/janji bayar mengembalikan pool normal melalui reconnect.
 
-Rentang contoh berisi 253 IP. Untuk ribuan sesi isolir bersamaan, sediakan subnet
-dan rentang yang cukup besar serta kapasitas router yang memadai. Pool tidak boleh
-tumpang tindih dengan pool lain/jaringan interface, menyertakan network/broadcast/
-gateway, atau memakai next-pool. Gateway disediakan oleh profil PPP; jangan
-menambahkan subnet isolir sebagai jaringan interface sebelum menerapkan konfigurasi.
+Konfirmasi operator tidak berarti backend memeriksa isi router. UI tidak boleh menyatakan perangkat telah diverifikasi otomatis. Subnet/pool harus cukup kapasitas dan tidak tumpang tindih; gateway bukan alamat yang dibagikan ke pelanggan. Untuk IPv6, profil isolir menonaktifkannya sesuai script.
 
-## Perilaku sistem
+## Sinkronisasi
 
-- Konfigurasi tersimpan pada AppSetting `pppoe_isolation_router_{id}`; tidak perlu
-  migrasi skema. Pool tetap dibaca langsung dari RouterOS.
-- Profil `UNZANET-ISOLIR-{id}` memakai local-address gateway, remote-address pool,
-  `use-ipv6=no`, dan tanpa session/idle timeout. Tiga rule IPv4 filter dengan
-  komentar `UNZANET-ISOLIR:{id}:...` ditempatkan sebelum accept/FastTrack: forward
-  dari subnet, forward menuju subnet, dan input dari subnet.
-- RADIUS mempertahankan Cleartext-Password dan Simultaneous-Use. Pelanggan isolir
-  menerima Framed-Pool isolir dan Mikrotik-Group profil isolir. Expiration tidak
-  dipakai selama mode aktif, supaya masa aktif habis memindahkan pool alih-alih
-  menolak autentikasi. Password salah tetap ditolak.
-- Sinkronisasi berjalan per batch 100 akun, membaca ulang akun dalam transaksi
-  sebelum mengubah RADIUS. Pemeriksaan berkala setiap menit menangani masa aktif
-  habis dan mencoba kembali sinkronisasi yang tertunda. Baris RADIUS yang sudah
-  sesuai dilewati. API MikroTik tidak dipanggil pada setiap autentikasi RADIUS.
-- Sinkronisasi membaca daftar sesi sekali dan memutus hanya sesi pelanggan dengan
-  IP yang tidak sesuai statusnya. Router pelanggan menyambung ulang untuk mendapat
-  IP baru; sesi yang sudah benar dipertahankan. ACC dan janji bayar memperbarui
-  RADIUS dalam transaksi, lalu meminta reconnect setelah commit.
-- Jika sinkronisasi gagal, status menampilkan kegagalan. Gunakan **Sinkron Ulang**
-  setelah koneksi pulih; tugas tertunda juga dicoba berkala setelah backend restart.
-  Config yang sedang tersinkron tidak dapat diganti ke subnet/pool lain.
-- Untuk mengganti pool/subnet, nonaktifkan mode dan tunggu sinkronisasi selesai
-  terlebih dahulu. Menonaktifkan mode mengembalikan isolir ke penolakan login,
-  memutus sesi terkait, kemudian menghapus rule drop yang dikelola aplikasi.
-- Profil/rule isolir tetap harus dijaga jika ada perubahan manual di MikroTik.
-  Status siap memeriksa pool, profil, dan posisi rule; sinkronisasi akun bukan
-  pengganti penerapan ulang konfigurasi router yang diubah dari luar aplikasi.
+Konfigurasi per NAS disimpan pada AppSetting. Atribut RADIUS mempertahankan password dan Simultaneous Use; pool/profil isolir dikirim melalui Framed Pool dan Mikrotik Group. Mode pool tidak menggunakan Expiration untuk menolak login saat masa aktif habis. Password yang salah tetap ditolak.
 
-## Firewall otomatis
+Sinkronisasi menyelesaikan transaksi RADIUS lalu mengirim Disconnect Request kepada sesi accounting yang perlu berpindah IP. Backend memeriksa balasan yang sah, ACK/NAK/timeout, dan tidak menulis Accounting Stop palsu. Sesi baru memperoleh atribut yang sesuai. ACC pembayaran dan janji bayar memakai jalur yang sama setelah commit. Pemeriksaan masa aktif/pending berjalan berkala tiap menit; tidak ada jaminan seluruh proses kurang dari satu detik.
 
-Rule drop dibuat dan ditata otomatis melalui **PPPoE > Isolir PPPoE** ketika
-menekan **Terapkan ke MikroTik**. Administrator tidak perlu membuat rule isolir
-secara manual. Daftar rule terkelola tetap ditampilkan pada halaman Isolir PPPoE.
-Menu, halaman, dan API pengelolaan firewall umum telah dihapus. Penghapusan fitur
-editor ini tidak menghapus rule yang sudah terpasang di router.
+Status dan IP sesi berasal dari accounting dengan batas kesegaran, bukan daftar PPP aktif langsung. Data stale bukan bukti pasti offline/online. Kegagalan jalur NAS ditampilkan dan dapat dicoba ulang melalui Sinkron Ulang/Putus Sesi.
 
-## Batas validasi
+## Menonaktifkan atau mengganti konfigurasi
 
-Tes otomatis memakai database/API RouterOS tiruan. Build dan tes lokal tidak
-membuktikan dial PPPoE, distribusi IP, firewall, maupun kemampuan ribuan sesi pada
-perangkat nyata. Verifikasi langkah 4 pada router uji setelah deployment.
+Nonaktifkan mode dan tunggu sinkronisasi sebelum mengganti pool/subnet. Tidak ada penghapusan firewall/profil perangkat otomatis. Rule drop lama dipertahankan agar sesi isolir yang belum terputus tetap dibatasi. Periksa sesi melalui Terminal, pastikan tidak ada pelanggan pada subnet lama, lalu bersihkan artefak lama secara manual. Jangan membuka akses subnet isolir hanya karena perubahan web berhasil disimpan.
 
-Referensi resmi:
-
-- [RADIUS dan atribut Framed-Pool/Mikrotik-Group](https://manual.mikrotik.com/docs/authentication-authorization-accounting/radius/)
-- [Profil dan autentikasi PPP](https://manual.mikrotik.com/docs/authentication-authorization-accounting/ppp-aaa/)
-- [Alur paket dan FastTrack](https://manual.mikrotik.com/docs/firewall-and-quality-of-service/packet-flow-in-routeros/)
+Tes lokal memeriksa script, transaksi, dan protokol UDP; belum membuktikan IP/firewall/dial PPPoE pada perangkat. Lihat [panduan instalasi dan uji](instalasi-ubuntu-vpn.md) dan [RADIUS MikroTik](https://help.mikrotik.com/docs/spaces/ROS/pages/328097/RADIUS).

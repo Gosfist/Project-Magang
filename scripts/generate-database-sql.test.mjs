@@ -15,7 +15,13 @@ test('fresh install SQL contains current tables without legacy migrations or des
   const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   assert.equal(packageJson.scripts['migrate:updates'], undefined);
   const deploy = readFileSync(new URL('./server-update.sh', import.meta.url), 'utf8');
-  assert.doesNotMatch(deploy, /migrate:updates|run-sql-updates|prisma db execute/);
+  assert.doesNotMatch(deploy, /mysql.*<.*database\.sql|prisma db push/);
+  assert.doesNotMatch(deploy, /upgrade-zero-api|prisma\/updates|database\.sha256/);
+  const nasTable = sql.match(/CREATE TABLE `nas` \([\s\S]*?\n\)/)?.[0];
+  assert.ok(nasTable);
+  assert.doesNotMatch(nasTable, /`(?:username|password|port|auth_mode)`/);
+  assert.match(nasTable, /`coa_port` SMALLINT UNSIGNED NOT NULL DEFAULT 3799/);
+  assert.doesNotMatch(sql, /CREATE TABLE `router_stats/);
 });
 
 test('SQL generation is stable across Windows and Ubuntu line endings', () => {

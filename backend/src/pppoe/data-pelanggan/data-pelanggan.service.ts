@@ -22,7 +22,7 @@ export class DataPelangganService {
   constructor(private readonly prisma: PrismaService, private readonly radius: RadiusService, private readonly secrets: SecretService, private readonly network: PppoeNetworkService, private readonly waNotify?: WhatsappNotifyService) { }
 
   private networkMessage(message: string, warnings: string[]) {
-    return warnings.length ? `${message} Perhatian: ${warnings.join(' ')}` : `${message} Operasi MikroTik berhasil.`;
+    return warnings.length ? `${message} Perhatian: ${warnings.join(' ')}` : `${message} Permintaan Disconnect RADIUS selesai.`;
   }
 
   async nasOptions() {
@@ -98,7 +98,6 @@ export class DataPelangganService {
         const maximum = await tx.pppoeAccount.aggregate({ _max: { customerNumber: true } });
         const customerNumber = (maximum._max.customerNumber ?? 0n) + 1n;
         const item = await tx.pppoeAccount.create({ data: { ...this.accountData(dto, this.secrets.encrypt(dto.password!), true), customerNumber }, include: { package: { include: { ipPool: true } } } });
-        await this.closeOpenAccounting(tx, item.username);
         if (dto.firstInvoice && dto.firstInvoice !== 'none') {
           await this.createFirstInvoice(tx, item, pkg, dto.discount || 0, dto.firstInvoice);
         }
@@ -138,10 +137,6 @@ export class DataPelangganService {
           data: this.accountData(dto, dto.password ? this.secrets.encrypt(dto.password) : current.password, false),
           include: { package: { include: { ipPool: true } } },
         });
-        if (current.username !== item.username || passwordChanged) {
-          await this.closeOpenAccounting(tx, current.username);
-          await this.closeOpenAccounting(tx, item.username);
-        }
         await this.radius.sync(tx, item, current.username);
         return item;
       });
@@ -186,6 +181,8 @@ export class DataPelangganService {
 
   async removeAccount(id: string) {
     const current = await this.findAccount(id);
+    // Keep NAS/session identifiers before deleting the customer's accounting history.
+    const sessions = await this.network.openSessions(current.username);
     const photos = new Set<string>();
     if (current.idCardPhoto) photos.add(current.idCardPhoto);
     await this.prisma.$transaction(async (tx) => {
@@ -245,7 +242,7 @@ export class DataPelangganService {
     });
     const warnings: string[] = [];
     try {
-      const result = await this.network.disconnect(current.username, current.routerNasId);
+      const result = await this.network.disconnect(current.username, current.routerNasId, sessions);
       warnings.push(...result.warnings);
     } catch (error) {
       warnings.push(`Sesi router belum diputus: ${error instanceof Error ? error.message : String(error)}`);
@@ -335,13 +332,6 @@ export class DataPelangganService {
         createdAt: now,
         updatedAt: now,
       },
-    });
-  }
-
-  private closeOpenAccounting(tx: Prisma.TransactionClient, username: string) {
-    return tx.radacct.updateMany({
-      where: { username, acctstoptime: null },
-      data: { acctstoptime: new Date(), acctterminatecause: 'Admin-Reset' },
     });
   }
 

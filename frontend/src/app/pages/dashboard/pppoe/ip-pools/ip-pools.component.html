@@ -1,4 +1,5 @@
 <div class="space-y-4">
+  <p class="card p-4 text-sm text-slate-500">Daftar ini menyimpan rencana pool per NAS. Pasang script hasil penyimpanan melalui Terminal Winbox. Kapasitas terpakai dan sisa IP pada perangkat tidak dipantau.</p>
   <div class="card flex gap-3 p-4">
     <div class="relative flex-1">
       <svg
@@ -26,9 +27,9 @@
           <th>Router/NAS</th>
           <th>Nama Pool</th>
           <th>Rentang IP</th>
-          <th>Total IP</th>
-          <th>IP Terpakai</th>
-          <th>IP Tersedia</th>
+          <th>Total IP Rencana</th>
+          <th>IP Terpakai (Perangkat)</th>
+          <th>IP Tersedia (Perangkat)</th>
           <th>Aksi</th>
         </tr>
       </thead>
@@ -42,7 +43,7 @@
             <td>{{ item.ranges }}</td>
             <td>{{ item.totalIps ?? "?" }}</td>
             <td class="font-normal text-amber-600">
-              {{ item.usedIps ?? "?" }}
+              {{ item.usedIps ?? "Tidak dipantau" }}
             </td>
             <td
               class="font-normal"
@@ -51,7 +52,7 @@
               "
               [class.text-red-600]="item.freeIps === 0"
             >
-              {{ item.freeIps ?? "?" }}
+              {{ item.freeIps ?? "Tidak dipantau" }}
             </td>
             <td>
               <div class="flex gap-2">
@@ -99,7 +100,7 @@
           required
           [(ngModel)]="form.routerNasId"
           name="routerNasId"
-          [disabled]="editing() !== null"
+          [disabled]="editing()?.routerNasId != null"
         >
           <option [ngValue]="0" disabled>Pilih Router/NAS</option>
           @for (router of routers(); track router.id) {
@@ -140,10 +141,14 @@
           Batal
         </button>
         <button class="btn-primary" [disabled]="saving() || !form.routerNasId">
-          {{ saving() ? "Menyimpan..." : "Simpan ke MikroTik" }}
+          {{ saving() ? "Menyimpan..." : "Simpan & Buat Script" }}
         </button>
       </div>
     </form>
+  </app-modal>
+
+  <app-modal [open]="script() !== null" title="Script Konfigurasi IP Pool" (closeModal)="script.set(null)">
+    <div class="space-y-3"><p class="text-sm text-amber-800">Data rencana tersimpan. Salin script ini ke Terminal Winbox router yang dipilih. Aplikasi belum memeriksa konfigurasi perangkat.</p><pre class="max-h-96 overflow-auto rounded-lg bg-slate-950 p-4 text-xs text-slate-100">{{ script() }}</pre></div>
   </app-modal>
 
   @if (toast()) {

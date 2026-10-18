@@ -9,6 +9,10 @@ SERVICE_NAME="${SERVICE_NAME:-unzanet-backend}"
 BOTWA_SERVICE="${BOTWA_SERVICE:-unzanet-botwa}"
 MODE="${1:-all}"
 
+if [[ "$EUID" -ne 0 ]]; then
+  exec sudo bash "$ROOT_DIR/scripts/server-update.sh" "$@"
+fi
+
 log() {
   printf '\n[%s] %s\n' "$(date '+%H:%M:%S')" "$1"
 }
@@ -29,7 +33,8 @@ install_node_modules() {
 cd "$ROOT_DIR"
 
 log "Ambil update terbaru dari Git"
-git pull --ff-only
+REPO_OWNER="$(stat -c '%U' "$ROOT_DIR/.git")"
+runuser -u "$REPO_OWNER" -- git -C "$ROOT_DIR" pull --ff-only
 
 if [[ "$MODE" != "all" && "$MODE" != "be" && "$MODE" != "fe" && "$MODE" != "bot" ]]; then
   printf 'Mode tidak dikenal: %s\nGunakan: npm run update, npm run updatebe, npm run updatefe, atau npm run updatebot\n' "$MODE"
@@ -40,7 +45,8 @@ if [[ "$MODE" == "all" || "$MODE" == "be" ]]; then
   UPLOADS_DIR="${UPLOADS_DIR:-$ROOT_DIR/uploads}"
   BACKEND_USER="$(systemctl show -p User --value "$SERVICE_NAME" 2>/dev/null || true)"
   BACKEND_USER="${BACKEND_USER:-$(id -un)}"
-  BACKEND_GROUP="$(id -gn "$BACKEND_USER")"
+  BACKEND_GROUP="$(systemctl show -p Group --value "$SERVICE_NAME" 2>/dev/null || true)"
+  BACKEND_GROUP="${BACKEND_GROUP:-$(id -gn "$BACKEND_USER")}"
 
   log "Siapkan folder upload untuk backend"
   sudo install -d -o "$BACKEND_USER" -g "$BACKEND_GROUP" -m 0750 \
@@ -64,6 +70,11 @@ if [[ "$MODE" == "all" || "$MODE" == "be" ]]; then
   log "Build backend"
   npm run build
 
+  if systemctl cat freeradius.service >/dev/null 2>&1; then
+    log "Siapkan penerapan client NAS SQL tanpa hak sudo pada web"
+    bash "$ROOT_DIR/scripts/setup-radius-refresh.sh"
+  fi
+
   log "Reload dan start backend"
   sudo systemctl daemon-reload
   sudo systemctl start "$SERVICE_NAME"
@@ -84,7 +95,7 @@ if [[ "$MODE" == "all" || "$MODE" == "bot" ]]; then
   install_node_modules "$BOTWA_DIR" "Bot WhatsApp"
 
   BOTWA_SERVICE_FILE="$BOTWA_DIR/unzanet-botwa.service"
-  if [[ -f "$BOTWA_SERVICE_FILE" ]]; then
+  if [[ ! -f /etc/unzanet/install.json && -f "$BOTWA_SERVICE_FILE" ]]; then
     SERVICE_WORKING_DIR="$(systemctl show -p WorkingDirectory --value "$BOTWA_SERVICE" 2>/dev/null || true)"
     if [[ "$SERVICE_WORKING_DIR" != "$BOTWA_DIR" ]]; then
       log "Alihkan service bot dari direktori lama ke direktori project ini"
@@ -111,7 +122,7 @@ if [[ "$MODE" == "all" || "$MODE" == "bot" ]]; then
   fi
 
   log "Setup dan restart bot WhatsApp"
-  if [[ -f "$BOTWA_DIR/unzanet-botwa.service" ]]; then
+  if [[ ! -f /etc/unzanet/install.json && -f "$BOTWA_DIR/unzanet-botwa.service" ]]; then
     sudo cp "$BOTWA_DIR/unzanet-botwa.service" /etc/systemd/system/
     sudo systemctl daemon-reload
     sudo systemctl enable "$BOTWA_SERVICE" || true

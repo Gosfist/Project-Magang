@@ -150,8 +150,9 @@ CREATE TABLE `ip_pools` (
     `network_end` VARCHAR(45) NOT NULL,
     `created_at` DATETIME(3) NULL,
     `updated_at` DATETIME(3) NULL,
+    `router_nas_id` INTEGER UNSIGNED NULL,
 
-    UNIQUE INDEX `ip_pools_name_key`(`name`),
+    UNIQUE INDEX `ip_pools_router_nas_id_name_key`(`router_nas_id`, `name`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -383,12 +384,12 @@ CREATE TABLE `nas` (
     `nasname` VARCHAR(128) NOT NULL,
     `shortname` VARCHAR(32) NULL,
     `type` VARCHAR(30) NOT NULL DEFAULT 'mikrotik',
-    `auth_mode` VARCHAR(20) NOT NULL DEFAULT 'radius',
     `ip_address` VARCHAR(45) NULL,
-    `username` VARCHAR(64) NULL,
-    `password` TEXT NULL,
-    `port` INTEGER UNSIGNED NULL DEFAULT 8728,
     `ports` SMALLINT UNSIGNED NULL DEFAULT 1812,
+    `coa_port` SMALLINT UNSIGNED NOT NULL DEFAULT 3799,
+    `radius_server_ip` VARCHAR(45) NULL,
+    `vpn_host` VARCHAR(253) NULL,
+    `vpn_username` VARCHAR(100) NULL,
     `secret` VARCHAR(60) NOT NULL DEFAULT 'secret',
     `server` VARCHAR(64) NULL,
     `community` VARCHAR(50) NULL,
@@ -400,7 +401,7 @@ CREATE TABLE `nas` (
     `created_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
 
-    INDEX `nas_nasname_idx`(`nasname`),
+    UNIQUE INDEX `nas_nasname_key`(`nasname`),
     INDEX `nas_vpn_client_id_idx`(`vpn_client_id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -458,24 +459,6 @@ CREATE TABLE `server_stats` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `router_stats` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `nas_id` INTEGER UNSIGNED NOT NULL,
-    `recorded_at` DATETIME(3) NOT NULL,
-    `cpu_percent` DOUBLE NOT NULL,
-    `mem_percent` DOUBLE NOT NULL,
-    `mem_free` BIGINT UNSIGNED NOT NULL,
-    `mem_total` BIGINT UNSIGNED NOT NULL,
-    `net_down` DOUBLE NOT NULL,
-    `net_up` DOUBLE NOT NULL,
-    `uptime` BIGINT UNSIGNED NOT NULL DEFAULT 0,
-
-    INDEX `router_stats_nas_id_recorded_at_idx`(`nas_id`, `recorded_at`),
-    INDEX `router_stats_recorded_at_idx`(`recorded_at`),
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
 CREATE TABLE `server_stats_monthly` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `year` SMALLINT UNSIGNED NOT NULL,
@@ -491,22 +474,6 @@ CREATE TABLE `server_stats_monthly` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `router_stats_monthly` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `nas_id` INTEGER UNSIGNED NOT NULL,
-    `year` SMALLINT UNSIGNED NOT NULL,
-    `month` TINYINT UNSIGNED NOT NULL,
-    `cpu_percent` DOUBLE NOT NULL,
-    `mem_percent` DOUBLE NOT NULL,
-    `net_down` DOUBLE NOT NULL,
-    `net_up` DOUBLE NOT NULL,
-    `samples` INTEGER UNSIGNED NOT NULL DEFAULT 0,
-
-    UNIQUE INDEX `router_stats_monthly_nas_id_year_month_key`(`nas_id`, `year`, `month`),
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
 CREATE TABLE `server_stats_yearly` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `year` SMALLINT UNSIGNED NOT NULL,
@@ -517,21 +484,6 @@ CREATE TABLE `server_stats_yearly` (
     `samples` INTEGER UNSIGNED NOT NULL DEFAULT 0,
 
     UNIQUE INDEX `server_stats_yearly_year_key`(`year`),
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
-CREATE TABLE `router_stats_yearly` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `nas_id` INTEGER UNSIGNED NOT NULL,
-    `year` SMALLINT UNSIGNED NOT NULL,
-    `cpu_percent` DOUBLE NOT NULL,
-    `mem_percent` DOUBLE NOT NULL,
-    `net_down` DOUBLE NOT NULL,
-    `net_up` DOUBLE NOT NULL,
-    `samples` INTEGER UNSIGNED NOT NULL DEFAULT 0,
-
-    UNIQUE INDEX `router_stats_yearly_nas_id_year_key`(`nas_id`, `year`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -639,6 +591,9 @@ ALTER TABLE `psb_orders` ADD CONSTRAINT `psb_orders_pppoe_account_id_fkey` FOREI
 
 -- AddForeignKey
 ALTER TABLE `psb_orders` ADD CONSTRAINT `psb_orders_router_nas_id_fkey` FOREIGN KEY (`router_nas_id`) REFERENCES `nas`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `ip_pools` ADD CONSTRAINT `ip_pools_router_nas_id_fkey` FOREIGN KEY (`router_nas_id`) REFERENCES `nas`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `invoices` ADD CONSTRAINT `invoices_pppoe_account_id_fkey` FOREIGN KEY (`pppoe_account_id`) REFERENCES `daftar_pelanggan`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;

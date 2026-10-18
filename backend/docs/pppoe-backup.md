@@ -5,6 +5,10 @@ kembali ke RADIUS, backup Excel, template, dan impor akun. Tidak memerlukan
 migrasi database. Pengaturan nonsensitif per router memakai AppSetting
 `pppoe_backup_router_{id}`. Unduhan tidak menghubungi atau mengubah MikroTik.
 
+Arsitektur aktif tidak menggunakan API MikroTik atau SNMP. Pool/profil dasar pada
+router tetap dipersiapkan operator lewat script; data pool web adalah metadata.
+Backup darurat tetap dipasang melalui Terminal dan tidak mengaktifkan koneksi API.
+
 ## Persiapan sebelum gangguan
 
 1. Login admin, buka Pengaturan, pilih tab Backup dan router yang sesuai.

@@ -42,7 +42,7 @@ describe('PSB fee paid to technician', () => {
 });
 
 describe('manual technician credential changes', () => {
-  it.each(['', 'new-password'])('saves a username change with password %s and removes old RADIUS credentials', async password => {
+  function setup() {
     const order = { id: 1n, status: 'ACTIVATED', pppoeAccountId: 2n, installationPhoto: '/uploads/instalasi/1.png' };
     const current = { username: 'old.username', routerNasId: 3 };
     const account = { ...current, id: 2n, username: 'new.username' };
@@ -66,14 +66,25 @@ describe('manual technician credential changes', () => {
       expect(committed).toBe(true);
       return { warnings: [] };
     }) };
-    await new PsbService(prisma as any, radius as any, secrets as any, {} as any, {} as any, network as any)
-      .activate('1', { username: 'new.username', password: password || undefined, odp: '4' }, '7');
+    const service = new PsbService(prisma as any, radius as any, secrets as any, {} as any, {} as any, network as any);
+    return { service, tx, radius, network, account };
+  }
+  it.each(['', 'new-password'])('saves a username change with password %s and disconnects only after commit', async password => {
+    const { service, tx, radius, network, account } = setup();
+    await service.activate('1', { username: 'new.username', password: password || undefined, odp: '4' }, '7');
     const data = tx.pppoeAccount.update.mock.calls[0][0].data;
     expect(data.username).toBe('new.username');
     if (password) expect(data.password).toBe('encrypted-new');
     else expect(data).not.toHaveProperty('password');
     expect(radius.sync).toHaveBeenCalledWith(tx, account, 'old.username');
     expect(network.disconnect).toHaveBeenCalledWith('old.username', 3);
-    expect(tx.radacct.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: { username: { in: ['old.username', 'new.username'] }, acctstoptime: null } }));
+    expect(tx.radacct.updateMany).not.toHaveBeenCalled();
+  });
+  it('does not send Disconnect or manufacture Accounting-Stop if RADIUS synchronization rolls back', async () => {
+    const { service, radius, network, tx } = setup();
+    radius.sync.mockRejectedValue(new Error('RADIUS update failed'));
+    await expect(service.activate('1', { username: 'new.username', odp: '4' }, '7')).rejects.toThrow('RADIUS update failed');
+    expect(network.disconnect).not.toHaveBeenCalled();
+    expect(tx.radacct.updateMany).not.toHaveBeenCalled();
   });
 });

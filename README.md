@@ -7,6 +7,26 @@ Aplikasi PT UNZANET telah dimigrasikan penuh dari Laravel/Blade ke TypeScript de
 
 Fitur yang dipertahankan: web profile, login JWT, dashboard, role admin/petugas, data petugas, Main Core (Server, Rasio, ODC, ODP), Trace Jalur, kalkulator redaman, paket PPPoE, akun PPPoE, dan sinkronisasi FreeRADIUS.
 
+## Instalasi Ubuntu baru
+
+Panduan lengkap ada di [`install.doc`](install.doc), [`panduan-revisi.doc`](panduan-revisi.doc), dan [panduan teks](backend/docs/instalasi-ubuntu-vpn.md). Panduan mencakup pembuatan VM VirtualBox, Ubuntu, Bridged Adapter ke Ethernet fisik, ping dua arah ke MikroTik, lalu aplikasi dan database. Installer ditujukan untuk Ubuntu Server 24.04 LTS baru, dengan repo di `/var/www/Project-Magang`, Node.js 22, akses internet, dan user yang memiliki sudo.
+
+Setelah repo di-clone dan Node.js/npm tersedia, jalankan dari root project:
+
+```bash
+npm run install
+```
+
+Installer melakukan `git pull --ff-only`, memasang paket Ubuntu/dependency aplikasi, mengimpor `database.sql` hanya ketika database kosong, membuat administrator dengan password acak, membangun frontend/backend, menyiapkan Apache, MySQL, FreeRADIUS SQL, klien SSTP Ubuntu, firewall, serta service systemd. URL web dan akun VPN Ubuntu ditanyakan sekali. Konfigurasi serta secret disimpan privat di `/etc/unzanet/install.json`; password administrator awal tersedia melalui `sudo cat /etc/unzanet/credentials.txt`. Installer tidak membuat akun demo dari seed.
+
+Pilih mode `local` untuk lab LAN atau `vpn` untuk Ubuntu dan MikroTik yang masing-masing terhubung ke gateway SSTP. Tambah Router/NAS pada web lalu Simpan membuka script otomatis untuk dipasang pada Terminal MikroTik. Autentikasi menggunakan UDP 1812, accounting UDP 1813, dan Disconnect UDP 3799 (RFC 5176, pengganti RFC 3576). Tidak ada login API MikroTik, kredensial admin router, SNMP, atau monitoring CPU/RAM/interface router. Password VPN router hanya dipakai untuk menghasilkan script saat itu; shared secret RADIUS tetap diperlukan/disimpan.
+
+FreeRADIUS membaca client SQL saat startup. Worker root terpisah memvalidasi lalu menerapkan perubahan client aktif sekitar setiap 60 detik; backend web tidak diberi sudo. Status sesi bersumber dari accounting dengan batas kesegaran awal 900 detik. IP Pool berupa metadata per NAS dan script, sedangkan isolir diaktifkan setelah operator mengonfirmasi script pool/profil/firewall dipasang. QR WhatsApp tetap dipindai manual. Script tidak menebak port WAN, port pelanggan, profil dasar, atau konfigurasi PPPoE awal.
+
+Menjalankan installer kembali mempertahankan secret dan database yang sudah ditandai. Database berisi tabel tanpa penanda installer, atau perubahan SQL terhadap instalasi berisi data, membuat installer berhenti agar tidak menimpa data. `npm run update` tetap untuk pembaruan kode setelah instalasi.
+
+Frontend production memakai `/api/wa` melalui proxy Apache sehingga port bot 3002 tidak perlu dibuka ke jaringan. Instalasi lama yang memperbarui frontend perlu menambahkan proxy `/api/wa` sebelum proxy `/api/`; contoh konfigurasi tersedia pada renderer installer. Perintah `npm install` di root juga memanggil lifecycle `install`; gunakan root project ini untuk installer Ubuntu, dan jalankan pengelolaan dependency per aplikasi dari subfolder masing-masing.
+
 ## Menjalankan lokal
 
 Gunakan tiga terminal.
@@ -38,7 +58,7 @@ Frontend tersedia di `http://localhost:3000`, REST API di `http://localhost:3001
 
 ## Database
 
-Satu-satunya file SQL untuk **instalasi baru** adalah [`backend/prisma/database.sql`](backend/prisma/database.sql). File ini berisi skema terbaru dan pengaturan awal. Cukup impor file ini sekali ke database MySQL kosong. File pembaruan SQL bertahap dan script migrasi lamanya sudah dihapus.
+File SQL untuk **instalasi baru** adalah [`backend/prisma/database.sql`](backend/prisma/database.sql). Semua perubahan tanpa API MikroTik sudah langsung berada di file ini, termasuk metadata NAS, Disconnect, pool per NAS, dan pengaturan awal. Gunakan database kosong pada VM VirtualBox baru. Tidak ada file migrasi terpisah.
 
 Setelah membuat database kosong dan mengisi `backend/.env`, jalankan:
 
@@ -51,7 +71,7 @@ npm run db:seed
 
 Alternatif: pilih database kosong di phpMyAdmin lalu impor `backend/prisma/database.sql`. Pembuatan akun awal tetap menggunakan `npm run db:seed` dari folder `backend`.
 
-`npm run update` / `npm run updatebe` memperbarui kode, build, dan service; perintah tersebut tidak mengimpor ulang database. Untuk pengujian dari awal di VirtualBox, gunakan database kosong pada VM baru. Database yang sudah berisi data memerlukan peninjauan perubahan skema tersendiri; jangan mengimpor ulang `database.sql` ke database tersebut.
+`npm run update` / `npm run updatebe` memperbarui kode, build, dan service. Keduanya tidak mengubah skema atau mengimpor ulang `database.sql`. Untuk setup yang diminta, gunakan VM baru atau snapshot kosong lalu jalankan installer; database berisi data tidak direset otomatis.
 
 Setiap skema Prisma berubah, perbarui file SQL lengkap dari root project:
 

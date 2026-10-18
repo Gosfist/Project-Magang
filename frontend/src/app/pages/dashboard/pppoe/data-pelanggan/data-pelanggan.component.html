@@ -204,8 +204,8 @@
                 "
                 [title]="
                   item.online == null
-                    ? 'Sesi belum dapat diperiksa. Pastikan Router NAS aktif dan API terhubung.'
-                    : 'Status sesi PPPoE dari MikroTik saat daftar dimuat'
+                    ? 'Status sesi belum diketahui dari accounting RADIUS.'
+                    : 'Status sesi berdasarkan accounting RADIUS terakhir; perubahan yang belum terkirim dapat terlambat terlihat.'
                 "
                 >{{
                   item.online === true

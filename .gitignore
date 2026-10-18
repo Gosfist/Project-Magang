@@ -3,6 +3,7 @@
 **/.angular/
 **/dist/
 **/*.tsbuildinfo
+**/__pycache__/
 **/.env
 **/.env.local
 **/.env.*.local

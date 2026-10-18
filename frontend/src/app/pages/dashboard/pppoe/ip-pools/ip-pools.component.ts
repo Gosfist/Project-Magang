@@ -35,6 +35,7 @@ export class IpPoolsComponent implements OnInit {
   editing = signal<IpPool | null>(null);
   routers = signal<{ id: number; nasname: string; shortname: string }[]>([]);
   saving = signal(false);
+  script = signal<string | null>(null);
   form = { routerNasId: 0, name: '', networkStart: '', networkEnd: '' };
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -65,7 +66,7 @@ export class IpPoolsComponent implements OnInit {
     this.editing.set(item ?? null);
     this.form = item
       ? {
-          routerNasId: item.routerNasId,
+          routerNasId: item.routerNasId ?? 0,
           name: item.name,
           networkStart: item.networkStart,
           networkEnd: item.networkEnd,
@@ -84,12 +85,13 @@ export class IpPoolsComponent implements OnInit {
       networkEnd: this.form.networkEnd,
     };
     const req = this.editing()
-      ? this.api.patch<{ message: string; warnings?: string[] }>(`/pppoe/ip-pools/${this.editing()!.id}`, body)
-      : this.api.post<{ message: string; warnings?: string[] }>('/pppoe/ip-pools', body);
+      ? this.api.patch<{ message: string; script: string; warnings?: string[] }>(`/pppoe/ip-pools/${this.editing()!.id}`, body)
+      : this.api.post<{ message: string; script: string; warnings?: string[] }>('/pppoe/ip-pools', body);
     req.subscribe({
       next: (r) => {
         this.saving.set(false);
         this.open.set(false);
+        this.script.set(r.script);
         this.toast.set({ message: r.message, type: r.warnings?.length ? 'error' : 'success' });
         this.load();
       },
@@ -98,9 +100,10 @@ export class IpPoolsComponent implements OnInit {
   }
 
   remove(item: IpPool): void {
-    if (!confirm(`Hapus IP pool ${item.name}?`)) return;
-    this.api.delete<{ message: string; warnings?: string[] }>(`/pppoe/ip-pools/${item.id}`).subscribe({
+    if (!confirm(`Hapus pendaftaran IP pool ${item.name}? Konfigurasi pada router dihapus melalui script.`)) return;
+    this.api.delete<{ message: string; script?: string; warnings?: string[] }>(`/pppoe/ip-pools/${item.id}`).subscribe({
       next: (r) => {
+        this.script.set(r.script || null);
         this.toast.set({ message: r.message, type: r.warnings?.length ? 'error' : 'success' });
         this.load();
       },

@@ -119,13 +119,6 @@
             ><ng-container [ngTemplateOutlet]="menuIcon" [ngTemplateOutletContext]="{ $implicit: 'Server' }" />Server</a
           >
           <a
-            routerLink="/dashboard/monitoring/router"
-            routerLinkActive="bg-white/15 text-white"
-            class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"
-            (click)="mobile.set(false)"
-            ><ng-container [ngTemplateOutlet]="menuIcon" [ngTemplateOutletContext]="{ $implicit: 'NAS / Router' }" />NAS / Router</a
-          >
-          <a
             routerLink="/dashboard/monitoring/radius"
             routerLinkActive="bg-white/15 text-white"
             class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white"

@@ -116,10 +116,6 @@ export class PsbService {
           include: { package: { include: { ipPool: true } } },
         });
         const credentialsChanged = currentAccount.username !== account.username || !!dto.password;
-        if (credentialsChanged) await tx.radacct.updateMany({
-          where: { username: { in: [...new Set([currentAccount.username, account.username])] }, acctstoptime: null },
-          data: { acctstoptime: new Date(), acctterminatecause: 'Admin-Reset' },
-        });
         await this.radius.sync(tx, account, currentAccount.username);
         const updated = await tx.psbOrder.update({
           where: { id: order.id },

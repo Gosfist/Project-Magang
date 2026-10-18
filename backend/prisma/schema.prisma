@@ -158,13 +158,16 @@ model PsbOrder {
 
 model IpPool {
   id           BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
-  name         String         @unique @db.VarChar(100)
+  name         String         @db.VarChar(100)
   networkStart String         @map("network_start") @db.VarChar(45)
   networkEnd   String         @map("network_end") @db.VarChar(45)
   createdAt    DateTime?      @map("created_at")
   updatedAt    DateTime?      @map("updated_at")
   packages     PppoePackage[]
+  routerNasId  Int?           @map("router_nas_id") @db.UnsignedInt
+  routerNas    Nas?           @relation(fields: [routerNasId], references: [id], onDelete: SetNull)
 
+  @@unique([routerNasId, name])
   @@map("ip_pools")
 }
 
@@ -385,15 +388,15 @@ model VpnClient {
 model Nas {
   id              Int            @id @default(autoincrement()) @db.UnsignedInt
   name            String?        @db.VarChar(100)
-  nasname         String         @db.VarChar(128)
+  nasname         String         @unique @db.VarChar(128)
   shortname       String?        @db.VarChar(32)
   type            String         @default("mikrotik") @db.VarChar(30)
-  authMode        String         @default("radius") @map("auth_mode") @db.VarChar(20)
   ipAddress       String?        @map("ip_address") @db.VarChar(45)
-  username        String?        @db.VarChar(64)
-  password        String?        @db.Text
-  port            Int?           @default(8728) @db.UnsignedInt
   ports           Int?           @default(1812) @db.UnsignedSmallInt
+  coaPort         Int            @default(3799) @map("coa_port") @db.UnsignedSmallInt
+  radiusServerIp  String?        @map("radius_server_ip") @db.VarChar(45)
+  vpnHost         String?        @map("vpn_host") @db.VarChar(253)
+  vpnUsername     String?        @map("vpn_username") @db.VarChar(100)
   secret          String         @default("secret") @db.VarChar(60)
   server          String?        @db.VarChar(64)
   community       String?        @db.VarChar(50)
@@ -405,11 +408,11 @@ model Nas {
   createdAt       DateTime?      @default(now()) @map("created_at")
   updatedAt       DateTime?      @default(now()) @updatedAt @map("updated_at")
   accounts        PppoeAccount[]
+  ipPools         IpPool[]
   psbOrders       PsbOrder[]
   mainCoreServers MainCore[]       @relation("MainCoreRouter")
   vpnClient       VpnClient?     @relation(fields: [vpnClientId], references: [id], onDelete: SetNull)
 
-  @@index([nasname])
   @@index([vpnClientId])
   @@map("nas")
 }
@@ -462,22 +465,6 @@ model ServerStat {
   @@map("server_stats")
 }
 
-model RouterStat {
-  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  nasId      Int      @map("nas_id") @db.UnsignedInt
-  recordedAt DateTime @map("recorded_at")
-  cpuPercent Float    @map("cpu_percent")
-  memPercent Float    @map("mem_percent")
-  memFree    BigInt   @map("mem_free") @db.UnsignedBigInt
-  memTotal   BigInt   @map("mem_total") @db.UnsignedBigInt
-  netDown    Float    @map("net_down")
-  netUp      Float    @map("net_up")
-  uptime     BigInt   @default(0) @db.UnsignedBigInt
-
-  @@index([nasId, recordedAt])
-  @@index([recordedAt])
-  @@map("router_stats")
-}
 
 model ServerStatMonthly {
   id         BigInt @id @default(autoincrement()) @db.UnsignedBigInt
@@ -493,20 +480,6 @@ model ServerStatMonthly {
   @@map("server_stats_monthly")
 }
 
-model RouterStatMonthly {
-  id         BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  nasId      Int    @map("nas_id") @db.UnsignedInt
-  year       Int    @db.UnsignedSmallInt
-  month      Int    @db.UnsignedTinyInt
-  cpuPercent Float  @map("cpu_percent")
-  memPercent Float  @map("mem_percent")
-  netDown    Float  @map("net_down")
-  netUp      Float  @map("net_up")
-  samples    Int    @default(0) @db.UnsignedInt
-
-  @@unique([nasId, year, month])
-  @@map("router_stats_monthly")
-}
 
 model ServerStatYearly {
   id         BigInt @id @default(autoincrement()) @db.UnsignedBigInt
@@ -520,19 +493,6 @@ model ServerStatYearly {
   @@map("server_stats_yearly")
 }
 
-model RouterStatYearly {
-  id         BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  nasId      Int    @map("nas_id") @db.UnsignedInt
-  year       Int    @db.UnsignedSmallInt
-  cpuPercent Float  @map("cpu_percent")
-  memPercent Float  @map("mem_percent")
-  netDown    Float  @map("net_down")
-  netUp      Float  @map("net_up")
-  samples    Int    @default(0) @db.UnsignedInt
-
-  @@unique([nasId, year])
-  @@map("router_stats_yearly")
-}
 
 model Area {
   id          BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
