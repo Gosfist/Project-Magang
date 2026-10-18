@@ -35,7 +35,7 @@ curl -I https://github.com
 ssh -p 2222 USER_UBUNTU@127.0.0.1
 ~~~
 
-3. Cocokkan identitas server, ketik yes, lalu masukkan password Linux.
+3. Cocokkan identitas server. Ketik yes hanya saat SSH menampilkan pertanyaan konfirmasi, lalu masukkan password Linux.
 4. Jika VM lama diganti dan muncul REMOTE HOST IDENTIFICATION HAS CHANGED, jalankan di CMD Windows lalu ulangi SSH:
 
 ~~~cmd
@@ -60,7 +60,7 @@ Get-Item .\releases\frontend.tar.gz
 
 4. Pastikan Node menampilkan v22 dan build selesai dengan pesan Paket siap di-commit: releases/frontend.tar.gz.
 5. Jika paket dari kode frontend yang sama sudah ada, gunakan paket tersebut tanpa build ulang.
-6. Commit paket hasil build lalu push ke GitHub melalui aplikasi Git, atau jalankan:
+6. Jika paket berubah, commit lalu push ke GitHub melalui aplikasi Git, atau jalankan:
 
 ~~~powershell
 git add releases/frontend.tar.gz
@@ -83,9 +83,14 @@ sudo bash /tmp/nodesource-22.sh
 sudo apt install -y nodejs
 node --version
 npm --version
-sudo install -d -o "$USER" -g "$(id -gn)" /var/www/Project-Magang
-git clone https://github.com/Gosfist/Project-Magang.git /var/www/Project-Magang
-cd /var/www/Project-Magang
+if [ -d /var/www/Project-Magang/.git ]; then
+  cd /var/www/Project-Magang
+  git pull --ff-only
+else
+  sudo install -d -o "$USER" -g "$(id -gn)" /var/www/Project-Magang
+  git clone https://github.com/Gosfist/Project-Magang.git /var/www/Project-Magang
+  cd /var/www/Project-Magang
+fi
 ls -lh releases/frontend.tar.gz
 ~~~
 
@@ -113,24 +118,43 @@ npm run install
 
 4. Untuk aplikasi di VPS, isi URL browser dengan IP/domain sebenarnya dan akses SSH dari provider; lewati port forwarding VirtualBox.
 5. Tunggu pesan Frontend hasil build laptop terpasang dan Aplikasi siap dibuka. Jangan impor database.sql lagi.
+6. Jika instalasi versi lama berhenti dengan Failed to find Auth-Type EAP section, jalankan pada SSH Ubuntu aplikasi:
+
+~~~bash
+cd /var/www/Project-Magang
+git pull --ff-only
+sudo python3 scripts/installer-config.py radius-modules
+npm run install
+~~~
+
+7. Untuk error FreeRADIUS lain, ambil baris error tanpa membagikan konfigurasi dan secret:
+
+~~~bash
+sudo grep -nEi 'error|fail|unable|unknown|invalid|denied|cannot|not found|duplicate|parse|refused' /etc/unzanet/freeradius-check.log | tail -n 40
+~~~
 
 ## 6 Siapkan gateway VPN
 
 1. Jika gateway sudah tersedia, siapkan host, CA publik, akun/IP Ubuntu dan akun/IP MikroTik dari pengelola. Lanjut ke tahap 7.
 2. Jika belum tersedia, siapkan VPS Ubuntu 24.04 dengan IP publik dan TCP 443 kosong.
-3. Buka CMD Windows kedua dan remote VPS gateway:
+3. Buka CMD Windows kedua dan remote VPS VPN. Ganti USER_GATEWAY dan HOST_GATEWAY dengan akun SSH serta IP/domain publik VPS VPN. Gunakan port SSH 22 jika belum diubah:
 
 ~~~cmd
-ssh USER_GATEWAY@HOST_GATEWAY
+ssh -p 22 USER_GATEWAY@HOST_GATEWAY
 ~~~
 
-4. Ganti IP_PUBLIK_VPS, lalu jalankan pada VPS gateway:
+4. Jalankan seluruh blok berikut pada SSH VPS VPN. Ganti IP_PUBLIK_VPS dengan IP publik VPS tersebut. Clone di sini mengambil script installer VPN:
 
 ~~~bash
 sudo apt update
 sudo apt install -y git ca-certificates
-git clone https://github.com/Gosfist/Project-Magang.git ~/Project-Magang-Gateway
-cd ~/Project-Magang-Gateway
+if [ -d "$HOME/Project-Magang-Gateway/.git" ]; then
+  cd ~/Project-Magang-Gateway
+  git pull --ff-only
+else
+  git clone https://github.com/Gosfist/Project-Magang.git ~/Project-Magang-Gateway
+  cd ~/Project-Magang-Gateway
+fi
 sudo bash install-sstp-ubuntu24.sh IP_PUBLIK_VPS
 sudo systemctl is-active accel-ppp
 sudo cat /root/sstp-accounts.txt
@@ -140,7 +164,7 @@ fi
 openssl x509 -in ~/sstp-ca.crt -noout -fingerprint -sha256
 ~~~
 
-5. Catat host, fingerprint CA, username/password Ubuntu dan username/password MikroTik secara privat.
+5. Catat host, fingerprint CA dan dua akun dari sstp-accounts.txt secara privat: vpn_radius untuk Ubuntu aplikasi, vpn_router01 untuk MikroTik. Password VPN berbeda dari password SSH VPS.
 6. Gunakan IP tunnel sesuai akun gateway. Contoh akun awal:
 
 | Perangkat | IP tunnel |
@@ -152,10 +176,10 @@ openssl x509 -in ~/sstp-ca.crt -noout -fingerprint -sha256
 ## 7 Pasang CA dan VPN Ubuntu
 
 1. Kembali ke sesi SSH Ubuntu aplikasi.
-2. Ganti PORT_SSH_GATEWAY, USER_GATEWAY dan HOST_GATEWAY, lalu ambil CA publik:
+2. Pada SSH Ubuntu aplikasi, ganti USER_GATEWAY dan HOST_GATEWAY dengan akun SSH serta IP/domain publik VPS VPN. Ambil CA menggunakan port SSH 22; ganti 22 jika port SSH VPS diubah. Port 443 dipakai SSTP:
 
 ~~~bash
-scp -P PORT_SSH_GATEWAY USER_GATEWAY@HOST_GATEWAY:~/sstp-ca.crt ~/sstp-ca.crt
+scp -P 22 USER_GATEWAY@HOST_GATEWAY:~/sstp-ca.crt ~/sstp-ca.crt
 openssl x509 -in ~/sstp-ca.crt -noout -fingerprint -sha256
 ~~~
 
@@ -166,6 +190,7 @@ openssl x509 -in ~/sstp-ca.crt -noout -fingerprint -sha256
 sudo install -m 644 ~/sstp-ca.crt /usr/local/share/ca-certificates/unzanet-sstp.crt
 sudo update-ca-certificates
 cd /var/www/Project-Magang
+git pull --ff-only
 npm run setupvpn
 ~~~
 
@@ -173,8 +198,9 @@ npm run setupvpn
 
 | Pertanyaan | Isian |
 | --- | --- |
-| Host gateway | IP/domain sesuai sertifikat gateway |
-| Username dan password SSTP Ubuntu | Akun VPN khusus Ubuntu |
+| Host gateway | IP publik VPS VPN yang dipakai saat membuat sertifikat, atau domain pada sertifikat; tanpa https:// dan tanpa :443 |
+| Username SSTP Ubuntu | vpn_radius atau akun Ubuntu dari gateway |
+| Password SSTP Ubuntu | Password akun vpn_radius dari sstp-accounts.txt |
 | IP tunnel Ubuntu | 10.88.0.2 atau IP dari gateway |
 | IP tunnel MikroTik pertama | 10.88.0.3 atau IP dari gateway |
 | Subnet tunnel | 10.88.0.0/24 atau subnet dari gateway |
@@ -187,7 +213,27 @@ ip -4 address show sstp-radius
 ping -c 5 10.88.0.1
 ~~~
 
-7. Lanjut setelah tunnel aktif dan ping gateway berhasil. Pertahankan DHCP interface internet Ubuntu.
+7. Pastikan interface UP, memiliki inet 10.88.0.2 peer 10.88.0.1, dan ping berhasil. Sesuaikan IP jika akun gateway berbeda. State UNKNOWN dapat muncul pada PPP yang sudah terhubung.
+8. Jika interface belum ada atau service terus activating, periksa pada SSH Ubuntu aplikasi:
+
+~~~bash
+sudo journalctl -u sstp-radius -n 60 --no-pager
+nc -vz -w 5 HOST_GATEWAY 443
+~~~
+
+9. Jika konfigurasi lama masih memakai opsi sstp-socket, perbaiki menjadi sstp-sock pada SSH Ubuntu aplikasi:
+
+~~~bash
+cd /var/www/Project-Magang
+git pull --ff-only
+sudo sed -i 's/^sstp-socket /sstp-sock /' /etc/ppp/peers/sstp-radius
+sudo systemctl restart sstp-radius
+sleep 8
+ip -4 address show sstp-radius
+ping -c 5 10.88.0.1
+~~~
+
+10. Lanjut setelah tunnel aktif dan ping gateway berhasil. Pertahankan DHCP interface internet Ubuntu.
 
 ## 8 Buka website dan login
 
@@ -201,7 +247,7 @@ sudo cat /etc/unzanet/credentials.txt
 
 2. Pastikan service active dan web merespons HTTP 200.
 3. Buka http://127.0.0.1:8080 di browser Windows.
-4. Login dengan kredensial awal. Ganti password melalui profil.
+4. Login memakai email dan password dari credentials.txt. Email bawaan admin@unzanet.com; password dibuat acak saat instalasi. Ganti password melalui profil dan simpan kredensial secara privat.
 5. Buat snapshot VM. Lanjut ke MikroTik setelah VPN Ubuntu dan login website berhasil.
 
 ## 9 Tambah MikroTik dan paste satu script

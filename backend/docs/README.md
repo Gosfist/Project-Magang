@@ -16,3 +16,9 @@ yang sama. IP LAN tertentu dan jaringan fisik yang sama tidak diperlukan.
 Panduan instalasi lama sudah dihapus agar tidak ada alur yang saling bertentangan.
 Generator `backend/scripts/generate_pppoe_virtualbox_guide.py` kini membaca sumber
 Markdown aktif dan menghasilkan `install.docx`, bukan mereproduksi panduan lama.
+
+Setiap kesalahan yang ditemukan saat instalasi atau operasi harus dikoreksi juga
+pada panduan terkait. Untuk alur instalasi, perbarui [sumber Markdown](instalasi-ubuntu-vpn.md) dan
+`install.doc` bersamaan, pertahankan langkah langsung per perangkat, lalu render
+dan periksa setiap halaman Word sebelum commit/push. Perbaikan kode installer
+harus disertai langkah pemulihan untuk konfigurasi lama bila diperlukan.
