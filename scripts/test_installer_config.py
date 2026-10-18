@@ -1,6 +1,9 @@
 import importlib.util
+import os
 from pathlib import Path
+import tempfile
 import unittest
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('installer_config', Path(__file__).with_name('installer-config.py'))
 module = importlib.util.module_from_spec(spec)
@@ -122,6 +125,55 @@ class InstallerConfigurationTests(unittest.TestCase):
         self.assertEqual(module.prepare_sql_module(patched), patched)
         with self.assertRaises(ValueError):
             module.prepare_sql_module('read_clients = no\n client_table = "other"')
+
+    def test_pppoe_server_keeps_pap_chap_mschap_without_eap(self):
+        server = module.render(self.config)['/etc/freeradius/3.0/sites-available/unzanet']
+        for method in ['PAP', 'CHAP', 'MS-CHAP']:
+            self.assertIn('Auth-Type ' + method + ' {', server)
+        self.assertNotIn('eap', server.lower())
+
+    def test_disabling_default_eap_preserves_available_config_and_other_modules(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            enabled = root / 'mods-enabled/eap'
+            available = root / 'mods-available/eap'
+            enabled.parent.mkdir()
+            available.parent.mkdir()
+            available.write_text('eap configuration retained')
+            enabled.write_text('simulated enabled symlink')
+            sql = enabled.with_name('sql')
+            sql.write_text('sql configuration retained')
+            # Simulate only the symlink metadata on Windows; exercise real scoped I/O.
+            with patch.object(Path, 'is_symlink', autospec=True, side_effect=lambda path: path == enabled):
+                module.disable_unused_eap(root)
+            self.assertFalse(enabled.exists())
+            self.assertEqual(available.read_text(), 'eap configuration retained')
+            self.assertEqual(sql.read_text(), 'sql configuration retained')
+            module.disable_unused_eap(root)
+
+    def test_custom_eap_file_is_not_deleted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            enabled = root / 'mods-enabled/eap'
+            enabled.parent.mkdir()
+            enabled.write_text('custom configuration')
+            with self.assertRaisesRegex(ValueError, 'bukan symlink'):
+                module.disable_unused_eap(root)
+            self.assertEqual(enabled.read_text(), 'custom configuration')
+
+    @unittest.skipIf(os.name == 'nt', 'Creating real symlinks requires Windows developer mode/admin')
+    def test_real_eap_symlink_is_removed_without_deleting_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            available = root / 'mods-available/eap'
+            enabled = root / 'mods-enabled/eap'
+            available.parent.mkdir()
+            enabled.parent.mkdir()
+            available.write_text('preserved')
+            enabled.symlink_to('../mods-available/eap')
+            module.disable_unused_eap(root)
+            self.assertFalse(enabled.is_symlink())
+            self.assertEqual(available.read_text(), 'preserved')
 
 
 if __name__ == '__main__':

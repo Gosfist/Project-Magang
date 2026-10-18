@@ -8,6 +8,8 @@ Ikuti [panduan instalasi](instalasi-ubuntu-vpn.md): Ubuntu VirtualBox dengan NAT
 
 Aktifkan modul SQL pada authorize, accounting, session, dan post auth. Modul memakai `read_clients = yes`, tabel `nas`, dan query client dengan `WHERE is_active = 1`. Daftar client dibaca saat startup. Installer memasang worker root yang membandingkan fingerprint client setiap sekitar 60 detik, validasi `freeradius -XC`, lalu restart saat berubah. Worker tidak memberi sudo kepada web dan tidak mencetak secret.
 
+Virtual server UNZANET memakai PAP, CHAP dan MS-CHAP untuk PPPoE. Installer menonaktifkan symlink modul EAP bawaan setelah mengganti site `default`/`inner-tunnel`; file `mods-available/eap` dipertahankan. Ini mencegah kegagalan `Failed to find 'Auth-Type EAP' section` dari modul yang aktif tanpa handler. File EAP custom yang bukan symlink tidak dihapus otomatis.
+
 Untuk instalasi manual, salin query MySQL bawaan melalui `scripts/installer-config.py queries --source PATH_QUERY_ASLI`, tinjau hasil, gunakan file terpisah `queries-unzanet.conf`, dan arahkan include modul SQL ke file itu. Akun SQL radius perlu SELECT pada radcheck/radreply/grup/nas/website_settings, SELECT/INSERT/UPDATE pada radacct/nasreload, serta SELECT/INSERT pada radpostauth. Akun itu tidak memerlukan hak DDL. Jalur update membantu memasang konfigurasi ini dan berhenti jika format custom tidak dikenali.
 
 ## Accounting dan satu sesi

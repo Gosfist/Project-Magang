@@ -356,14 +356,28 @@ def prepare_sql_module(text):
     return text
 
 
+def disable_unused_eap(config_root=Path('/etc/freeradius/3.0')):
+    # The managed PPPoE virtual server uses PAP, CHAP and MS-CHAP, not EAP.
+    # Leave mods-available/eap intact so the package configuration is preserved.
+    enabled = Path(config_root) / 'mods-enabled/eap'
+    if enabled.is_symlink():
+        enabled.unlink()
+    elif enabled.exists():
+        raise ValueError('mods-enabled/eap bukan symlink bawaan. Periksa konfigurasi EAP manual; file tidak dihapus.')
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['create', 'get', 'render', 'queries', 'refresh', 'sql-module', 'configure-vpn'])
+    parser.add_argument('action', choices=['create', 'get', 'render', 'queries', 'refresh', 'sql-module', 'configure-vpn', 'radius-modules'])
     parser.add_argument('--config', default='/etc/unzanet/install.json')
     parser.add_argument('--key')
     parser.add_argument('--source')
     args = parser.parse_args()
     state = Path(args.config)
+    if args.action == 'radius-modules':
+        disable_unused_eap()
+        print('Modul EAP bawaan dinonaktifkan; PPPoE memakai PAP, CHAP dan MS-CHAP.')
+        return
     if args.action == 'create':
         keys = ['ROOT_DIR', 'WEB_URL', 'VPN_SERVER', 'VPN_USERNAME', 'VPN_PASSWORD', 'VPN_RADIUS_IP', 'VPN_ROUTER_IP', 'VPN_NETWORK', 'ADMIN_EMAIL']
         config = {key: os.environ[key] for key in keys}

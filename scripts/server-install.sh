@@ -186,6 +186,7 @@ SQL
       die "sites-enabled/$site bukan symlink bawaan. Periksa konfigurasi FreeRADIUS."
     fi
   done
+  python3 "$ROOT_DIR/scripts/installer-config.py" radius-modules
   ln -sfn ../mods-available/sql /etc/freeradius/3.0/mods-enabled/sql
   ln -sfn ../sites-available/unzanet /etc/freeradius/3.0/sites-enabled/unzanet
 
