@@ -175,6 +175,7 @@ SQL
 
   log 'Memasang dependency dan membangun aplikasi'
   for folder in backend frontend bot_whatsapp; do
+    log "Memasang dependency $folder"
     (cd "$ROOT_DIR/$folder" && umask 022 && npm ci)
   done
   (cd "$ROOT_DIR/backend" && umask 022 && npm run prisma:generate)
