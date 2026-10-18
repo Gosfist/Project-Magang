@@ -4,7 +4,7 @@
 
 Tambah atau edit NAS menyimpan IP sumber RADIUS, alamat tujuan Disconnect, port autentikasi/Disconnect, IP server, shared secret, serta metadata VPN opsional. Tidak ada username/password admin, port API, atau login API MikroTik. Password VPN router hanya dipakai untuk menghasilkan script saat Simpan dan tidak disimpan.
 
-Simpan membuka script pemasangan otomatis. Operator menyalin script ke Terminal perangkat. Script mengatur RADIUS, incoming Disconnect 3799, firewall sumber server, dan SSTP opsional dengan verifikasi sertifikat. Sertifikat CA dan rute dua arah harus benar. Endpoint lama tes login API dan monitoring router dihapus. Status accounting/RADIUS membuktikan komunikasi sesuai data yang masuk, bukan CPU atau jangkauan seluruh router.
+Simpan membuka script pemasangan otomatis. Untuk router baru, isi akun VPN router dan satu CA publik PEM pada form, lalu salin script sekali ke Terminal perangkat. Script mengimpor CA, mengatur SSTP terverifikasi, rute server RADIUS, RADIUS, incoming Disconnect 3799, serta firewall terkait. CA dari form tidak disimpan dalam tabel NAS dan tidak boleh berisi private key. Rute dua arah melalui gateway harus tersedia. Endpoint lama tes login API dan monitoring router dihapus. Status accounting/RADIUS membuktikan komunikasi sesuai data yang masuk, bukan CPU atau jangkauan seluruh router.
 
 Worker root terpisah menerapkan perubahan client SQL sekitar setiap 60 detik setelah config check. Web tidak diberi sudo. Lihat [panduan instalasi](instalasi-ubuntu-vpn.md).
 

@@ -77,7 +77,7 @@ main() {
     local detected_ip
     detected_ip="$(ip -4 route get 1.1.1.1 | awk '{for(i=1;i<=NF;i++) if($i=="src") {print $(i+1); exit}}')"
     ask WEB_URL 'URL browser (NAT: http://127.0.0.1:8080; VPS: IP/domain sebenarnya)' 'http://127.0.0.1:8080'
-    ask NETWORK_MODE 'Tahap jaringan: web (website dahulu), vpn (VPN sudah siap), local (lab LAN)' web
+    ask NETWORK_MODE 'Tahap jaringan: web (aplikasi dahulu), vpn (VPN sudah siap), local (lab LAN)' web
     if [[ "$NETWORK_MODE" == web ]]; then
       export VPN_SERVER='' VPN_USERNAME='' VPN_PASSWORD=''
       # Planned private tunnel addresses; no static LAN address is installed.
@@ -241,7 +241,7 @@ JS
   if [[ "$NETWORK_MODE" == local ]]; then
     printf 'Mode LAN: uji ping %s, lalu tambah NAS dengan IP tersebut.\n' "$VPN_ROUTER_IP"
   elif [[ "$NETWORK_MODE" == web ]]; then
-    printf 'Website siap tanpa MikroTik/VPN. Buka URL web dan login dahulu. Setelah itu: npm run setupvpn\n'
+    printf 'Aplikasi terpasang. Siapkan gateway/CA, jalankan npm run setupvpn, lalu buka website dan pastikan login berjalan sebelum menambah NAS.\n'
   elif ip -4 -o addr show dev sstp-radius 2>/dev/null | grep -Fq " $VPN_RADIUS_IP/"; then
     printf 'Ubuntu sudah mendapat IP VPN %s. Lanjutkan setup SSTP MikroTik di install.doc.\n' "$VPN_RADIUS_IP"
   else

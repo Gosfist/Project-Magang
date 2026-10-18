@@ -5,7 +5,7 @@ import { isIPv4 } from 'node:net';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { pageMeta, serialize } from '../../common/serialize.js';
 import { SaveRouterDto } from './routers.dto.js';
-import { radiusSetupScript } from '../shared/radius-setup-script.js';
+import { radiusSetupScript, vpnCaCertificate } from '../shared/radius-setup-script.js';
 
 @Injectable()
 export class RoutersService {
@@ -44,20 +44,22 @@ export class RoutersService {
 
   async createRouter(dto: SaveRouterDto) {
     const data = this.routerData(dto);
+    const ca = this.scriptCa(dto);
     await this.assertUniqueNas(data.nasname);
     try {
       const item = await this.prisma.nas.create({ data: { ...data, createdAt: new Date() } });
-      return serialize({ message: 'NAS ditambahkan. Salin script ke Terminal MikroTik. Konfigurasi NAS diterapkan FreeRADIUS dalam sekitar 60 detik.', router: this.publicRouter(item), setup: this.setup(item, dto.vpnPassword) });
+      return serialize({ message: 'NAS ditambahkan. Salin script ke Terminal MikroTik. Konfigurasi NAS diterapkan FreeRADIUS dalam sekitar 60 detik.', router: this.publicRouter(item), setup: this.setup(item, dto.vpnPassword, ca) });
     } catch (error) { this.unique(error); }
   }
 
   async updateRouter(id: string, dto: SaveRouterDto) {
     const current = await this.findRouter(id);
     const data = this.routerData(dto, current);
+    const ca = this.scriptCa(dto);
     await this.assertUniqueNas(data.nasname, current.id);
     try {
       const item = await this.prisma.nas.update({ where: { id: current.id }, data });
-      return serialize({ message: 'NAS diperbarui. Terapkan script jika konfigurasi berubah. FreeRADIUS menerapkan perubahan dalam sekitar 60 detik.', router: this.publicRouter(item), setup: this.setup(item, dto.vpnPassword) });
+      return serialize({ message: 'NAS diperbarui. Terapkan script jika konfigurasi berubah. FreeRADIUS menerapkan perubahan dalam sekitar 60 detik.', router: this.publicRouter(item), setup: this.setup(item, dto.vpnPassword, ca) });
     } catch (error) { this.unique(error); }
   }
 
@@ -71,13 +73,19 @@ export class RoutersService {
 
   async getRouterScript(id: string) { return serialize(this.setup(await this.findRouter(id))); }
 
-  private setup(router: Nas, vpnPassword?: string) {
+  private scriptCa(dto: SaveRouterDto) {
+    const ca = vpnCaCertificate(dto.vpnCaCertificate);
+    if (ca && !dto.vpnPassword) throw new BadRequestException('Isi password VPN untuk membuat script SSTP beserta sertifikat CA.');
+    return ca;
+  }
+
+  private setup(router: Nas, vpnPassword?: string, ca?: ReturnType<typeof vpnCaCertificate>) {
     const radiusServerIp = this.serverIp(router.radiusServerIp);
     return {
       routerName: router.name, radiusServerIp, nasSrcAddress: router.nasname,
       authPort: router.ports || 1812, coaPort: router.coaPort || 3799,
-      scriptRos7: radiusSetupScript(router, radiusServerIp, router.nasname, true, vpnPassword),
-      scriptRos6: radiusSetupScript(router, radiusServerIp, router.nasname, false, vpnPassword),
+      scriptRos7: radiusSetupScript(router, radiusServerIp, router.nasname, true, vpnPassword, ca),
+      scriptRos6: radiusSetupScript(router, radiusServerIp, router.nasname, false, vpnPassword, ca),
     };
   }
 

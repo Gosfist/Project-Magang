@@ -4,7 +4,7 @@ NestJS mengelola paket, pelanggan, billing, dan atribut RADIUS di database MySQL
 
 ## Instalasi dan pendaftaran NAS
 
-Ikuti [panduan instalasi](instalasi-ubuntu-vpn.md), mulai dari VirtualBox/Bridged Ethernet hingga ping, aplikasi, serta uji PPPoE nyata. Pilih LAN untuk lab atau SSTP terverifikasi untuk cloud. Tambah Router lalu Simpan menghasilkan script RADIUS dan SSTP opsional. Host dan username VPN menjadi metadata; password VPN router hanya untuk script kali ini. Secret RADIUS tetap disimpan agar FreeRADIUS/Disconnect berfungsi.
+Ikuti [panduan instalasi](instalasi-ubuntu-vpn.md): Ubuntu VirtualBox dengan NAT/DHCP, SSH dari CMD, instal aplikasi, setup VPN Ubuntu, uji website/login, lalu tambah NAS dan paste satu script VPN/RADIUS MikroTik. Sertakan satu CA publik PEM pada form agar impor CA masuk ke script yang sama. Host dan username VPN menjadi metadata; password VPN router serta CA dari form hanya untuk script kali ini. Secret RADIUS tetap disimpan agar FreeRADIUS/Disconnect berfungsi. IP internet Ubuntu boleh dinamis dan MikroTik tidak perlu satu LAN.
 
 Aktifkan modul SQL pada authorize, accounting, session, dan post auth. Modul memakai `read_clients = yes`, tabel `nas`, dan query client dengan `WHERE is_active = 1`. Daftar client dibaca saat startup. Installer memasang worker root yang membandingkan fingerprint client setiap sekitar 60 detik, validasi `freeradius -XC`, lalu restart saat berubah. Worker tidak memberi sudo kepada web dan tidak mencetak secret.
 

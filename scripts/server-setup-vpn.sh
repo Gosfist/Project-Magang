@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Second stage: enable the Ubuntu RADIUS tunnel after the website is usable.
+# Second stage: enable the Ubuntu RADIUS tunnel after application installation.
 set -Eeuo pipefail
 umask 077
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [[ "$EUID" != 0 ]]; then exec sudo bash "$ROOT_DIR/scripts/server-setup-vpn.sh" "$@"; fi
 [[ $# == 0 ]] || { printf 'Jalankan: npm run setupvpn\n' >&2; exit 1; }
-[[ -f /etc/unzanet/install-complete ]] || { printf 'Selesaikan npm run install dan buka website dahulu.\n' >&2; exit 1; }
+[[ -f /etc/unzanet/install-complete ]] || { printf 'Selesaikan npm run install dahulu.\n' >&2; exit 1; }
 exec 9>/run/lock/unzanet-install.lock
 flock -n 9 || { printf 'Installer lain masih berjalan.\n' >&2; exit 1; }
 setting() { python3 "$ROOT_DIR/scripts/installer-config.py" get --key "$1"; }
@@ -35,7 +35,7 @@ systemctl restart sstp-radius.service
 systemctl restart unzanet-backend.service
 for _ in {1..20}; do
   if ip -4 -o addr show dev sstp-radius 2>/dev/null | grep -Fq " $VPN_RADIUS_IP/"; then
-    printf 'Ubuntu mendapat IP tunnel %s. Sekarang tambah NAS di web dan pasang script pada MikroTik.\n' "$VPN_RADIUS_IP"
+    printf 'Ubuntu mendapat IP tunnel %s. Buka website dan pastikan login berjalan, lalu tambah NAS untuk memperoleh satu script VPN/RADIUS MikroTik.\n' "$VPN_RADIUS_IP"
     exit 0
   fi
   sleep 2

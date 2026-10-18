@@ -5,6 +5,8 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { SaveRouterDto } from './routers.dto.js';
 import { RoutersService } from './routers.service.js';
 import { radiusSetupScript, routerOsQuote } from '../shared/radius-setup-script.js';
+import { rootCertificates } from 'node:tls';
+import { X509Certificate } from 'node:crypto';
 
 const router = {
   id: 7, name: 'Router cabang', nasname: '10.88.0.3', ipAddress: '10.88.0.3', shortname: 'cabang',
@@ -49,6 +51,48 @@ describe('Zero MikroTik API NAS registry', () => {
     const result = await service.routers();
     expect(result.data[0]).toMatchObject({ id: 7, accountsCount: 12 });
     for (const key of ['username', 'password', 'port', 'authMode', 'secret', 'vpnPassword']) expect(result.data[0]).not.toHaveProperty(key);
+  });
+
+  it('embeds a validated public CA before SSTP for one paste on RouterOS 6 and 7 without storing it', async () => {
+    const { nas, service } = setup();
+    const pem = rootCertificates.find(value => value.length < 3900 && new X509Certificate(value).ca)!;
+    const fingerprint = new X509Certificate(pem).fingerprint256.replaceAll(':', '').toLowerCase();
+    const result = await service.createRouter({
+      name: router.name, nasname: router.nasname, radiusServerIp: router.radiusServerIp,
+      vpnHost: 'vpn.example.test', vpnUsername: 'nas07', vpnPassword: 'one-time-vpn-password', vpnCaCertificate: pem,
+    });
+    for (const script of [result.setup.scriptRos6, result.setup.scriptRos7]) {
+      expect(script).toContain('-----BEGIN CERTIFICATE-----');
+      expect(script).toContain(`fingerprint="${fingerprint}"`);
+      expect(script).toContain('trusted=yes');
+      expect(script).toContain('/file remove');
+      expect(script.indexOf('/certificate import')).toBeLessThan(script.indexOf('/interface sstp-client add'));
+      expect(script).toContain('verify-server-certificate=yes verify-server-address-from-certificate=yes');
+      expect(script).toContain('/radius incoming set accept=yes port=3799');
+    }
+    expect(nas.create.mock.calls[0][0].data).not.toHaveProperty('vpnCaCertificate');
+    expect(result.router).not.toHaveProperty('vpnCaCertificate');
+  });
+
+  it('rejects invalid or private certificate material before creating or updating a NAS', async () => {
+    const { nas, service } = setup();
+    for (const pem of ['-----BEGIN PRIVATE KEY-----\nsecret\n-----END PRIVATE KEY-----', '-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----', 'fake\n/user add name=attacker']) {
+      const dto = { name: router.name, nasname: router.nasname, radiusServerIp: router.radiusServerIp, vpnCaCertificate: pem };
+      await expect(service.createRouter(dto)).rejects.toThrow('CA publik PEM');
+      await expect(service.updateRouter('7', dto)).rejects.toThrow('CA publik PEM');
+    }
+    expect(nas.create).not.toHaveBeenCalled();
+    expect(nas.update).not.toHaveBeenCalled();
+  });
+
+  it('requires a VPN password when embedding a CA and accepts the PEM field through HTTP validation', async () => {
+    const pem = rootCertificates.find(value => value.length < 3900 && new X509Certificate(value).ca)!;
+    const { nas, service } = setup();
+    await expect(service.createRouter({ name: router.name, nasname: router.nasname, radiusServerIp: router.radiusServerIp, vpnCaCertificate: pem })).rejects.toThrow('Isi password VPN');
+    expect(nas.create).not.toHaveBeenCalled();
+    const pipe = new ValidationPipe({ transform: true, whitelist: true });
+    const result = await pipe.transform({ name: router.name, nasname: router.nasname, vpnCaCertificate: pem }, { type: 'body', metatype: SaveRouterDto });
+    expect(result.vpnCaCertificate).toBe(pem.trim());
   });
 
   it('preserves existing secret on blank edit and allows clearing VPN metadata', async () => {

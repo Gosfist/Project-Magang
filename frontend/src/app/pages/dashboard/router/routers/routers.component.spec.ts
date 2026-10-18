@@ -22,13 +22,17 @@ describe('Router / NAS RADIUS setup', () => {
     for (const name of ['username', 'password', 'port', 'authMode']) expect(element.querySelector(`[name="${name}"]`)).toBeNull();
     component.form.name = 'Lab'; component.form.nasname = '10.255.0.2';
     component.form.vpnPassword = 'temporary-vpn-password';
+    component.form.vpnCaCertificate = '-----BEGIN CERTIFICATE-----\npublic-ca-for-script\n-----END CERTIFICATE-----';
+    expect(element.querySelector('textarea[name="vpnCaCertificate"]')).not.toBeNull();
     component.save(); fixture.detectChanges();
     const [url, body] = api.post.calls.mostRecent().args;
     expect(url).toBe('/router/nas');
     expect(body.coaPort).toBe(3799);
     expect(body.vpnPassword).toBe('temporary-vpn-password');
+    expect(body.vpnCaCertificate).toContain('public-ca-for-script');
     for (const key of ['username', 'password', 'port', 'authMode']) expect(key in body).toBeFalse();
     expect(component.form.vpnPassword).toBe('');
+    expect(component.form.vpnCaCertificate).toBe('');
     expect(component.scriptModalOpen()).toBeTrue();
     expect(element.textContent).toContain('NAS tersimpan. Pasang script');
     component.closeScript(); expect(component.scriptData()).toBeNull();

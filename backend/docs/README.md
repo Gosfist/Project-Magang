@@ -4,13 +4,12 @@ Panduan aktif adalah [instalasi Ubuntu dan VirtualBox](instalasi-ubuntu-vpn.md),
 [FreeRADIUS](pppoe-freeradius.md), [operasi Router dan PPPoE](router-pppoe-operations.md),
 [isolir](pppoe-isolation.md), dan [backup darurat](pppoe-backup.md).
 Versi Word terbaru berada pada `install.doc` di root repo.
-Instalasi dimulai dengan internet DHCP/NAT dan website sampai berhasil login
-(mode `web`). Setelah itu jalankan `npm run setupvpn`, tambah NAS, pasang script
-MikroTik, dan uji ping melalui tunnel. IP LAN tertentu dan jaringan fisik yang
-sama dengan MikroTik tidak diperlukan.
+Urutan instalasi: Ubuntu VirtualBox DHCP/NAT, aktifkan SSH, remote dari CMD,
+`npm run install` (mode `web`), setup VPN Ubuntu dengan `npm run setupvpn`,
+buka website dan uji login, lalu tambah NAS untuk memperoleh satu script
+VPN/RADIUS MikroTik. Isi CA publik PEM pada form untuk impor CA dalam script
+yang sama. IP LAN tertentu dan jaringan fisik yang sama tidak diperlukan.
 
-Dokumen `Panduan_Setup_Lab_PPPoE_VirtualBox.docx` dan
-`Panduan_Setup_Lab_PPPoE_VirtualBox_v1.1_WireGuard.docx` adalah arsip arsitektur
-sebelum revisi tanpa API. Gunakan panduan aktif untuk instalasi baru.
+Panduan instalasi lama sudah dihapus agar tidak ada alur yang saling bertentangan.
 Generator `backend/scripts/generate_pppoe_virtualbox_guide.py` kini membaca sumber
 Markdown aktif dan menghasilkan `install.docx`, bukan mereproduksi panduan lama.

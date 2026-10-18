@@ -16,6 +16,8 @@ export class SaveRouterDto {
   @Transform(trim) @IsOptional() @IsString() @MaxLength(100) vpnUsername?: string;
   // Used once in the returned Terminal script. Never persisted in NAS or logs.
   @IsOptional() @IsString() @MaxLength(256) vpnPassword?: string;
+  // Public CA is embedded once in the setup script, not persisted in the NAS table.
+  @Transform(trim) @IsOptional() @IsString() @MaxLength(3900) vpnCaCertificate?: string;
   @IsOptional() @IsString() @MaxLength(60) secret?: string;
   @Transform(trim) @IsOptional() @IsString() @MaxLength(200) description?: string;
   @IsOptional() @IsBoolean() isActive?: boolean;

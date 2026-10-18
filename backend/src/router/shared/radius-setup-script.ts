@@ -1,4 +1,20 @@
 import type { Nas } from '@prisma/client';
+import { BadRequestException } from '@nestjs/common';
+import { X509Certificate } from 'node:crypto';
+
+export function vpnCaCertificate(value?: string): { pem: string; fingerprint: string } | undefined {
+  const pem = value?.trim();
+  if (!pem) return undefined;
+  try {
+    // A single public CA only, never a private key or an unvalidated script fragment.
+    if (pem.length > 3900 || !/^-----BEGIN CERTIFICATE-----\r?\n[A-Za-z0-9+/=\r\n]+\r?\n-----END CERTIFICATE-----$/.test(pem)) throw new Error();
+    const cert = new X509Certificate(pem);
+    if (!cert.ca) throw new Error();
+    return { pem: cert.toString(), fingerprint: cert.fingerprint256.replaceAll(':', '').toLowerCase() };
+  } catch {
+    throw new BadRequestException('Sertifikat VPN harus satu CA publik PEM yang valid, maksimal 3900 karakter. Jangan masukkan private key.');
+  }
+}
 
 export function routerOsQuote(value: string): string {
   let result = '"';
@@ -10,7 +26,7 @@ export function routerOsQuote(value: string): string {
   return result + '"';
 }
 
-export function radiusSetupScript(router: Nas, serverIp: string, sourceIp: string, ros7: boolean, vpnPassword?: string) {
+export function radiusSetupScript(router: Nas, serverIp: string, sourceIp: string, ros7: boolean, vpnPassword?: string, ca?: ReturnType<typeof vpnCaCertificate>) {
   const q = routerOsQuote;
   const tag = `UNZANET-RADIUS:${router.id}`;
   const coaPort = router.coaPort || 3799;
@@ -23,9 +39,28 @@ export function radiusSetupScript(router: Nas, serverIp: string, sourceIp: strin
     '{',
   ];
   if (router.vpnHost && router.vpnUsername && vpnPassword) {
+    if (ca) {
+      const filename = `unzanet-ca-${router.id}-${ca.fingerprint.slice(0, 16)}`;
+      const cert = `[/certificate find where fingerprint=${q(ca.fingerprint)}]`;
+      const file = `[/file find where name=${q(filename + '.txt')}]`;
+      lines.push(
+        '# Impor CA publik dari form web dalam script yang sama sebelum membuat SSTP.',
+        `:if ([:len ${cert}] = 0) do={`,
+        `  :if ([:len ${file}] > 0) do={ :error "File sementara CA sudah ada. Periksa dan hapus file tersebut sebelum mencoba ulang."; };`,
+        `  /file print file=${q(filename)}; :delay 1s;`,
+        '  :do {',
+        `    /file set ${file} contents=${q(ca.pem)};`,
+        `    /certificate import file-name=${q(filename + '.txt')} passphrase="";`,
+        `  } on-error={ /file remove ${file}; :error "Impor CA VPN gagal. SSTP belum dipasang."; };`,
+        `  /file remove ${file};`,
+        '};',
+        `:if ([:len ${cert}] != 1) do={ :error "Fingerprint CA VPN tidak sesuai. SSTP belum dipasang."; };`,
+        `/certificate set ${cert} trusted=yes;`,
+      );
+    }
     const params = `name=${q(tunnelName)} connect-to=${q(router.vpnHost)} user=${q(router.vpnUsername)} password=${q(vpnPassword)} profile=default add-default-route=no verify-server-certificate=yes verify-server-address-from-certificate=yes disabled=no`;
     lines.push(
-      '# Sertifikat CA VPN harus sudah dipercaya router; verifikasi sertifikat tidak dimatikan.',
+      ca ? '# CA sudah diimpor; verifikasi sertifikat dan hostname tetap aktif.' : '# CA VPN harus sudah dipercaya router. Isi CA publik pada form web untuk impor otomatis.',
       `:local tunnel [/interface sstp-client find where comment=${q(`${tag}:VPN`)}];`,
       ':if ([:len $tunnel] > 1) do={ :error "Tunnel terkelola ganda. Periksa sebelum melanjutkan."; };',
       `:if ([:len $tunnel] = 0) do={ :if ([:len [/interface find where name=${q(tunnelName)}]] > 0) do={ :error "Nama tunnel sudah digunakan konfigurasi lain."; }; /interface sstp-client add ${params} comment=${q(`${tag}:VPN`)}; } else={ /interface sstp-client set $tunnel ${params}; };`,

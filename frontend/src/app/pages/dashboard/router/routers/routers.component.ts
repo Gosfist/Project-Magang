@@ -62,7 +62,7 @@ export class RoutersComponent implements OnInit {
   private emptyForm() {
     return { name: '', nasname: '', ipAddress: '', type: 'mikrotik', ports: 1812,
       coaPort: 3799, radiusServerIp: '', secret: '', vpnHost: '', vpnUsername: '',
-      vpnPassword: '', description: '', isActive: true };
+      vpnPassword: '', vpnCaCertificate: '', description: '', isActive: true };
   }
 
   ngOnInit(): void {
@@ -107,6 +107,7 @@ export class RoutersComponent implements OnInit {
           vpnHost: item.vpnHost ?? '',
           vpnUsername: item.vpnUsername ?? '',
           vpnPassword: '',
+          vpnCaCertificate: '',
           description: item.description ?? '',
           isActive: item.isActive,
         }
@@ -125,6 +126,7 @@ export class RoutersComponent implements OnInit {
       coaPort: Number(this.form.coaPort) || 3799,
       secret: this.form.secret || undefined,
       vpnPassword: this.form.vpnPassword || undefined,
+      vpnCaCertificate: this.form.vpnCaCertificate || undefined,
     };
 
     const req = this.editing()
@@ -135,6 +137,7 @@ export class RoutersComponent implements OnInit {
       next: (r) => {
         this.saving.set(false);
         this.form.vpnPassword = '';
+        this.form.vpnCaCertificate = '';
         this.form.secret = '';
         this.open.set(false);
         this.toast.set({ message: r.message, type: 'success' });
@@ -175,6 +178,7 @@ export class RoutersComponent implements OnInit {
   closeForm(): void {
     this.open.set(false);
     this.form.vpnPassword = '';
+    this.form.vpnCaCertificate = '';
     this.form.secret = '';
   }
 

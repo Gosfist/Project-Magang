@@ -60,6 +60,8 @@ def format_table(table):
                 margins.append(margin)
             tc_properties.append(margins)
             for paragraph in cell.paragraphs:
+                # Keep short input tables together and never leave a header alone.
+                paragraph.paragraph_format.keep_with_next = index < len(table.rows) - 1 and (len(table.rows) <= 7 or index < 2)
                 for run in paragraph.runs:
                     run.font.color.rgb = RGBColor(0, 0, 0)
 
