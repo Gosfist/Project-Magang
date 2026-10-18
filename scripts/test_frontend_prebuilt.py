@@ -27,7 +27,7 @@ class FrontendPrebuiltTests(unittest.TestCase):
         for args in [('init',), ('add', 'frontend'), ('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-m', 'fixture')]:
             subprocess.run(['git', *args], cwd=self.root, check=True, capture_output=True)
         self.tree = MODULE.source_tree(self.root)
-        (self.root / '.git/info/exclude').write_text('frontend/dist/\nreleases/\n')
+        (self.root / '.git/info/exclude').write_text('frontend/dist/\n')
 
     def artifact(self, contents=None, tree=None, extras=(), checksum=None):
         contents = contents or {'index.html': b'<script src="new.js"></script>', 'new.js': b'new', 'assets/deep/logo.svg': b'logo'}
@@ -86,6 +86,36 @@ class FrontendPrebuiltTests(unittest.TestCase):
         for args in [('add', 'backend.txt'), ('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-m', 'backend')]:
             subprocess.run(['git', *args], cwd=self.root, check=True, capture_output=True)
         MODULE.deploy(self.root, check_only=True)
+
+    def test_only_release_package_is_visible_to_git(self):
+        (self.root / '.gitignore').write_bytes((ROOT / '.gitignore').read_bytes())
+        self.artifact()
+        (self.root / 'releases/frontend-pending.tar.gz').write_bytes(b'pending')
+        visible = subprocess.run(['git', 'check-ignore', 'releases/frontend.tar.gz'], cwd=self.root, capture_output=True)
+        hidden = subprocess.run(['git', 'check-ignore', 'releases/frontend-pending.tar.gz'], cwd=self.root, capture_output=True)
+        self.assertEqual(visible.returncode, 1)
+        self.assertEqual(hidden.returncode, 0)
+
+    def test_git_clone_and_pull_deliver_package_without_manual_upload(self):
+        self.artifact()
+        git = ['git', '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid']
+        subprocess.run([*git, 'add', 'releases/frontend.tar.gz'], cwd=self.root, check=True, capture_output=True)
+        subprocess.run([*git, 'commit', '-m', 'release'], cwd=self.root, check=True, capture_output=True)
+        with tempfile.TemporaryDirectory() as directory:
+            checkout = Path(directory) / 'server'
+            subprocess.run(['git', 'clone', '--quiet', str(self.root), str(checkout)], check=True, capture_output=True)
+            (checkout / '.git/info/exclude').write_text('frontend/dist/\n')
+            MODULE.deploy(checkout, check_only=True)
+            MODULE.deploy(checkout)
+            self.artifact(contents={'index.html': b'updated', 'next.js': b'next'})
+            subprocess.run([*git, 'add', 'releases/frontend.tar.gz'], cwd=self.root, check=True, capture_output=True)
+            subprocess.run([*git, 'commit', '-m', 'next release'], cwd=self.root, check=True, capture_output=True)
+            subprocess.run(['git', 'pull', '--ff-only'], cwd=checkout, check=True, capture_output=True)
+            MODULE.deploy(checkout)
+            self.assertEqual((checkout / 'frontend/dist/frontend/browser/index.html').read_bytes(), b'updated')
+            self.assertTrue((checkout / 'frontend/dist/frontend/browser/new.js').is_file())
+            self.assertTrue((checkout / 'frontend/dist/frontend/browser/next.js').is_file())
+            self.assertEqual(subprocess.check_output(['git', 'diff', '--name-only'], cwd=checkout), b'')
 
     def test_damaged_asset_and_missing_index_are_rejected(self):
         self.artifact(checksum={'new.js': '0' * 64})

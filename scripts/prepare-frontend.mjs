@@ -1,4 +1,4 @@
-// Build on the developer's machine; upload only releases/frontend.tar.gz.
+// Build on the developer's machine; commit releases/frontend.tar.gz to Git.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
@@ -56,8 +56,8 @@ try {
   pending = join(root, 'releases', `frontend-${process.pid}.tar.gz`);
   run('tar', ['-czf', pending, '-C', staging, 'manifest.json', 'browser']);
   renameSync(pending, join(root, 'releases/frontend.tar.gz'));
-  console.log('[UNZANET] Siap diunggah: releases/frontend.tar.gz');
-  console.log('[UNZANET] Push commit kode yang sama, unggah paket ke releases/ pada server, lalu npm run install atau npm run updatefe.');
+  console.log('[UNZANET] Paket siap di-commit: releases/frontend.tar.gz');
+  console.log('[UNZANET] Commit dan push paket ini ke GitHub. Server mengambilnya melalui git pull saat npm run install atau npm run updatefe.');
 } catch (error) {
   console.error(`[UNZANET] ${error.message}`);
   process.exitCode = 1;

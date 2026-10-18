@@ -5,8 +5,9 @@ Panduan aktif adalah [instalasi Ubuntu dan VirtualBox](instalasi-ubuntu-vpn.md),
 [isolir](pppoe-isolation.md), dan [backup darurat](pppoe-backup.md).
 Versi Word terbaru berada pada `install.doc` di root repo.
 Urutan instalasi: Ubuntu VirtualBox DHCP/NAT, aktifkan SSH, remote dari CMD,
-build frontend di laptop dengan `npm.cmd run preparefe`, clone repo di Ubuntu,
-upload `releases/frontend.tar.gz`, `npm run install` (mode `web`, tanpa build frontend di server),
+build frontend di laptop dengan `npm.cmd run preparefe`, commit dan push
+`releases/frontend.tar.gz` ke GitHub, clone repo beserta paket di Ubuntu,
+`npm run install` (mode `web`, tanpa build frontend di server),
 setup VPN Ubuntu dengan `npm run setupvpn`,
 buka website dan uji login, lalu tambah NAS untuk memperoleh satu script
 VPN/RADIUS MikroTik. Isi CA publik PEM pada form untuk impor CA dalam script

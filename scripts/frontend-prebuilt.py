@@ -53,7 +53,7 @@ def validate(archive, tree):
         raise ValueError('Manifest paket tidak valid.')
     manifest = json.load(archive.extractfile(metadata))
     if manifest.get('version') != 1 or manifest.get('sourceTree') != tree:
-        raise ValueError('Paket frontend berbeda dengan kode server. Build ulang npm run preparefe dan unggah paket terbaru.')
+        raise ValueError('Paket frontend berbeda dengan kode server. Build ulang npm run preparefe di laptop, lalu commit dan push paket terbaru ke GitHub.')
     files = manifest.get('files')
     if not isinstance(files, dict) or not files or 'index.html' not in files:
         raise ValueError('Manifest harus memuat index.html.')
@@ -77,7 +77,7 @@ def deploy(root, check_only=False):
     root = Path(root).resolve()
     artifact = root / 'releases/frontend.tar.gz'
     if not artifact.is_file():
-        raise ValueError('Paket releases/frontend.tar.gz wajib tersedia. Jalankan npm run preparefe di laptop, lalu unggah paket ke server.')
+        raise ValueError('Paket releases/frontend.tar.gz wajib tersedia. Jalankan npm run preparefe di laptop, commit dan push paket ke GitHub, lalu git pull di server.')
     if artifact.stat().st_size > MAX_BYTES:
         raise ValueError('Ukuran arsip terlalu besar.')
     tree = source_tree(root)

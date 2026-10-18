@@ -2,7 +2,8 @@
 **/.next/
 **/.angular/
 **/dist/
-/releases/
+/releases/*
+!/releases/frontend.tar.gz
 **/*.tsbuildinfo
 **/__pycache__/
 **/.env

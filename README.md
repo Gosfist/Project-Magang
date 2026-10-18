@@ -9,7 +9,7 @@ Fitur yang dipertahankan: web profile, login JWT, dashboard, role admin/petugas,
 
 ## Instalasi Ubuntu baru
 
-Panduan instalasi utama adalah [`install.doc`](install.doc), dengan [sumber teks yang sama](backend/docs/instalasi-ubuntu-vpn.md). Urutannya: pasang Ubuntu VirtualBox dengan DHCP/NAT, aktifkan SSH dan remote dari CMD Windows, build frontend di laptop dengan `npm.cmd run preparefe`, clone repo di Ubuntu dan upload paket frontend, jalankan `npm run install`, sambungkan VPN Ubuntu dengan `npm run setupvpn`, buka website dan uji login, kemudian tambah NAS untuk membuat satu script VPN/RADIUS MikroTik. VirtualBox meneruskan host `127.0.0.1:2222` ke guest SSH port 22 serta host `127.0.0.1:8080` ke guest Apache port 80. Internet boleh dari Wi-Fi, hotspot, atau provider; Ubuntu dan MikroTik tidak perlu satu LAN. Pada VPS gunakan jaringan provider. Installer ditujukan untuk Ubuntu Server 24.04 LTS baru, repo di `/var/www/Project-Magang`, Node.js 22, internet, dan user sudo.
+Panduan instalasi utama adalah [`install.doc`](install.doc), dengan [sumber teks yang sama](backend/docs/instalasi-ubuntu-vpn.md). Urutannya: pasang Ubuntu VirtualBox dengan DHCP/NAT, aktifkan SSH dan remote dari CMD Windows, build frontend di laptop dengan `npm.cmd run preparefe`, commit/push paket frontend ke GitHub dan clone repo beserta paket di Ubuntu, jalankan `npm run install`, sambungkan VPN Ubuntu dengan `npm run setupvpn`, buka website dan uji login, kemudian tambah NAS untuk membuat satu script VPN/RADIUS MikroTik. VirtualBox meneruskan host `127.0.0.1:2222` ke guest SSH port 22 serta host `127.0.0.1:8080` ke guest Apache port 80. Internet boleh dari Wi-Fi, hotspot, atau provider; Ubuntu dan MikroTik tidak perlu satu LAN. Pada VPS gunakan jaringan provider. Installer ditujukan untuk Ubuntu Server 24.04 LTS baru, repo di `/var/www/Project-Magang`, Node.js 22, internet, dan user sudo.
 
 Setelah repo di-clone dan Node.js/npm tersedia, jalankan dari root project:
 
@@ -26,49 +26,50 @@ FreeRADIUS membaca client SQL saat startup. Worker root terpisah memvalidasi lal
 Menjalankan installer kembali mempertahankan secret dan database yang sudah ditandai. Database berisi tabel tanpa penanda installer, atau perubahan SQL terhadap instalasi berisi data, membuat installer berhenti agar tidak menimpa data. `npm run update` tetap untuk pembaruan kode setelah instalasi.
 Jika `git pull` di dalam installer mengambil commit baru, installer melepas lock dan menjalankan ulang script terbaru sebelum pemasangan paket/database. Untuk mengganti installer lama yang sudah terlanjur berjalan, jalankan `git pull --ff-only` secara terpisah sebelum `npm run install`.
 
-Frontend wajib dibangun di laptop dan diunggah sebagai `releases/frontend.tar.gz` sebelum instalasi atau update frontend. Paket yang hilang, rusak atau berbeda kode membuat proses berhenti sebelum pemasangan dependency aplikasi. Ubuntu hanya memasang dependency backend/bot, menghasilkan Prisma Client, membangun backend dan menyalin aset frontend. Tidak ada pengaturan batas RAM/CPU/worker tambahan atau penghentian MySQL, Apache dan FreeRADIUS untuk tahap build. Service aplikasi diaktifkan/direstart pada akhir instalasi. `npm run buildfe` adalah alias `npm run preparefe` untuk membuat paket di laptop.
+Frontend dibangun di laptop dan hasil `releases/frontend.tar.gz` di-commit/push ke GitHub sebelum instalasi atau update frontend. Clone dan pull di server mengambil paket tersebut bersama kode aplikasi. Paket yang hilang, rusak atau berbeda kode membuat proses berhenti sebelum pemasangan dependency aplikasi. Ubuntu hanya memasang dependency backend/bot, menghasilkan Prisma Client, membangun backend dan menyalin aset frontend. Tidak ada pengaturan batas RAM/CPU/worker tambahan atau penghentian MySQL, Apache dan FreeRADIUS untuk tahap build. Service aplikasi diaktifkan/direstart pada akhir instalasi. `npm run buildfe` adalah alias `npm run preparefe` untuk membuat paket di laptop.
 
 Frontend production memakai `/api/wa` melalui proxy Apache sehingga port bot 3002 tidak perlu dibuka ke jaringan. Instalasi lama yang memperbarui frontend perlu menambahkan proxy `/api/wa` sebelum proxy `/api/`; contoh konfigurasi tersedia pada renderer installer. Perintah `npm install` di root juga memanggil lifecycle `install`; gunakan root project ini untuk installer Ubuntu, dan jalankan pengelolaan dependency per aplikasi dari subfolder masing-masing.
 
-## Build frontend di laptop, pasang di VPS/VirtualBox
+## Build frontend di laptop lalu kirim melalui GitHub
 
-1. Pasang Node.js 22 dan Git di laptop. Simpan perubahan frontend ke commit dan push kode ke GitHub.
-2. Di PowerShell laptop, dari root project:
+1. Gunakan folder project Windows yang sudah ada. Pasang Node.js 22 dan Git. Simpan perubahan kode frontend ke commit dahulu.
+2. Jika frontend berubah atau paket belum ada, jalankan di PowerShell:
 
 ```powershell
+cd "D:\1. Kuliah\Magang\Project Magang"
 npm.cmd run preparefe
 ```
 
-3. Di SSH Ubuntu aplikasi, siapkan folder paket (ganti `USER_UBUNTU` dengan username SSH):
-
-```bash
-sudo install -d -m 755 -o USER_UBUNTU /var/www/Project-Magang/releases
-```
-
-4. Di PowerShell laptop, unggah paket ke VirtualBox NAT:
+3. Commit dan push paket hasil build melalui aplikasi Git atau perintah berikut:
 
 ```powershell
-scp -P 2222 .\releases\frontend.tar.gz USER_UBUNTU@127.0.0.1:/var/www/Project-Magang/releases/frontend-upload.tar.gz
+git add releases/frontend.tar.gz
+git commit -m "Build frontend produksi"
+git push
 ```
 
-   Untuk VPS (ganti `IP_VPS` dan username):
-
-```powershell
-scp .\releases\frontend.tar.gz USER_UBUNTU@IP_VPS:/var/www/Project-Magang/releases/frontend-upload.tar.gz
-```
-
-5. Setelah upload selesai, di SSH Ubuntu aplikasi:
+4. Pada Ubuntu baru, clone repository sesuai `install.doc`, lalu jalankan dari `/var/www/Project-Magang`:
 
 ```bash
-cd /var/www/Project-Magang
-mv releases/frontend-upload.tar.gz releases/frontend.tar.gz
 git pull --ff-only
+python3 scripts/frontend-prebuilt.py --check
 npm run install
 ```
 
-6. Untuk update frontend pada server yang sudah terpasang, ulangi build/upload lalu jalankan `npm run updatefe` sebagai pengganti `npm run install`.
+5. Untuk server yang sudah terpasang, jalankan `npm run updatefe` untuk frontend saja, atau `npm run update` untuk seluruh aplikasi. Keduanya mengambil kode/paket terbaru melalui Git. Backend saja memakai `npm run updatebe`; paket frontend tidak perlu dibangun ulang jika frontend tidak berubah.
 
-`preparefe` memasang dependency dan melakukan build **production** di laptop, kemudian membuat satu paket `releases/frontend.tar.gz`. Folder `releases` tidak di-commit ke Git. Server memeriksa kesamaan kode frontend dan checksum semua file, lalu memasang aset tanpa dependency atau build Angular. Backend/Prisma, database dan layanan lain tetap disiapkan di Ubuntu. Alamat API production tetap `/api`, sehingga paket tidak terikat IP laptop. Paket wajib tersedia; jika hilang, rusak atau tidak sesuai kode, build ulang dan unggah paket terbaru. File chunk lama dipertahankan saat update, dan `index.html` diganti terakhir. Jangan upload saat installer/update masih berjalan.
+`preparefe` membuat build **production** dan paket `releases/frontend.tar.gz` di laptop. File paket ini ikut Git; file sementara/backup lain dalam `releases` tetap diabaikan. Server memeriksa kesamaan kode frontend dan checksum setiap aset, lalu memasang frontend tanpa dependency atau build Angular. Tidak ada upload SCP frontend. Backend/Prisma, database dan layanan lain tetap disiapkan di Ubuntu. API production memakai `/api`, sehingga paket tidak terikat IP laptop. Jika paket hilang atau tidak sesuai kode, build ulang di laptop, commit/push paket terbaru, lalu ulangi update server. Chunk lama dipertahankan dan `index.html` diganti terakhir.
+
+Untuk server lama yang pernah menerima paket lewat SCP, pindahkan hanya paket yang belum dilacak Git sebelum pull pertama ke alur baru:
+
+```bash
+cd /var/www/Project-Magang
+if [ -f releases/frontend.tar.gz ] && ! git ls-files --error-unmatch releases/frontend.tar.gz >/dev/null 2>&1; then
+  backup_path="$(mktemp "$HOME/frontend-scp-backup.XXXXXX.tar.gz")"
+  sudo mv -- releases/frontend.tar.gz "$backup_path"
+fi
+git pull --ff-only
+```
 
 ## Menjalankan lokal
 

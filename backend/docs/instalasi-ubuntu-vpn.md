@@ -45,22 +45,30 @@ ssh-keygen -R [127.0.0.1]:2222
 
 ## 3 Build frontend di laptop Windows
 
-1. Commit dan push seluruh revisi terbaru project ke GitHub.
+1. Gunakan folder project Windows yang sudah ada. Simpan perubahan kode frontend ke commit terlebih dahulu.
 2. Install Git for Windows dan Node.js 22 pada laptop. Tutup lalu buka kembali PowerShell.
-3. Jalankan di PowerShell laptop:
+3. Jika paket belum ada atau kode frontend berubah, jalankan di PowerShell laptop dari folder project yang sama:
 
 ~~~powershell
+cd "D:\1. Kuliah\Magang\Project Magang"
 node --version
 git --version
 tar --version
-git clone https://github.com/Gosfist/Project-Magang.git "$HOME\Project-Magang-Deploy"
-cd "$HOME\Project-Magang-Deploy"
 npm.cmd run preparefe
 Get-Item .\releases\frontend.tar.gz
 ~~~
 
-4. Pastikan Node menampilkan v22 dan build selesai dengan pesan Siap diunggah: releases/frontend.tar.gz.
-5. Gunakan paket tersebut untuk tahap 5. Jangan ubah kode frontend sebelum upload dan instalasi selesai.
+4. Pastikan Node menampilkan v22 dan build selesai dengan pesan Paket siap di-commit: releases/frontend.tar.gz.
+5. Jika paket dari kode frontend yang sama sudah ada, gunakan paket tersebut tanpa build ulang.
+6. Commit paket hasil build lalu push ke GitHub melalui aplikasi Git, atau jalankan:
+
+~~~powershell
+git add releases/frontend.tar.gz
+git commit -m "Build frontend produksi"
+git push
+~~~
+
+7. Pastikan releases/frontend.tar.gz terlihat di GitHub sebelum melanjutkan ke Ubuntu baru.
 
 ## 4 Siapkan aplikasi di Ubuntu baru
 
@@ -78,38 +86,24 @@ npm --version
 sudo install -d -o "$USER" -g "$(id -gn)" /var/www/Project-Magang
 git clone https://github.com/Gosfist/Project-Magang.git /var/www/Project-Magang
 cd /var/www/Project-Magang
-install -d -m 755 releases
+ls -lh releases/frontend.tar.gz
 ~~~
 
-3. Biarkan sesi SSH terbuka. Lanjutkan upload dari PowerShell laptop.
+3. Pastikan paket frontend sudah tersedia dari hasil clone. Lanjut ke tahap 5 pada sesi SSH ini.
 
-## 5 Upload frontend dan install aplikasi
+## 5 Install aplikasi dari GitHub
 
-1. Di PowerShell laptop, ganti USER_UBUNTU dengan username Linux lalu upload ke VirtualBox:
-
-~~~powershell
-cd "$HOME\Project-Magang-Deploy"
-scp -P 2222 .\releases\frontend.tar.gz USER_UBUNTU@127.0.0.1:/var/www/Project-Magang/releases/frontend-upload.tar.gz
-~~~
-
-2. Jika aplikasi dipasang pada VPS, gunakan perintah berikut sebagai pengganti upload VirtualBox. Ganti IP_VPS dan USER_UBUNTU:
-
-~~~powershell
-scp .\releases\frontend.tar.gz USER_UBUNTU@IP_VPS:/var/www/Project-Magang/releases/frontend-upload.tar.gz
-~~~
-
-3. Setelah upload selesai, kembali ke sesi SSH Ubuntu aplikasi:
+1. Jalankan di sesi SSH Ubuntu aplikasi:
 
 ~~~bash
 cd /var/www/Project-Magang
-mv releases/frontend-upload.tar.gz releases/frontend.tar.gz
 git pull --ff-only
 python3 scripts/frontend-prebuilt.py --check
 npm run install
 ~~~
 
-4. Pastikan muncul Paket frontend lokal valid; build frontend di server dilewati. Paket wajib tersedia. Jika hilang atau ditolak, ulangi build dan upload dari kode terbaru.
-5. Isi pertanyaan installer:
+2. Pastikan muncul Paket frontend lokal valid; build frontend di server dilewati. Jika paket hilang atau ditolak, build ulang di laptop, commit dan push paket terbaru, lalu ulangi git pull.
+3. Isi pertanyaan installer:
 
 | Pertanyaan | Isian |
 | --- | --- |
@@ -117,8 +111,8 @@ npm run install
 | Tahap jaringan | web |
 | Email administrator | Email admin milikmu |
 
-6. Untuk aplikasi di VPS, isi URL browser dengan IP/domain sebenarnya dan akses SSH dari provider; lewati port forwarding VirtualBox.
-7. Tunggu pesan Frontend hasil build laptop terpasang dan Aplikasi siap dibuka. Jangan impor database.sql lagi.
+4. Untuk aplikasi di VPS, isi URL browser dengan IP/domain sebenarnya dan akses SSH dari provider; lewati port forwarding VirtualBox.
+5. Tunggu pesan Frontend hasil build laptop terpasang dan Aplikasi siap dibuka. Jangan impor database.sql lagi.
 
 ## 6 Siapkan gateway VPN
 
