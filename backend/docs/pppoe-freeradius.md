@@ -10,6 +10,8 @@ Aktifkan modul SQL pada authorize, accounting, session, dan post auth. Modul mem
 
 Virtual server UNZANET memakai PAP, CHAP dan MS-CHAP untuk PPPoE. Installer menonaktifkan symlink modul EAP bawaan setelah mengganti site `default`/`inner-tunnel`; file `mods-available/eap` dipertahankan. Ini mencegah kegagalan `Failed to find 'Auth-Type EAP' section` dari modul yang aktif tanpa handler. File EAP custom yang bukan symlink tidak dihapus otomatis.
 
+Client SSTP Ubuntu memakai opsi plugin `sstp-sock /run/sstpc/sstpc-sstp-radius`. Pada konfigurasi lama dengan salah tulis `sstp-socket`, perbaiki hanya nama opsi pada `/etc/ppp/peers/sstp-radius` lalu restart `sstp-radius`; kredensial dan database tidak perlu dibuat ulang. Jika tunnel tetap belum muncul, periksa `sudo journalctl -u sstp-radius -n 60 --no-pager` dan koneksi TCP 443 ke gateway. [Contoh konfigurasi resmi SSTP](https://gitlab.com/sstp-project/sstp-client/-/blob/master/sstp-test.example) menunjukkan opsi `sstp-sock` untuk plugin PPP.
+
 Untuk instalasi manual, salin query MySQL bawaan melalui `scripts/installer-config.py queries --source PATH_QUERY_ASLI`, tinjau hasil, gunakan file terpisah `queries-unzanet.conf`, dan arahkan include modul SQL ke file itu. Akun SQL radius perlu SELECT pada radcheck/radreply/grup/nas/website_settings, SELECT/INSERT/UPDATE pada radacct/nasreload, serta SELECT/INSERT pada radpostauth. Akun itu tidak memerlukan hak DDL. Jalur update membantu memasang konfigurasi ini dan berhenti jika format custom tidak dikenali.
 
 ## Accounting dan satu sesi

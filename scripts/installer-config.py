@@ -111,7 +111,7 @@ pty {ppp_quote('/usr/sbin/sstpc --ipparam sstp-radius --nolaunchpppd ' + config[
 name {ppp_quote(config['VPN_USERNAME'])}
 password {ppp_quote(config['VPN_PASSWORD'])}
 plugin sstp-pppd-plugin.so
-sstp-socket /run/sstpc/sstpc-sstp-radius
+sstp-sock /run/sstpc/sstpc-sstp-radius
 ifname sstp-radius
 noauth
 refuse-eap

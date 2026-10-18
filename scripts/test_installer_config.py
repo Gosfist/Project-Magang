@@ -40,6 +40,15 @@ class InstallerConfigurationTests(unittest.TestCase):
         self.assertNotIn('--cert-warn', peer)
         self.assertNotIn('defaultroute\n', peer.replace('nodefaultroute\n', ''))
 
+    def test_sstp_pppd_plugin_uses_supported_socket_option(self):
+        files = module.render(self.config)
+        peer = files['/etc/ppp/peers/sstp-radius']
+        self.assertIn('plugin sstp-pppd-plugin.so\nsstp-sock /run/sstpc/sstpc-sstp-radius\n', peer)
+        self.assertNotIn('sstp-socket', peer)
+        self.assertIn('--ipparam sstp-radius --nolaunchpppd', peer)
+        self.assertIn('ifname sstp-radius\n', peer)
+        self.assertIn('ExecStartPre=/usr/bin/install -d -m 0755 /run/sstpc', files['/etc/systemd/system/sstp-radius.service'])
+
     def test_backend_uses_radius_vpn_ip_and_shared_secrets_match_bot(self):
         files = module.render(self.config)
         backend = files['/var/www/Project-Magang/backend/.env']
