@@ -154,7 +154,7 @@ def build(source, destination):
             document.add_paragraph().paragraph_format.space_after = Pt(0)
         else:
             paragraph = document.add_paragraph()
-            if line.endswith(':'):
+            if line.endswith(':') or line.startswith('1. Jika '):
                 paragraph.paragraph_format.keep_with_next = True
             if line.startswith('- '):
                 paragraph.style = 'List Bullet'

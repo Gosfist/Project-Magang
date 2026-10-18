@@ -4,7 +4,8 @@
   "scripts": {
     "install": "bash scripts/server-install.sh",
     "setupvpn": "bash scripts/server-setup-vpn.sh",
-    "buildfe": "bash scripts/build-frontend.sh",
+    "buildfe": "node scripts/prepare-frontend.mjs",
+    "preparefe": "node scripts/prepare-frontend.mjs",
     "update": "bash scripts/server-update.sh all",
     "runupdate": "bash scripts/server-update.sh all",
     "updatebe": "bash scripts/server-update.sh be",

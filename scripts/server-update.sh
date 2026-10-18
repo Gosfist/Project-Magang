@@ -3,7 +3,6 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKEND_DIR="$ROOT_DIR/backend"
-FRONTEND_DIR="$ROOT_DIR/frontend"
 BOTWA_DIR="$ROOT_DIR/bot_whatsapp"
 SERVICE_NAME="${SERVICE_NAME:-unzanet-backend}"
 BOTWA_SERVICE="${BOTWA_SERVICE:-unzanet-botwa}"
@@ -35,6 +34,10 @@ cd "$ROOT_DIR"
 log "Ambil update terbaru dari Git"
 REPO_OWNER="$(stat -c '%U' "$ROOT_DIR/.git")"
 runuser -u "$REPO_OWNER" -- git -C "$ROOT_DIR" pull --ff-only
+
+if [[ "$MODE" == all || "$MODE" == fe ]]; then
+  python3 "$ROOT_DIR/scripts/frontend-prebuilt.py" --check
+fi
 
 if [[ "$MODE" != "all" && "$MODE" != "be" && "$MODE" != "fe" && "$MODE" != "bot" ]]; then
   printf 'Mode tidak dikenal: %s\nGunakan: npm run update, npm run updatebe, npm run updatefe, atau npm run updatebot\n' "$MODE"
@@ -81,13 +84,8 @@ if [[ "$MODE" == "all" || "$MODE" == "be" ]]; then
 fi
 
 if [[ "$MODE" == "all" || "$MODE" == "fe" ]]; then
-  log "Install dependency frontend"
-  install_node_modules "$FRONTEND_DIR" "Frontend"
-
-  log "Build frontend"
-  cd "$FRONTEND_DIR"
-  # Keep hashed assets referenced by browser tabs opened before this update.
-  bash "$ROOT_DIR/scripts/build-frontend.sh"
+  log "Pasang frontend hasil build laptop"
+  python3 "$ROOT_DIR/scripts/frontend-prebuilt.py"
 fi
 
 if [[ "$MODE" == "all" || "$MODE" == "bot" ]]; then

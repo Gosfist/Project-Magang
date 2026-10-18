@@ -64,6 +64,7 @@ main() {
   as_repo_owner git -C "$ROOT_DIR" pull --ff-only
   current_revision="$(as_repo_owner git -C "$ROOT_DIR" rev-parse HEAD)"
   reload_installer_if_updated "$previous_revision" "$current_revision"
+  python3 "$ROOT_DIR/scripts/frontend-prebuilt.py" --check
 
   if [[ ! -f /etc/unzanet/install.json ]]; then
     [[ ! -f "$ROOT_DIR/backend/.env" && ! -f "$ROOT_DIR/bot_whatsapp/.env" ]] || die 'Ada .env lama tanpa state installer. Gunakan VM/repo baru agar secret lama tidak tertimpa.'
@@ -188,8 +189,8 @@ SQL
   ln -sfn ../mods-available/sql /etc/freeradius/3.0/mods-enabled/sql
   ln -sfn ../sites-available/unzanet /etc/freeradius/3.0/sites-enabled/unzanet
 
-  log 'Memasang dependency dan membangun aplikasi'
-  bash "$ROOT_DIR/scripts/build-install-phase.sh"
+  log 'Memasang dependency backend/bot dan frontend hasil build laptop'
+  bash "$ROOT_DIR/scripts/install-applications.sh"
   export UNZANET_ADMIN_EMAIL="$(setting ADMIN_EMAIL)"
   export UNZANET_ADMIN_PASSWORD="$(setting ADMIN_PASSWORD)"
   (cd "$ROOT_DIR/backend" && node --env-file=.env --input-type=module <<'JS'

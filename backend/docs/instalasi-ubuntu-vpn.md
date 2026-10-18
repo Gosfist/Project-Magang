@@ -4,9 +4,9 @@
 
 1. Install Oracle VirtualBox pada Windows.
 2. Download ISO Ubuntu Server 24.04 LTS.
-3. Buat VM: 2 CPU, RAM 4 GB, disk dinamis 40 GB.
+3. Buat VM: 1 CPU, RAM 2 GB, disk dinamis 40 GB.
 4. Pilih Network → Adapter 1 → NAT → Cable Connected.
-5. Buka Advanced → Port Forwarding. Kosongkan Guest IP dan isi aturan berikut:
+5. Klik Port Forwarding di bawah Cable Connected. Pada tampilan Basic, buka Advanced dahulu. Kosongkan Guest IP dan isi aturan berikut:
 
 | Nama | Protokol | Host IP | Host Port | Guest Port |
 | --- | --- | --- | --- | --- |
@@ -36,17 +36,40 @@ ssh -p 2222 USER_UBUNTU@127.0.0.1
 ~~~
 
 3. Cocokkan identitas server, ketik yes, lalu masukkan password Linux.
-4. Jalankan tahap berikutnya pada sesi SSH Ubuntu ini.
+4. Jika VM lama diganti dan muncul REMOTE HOST IDENTIFICATION HAS CHANGED, jalankan di CMD Windows lalu ulangi SSH:
+
+~~~cmd
+ssh-keygen -R [127.0.0.1]:2222
+~~~
 5. Jika perintah ssh tidak tersedia, install OpenSSH Client melalui Optional features Windows.
 
-## 3 Install aplikasi
+## 3 Build frontend di laptop Windows
 
-1. Gunakan VM baru dan database kosong. Pastikan revisi terbaru sudah tersedia di Git remote.
-2. Jalankan melalui SSH Ubuntu:
+1. Commit dan push seluruh revisi terbaru project ke GitHub.
+2. Install Git for Windows dan Node.js 22 pada laptop. Tutup lalu buka kembali PowerShell.
+3. Jalankan di PowerShell laptop:
+
+~~~powershell
+node --version
+git --version
+tar --version
+git clone https://github.com/Gosfist/Project-Magang.git "$HOME\Project-Magang-Deploy"
+cd "$HOME\Project-Magang-Deploy"
+npm.cmd run preparefe
+Get-Item .\releases\frontend.tar.gz
+~~~
+
+4. Pastikan Node menampilkan v22 dan build selesai dengan pesan Siap diunggah: releases/frontend.tar.gz.
+5. Gunakan paket tersebut untuk tahap 5. Jangan ubah kode frontend sebelum upload dan instalasi selesai.
+
+## 4 Siapkan aplikasi di Ubuntu baru
+
+1. Gunakan VM baru dan database kosong.
+2. Jalankan pada sesi SSH Ubuntu aplikasi, bukan VPS gateway:
 
 ~~~bash
 sudo apt update
-sudo apt install -y git curl ca-certificates
+sudo apt install -y git curl ca-certificates python3
 curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource-22.sh
 sudo bash /tmp/nodesource-22.sh
 sudo apt install -y nodejs
@@ -55,10 +78,38 @@ npm --version
 sudo install -d -o "$USER" -g "$(id -gn)" /var/www/Project-Magang
 git clone https://github.com/Gosfist/Project-Magang.git /var/www/Project-Magang
 cd /var/www/Project-Magang
+install -d -m 755 releases
+~~~
+
+3. Biarkan sesi SSH terbuka. Lanjutkan upload dari PowerShell laptop.
+
+## 5 Upload frontend dan install aplikasi
+
+1. Di PowerShell laptop, ganti USER_UBUNTU dengan username Linux lalu upload ke VirtualBox:
+
+~~~powershell
+cd "$HOME\Project-Magang-Deploy"
+scp -P 2222 .\releases\frontend.tar.gz USER_UBUNTU@127.0.0.1:/var/www/Project-Magang/releases/frontend-upload.tar.gz
+~~~
+
+2. Jika aplikasi dipasang pada VPS, gunakan perintah berikut sebagai pengganti upload VirtualBox. Ganti IP_VPS dan USER_UBUNTU:
+
+~~~powershell
+scp .\releases\frontend.tar.gz USER_UBUNTU@IP_VPS:/var/www/Project-Magang/releases/frontend-upload.tar.gz
+~~~
+
+3. Setelah upload selesai, kembali ke sesi SSH Ubuntu aplikasi:
+
+~~~bash
+cd /var/www/Project-Magang
+mv releases/frontend-upload.tar.gz releases/frontend.tar.gz
+git pull --ff-only
+python3 scripts/frontend-prebuilt.py --check
 npm run install
 ~~~
 
-3. Isi pertanyaan installer:
+4. Pastikan muncul Paket frontend lokal valid; build frontend di server dilewati. Paket wajib tersedia. Jika hilang atau ditolak, ulangi build dan upload dari kode terbaru.
+5. Isi pertanyaan installer:
 
 | Pertanyaan | Isian |
 | --- | --- |
@@ -66,12 +117,12 @@ npm run install
 | Tahap jaringan | web |
 | Email administrator | Email admin milikmu |
 
-4. Tunggu installer selesai tanpa error. Jangan impor database.sql lagi.
-5. Untuk VPS, gunakan IP/domain web dan akses SSH dari provider; lewati port forwarding VirtualBox.
+6. Untuk aplikasi di VPS, isi URL browser dengan IP/domain sebenarnya dan akses SSH dari provider; lewati port forwarding VirtualBox.
+7. Tunggu pesan Frontend hasil build laptop terpasang dan Aplikasi siap dibuka. Jangan impor database.sql lagi.
 
-## 4 Siapkan gateway VPN
+## 6 Siapkan gateway VPN
 
-1. Jika gateway sudah tersedia, siapkan host, CA publik, akun/IP Ubuntu dan akun/IP MikroTik dari pengelola. Lanjut ke tahap 5.
+1. Jika gateway sudah tersedia, siapkan host, CA publik, akun/IP Ubuntu dan akun/IP MikroTik dari pengelola. Lanjut ke tahap 7.
 2. Jika belum tersedia, siapkan VPS Ubuntu 24.04 dengan IP publik dan TCP 443 kosong.
 3. Buka CMD Windows kedua dan remote VPS gateway:
 
@@ -104,7 +155,7 @@ openssl x509 -in ~/sstp-ca.crt -noout -fingerprint -sha256
 | Ubuntu RADIUS | 10.88.0.2 |
 | MikroTik pertama | 10.88.0.3 |
 
-## 5 Pasang CA dan VPN Ubuntu
+## 7 Pasang CA dan VPN Ubuntu
 
 1. Kembali ke sesi SSH Ubuntu aplikasi.
 2. Ganti PORT_SSH_GATEWAY, USER_GATEWAY dan HOST_GATEWAY, lalu ambil CA publik:
@@ -144,7 +195,7 @@ ping -c 5 10.88.0.1
 
 7. Lanjut setelah tunnel aktif dan ping gateway berhasil. Pertahankan DHCP interface internet Ubuntu.
 
-## 6 Buka website dan login
+## 8 Buka website dan login
 
 1. Jalankan melalui SSH Ubuntu:
 
@@ -159,7 +210,7 @@ sudo cat /etc/unzanet/credentials.txt
 4. Login dengan kredensial awal. Ganti password melalui profil.
 5. Buat snapshot VM. Lanjut ke MikroTik setelah VPN Ubuntu dan login website berhasil.
 
-## 7 Tambah MikroTik dan paste satu script
+## 9 Tambah MikroTik dan paste satu script
 
 1. Pastikan MikroTik memiliki internet, DNS dan waktu yang benar.
 2. Di SSH Ubuntu, baca CA publik:
@@ -201,7 +252,7 @@ cat ~/sstp-ca.crt
 ping -c 5 10.88.0.3
 ~~~
 
-## 8 Siapkan PPPoE dan pool
+## 10 Siapkan PPPoE dan pool
 
 1. Jika server PPPoE dan pool sudah tersedia, lanjut ke langkah 4.
 2. Untuk router kosong, ganti PORT_PELANGGAN dan sesuaikan subnet pelanggan. Jalankan pada MikroTik:
@@ -222,7 +273,7 @@ ping -c 5 10.88.0.3
 5. Simpan, lalu pasang script pool yang dihasilkan pada MikroTik.
 6. Buat Harga Paket dan pilih nama pool yang sama.
 
-## 9 Uji pelanggan dan Disconnect
+## 11 Uji pelanggan dan Disconnect
 
 1. Buat akun pelanggan uji di web dengan NAS dan paket yang benar.
 2. Jangan buat PPP secret lokal dengan username yang sama pada MikroTik.
@@ -244,7 +295,7 @@ sudo mysql unzanet -e "SELECT username,nasipaddress,framedipaddress,acctstarttim
 7. Klik Putus Sesi pada pelanggan uji di web.
 8. Pastikan sesi terputus dan pelanggan aktif dapat reconnect.
 
-## 10 Aktifkan dan uji isolir
+## 12 Aktifkan dan uji isolir
 
 1. Buka Isolir PPPoE pada web dan pilih NAS.
 2. Isi pool isolir terpisah, contoh rentang 192.168.100.2–192.168.100.254, subnet 192.168.100.0/24 dan gateway 192.168.100.1.
@@ -253,7 +304,7 @@ sudo mysql unzanet -e "SELECT username,nasipaddress,framedipaddress,acctstarttim
 5. Isolir pelanggan uji. Pastikan reconnect ke pool isolir dan akses internet terblokir.
 6. Uji ACC pembayaran atau janji bayar. Pastikan reconnect ke pool normal dan internet kembali.
 
-## 11 Selesaikan pengaturan
+## 13 Selesaikan pengaturan
 
 1. Isi area, petugas, biaya, paket dan data operasional.
 2. Buka Login Bot Wa dan scan QR dengan ponsel.
