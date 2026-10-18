@@ -23,7 +23,7 @@ class InstallerConfigurationTests(unittest.TestCase):
             ('VPN_ROUTER_IP', '10.88.0.2'), ('VPN_RADIUS_IP', '192.0.2.2'),
             ('VPN_ROUTER_IP', '10.88.0.255'), ('VPN_SERVER', 'host;reboot'), ('VPN_SERVER', '--help'),
             ('VPN_NETWORK', '0.0.0.0/0'), ('RADIUS_DB_PASSWORD', 'bad"config'),
-            ('WEB_URL', 'http://host/path'), ('WEB_URL', 'http://host:3000'),
+            ('WEB_URL', 'http://host/path'), ('WEB_URL', 'http://host:0'),
             ('ROOT_DIR', '/var/www/a\nExecStart=bad'), ('VPN_USERNAME', 'line\nbreak'),
         ]:
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
@@ -66,6 +66,36 @@ class InstallerConfigurationTests(unittest.TestCase):
         self.assertNotIn('/etc/ppp/peers/sstp-radius', files)
         self.assertNotIn('/etc/systemd/system/sstp-radius.service', files)
         self.assertIn('RADIUS_SERVER_IP="192.168.10.3"', files['/var/www/Project-Magang/backend/.env'])
+
+    def test_web_first_works_with_nat_port_forwarding_and_no_vpn_account(self):
+        config = {**self.config, 'NETWORK_MODE': 'web', 'WEB_URL': 'http://127.0.0.1:8080',
+                  'VPN_SERVER': '', 'VPN_USERNAME': '', 'VPN_PASSWORD': ''}
+        files = module.render(config)
+        self.assertNotIn('/etc/ppp/peers/sstp-radius', files)
+        self.assertNotIn('/etc/systemd/system/sstp-radius.service', files)
+        backend = files['/var/www/Project-Magang/backend/.env']
+        self.assertIn('FRONTEND_URL="http://127.0.0.1:8080"', backend)
+        self.assertIn('RADIUS_SERVER_IP=""', backend)
+        self.assertIn('RADIUS_DISCONNECT_SOURCE_IP=""', backend)
+        self.assertNotIn('192.168.10.3', backend)
+
+    def test_vpn_second_stage_preserves_existing_website_settings_and_secrets(self):
+        config = {**self.config, 'NETWORK_MODE': 'web', 'WEB_URL': 'http://127.0.0.1:8080',
+                  'VPN_SERVER': '', 'VPN_USERNAME': '', 'VPN_PASSWORD': ''}
+        original = 'JWT_SECRET="user-edited-secret"\nDATABASE_URL="keep-db"\nFRONTEND_URL="http://127.0.0.1:8080"\nRADIUS_SERVER_IP=""\nRADIUS_DISCONNECT_SOURCE_IP=""\nLARAVEL_APP_KEY="keep-key"\n'
+        changes = {key: self.config[key] for key in ('VPN_SERVER', 'VPN_USERNAME', 'VPN_PASSWORD', 'VPN_RADIUS_IP', 'VPN_ROUTER_IP', 'VPN_NETWORK')}
+        updated, files = module.vpn_transition(config, original, changes)
+        self.assertEqual(updated['NETWORK_MODE'], 'vpn')
+        self.assertEqual(updated['WEB_URL'], config['WEB_URL'])
+        result = files['/var/www/Project-Magang/backend/.env']
+        for line in original.splitlines():
+            if not line.startswith(('RADIUS_SERVER_IP=', 'RADIUS_DISCONNECT_SOURCE_IP=')):
+                self.assertIn(line, result)
+        self.assertIn('RADIUS_SERVER_IP="10.88.0.2"', result)
+        self.assertIn('RADIUS_DISCONNECT_SOURCE_IP="10.88.0.2"', result)
+        self.assertEqual(len(files), 4)
+        self.assertNotIn('/var/www/Project-Magang/bot_whatsapp/.env', files)
+        self.assertNotIn('/etc/apache2/sites-available/unzanet.conf', files)
 
     def test_client_query_filter_preserves_accounting_and_other_vendor_queries(self):
         original = 'sql_user_name = "%{User-Name}"\nclient_query = "\\\n SELECT id, nasname, shortname, type, secret, server \\\n FROM ${client_table}"\nsimul_count_query = "SELECT COUNT(*) FROM radacct"\nsimul_verify_query = "SELECT * FROM radacct"\naccounting { query = "INSERT INTO radacct ..." }\n'

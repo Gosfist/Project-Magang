@@ -1,142 +1,68 @@
-# Instalasi UNZANET tanpa API MikroTik
+# Instalasi UNZANET dengan internet dinamis dan RADIUS melalui VPN
 
-Panduan ini menyiapkan Ubuntu Server 24.04 LTS di VirtualBox, MySQL, backend NestJS, frontend Angular, bot WhatsApp, dan FreeRADIUS. Mulai dengan MikroTik fisik sampai ping dua arah berhasil. Lalu pilih sambungan LAN untuk lab atau SSTP untuk router berbeda lokasi. Aplikasi tidak meminta atau menyimpan username/password admin atau API MikroTik. Administrator memasang konfigurasi perangkat dengan menyalin script web ke Terminal MikroTik.
+Selesaikan Ubuntu, database, backend, frontend, dan login website terlebih dahulu. Setelah website dapat dibuka, siapkan VPN Ubuntu dan hubungkan MikroTik di lokasi lain. Internet Ubuntu boleh berasal dari Wi Fi laptop, hotspot, internet rumah, atau jaringan provider. Ubuntu tidak memerlukan IP LAN tertentu dan tidak perlu satu jaringan fisik dengan MikroTik pelanggan.
 
-## 1 Arsitektur dan alamat contoh
+## 1 Memahami alamat internet website dan tunnel
 
-Autentikasi memakai RADIUS RFC 2865 pada UDP 1812; accounting memakai RFC 2866 pada UDP 1813. Pemutusan sesi memakai Disconnect Request RFC 5176 pada UDP 3799. RFC 5176 menggantikan RFC 3576. Port 3799 adalah listener pada MikroTik sebagai tujuan permintaan server, bukan port autentikasi Ubuntu. Tidak ada koneksi RouterOS API TCP 8728/8729 atau monitoring SNMP.
+Ada tiga alamat dengan tugas berbeda. IP internet/LAN Ubuntu mengikuti jaringan tempat server berada dan boleh diperoleh dengan DHCP. URL website adalah alamat yang dibuka pengguna, misalnya port forwarding laptop saat lab atau domain ketika dihosting. IP tunnel RADIUS merupakan alamat privat tetap yang ditetapkan gateway VPN untuk mengenali server dan NAS. Alamat tunnel tidak menggantikan IP internet Ubuntu.
 
-| Sambungan | Ubuntu RADIUS | MikroTik NAS | Jalur |
-| --- | --- | --- | --- |
-| Lab LAN fisik | 192.168.10.3/29 | 192.168.10.1/29 | Bridged Adapter ke Ethernet fisik |
-| Cloud SSTP | 10.88.0.2 | 10.88.0.3 | Dua klien ke gateway VPN 10.88.0.1 |
+| Alamat | Contoh dalam panduan | Kegunaan |
+| --- | --- | --- |
+| Jaringan internet Ubuntu | DHCP dari VirtualBox atau provider | Internet keluar untuk update paket dan koneksi VPN |
+| Website lab pada Windows | http://127.0.0.1:8080 | Browser laptop diteruskan ke Apache Ubuntu port 80 |
+| Website hosting | Domain atau IP akses server yang sebenarnya | Akses pengguna melalui jaringan hosting |
+| Gateway SSTP | vpn.example.net dan peer 10.88.0.1 | Titik VPN yang dapat dijangkau melalui internet |
+| Tunnel Ubuntu RADIUS | 10.88.0.2 | Alamat privat tetap untuk RADIUS di dalam VPN |
+| Tunnel MikroTik pertama | 10.88.0.3 | Identitas NAS dan tujuan Disconnect di dalam VPN |
 
-Alamat di atas merupakan contoh; periksa konflik sebelum dipakai. IP management, subnet VPN, pool PPPoE internet, dan subnet isolir harus berbeda. Trafik internet pelanggan tetap melalui WAN MikroTik. VPN cukup membawa RADIUS, accounting, Disconnect, serta ping.
+Semua domain dan alamat tunnel di atas adalah contoh. Ganti dengan data gateway yang digunakan. Setiap NAS memerlukan IP tunnel unik. IP tunnel perlu tetap agar identitas NAS dan shared secret cocok; IP internet rumah/provider tidak wajib statis. Trafik internet pelanggan tetap melewati WAN MikroTik.
 
-Database menyimpan metadata NAS, IP sumber RADIUS, tujuan Disconnect, dan shared secret RADIUS yang masih diperlukan protokol. Password SSTP router hanya digunakan untuk menghasilkan script saat Simpan; tidak disimpan di tabel NAS. Password SSTP Ubuntu disimpan privat pada Ubuntu agar tunnel dapat menyambung otomatis. Password PPPoE pelanggan tetap diperlukan untuk autentikasi.
+Sistem memakai autentikasi RADIUS RFC 2865 pada UDP 1812, accounting RFC 2866 pada UDP 1813, serta Disconnect Request RFC 5176 pada UDP 3799. RFC 5176 menggantikan RFC 3576. Port 3799 berada pada NAS sebagai tujuan permintaan server. Tidak ada login API MikroTik, kredensial admin router, atau monitoring SNMP.
 
-## 2 Membuat VM dari awal
+## 2 Memasang Ubuntu di VirtualBox
 
-1. Unduh ISO Ubuntu Server 24.04 LTS dari situs Ubuntu dan pasang Oracle VirtualBox di Windows. Siapkan MikroTik fisik, kabel Ethernet, serta akses Winbox lokal.
-2. Pilih New, nama Ubuntu UNZANET, ISO Ubuntu Server, Linux dan Ubuntu 64 bit. Gunakan pemasangan manual jika muncul pilihan unattended.
-3. Alokasikan awal 2 CPU, RAM 4 GB, dan disk dinamis 40 GB untuk lab. Ini ukuran awal pengujian, bukan jaminan kapasitas produksi. Sisakan RAM Windows saat build.
-4. Di Settings lalu Network, pasang Adapter 1 sebagai NAT untuk internet VM. Pasang Adapter 2 sebagai Bridged Adapter, pilih NIC Ethernet fisik yang kabelnya menuju LAN management MikroTik, dan centang Cable Connected. Jangan pilih VirtualBox Host Only untuk menghubungi router fisik.
-5. Hubungkan kabel Ethernet laptop ke port LAN management router. Internet laptop/VM dapat berasal dari Wi Fi melalui adapter NAT. Port WAN dan port pelanggan PPPoE dipilih terpisah sesuai topologi.
-6. Jalankan Install Ubuntu Server. Atur bahasa dan keyboard, pilih disk virtual baru, buat akun Linux sendiri, dan aktifkan Install OpenSSH Server. Jangan memilih disk fisik Windows.
-7. Setelah selesai, reboot dan lepaskan ISO. Login dengan akun Linux tadi. Buat snapshot Ubuntu sebelum UNZANET.
+1. Pasang Oracle VirtualBox pada Windows dan unduh ISO Ubuntu Server 24.04 LTS. MikroTik belum diperlukan pada tahap ini.
+2. Pilih New, nama Ubuntu UNZANET, ISO Ubuntu Server, Linux, dan Ubuntu 64 bit. Pilih instalasi manual jika terdapat opsi unattended.
+3. Gunakan awal 2 CPU, RAM 4 GB, dan disk virtual dinamis 40 GB untuk lab. Sisakan kapasitas Windows; ukuran ini bukan jaminan kapasitas produksi.
+4. Pada Settings lalu Network, cukup aktifkan Adapter 1 sebagai NAT dan centang Cable Connected. Tidak perlu adapter kedua atau kabel langsung ke MikroTik. NAT memakai koneksi internet Windows, termasuk Wi Fi atau hotspot.
+5. Jalankan instalasi Ubuntu. Pada konfigurasi jaringan biarkan IPv4 Automatic DHCP. Buat akun Linux sendiri dan aktifkan Install OpenSSH Server bila ingin SSH dari laptop.
+6. Selesaikan instalasi, reboot, lepaskan ISO, lalu login pada console VM. Buat snapshot sebelum memasang aplikasi.
 
-Satu Bridged Adapter juga bisa dipakai jika internet, laptop, dan MikroTik berada pada LAN yang sama. Dua adapter di atas memisahkan internet VM dari lab fisik. Nama interface tidak selalu sama; cocokkan MAC address dari VirtualBox.
+Jika Ubuntu dipasang sebagai VPS, gunakan interface dan konfigurasi jaringan yang disediakan provider. Jika memilih Bridged untuk kebutuhan akses LAN laptop, DHCP juga dapat digunakan; pilihan itu tidak berarti MikroTik harus berada di LAN yang sama. Alur utama panduan ini memakai NAT untuk lab dan SSTP untuk router jarak jauh.
 
-## 3 Mengatur jaringan dan ping MikroTik
-
-Periksa interface, alamat, dan route aktual di Ubuntu:
+Pada Ubuntu, periksa internet dan DNS:
 
 ~~~bash
-ip -br link
 ip -4 -br address
 ip -4 route
-~~~
-
-Contoh berikut menganggap enp0s3 adalah NAT dan enp0s8 adalah Bridged Ethernet. Ganti jika output berbeda. Dari Winbox Terminal periksa router:
-
-~~~routeros
-/interface print
-/ip address print
-~~~
-
-Bila router lab belum mempunyai IP management, ganti PORT_LAN_MANAGEMENT dengan port yang benar dan tambahkan alamat contoh. Jangan mengubah port WAN atau menghapus alamat router yang sedang melayani pelanggan.
-
-~~~routeros
-/ip address add address=192.168.10.1/29 interface=PORT_LAN_MANAGEMENT comment="Lab Ubuntu RADIUS"
-~~~
-
-Pada Ubuntu periksa Netplan bawaan dan buka konfigurasi lab:
-
-~~~bash
-ls /etc/netplan
-sudo nano /etc/netplan/60-unzanet-lab.yaml
-~~~
-
-Isi contoh berikut. NAT menggunakan DHCP sebagai satu satunya default route. Adapter menuju MikroTik memakai IP statis tanpa gateway tambahan.
-
-~~~yaml
-network:
-  version: 2
-  ethernets:
-    enp0s3:
-      dhcp4: true
-    enp0s8:
-      dhcp4: false
-      addresses:
-        - 192.168.10.3/29
-~~~
-
-Jika file bawaan mengatur interface yang sama, sesuaikan file yang ada agar tidak bertentangan. Gunakan indentasi spasi. Jalankan dari console VM supaya pemulihan jaringan tetap tersedia.
-
-~~~bash
-sudo chmod 600 /etc/netplan/60-unzanet-lab.yaml
-sudo netplan generate
-sudo netplan try
-ip -4 route get 192.168.10.1
-ping -c 5 192.168.10.1
-ping -c 3 1.1.1.1
 getent hosts github.com
+curl -I https://github.com
 ~~~
 
-Lanjut setelah ping router, internet, dan DNS berhasil. Pada MikroTik uji arah balik:
+Jangan menimpa alamat DHCP atau menambahkan IP statis untuk mengikuti angka contoh panduan. Nama interface dapat berbeda. Belum perlu ping MikroTik pada tahap ini.
 
-~~~routeros
-/ping 192.168.10.3 count=5
+## 3 Menyiapkan akses website dari laptop
+
+Dengan NAT, alamat guest Ubuntu tidak langsung menjadi alamat website pada Windows. Saat VM dimatikan, buka Settings, Network, Adapter 1 NAT, Advanced, lalu Port Forwarding. Buat aturan berikut; biarkan Guest IP kosong agar mengikuti DHCP NAT VirtualBox.
+
+| Nama | Protokol | Host IP | Host Port | Guest Port |
+| --- | --- | --- | --- | --- |
+| unzanet-web | TCP | 127.0.0.1 | 8080 | 80 |
+| unzanet-ssh opsional | TCP | 127.0.0.1 | 2222 | 22 |
+
+Jika port host sudah dipakai, pilih port lain dan gunakan port yang sama pada URL instalasi. Hidupkan VM. Browser Windows nanti membuka http://127.0.0.1:8080; perintah curl di Ubuntu tetap memakai http://127.0.0.1/ pada port 80. Kedua alamat localhost tersebut milik mesin yang berbeda dan terhubung lewat forwarding VirtualBox.
+
+SSH opsional dijalankan dari PowerShell Windows setelah mengganti USER_UBUNTU dengan akun Linux yang dibuat:
+
+~~~powershell
+ssh -p 2222 USER_UBUNTU@127.0.0.1
 ~~~
 
-Ethernet Windows dapat diberi alamat lain yang masih kosong, misalnya 192.168.10.2/29, agar browser/SSH dapat mengakses VM. Ethernet lab tidak membutuhkan default gateway jika Wi Fi sudah menyediakan internet laptop. Jika ping gagal, cek kabel, NIC Bridged fisik, mask, IP duplikat, route, dan firewall input router.
+Port forwarding localhost ini untuk akses laptop sendiri. Untuk website hosting, gunakan alamat/domain yang dapat dijangkau pengguna dan konfigurasi jaringan hosting yang sesuai. IP dinamis dapat menggunakan DNS yang diperbarui atau layanan tunnel/reverse proxy untuk web; jaringan di belakang CGNAT memerlukan jalur masuk yang sesuai. Website publik tidak muncul otomatis hanya karena VM mempunyai internet. Jalur akses web berbeda dari tunnel RADIUS.
 
-## 4 Memilih LAN atau SSTP
+## 4 Memasang aplikasi dan database dahulu
 
-Pilih mode local pada installer untuk menguji end to end tanpa VPS. Isi RADIUS 192.168.10.3, NAS dan tujuan Disconnect 192.168.10.1, subnet 192.168.10.0/29, URL web http://192.168.10.3. Lanjut ke bagian 6.
-
-Untuk mode vpn, Ubuntu dan setiap router menjadi klien SSTP ke gateway. Contoh host vpn.example.net, gateway tunnel 10.88.0.1, akun Ubuntu vpn_radius dengan IP tetap 10.88.0.2, dan akun router vpn_router01 dengan IP tetap 10.88.0.3. Ganti host contoh dengan gateway milikmu. Setiap NAS tambahan perlu akun dan IP unik.
-
-## 5 Gateway dan sertifikat SSTP
-
-Lewati untuk mode local. Jika gateway sudah tersedia, tidak perlu memasang ulang. Gateway harus meneruskan paket antarpeer tanpa masquerade sehingga sumber NAS tetap 10.88.0.3. Klien memerlukan akses keluar TCP 443 ke gateway; Cloud Firewall gateway menerima TCP 443 tanpa mempublikasikan UDP RADIUS.
-
-Pada VPS Ubuntu 24.04 baru yang khusus menjadi gateway dan port 443 belum dipakai, repo menyediakan installer berikut. Jalankan pada VPS, bukan VM aplikasi. Ganti IP_PUBLIK_VPS sebelum menjalankan.
-
-~~~bash
-sudo apt update
-sudo apt install -y git ca-certificates
-git clone https://github.com/Gosfist/Project-Magang.git ~/Project-Magang-Gateway
-cd ~/Project-Magang-Gateway
-sudo bash install-sstp-ubuntu24.sh IP_PUBLIK_VPS
-sudo systemctl status accel-ppp --no-pager -l
-sudo accel-cmd show sessions
-~~~
-
-Installer berhenti bila konfigurasi Accel PPP sudah ada. Akun disimpan privat di /root/sstp-accounts.txt; CA publik untuk klien ada di /root/sstp-ca.crt. Jangan mengirim file .key ke klien. Sertifikat server berlaku 365 hari; perbarui sebelum kedaluwarsa. Host/IP klien harus cocok SAN sertifikat.
-
-Salin CA publik ke Ubuntu aplikasi melalui jalur tepercaya, cocokkan fingerprint dengan pengelola gateway, lalu pasang:
-
-~~~bash
-sudo install -m 644 sstp-ca.crt /usr/local/share/ca-certificates/unzanet-sstp.crt
-sudo update-ca-certificates
-~~~
-
-Upload CA publik melalui Files Winbox, lalu impor pada MikroTik:
-
-~~~routeros
-/certificate import file-name=sstp-ca.crt passphrase=""
-/certificate print
-/certificate set [find where common-name="UNZANET-SSTP-CA"] trusted=yes
-~~~
-
-Perintah terakhir sesuai nama CA buatan installer. Untuk CA lain gunakan nama yang benar dari hasil print. Sinkronkan waktu kedua perangkat. Script web memakai verify-server-certificate=yes dan klien Ubuntu tidak memakai --cert-warn. Jangan mematikan validasi sertifikat untuk memaksa VPN tersambung.
-
-Installer gateway awal mengizinkan pasangan .2 dan .3 untuk UDP 1812/1813, UDP 3799, balasan koneksi, dan ping; forwarding antarpeer lain ditolak. NAS tambahan memerlukan akun dan aturan setara. Port Disconnect yang diubah juga perlu disesuaikan pada gateway.
-
-## 6 Mengambil repo dan memasang aplikasi
-
-Pastikan revisi kode ini sudah tersedia pada remote Git yang di-clone. Perubahan yang hanya tersimpan di komputer pengembangan belum ikut terambil VM. Jalankan dengan akun Linux yang memiliki sudo:
+Pastikan revisi kode ini sudah tersedia pada remote Git yang di-clone. Perubahan yang hanya ada di komputer pengembangan belum ikut terambil. Pada Ubuntu baru, jalankan dengan akun Linux yang memiliki sudo:
 
 ~~~bash
 sudo apt update
@@ -152,36 +78,70 @@ cd /var/www/Project-Magang
 npm run install
 ~~~
 
-Node.js harus 22.x. Installer berjalan dari root repo di bawah /var/www tanpa spasi dan meminta sudo jika diperlukan. Gunakan autentikasi Git milikmu jika repo privat; jangan menaruh token di perintah yang dibagikan.
+Node.js harus 22.x. Repo harus berada di bawah /var/www tanpa spasi. Jika repo privat, gunakan autentikasi Git milikmu tanpa menulis token ke perintah yang dibagikan.
 
-Installer menanyakan URL web, mode local/vpn, IP RADIUS/NAS/subnet, dan email administrator. Mode vpn juga meminta gateway serta akun khusus Ubuntu; akun router diisi nanti pada Tambah Router. Password prompt tidak ditampilkan. Konfigurasi dan secret disimpan privat pada /etc/unzanet/install.json.
+Saat installer bertanya, isi URL browser lab http://127.0.0.1:8080 dan pilih mode web. Pada VPS atau hosting, isi URL akses yang sebenarnya. Mode web menyelesaikan aplikasi tanpa meminta akun VPN, tanpa membuat tunnel, dan tanpa membutuhkan MikroTik. Tidak ada pengaturan IP LAN statis pada Ubuntu.
 
-Installer memasang paket Ubuntu, dependency aplikasi, MySQL, Apache, FreeRADIUS SQL, serta systemd. Skema backend/prisma/database.sql hanya diimpor ke database kosong. Administrator dibuat dengan password acak; seed demo tidak dijalankan. Frontend dibangun untuk Apache, bukan ng serve. Bot menggunakan proxy /api/wa sehingga port 3002 tidak perlu dibuka ke jaringan.
+Installer memasang MySQL, Apache, FreeRADIUS SQL, backend, frontend, bot WhatsApp, dan service systemd. Seluruh skema di backend/prisma/database.sql diimpor sekali ke database kosong. Administrator dibuat dengan password acak; seed demo tidak dijalankan. Konfigurasi privat disimpan di /etc/unzanet/install.json. IP tunnel contoh yang dicatat pada state masih berupa rencana sampai tahap setup VPN, bukan alamat yang dipasang pada interface internet.
 
-Mode local membatasi RADIUS dari NAS pertama. Untuk NAS lokal tambahan, tambahkan UFW dari alamat NAS itu ke IP Ubuntu pada UDP 1812/1813. Mode vpn membatasi RADIUS ke interface tunnel dan subnet VPN. MySQL dan backend internal tidak perlu dibuka ke internet.
+Backend dan MySQL tidak perlu dibuka ke internet. Web dan bot diakses melalui proxy Apache; port bot 3002 tidak perlu diteruskan. Mode web belum membuka akses RADIUS dari jaringan luar. Jangan mengulang installer atau mengimpor SQL lagi hanya untuk menyambungkan MikroTik.
 
-Lihat login awal secara privat lalu ganti password melalui profil web:
+## 5 Membuka website sampai berhasil login
 
-~~~bash
-sudo cat /etc/unzanet/credentials.txt
-~~~
-
-Backup database, uploads, dan secret installer. Pertahankan JWT_SECRET ketika memulihkan database karena juga dipakai enkripsi password PPPoE. Jangan membagikan isi .env atau file kredensial.
-
-## 7 Memeriksa service Ubuntu
+Pada Ubuntu, periksa service dan respons internal:
 
 ~~~bash
 sudo systemctl status mysql apache2 freeradius --no-pager
 sudo systemctl status unzanet-backend unzanet-botwa --no-pager
 curl -i http://127.0.0.1:3001/api/auth/me
 curl http://127.0.0.1/api/wa/health
-sudo systemctl status unzanet-radius-nas-refresh.timer --no-pager
-sudo ss -lunp
+curl -I http://127.0.0.1/
+sudo cat /etc/unzanet/credentials.txt
 ~~~
 
-Respons 401 pada /api/auth/me membuktikan backend/guard menjawab tanpa login. Health bot harus sehat. FreeRADIUS mendengarkan UDP 1812/1813; Ubuntu tidak perlu mendengarkan 3799 karena server mengirim permintaan ke router. Buka URL web dari laptop.
+Respons 401 pada auth/me membuktikan backend/guard menjawab tanpa login. Buka http://127.0.0.1:8080 pada browser Windows dan login dengan kredensial awal yang dibaca secara privat di Ubuntu. Ganti password melalui profil. Selesaikan tahap ini sebelum mengatur MikroTik. Jika web tidak terbuka, periksa aturan forwarding host 8080 ke guest 80, service Apache/backend, dan firewall; jangan mengganti IP Ubuntu dengan angka contoh.
 
-Khusus mode vpn:
+FreeRADIUS dapat aktif walaupun belum ada NAS. Layanan pelanggan baru berfungsi setelah VPN, pendaftaran NAS, dan pengujian pada tahap berikutnya. Simpan snapshot VM setelah website berhasil dibuka. Backup database, uploads, dan secret installer; JWT_SECRET juga dipakai untuk enkripsi password PPPoE.
+
+## 6 Menyiapkan gateway SSTP setelah website siap
+
+Ubuntu dan MikroTik menjadi dua klien yang menyambung keluar ke gateway SSTP melalui internet masing masing. Keduanya tidak perlu satu LAN. Jika gateway dari pengelola VPN sudah tersedia, minta host, CA tepercaya, akun khusus Ubuntu, serta akun/IP unik per router. Contoh: Ubuntu vpn_radius mendapat 10.88.0.2; MikroTik vpn_router01 mendapat 10.88.0.3. Gateway harus merutekan antarpeer tanpa masquerade dan mengizinkan RADIUS, Disconnect, serta ping.
+
+Jika belum mempunyai gateway, contoh berikut memasangnya pada VPS Ubuntu 24.04 khusus dengan IP publik yang dapat dijangkau dan TCP 443 belum dipakai. Jalankan pada VPS gateway, bukan VM aplikasi. Ganti IP_PUBLIK_VPS dengan alamat VPS yang sebenarnya:
+
+~~~bash
+sudo apt update
+sudo apt install -y git ca-certificates
+git clone https://github.com/Gosfist/Project-Magang.git ~/Project-Magang-Gateway
+cd ~/Project-Magang-Gateway
+sudo bash install-sstp-ubuntu24.sh IP_PUBLIK_VPS
+sudo systemctl status accel-ppp --no-pager -l
+sudo accel-cmd show sessions
+~~~
+
+Installer berhenti bila konfigurasi Accel PPP sudah ada. Akun awal ada di /root/sstp-accounts.txt; CA publik ada di /root/sstp-ca.crt. Jangan membagikan private key. Host/IP klien harus cocok SAN sertifikat; sertifikat buatan installer berlaku 365 hari dan perlu diperbarui sebelum kedaluwarsa. Gateway awal membatasi forwarding pada pasangan .2 dan .3; NAS tambahan memerlukan akun/IP dan aturan setara.
+
+Salin CA publik ke Ubuntu aplikasi melalui jalur tepercaya dan cocokkan fingerprint dengan pengelola gateway. Di Ubuntu aplikasi:
+
+~~~bash
+sudo install -m 644 sstp-ca.crt /usr/local/share/ca-certificates/unzanet-sstp.crt
+sudo update-ca-certificates
+~~~
+
+## 7 Menyambungkan Ubuntu ke VPN tanpa instal ulang website
+
+Kembali ke Ubuntu aplikasi dan jalankan tahap kedua:
+
+~~~bash
+cd /var/www/Project-Magang
+npm run setupvpn
+~~~
+
+Isi host gateway sesuai sertifikat, username/password SSTP khusus Ubuntu, IP tunnel Ubuntu, rencana IP tunnel router pertama, dan subnet tunnel sesuai data pengelola. Contoh 10.88.0.2, 10.88.0.3, dan 10.88.0.0/24 merupakan alamat privat VPN. Jangan mengisi IP DHCP Wi Fi, IP publik provider, atau URL website pada kolom alamat tunnel.
+
+Tahap ini hanya memasang konfigurasi SSTP Ubuntu, aturan RADIUS pada interface tunnel, dan dua alamat RADIUS pada environment backend. URL website, database, password administrator, JWT_SECRET, dan konfigurasi bot dipertahankan. Website tidak diinstal ulang. Backend direstart untuk membaca pengaturan RADIUS. Password VPN Ubuntu disimpan privat agar dapat reconnect otomatis; klien memverifikasi sertifikat server.
+
+Periksa tunnel dan gateway pada Ubuntu:
 
 ~~~bash
 sudo systemctl status sstp-radius --no-pager -l
@@ -190,51 +150,52 @@ ip -4 route show dev sstp-radius
 ping -c 5 10.88.0.1
 ~~~
 
-Interface harus mendapat 10.88.0.2 dan route subnet VPN. Service aktif saja tidak membuktikan IP tersedia. Jika VM lama masih menggunakan akun/IP yang sama, hentikan SSTP di VM lama dengan sudo systemctl stop sstp-radius.
+Alamat interface harus sesuai IP tunnel Ubuntu dari gateway. Jika belum mendapat IP, periksa CA/hostname, akun, sesi ganda, route, dan journal klien. Jangan mengubah IP DHCP interface internet. Belum perlu ping router sampai router itu dipasang pada tahap berikutnya. Perubahan alamat internet dapat membuat VPN reconnect, sementara IP tunnel ditetapkan kembali oleh gateway sesuai akun.
 
-## 8 Tambah Router dan script otomatis
+## 8 Menambahkan MikroTik dari website dan memasang script
 
-Buka Router lalu Tambah Router dan isi alamat sesuai mode:
+Sekarang buka menu Router lalu Tambah Router pada website yang sudah berjalan. MikroTik boleh berada di kota atau provider lain, asalkan mempunyai internet untuk menyambung ke gateway yang sama.
 
-| Field | LAN lab | Cloud SSTP |
-| --- | --- | --- |
-| Nama | MikroTik Lab | MikroTik Cabang 01 |
-| IP sumber NAS | 192.168.10.1 | 10.88.0.3 |
-| IP tujuan Disconnect | 192.168.10.1 | 10.88.0.3 |
-| IP server RADIUS | 192.168.10.3 | 10.88.0.2 |
-| Port autentikasi | 1812 | 1812 |
-| Port Disconnect | 3799 | 3799 |
-| Host dan username SSTP | Kosong | Gateway aktual dan vpn_router01 |
-| Password SSTP | Kosong | Password akun router untuk script kali ini |
+| Field | Nilai contoh untuk router pertama |
+| --- | --- |
+| IP sumber NAS | 10.88.0.3 sesuai akun VPN router |
+| IP tujuan Disconnect | 10.88.0.3 |
+| IP server RADIUS | 10.88.0.2 sesuai tunnel Ubuntu |
+| Port autentikasi dan accounting | 1812 dan 1813 |
+| Port Disconnect | 3799 |
+| Host dan username SSTP | Gateway aktual dan vpn_router01 |
+| Password SSTP | Password akun router hanya untuk script kali ini |
 
-Shared secret RADIUS dapat dibuat acak oleh web. Klik Simpan; dialog script terbuka otomatis. Pilih RouterOS yang sesuai, salin seluruh script, dan paste di Terminal router tujuan. Script berisi shared secret dan mungkin password VPN; simpan privat. Simpan di web belum membuktikan perangkat sudah dikonfigurasi.
-
-Script mengatur entri RADIUS, sumber IP NAS, accounting lima menit, incoming Disconnect, serta rule yang menerima Disconnect dari IP RADIUS saja. Jika host, username, dan password VPN diisi, script juga membuat SSTP. Password VPN tidak tersimpan; isi ulang untuk membuat ulang bagian tunnel.
-
-Script web menambahkan route /32 menuju server RADIUS melalui tunnel terkelola jika data VPN diisi. Periksa route yang dihasilkan; jangan menambahkan contoh ini bila route tersebut sudah ada. Untuk tunnel manual yang belum mempunyai jalur NAS menuju RADIUS, contoh fallback berikut memakai nama tunnel yang sebenarnya:
+Shared secret RADIUS dapat dibuat acak oleh web. Sebelum menjalankan script, upload CA publik melalui Files Winbox dan impor pada MikroTik:
 
 ~~~routeros
-/ip route add dst-address=10.88.0.2/32 gateway=radius-cloud-ID_ROUTER comment="UNZANET route RADIUS"
+/certificate import file-name=sstp-ca.crt passphrase=""
+/certificate print
+/certificate set [find where common-name="UNZANET-SSTP-CA"] trusted=yes
 ~~~
 
-Ganti ID_ROUTER sesuai interface yang dihasilkan. Periksa route lama agar tidak ganda. Tidak perlu mengubah default route internet pelanggan. Uji dua arah:
+Nama CA di atas mengikuti installer gateway; gunakan nama aktual bila CA berbeda. Sinkronkan waktu router. Klik Simpan di web, pilih RouterOS yang sesuai pada dialog script, salin seluruh script, lalu paste di Terminal router tujuan. Script membuat SSTP, rute /32 ke RADIUS, konfigurasi RADIUS dan incoming Disconnect. Script juga membatasi koneksi TCP baru dari IP server RADIUS ke administrasi router. Internet pelanggan tetap melalui WAN semula.
+
+Password admin MikroTik tidak dikirim ke web. Password VPN router hanya untuk respons script saat itu; shared secret RADIUS tetap disimpan karena diperlukan protokol. Script berisi secret, jadi simpan privat. Saat mengunduh ulang, tunnel yang sudah ada dipertahankan; isi ulang password bila perlu membuat tunnel kembali.
+
+Setelah kedua tunnel terhubung, barulah uji dua arah. Pada MikroTik:
 
 ~~~routeros
 /ping 10.88.0.2 src-address=10.88.0.3 count=5
 ~~~
+
+Pada Ubuntu:
 
 ~~~bash
 ip -4 route get 10.88.0.3
 ping -c 5 10.88.0.3
 ~~~
 
-Untuk LAN ganti alamat dengan .10.1 dan .10.3. Bila ping diblokir firewall router, izinkan ICMP hanya dari IP server pada interface yang benar setelah meninjau rule yang ada. Ping belum membuktikan autentikasi atau Disconnect.
+Ganti contoh IP sesuai penetapan gateway. Jika ping gagal, periksa kedua sesi VPN, routing antarpeer tanpa NAT, dan firewall gateway/router. Jangan mencoba ping IP LAN MikroTik jarak jauh tanpa rute yang sesuai. Ping yang berhasil belum membuktikan autentikasi PPPoE atau Disconnect.
 
-## 9 Penerapan client NAS
+## 9 Penerapan client NAS dan pemisahan akses hosting
 
-FreeRADIUS dengan read_clients=yes membaca tabel nas ketika proses mulai. Installer menyediakan timer unzanet-radius-nas-refresh sekitar setiap 60 detik. Worker root membaca konfigurasi client aktif, membandingkan fingerprint, memvalidasi freeradius -XC, lalu restart hanya jika client berubah. Fingerprint sukses lama dipertahankan ketika validasi/restart gagal agar dicoba ulang. Secret tidak dicetak ke journal.
-
-Backend tidak diberi sudo. Worker root dipasang di /usr/local/lib/unzanet, bukan dijalankan dari file yang dapat ditulis web. Perubahan IP/secret/status NAS menunggu timer. Restart singkat memengaruhi permintaan RADIUS baru; sesi PPPoE aktif tetap berada pada router.
+FreeRADIUS dengan read_clients=yes membaca daftar NAS ketika proses mulai. Worker root terpisah memeriksa perubahan client aktif sekitar setiap 60 detik, memvalidasi konfigurasi, lalu restart FreeRADIUS bila diperlukan. Backend web tidak diberi sudo. Restart singkat memengaruhi permintaan RADIUS baru; sesi PPPoE aktif tetap berada pada router.
 
 ~~~bash
 sudo systemctl list-timers unzanet-radius-nas-refresh.timer --no-pager
@@ -243,7 +204,9 @@ sudo systemctl status unzanet-radius-nas-refresh.service --no-pager
 sudo systemctl status freeradius --no-pager -l
 ~~~
 
-Kegagalan rinci tersimpan privat pada /var/lib/unzanet-radius/last-error.log. Instalasi manual tanpa worker harus memvalidasi lalu restart FreeRADIUS setelah perubahan NAS. Jangan memberikan sudo kepada proses web.
+IP web publik atau IP DHCP Ubuntu tidak digunakan sebagai identitas NAS. RADIUS dan Disconnect memakai tunnel yang dapat dijangkau kedua sisi. Ketika aplikasi dipindahkan ke VPS, sesuaikan URL/origin web dan akses HTTPS sesuai hosting, serta sambungkan VPS itu ke gateway dengan akun Ubuntu RADIUS yang tepat. Jangan menjalankan dua mesin sekaligus memakai akun/IP tunnel yang sama. Website pada laptop sendiri tetap dapat diuji melalui forwarding NAT tanpa harus dipublikasikan.
+
+Layanan hosting untuk backend ini harus mendukung Node.js, MySQL, FreeRADIUS, proses systemd, dan koneksi SSTP atau jalur VPN setara. Shared hosting biasa yang hanya menyediakan PHP/file statis belum tentu memenuhi kebutuhan tersebut. MikroTik tidak perlu dipindah ke jaringan fisik server. Kegagalan worker dicatat privat pada /var/lib/unzanet-radius/last-error.log.
 
 ## 10 PPPoE dan pool pelanggan
 
@@ -320,7 +283,7 @@ Installer mengimpor database.sql sekali ketika database kosong. Skema sudah beri
 
 Untuk pemeriksaan sumber sebelum instalasi, jalankan npm run database:check dari root repo. Pemeriksaan ini membandingkan SQL dengan skema Prisma tanpa terhubung ke database. Bila skema diubah, npm run database:generate memperbarui SQL lengkap. npm run update hanya memperbarui aplikasi dan service; tidak mengimpor ulang SQL atau mengubah skema.
 
-Installer juga memasang worker NAS root. Setelah instalasi, isi IP server RADIUS, tujuan Disconnect, dan NAS di web; simpan lalu paste script pada router. Daftarkan pool per NAS dan pasang script pool. FreeRADIUS manual harus memakai read_clients=yes dan client_query yang hanya membaca NAS aktif. Perubahan web tidak menonaktifkan layanan API perangkat secara otomatis.
+Installer memasang worker NAS root. Selesaikan website pada mode web, lanjutkan npm run setupvpn, lalu isi IP tunnel server RADIUS, tujuan Disconnect dan NAS pada web; simpan lalu paste script pada router. Daftarkan pool per NAS dan pasang script pool. FreeRADIUS manual harus memakai read_clients=yes dan client_query yang hanya membaca NAS aktif. Perubahan web tidak menonaktifkan layanan API perangkat secara otomatis.
 
 Jika layanan lain tidak memerlukan API, nonaktifkan melalui Terminal:
 
@@ -339,8 +302,8 @@ Installer tidak mereset database saat dijalankan ulang. Jika database sudah beri
 
 | Gejala | Pemeriksaan |
 | --- | --- |
-| LAN tidak dapat ping router | NIC Bridged fisik, kabel, IP/mask, route, firewall input |
-| Web tidak terbuka | IP management, Apache, UFW TCP 80 |
+| Website NAT tidak terbuka | Forwarding host 8080 ke guest 80, URL browser, Apache dan firewall |
+| Website hosting tidak terbuka | DNS/domain, jalur masuk hosting, Apache, HTTPS dan firewall |
 | Login web 503 | Service backend, port 3001, journal backend |
 | SSTP gagal sertifikat | CA tepercaya, SAN/hostname, masa berlaku, waktu |
 | SSTP aktif tanpa IP | Akun/IP gateway, sesi ganda, journal klien |
@@ -380,4 +343,3 @@ Sumber resmi:
 - FreeRADIUS MySQL queries: https://github.com/FreeRADIUS/freeradius-server/blob/v3.2.x/raddb/mods-config/sql/main/mysql/queries.conf
 - VirtualBox networking: https://docs.oracle.com/en/virtualization/virtualbox/7.1/user/networkingdetails.html
 - Ubuntu sstpc: https://manpages.ubuntu.com/manpages/noble/man8/sstpc.8.html
-

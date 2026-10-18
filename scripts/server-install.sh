@@ -76,13 +76,17 @@ main() {
     log 'Isi konfigurasi instalasi baru'
     local detected_ip
     detected_ip="$(ip -4 route get 1.1.1.1 | awk '{for(i=1;i<=NF;i++) if($i=="src") {print $(i+1); exit}}')"
-    ask WEB_URL 'URL web yang dibuka dari browser' "http://${detected_ip:-127.0.0.1}"
-    ask NETWORK_MODE 'Mode jaringan: vpn (cloud SSTP) atau local (lab LAN)' vpn
-    if [[ "$NETWORK_MODE" == local ]]; then
+    ask WEB_URL 'URL browser (NAT: http://127.0.0.1:8080; VPS: IP/domain sebenarnya)' 'http://127.0.0.1:8080'
+    ask NETWORK_MODE 'Tahap jaringan: web (website dahulu), vpn (VPN sudah siap), local (lab LAN)' web
+    if [[ "$NETWORK_MODE" == web ]]; then
       export VPN_SERVER='' VPN_USERNAME='' VPN_PASSWORD=''
-      ask VPN_RADIUS_IP 'IP LAN Ubuntu RADIUS yang sudah terpasang' 192.168.10.3
-      ask VPN_ROUTER_IP 'IP LAN MikroTik pertama' 192.168.10.1
-      ask VPN_NETWORK 'Subnet LAN lab' 192.168.10.0/29
+      # Planned private tunnel addresses; no static LAN address is installed.
+      export VPN_RADIUS_IP=10.88.0.2 VPN_ROUTER_IP=10.88.0.3 VPN_NETWORK=10.88.0.0/24
+    elif [[ "$NETWORK_MODE" == local ]]; then
+      export VPN_SERVER='' VPN_USERNAME='' VPN_PASSWORD=''
+      ask VPN_RADIUS_IP 'IP LAN Ubuntu RADIUS yang sudah terpasang' "$detected_ip"
+      ask VPN_ROUTER_IP 'IP LAN MikroTik pertama'
+      ask VPN_NETWORK 'Subnet LAN lab yang sebenarnya'
     elif [[ "$NETWORK_MODE" == vpn ]]; then
       ask VPN_SERVER 'IP/domain VPS gateway SSTP tanpa port'
       ask VPN_USERNAME 'Username SSTP khusus Ubuntu RADIUS' vpn_radius
@@ -93,7 +97,7 @@ main() {
       ask VPN_ROUTER_IP 'IP VPN MikroTik pertama' 10.88.0.3
       ask VPN_NETWORK 'Subnet VPN' 10.88.0.0/24
     else
-      die 'Mode harus local atau vpn.'
+      die 'Mode harus web, local atau vpn.'
     fi
     ask ADMIN_EMAIL 'Email administrator awal' admin@unzanet.com
     python3 "$ROOT_DIR/scripts/installer-config.py" create
@@ -211,7 +215,7 @@ JS
   if [[ "$NETWORK_MODE" == vpn ]]; then
     ufw allow in on sstp-radius from "$VPN_NETWORK" to any port 1812 proto udp
     ufw allow in on sstp-radius from "$VPN_NETWORK" to any port 1813 proto udp
-  else
+  elif [[ "$NETWORK_MODE" == local ]]; then
     ufw allow from "$VPN_ROUTER_IP" to "$VPN_RADIUS_IP" port 1812 proto udp
     ufw allow from "$VPN_ROUTER_IP" to "$VPN_RADIUS_IP" port 1813 proto udp
   fi
@@ -236,12 +240,16 @@ JS
   printf 'Login awal tersimpan privat: sudo cat /etc/unzanet/credentials.txt\n'
   if [[ "$NETWORK_MODE" == local ]]; then
     printf 'Mode LAN: uji ping %s, lalu tambah NAS dengan IP tersebut.\n' "$VPN_ROUTER_IP"
+  elif [[ "$NETWORK_MODE" == web ]]; then
+    printf 'Website siap tanpa MikroTik/VPN. Buka URL web dan login dahulu. Setelah itu: npm run setupvpn\n'
   elif ip -4 -o addr show dev sstp-radius 2>/dev/null | grep -Fq " $VPN_RADIUS_IP/"; then
     printf 'Ubuntu sudah mendapat IP VPN %s. Lanjutkan setup SSTP MikroTik di install.doc.\n' "$VPN_RADIUS_IP"
   else
     printf 'VPN Ubuntu BELUM mendapat IP %s. Periksa journalctl -u sstp-radius sebelum menambah NAS.\n' "$VPN_RADIUS_IP"
   fi
-  printf 'Berikutnya: tambah NAS di web, salin script SSTP/RADIUS ke MikroTik, ping dua arah, tunggu refresh NAS maksimal sekitar 60 detik, lalu uji PPPoE dan Disconnect.\n'
+  if [[ "$NETWORK_MODE" != web ]]; then
+    printf 'Setelah jaringan siap: tambah NAS di web, salin script SSTP/RADIUS ke MikroTik, ping dua arah, tunggu refresh NAS maksimal sekitar 60 detik, lalu uji PPPoE dan Disconnect.\n'
+  fi
   printf 'WhatsApp: buka menu Login Bot Wa dan scan QR dengan ponsel.\n'
 }
 

@@ -119,9 +119,7 @@ def build(source, destination):
         elif line.startswith('# '):
             document.add_paragraph(line[2:], 'Title')
         elif line.startswith('## '):
-            paragraph = document.add_paragraph(line[3:], 'Heading 1')
-            if line.startswith('## 15 '):
-                paragraph.paragraph_format.page_break_before = True
+            document.add_paragraph(line[3:], 'Heading 1')
         elif line.startswith('### '):
             document.add_paragraph(line[4:], 'Heading 2')
         elif line.startswith('|'):
@@ -154,6 +152,8 @@ def build(source, destination):
             document.add_paragraph().paragraph_format.space_after = Pt(0)
         else:
             paragraph = document.add_paragraph()
+            if line.endswith(':'):
+                paragraph.paragraph_format.keep_with_next = True
             if line.startswith('- '):
                 paragraph.style = 'List Bullet'
                 line = line[2:]

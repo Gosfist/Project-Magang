@@ -11,15 +11,16 @@ from urllib.parse import urlsplit
 
 def validate(config):
     mode = config.get('NETWORK_MODE', 'vpn')
-    if mode not in ('local', 'vpn'):
-        raise ValueError('Mode jaringan harus local atau vpn.')
+    if mode not in ('web', 'local', 'vpn'):
+        raise ValueError('Mode jaringan harus web, local atau vpn.')
     root = PurePosixPath(config['ROOT_DIR'])
     if not str(root).startswith('/var/www/') or '..' in root.parts or not re.fullmatch(r'/[A-Za-z0-9_./-]+', str(root)):
         raise ValueError('Folder repo harus absolut tanpa spasi, tanda kutip, atau backslash.')
     url = urlsplit(config['WEB_URL'])
     if (url.scheme != 'http' or not url.hostname or url.username or url.password
-            or url.path not in ('', '/') or url.query or url.fragment or url.port not in (None, 80)):
-        raise ValueError('URL web harus http://IP atau http://domain tanpa path dan port lain.')
+            or url.path not in ('', '/') or url.query or url.fragment
+            or (url.port is not None and not 1 <= url.port <= 65535)):
+        raise ValueError('URL web harus http://IP atau http://domain dengan port valid dan tanpa path.')
     if not re.fullmatch(r'[A-Za-z0-9.-]+', url.hostname):
         raise ValueError('Host web harus IPv4 atau domain yang valid.')
     if mode == 'vpn' and not re.fullmatch(r'[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?', config['VPN_SERVER']):
@@ -91,8 +92,8 @@ def render(config):
         'PORT': '3001', 'FRONTEND_URL': origin, 'DATABASE_URL': db_url,
         'JWT_SECRET': config['JWT_SECRET'], 'JWT_EXPIRES_IN': '7d', 'LARAVEL_APP_KEY': '',
         'BOT_WHATSAPP_URL': 'http://127.0.0.1:3002', 'BOT_API_KEY': config['BOT_API_KEY'],
-        'RADIUS_LOG_TIMEZONE': 'WIB', 'RADIUS_SERVER_IP': config['VPN_RADIUS_IP'],
-        'RADIUS_DISCONNECT_SOURCE_IP': config['VPN_RADIUS_IP'],
+        'RADIUS_LOG_TIMEZONE': 'WIB', 'RADIUS_SERVER_IP': config['VPN_RADIUS_IP'] if config.get('NETWORK_MODE', 'vpn') != 'web' else '',
+        'RADIUS_DISCONNECT_SOURCE_IP': config['VPN_RADIUS_IP'] if config.get('NETWORK_MODE', 'vpn') != 'web' else '',
         'RADIUS_ACCOUNTING_STALE_SECONDS': '900',
         'RADIUS_ACCOUNTING_TIMEZONE': 'WIB',
         'UPLOADS_DIR': root + '/uploads',
@@ -291,10 +292,30 @@ After changing the password in the web, this initial password no longer applies.
 Installer state and secrets: /etc/unzanet/install.json
 Do not share this file or installer state.
 '''
-    if config.get('NETWORK_MODE', 'vpn') == 'local':
+    if config.get('NETWORK_MODE', 'vpn') != 'vpn':
         for path in ['/etc/ppp/peers/sstp-radius', '/etc/ppp/ip-up.d/99-unzanet-vpn', '/etc/systemd/system/sstp-radius.service']:
             files.pop(path)
     return files
+
+
+def vpn_transition(config, backend_text, changes):
+    """Enable the Ubuntu tunnel after web setup, without rewriting application secrets."""
+    if config.get('NETWORK_MODE', 'vpn') not in ('web', 'vpn'):
+        raise ValueError('Setup bertahap VPN hanya untuk mode web atau vpn.')
+    updated = {**config, **{key: changes[key] for key in (
+        'VPN_SERVER', 'VPN_USERNAME', 'VPN_PASSWORD', 'VPN_RADIUS_IP', 'VPN_ROUTER_IP', 'VPN_NETWORK')}, 'NETWORK_MODE': 'vpn'}
+    validate(updated)
+    all_files = render(updated)
+    paths = ['/etc/ppp/peers/sstp-radius', '/etc/ppp/ip-up.d/99-unzanet-vpn', '/etc/systemd/system/sstp-radius.service']
+    files = {path: all_files[path] for path in paths}
+    for key in ('RADIUS_SERVER_IP', 'RADIUS_DISCONNECT_SOURCE_IP'):
+        replacement = env_line(key, updated['VPN_RADIUS_IP'])
+        if re.search(r'(?m)^' + key + r'=', backend_text):
+            backend_text = re.sub(r'(?m)^' + key + r'=[^\r\n]*', lambda _: replacement, backend_text)
+        else:
+            backend_text = backend_text.rstrip('\r\n') + '\n' + replacement + '\n'
+    files[updated['ROOT_DIR'] + '/backend/.env'] = backend_text
+    return updated, files
 
 
 def prepare_queries(text):
@@ -337,7 +358,7 @@ def prepare_sql_module(text):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['create', 'get', 'render', 'queries', 'refresh', 'sql-module'])
+    parser.add_argument('action', choices=['create', 'get', 'render', 'queries', 'refresh', 'sql-module', 'configure-vpn'])
     parser.add_argument('--config', default='/etc/unzanet/install.json')
     parser.add_argument('--key')
     parser.add_argument('--source')
@@ -365,6 +386,29 @@ def main():
         validate(config)
     elif args.action != 'refresh':
         raise ValueError('State installer tidak ditemukan.')
+    if args.action == 'configure-vpn':
+        if os.geteuid() != 0:
+            raise ValueError('Konfigurasi VPN Ubuntu harus dijalankan dengan sudo.')
+        backend_file = Path(config['ROOT_DIR']) / 'backend/.env'
+        changes = {key: os.environ[key] for key in ('VPN_SERVER', 'VPN_USERNAME', 'VPN_PASSWORD', 'VPN_RADIUS_IP', 'VPN_ROUTER_IP', 'VPN_NETWORK')}
+        updated, files = vpn_transition(config, backend_file.read_text(), changes)
+        # Keep existing .env ownership and unrelated secrets/settings unchanged.
+        for filename, content in files.items():
+            file = Path(filename)
+            file.parent.mkdir(parents=True, exist_ok=True)
+            file.write_text(content, encoding='utf-8')
+            if '/peers/' in filename:
+                file.chmod(0o600)
+            elif '/ip-up.d/' in filename:
+                file.chmod(0o755)
+            elif filename.endswith('.service'):
+                file.chmod(0o644)
+        pending = state.with_suffix('.json.pending')
+        pending.write_text(json.dumps(updated, indent=2), encoding='utf-8')
+        pending.chmod(0o600)
+        pending.replace(state)
+        print('Konfigurasi SSTP Ubuntu disimpan; database, URL web dan secret aplikasi dipertahankan.')
+        return
     if args.action == 'get':
         print(config.get(args.key, 'vpn' if args.key == 'NETWORK_MODE' else ''), end='')
     else:

@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "install": "bash scripts/server-install.sh",
+    "setupvpn": "bash scripts/server-setup-vpn.sh",
     "update": "bash scripts/server-update.sh all",
     "runupdate": "bash scripts/server-update.sh all",
     "updatebe": "bash scripts/server-update.sh be",
