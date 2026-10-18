@@ -23,6 +23,17 @@ wait_http() {
   die "Pemeriksaan $address gagal. Lihat journalctl service terkait."
 }
 
+reload_installer_if_updated() {
+  local previous_revision="$1" current_revision="$2"
+  if [[ "$previous_revision" != "$current_revision" ]]; then
+    log "Kode berubah ke ${current_revision:0:7}; memuat ulang installer sebelum memasang paket atau mengubah database"
+    # Bash has already parsed main(): changing its file does not replace that function.
+    flock -u 9
+    exec 9>&-
+    exec /bin/bash "$ROOT_DIR/scripts/server-install.sh"
+  fi
+}
+
 main() {
   if [[ "${1:-}" == --help ]]; then
     printf 'UNZANET installer Ubuntu 24.04\nJalankan: npm run install\nKonfigurasi ditanyakan sekali dan disimpan privat di /etc/unzanet/install.json\n'
@@ -48,7 +59,11 @@ main() {
   as_repo_owner git -C "$ROOT_DIR" diff --quiet || die 'Ada perubahan kode lokal. Simpan dahulu sebelum instalasi.'
   as_repo_owner git -C "$ROOT_DIR" diff --cached --quiet || die 'Ada perubahan Git yang belum disimpan.'
   log 'Mengambil kode terbaru dari branch aktif'
+  local previous_revision current_revision
+  previous_revision="$(as_repo_owner git -C "$ROOT_DIR" rev-parse HEAD)"
   as_repo_owner git -C "$ROOT_DIR" pull --ff-only
+  current_revision="$(as_repo_owner git -C "$ROOT_DIR" rev-parse HEAD)"
+  reload_installer_if_updated "$previous_revision" "$current_revision"
 
   if [[ ! -f /etc/unzanet/install.json ]]; then
     [[ ! -f "$ROOT_DIR/backend/.env" && ! -f "$ROOT_DIR/bot_whatsapp/.env" ]] || die 'Ada .env lama tanpa state installer. Gunakan VM/repo baru agar secret lama tidak tertimpa.'
