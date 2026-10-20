@@ -35,6 +35,7 @@ export function radiusSetupScript(router: Nas, serverIp: string, sourceIp: strin
     `/ip firewall filter add chain=input protocol=tcp connection-state=new src-address=${q(serverIp)} action=drop comment=${q(tag)};`,
     '',
     '# 3. Aktifkan RADIUS dan accounting PPPoE',
+    '/system clock set time-zone-autodetect=no time-zone-name=Asia/Jakarta;',
     '/ppp aaa set use-radius=yes accounting=yes interim-update=5m;',
   );
   return lines.join('\n');

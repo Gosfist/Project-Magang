@@ -30,7 +30,16 @@ Perubahan akun, paket, status dan atribut RADIUS diselesaikan dalam transaksi se
 
 Putus Sesi dapat dicoba ulang. Akun aktif bisa menyambung kembali setelah disconnect manual. Backend tidak mengarang Accounting Stop; NAS tetap menjadi sumber Start/Stop/Interim. Signed ACK/NAK 503 memiliki penanda per sesi agar accounting yang terlambat tidak menahan reconnect. Isolir/pemulihan pool memerlukan reconnect untuk menerima IP baru.
 
-Status online adalah hasil accounting yang masih segar. Default RADIUS_ACCOUNTING_STALE_SECONDS 900 detik cocok dengan update 5 menit. RADIUS_ACCOUNTING_TIMEZONE harus sesuai DATETIME yang ditulis SQL; installer baru menggunakan WIB. Data stale ditampilkan sebagai tidak pasti.
+Status online adalah hasil accounting yang masih segar. Default RADIUS_ACCOUNTING_STALE_SECONDS 900 detik cocok dengan update 5 menit. RADIUS_ACCOUNTING_TIMEZONE harus sesuai DATETIME yang ditulis SQL; installer baru menetapkan sesi SQL dan pembacaan backend ke UTC, sementara tampilan memakai WIB. Pasang Baru dan Data Pelanggan memakai pembaca accounting yang sama. Nilai null ditampilkan Belum diketahui, bukan Offline; Aktif adalah status layanan dan tidak membuktikan sesi Online. Lihat diagnosis UTC/WIB pada bagian 9.7 panduan instalasi.
+
+Jam OS server dan zona MikroTik memakai Asia/Jakarta. Installer mengaktifkan NTP
+server dan mempertahankan SQL accounting UTC; log authdate mengikuti proses
+FreeRADIUS Jakarta dan dibaca WIB. Periksa sinkronisasi aktual NTP server/router,
+bukan hanya zona waktu. Script NAS mengatur clock pada bagian 3; lihat bagian 9.9.
+Untuk limit Mbps, periksa counter queue pelanggan. Kasus wisnu 20M/20M terselesaikan
+setelah profil internet diberi parent-queue=CLIENT dan sesi login ulang; queue
+sebelumnya parent=none dengan counter nol di belakang CLIENT yang menangkap subnet.
+Nama parent harus mengikuti router setempat; lihat bagian 9.8 dan pppoe-bandwidth.md.
 
 ## Form pelanggan dan tagihan
 

@@ -115,7 +115,7 @@ npm run install
 | Email sertifikat HTTPS | Email aktif Anda, untuk pemberitahuan sertifikat |
 
 6. Akun administrator awal dibuat otomatis: email admin@unzanet.com dan password 123. Installer tidak meminta isian email/password administrator.
-7. Tunggu installer memasang aplikasi, HTTPS Certbot dan pembaruan otomatisnya, server SSTP TCP 4443, CA, serta worker akun VPN. Tidak perlu menjalankan Certbot atau npm run setupvpnserver terpisah. Email sertifikat berbeda dari akun admin dan harus email aktif.
+7. Tunggu installer memasang aplikasi, HTTPS Certbot dan pembaruan otomatisnya, server SSTP TCP 4443, CA, serta worker akun VPN. Jam server memakai Asia/Jakarta (WIB), NTP diaktifkan; penyimpanan accounting SQL tetap UTC. Tidak perlu menjalankan Certbot atau npm run setupvpnserver terpisah. Email sertifikat berbeda dari akun admin dan harus email aktif.
 8. Gunakan VPS/database baru; database.sql hanya diimpor pada database kosong. Update kode tidak memigrasikan skema database lama. Instalasi web lama dapat dilengkapi dengan git pull --ff-only lalu npm run install; isian gabungan ditanyakan sekali tanpa mereset akun/data.
 
 ## 4 Periksa HTTPS website
@@ -225,7 +225,7 @@ sudo systemctl status unzanet-radius-nas-refresh.timer --no-pager
 /log print where topics~"radius|ppp|sstp"
 ~~~
 
-7. Periksa Monitoring RADIUS dan accounting Start/Interim. Uji Putus Sesi, isolir, serta pemulihan; pastikan sesi nyata terputus/tersambung dan menerima pool/profil yang sesuai.
+7. Periksa Monitoring RADIUS dan accounting Start/Interim. Aktif adalah status layanan, bukan bukti sesi Online. Pasang Baru dan Data Pelanggan membaca radacct tanpa API MikroTik: sesi segar tampil Online, sesi usang/tidak pasti tampil Belum diketahui. Instalasi baru memakai UTC untuk accounting SQL dan pembaca sesi backend; tampilan tetap WIB. Jika pelanggan bisa internet tetapi sesi belum diketahui, ikuti bagian 9.7. Uji Putus Sesi, isolir, serta pemulihan pada sesi nyata.
 8. Buka Login Bot Wa lalu pindai QR menggunakan ponsel jika memakai Bot WhatsApp.
 
 ## 9 Pemulihan dan perawatan
@@ -355,3 +355,109 @@ sudo accel-cmd show sessions username,ip,type,state
 ~~~
 
 5. Tidak diketahui berarti data gagal/usang, pengumpul belum tersedia, atau akun eksternal. Pengumpul hanya membaca sesi tanpa API MikroTik. Rujukan: [kolom sesi Accel-PPP](https://docs.accel-ppp.org/configuration/cli.html).
+
+### 9.7 Internet berjalan tetapi status sesi belum diketahui
+
+1. Bedakan status layanan Aktif dari sesi Online. Pasang Baru dan Data Pelanggan membaca accounting radacct tanpa API MikroTik. Sesi usang atau belum pasti tampil Belum diketahui, bukan Offline.
+2. Periksa pada Terminal Winbox. Pastikan use-radius=yes, accounting=yes, interim-update=5m, serta sesi pelanggan memakai flag RADIUS:
+
+~~~routeros
+/ppp aaa print
+/ppp active print detail where service=pppoe
+~~~
+
+3. Pada SSH VPS, ganti USERNAME_PPPOE dengan nama sesi pelanggan. Cocokkan NAS dan waktu accounting dengan waktu database:
+
+~~~bash
+sudo mysql unzanet <<'SQL'
+SELECT NOW() waktu_db, UTC_TIMESTAMP() waktu_utc;
+SELECT username,nasipaddress,acctstarttime,acctupdatetime,acctstoptime,
+  TIMESTAMPDIFF(SECOND,COALESCE(acctupdatetime,acctstarttime),NOW()) umur_detik
+FROM radacct WHERE username='USERNAME_PPPOE'
+ORDER BY radacctid DESC LIMIT 5;
+SQL
+~~~
+
+4. Jika data accounting memakai UTC, isi RADIUS_ACCOUNTING_TIMEZONE=UTC. Jangan membaca UTC sebagai WIB: selisih tujuh jam dapat membuat sesi segar dianggap usang. Jalankan pada SSH VPS:
+
+~~~bash
+sudo python3 - <<'PY'
+from pathlib import Path
+p = Path('/var/www/Project-Magang/backend/.env')
+rows = p.read_text(encoding='utf-8').splitlines()
+rows = [row for row in rows if not row.startswith('RADIUS_ACCOUNTING_TIMEZONE=')]
+rows.append('RADIUS_ACCOUNTING_TIMEZONE=UTC')
+p.write_text('\n'.join(rows) + '\n', encoding='utf-8')
+PY
+sudo systemctl restart unzanet-backend.service
+~~~
+
+5. Muat ulang Pasang Baru dan Data Pelanggan. Tidak perlu mengubah akun, menambah ulang RADIUS, atau memutus PPPoE hanya untuk memperbaiki zona pembacaan. Pada kasus 20 Oktober 2026, accounting berumur 19 detik kembali Online setelah pembacaan diubah dari WIB ke UTC.
+6. Instalasi baru memakai jam server Asia/Jakarta, accounting SQL UTC dan RADIUS_ACCOUNTING_TIMEZONE=UTC. Log authdate mengikuti waktu lokal FreeRADIUS Jakarta dan RADIUS_LOG_TIMEZONE=WIB; tampilan tetap WIB. Untuk database lama, ikuti zona data masing-masing; periksa sumber penyimpanan sebelum mengganti zona.
+
+### 9.8 Limit 20 Mbps terlewati karena susunan queue
+
+1. Jalankan saat speedtest melalui Wi-Fi/LAN pelanggan PPPoE:
+
+~~~routeros
+/queue simple print detail without-paging
+/queue simple print stats without-paging where dynamic=yes
+/ip firewall filter print detail where action=fasttrack-connection
+/ip firewall connection print count-only where fasttrack=yes
+~~~
+
+2. Periksa queue dinamis pelanggan: max-limit harus sesuai paket dan bytes/packets harus bertambah. Jika queue induk lebih dahulu menangkap subnet tetapi queue pelanggan parent=none, atur Parent Queue profil internet ke induk yang benar. Nama CLIENT di bawah hanya untuk router yang sudah memiliki induk CLIENT dengan target mencakup subnet pelanggan.
+3. Kasus terverifikasi wisnu pada NAS 1: SQL dan queue sudah 20M/20M, tanpa FastTrack, tetapi counter nol. Jalankan pada Terminal Winbox router tersebut; baris kedua memutus hanya wisnu agar modem login ulang:
+
+~~~routeros
+/ppp profile set [find where name="UNZANET-INTERNET-1"] parent-queue=CLIENT
+/ppp active remove [find where name="wisnu" service=pppoe]
+~~~
+
+4. Ulangi speedtest dan perintah statistik. Pengguna mengonfirmasi berhasil: queue berubah menjadi parent=CLIENT, counter bertambah, rate download 19.1 Mbps untuk paket 20 Mbps. Penyebabnya susunan queue router, bukan limit dari RADIUS atau API MikroTik.
+5. Pertahankan Parent Queue pada profil tersebut untuk login selanjutnya. Jangan menambahkan CLIENT ke semua script NAS; router lain dapat memakai nama/struktur berbeda. Panduan rinci ada di backend/docs/pppoe-bandwidth.md.
+
+### 9.9 Memastikan jam WIB tanpa menggeser accounting
+
+1. Instalasi baru mengatur server dan proses aplikasi ke Asia/Jakarta serta mengaktifkan NTP. MySQL memakai default-time-zone +00:00 dan koneksi SQL FreeRADIUS dipatok UTC agar accounting tidak berubah saat server restart. Periksa pada SSH VPS:
+
+~~~bash
+timedatectl
+date '+%Y-%m-%d %H:%M:%S %Z %z'
+sudo mysql unzanet -e "SELECT NOW() waktu_sql, UTC_TIMESTAMP() waktu_utc, @@global.time_zone zona_global, @@session.time_zone zona_sesi;"
+~~~
+
+2. Pastikan Time zone Asia/Jakarta, jam date WIB +0700, dan System clock synchronized yes. NTP diaktifkan bukan bukti sudah sinkron; jika masih no, periksa layanan NTP/koneksi server. Jam SQL UTC berbeda tujuh jam dari WIB dan tetap menunjukkan saat yang sama.
+3. Script Router/NAS terbaru mengatur zona MikroTik pada bagian 3. Untuk router yang sudah dipasang, jalankan hanya baris clock ini tanpa menempel ulang seluruh script add:
+
+~~~routeros
+/system clock set time-zone-autodetect=no time-zone-name=Asia/Jakarta;
+/system clock print
+~~~
+
+4. Periksa NTP Client MikroTik melalui Winbox System > NTP Client sesuai RouterOS yang digunakan. Mengganti zona waktu saja tidak mengoreksi jam perangkat yang salah; aktifkan sinkronisasi NTP dan periksa waktu aktualnya.
+5. Untuk VPS lama yang sudah terbukti menyimpan accounting UTC seperti kasus bagian 9.7, pin default MySQL ke UTC sebelum mengubah zona OS. Jalankan pada SSH VPS:
+
+~~~bash
+sudo install -d -m 0755 /etc/mysql/mysql.conf.d
+printf '[mysqld]\ndefault-time-zone = "+00:00"\n' | sudo tee /etc/mysql/mysql.conf.d/99-unzanet-timezone.cnf >/dev/null
+sudo mysql --protocol=socket -e "SET GLOBAL time_zone = '+00:00'"
+sudo timedatectl set-timezone Asia/Jakarta
+sudo timedatectl set-ntp true
+sudo install -d -m 0755 /etc/systemd/system/freeradius.service.d
+printf '[Service]\nEnvironment=TZ=Asia/Jakarta\n' | sudo tee /etc/systemd/system/freeradius.service.d/99-unzanet-timezone.conf >/dev/null
+sudo python3 - <<'PY'
+from pathlib import Path
+p = Path('/var/www/Project-Magang/backend/.env')
+rows = p.read_text(encoding='utf-8').splitlines()
+keys = ('RADIUS_ACCOUNTING_TIMEZONE=', 'RADIUS_LOG_TIMEZONE=')
+rows = [row for row in rows if not row.startswith(keys)]
+rows.extend(['RADIUS_ACCOUNTING_TIMEZONE=UTC', 'RADIUS_LOG_TIMEZONE=WIB'])
+p.write_text('\n'.join(rows) + '\n', encoding='utf-8')
+PY
+sudo systemctl daemon-reload
+sudo systemctl restart freeradius.service unzanet-backend.service
+timedatectl
+~~~
+
+6. Pemulihan ini tidak menulis ulang timestamp lama. Riwayat authdate yang dahulu ditulis UTC tidak otomatis menjadi WIB; RADIUS_LOG_TIMEZONE=WIB mengikuti log baru setelah FreeRADIUS memakai Jakarta. Jangan menjalankan pengaturan accounting UTC pada instalasi lama yang datanya memang WIB tanpa pemeriksaan.

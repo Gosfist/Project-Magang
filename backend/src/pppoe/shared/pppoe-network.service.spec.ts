@@ -61,6 +61,16 @@ describe('PPPoE RADIUS accounting and Disconnect', () => {
     const result = await service.accountPresence([{ username: 'andi', routerNasId: 3 }]);
     expect(result.states.get('andi')).toBe(true); expect(result.uptimes.get('andi')).toBe('120s'); expect(result.warnings).toEqual([]);
   });
+  it('keeps a UTC accounting update from 19 seconds ago online on a WIB display', async () => {
+    vi.setSystemTime(new Date('2026-10-20T09:49:30Z'));
+    const { service, prisma } = setup();
+    prisma.radacct.findMany.mockResolvedValue([{ ...session('wisnu'), acctstarttime: new Date('2026-10-20T09:44:11Z'),
+      acctupdatetime: new Date('2026-10-20T09:49:11Z'), acctsessiontime: 300 }]);
+    vi.stubEnv('RADIUS_ACCOUNTING_TIMEZONE', 'UTC');
+    expect((await service.accountPresence([{ username: 'wisnu', routerNasId: 3 }])).states.get('wisnu')).toBe(true);
+    vi.stubEnv('RADIUS_ACCOUNTING_TIMEZONE', 'WIB');
+    expect((await service.accountPresence([{ username: 'wisnu', routerNasId: 3 }])).states.get('wisnu')).toBeNull();
+  });
   it('does not query the database for an empty presence request', async () => {
     const { service, prisma } = setup();
     expect((await service.accountPresence([])).states.size).toBe(0);

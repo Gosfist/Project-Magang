@@ -39,4 +39,16 @@ describe('technician PPPoE activation', () => {
     component.activate();
     expect(post).toHaveBeenCalledWith('/psb/1/activate', jasmine.objectContaining({ username: 'new.username', password: undefined }));
   });
+  it('renders unknown accounting separately from offline and uses Online for a live session', () => {
+    const { fixture, component } = setup();
+    component.activationOpen.set(false);
+    component.items.set([true, false, null].map((internetOnline, index) => ({ id: String(index), customerId: String(index).padStart(6, '0'),
+      customerName: 'Pelanggan uji', phone: '-', address: '-', package: { name: '20 Mb' }, createdAt: '2026-10-20T00:00:00Z',
+      status: 'ACTIVATED', internetOnline } as PsbOrder)));
+    fixture.detectChanges();
+    const badges = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr td:nth-child(8) span'));
+    expect(badges.map(badge => badge.textContent?.trim())).toEqual(['Online', 'Offline', 'Belum diketahui']);
+    expect(badges[2].className).toContain('bg-slate-100');
+    expect(badges[2].getAttribute('title')).toContain('accounting RADIUS');
+  });
 });

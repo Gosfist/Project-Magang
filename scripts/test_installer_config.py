@@ -14,6 +14,19 @@ spec.loader.exec_module(module)
 
 
 class InstallerConfigurationTests(unittest.TestCase):
+    def test_accounting_uses_utc_while_server_local_auth_logs_use_jakarta(self):
+        files = module.render(self.config)
+        backend = files['/var/www/Project-Magang/backend/.env']
+        sql = files['/etc/freeradius/3.0/mods-available/sql']
+        self.assertIn('RADIUS_ACCOUNTING_TIMEZONE="UTC"', backend)
+        self.assertIn('RADIUS_LOG_TIMEZONE="WIB"', backend)
+        self.assertEqual(files['/etc/systemd/system/freeradius.service.d/99-unzanet-timezone.conf'],
+                         '[Service]\nEnvironment=TZ=Asia/Jakarta\n')
+        for name in ('unzanet-backend', 'unzanet-botwa'):
+            self.assertIn('Environment=TZ=Asia/Jakarta', files[f'/etc/systemd/system/{name}.service'])
+        self.assertIn('open_query = "SET time_zone = \'+00:00\'"', sql)
+        self.assertIn('RADIUS_ACCOUNTING_STALE_SECONDS="900"', backend)
+
     def test_fresh_config_uses_fixed_admin_without_requiring_admin_environment(self):
         environment = {key: value for key, value in self.config.items() if not key.startswith('ADMIN_')}
         config = module.create_config(environment)

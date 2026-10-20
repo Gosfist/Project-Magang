@@ -53,7 +53,7 @@ export class PsbService {
     ]);
     const presence = await this.network.accountPresence(data.flatMap(item => item.account ? [item.account] : []));
     return serialize({ data: data.map(item => ({ ...item, customerId: this.customerId(item.customerNumber),
-      internetOnline: item.account ? presence.states.get(item.account.username) ?? false : false,
+      internetOnline: item.account ? presence.states.get(item.account.username) ?? null : false,
       package: { ...item.package, price: Number(item.package.price), costPrice: Number(item.package.costPrice) }, password: undefined })), meta: pageMeta(page, 10, total), warnings: presence.warnings });
   }
 

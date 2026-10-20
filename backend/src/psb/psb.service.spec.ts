@@ -1,6 +1,23 @@
 import { describe, expect, it, vi } from 'vitest';
 import { PsbService } from './psb.service.js';
 
+describe('PSB session status from RADIUS accounting', () => {
+  it('preserves online, offline and unknown states instead of turning unknown accounting into offline', async () => {
+    const accounts = ['online', 'offline', 'stale', 'missing'].map(username => ({ username, routerNasId: 3 }));
+    const orders = [...accounts, null].map((account, index) => ({ id: BigInt(index + 1), customerNumber: BigInt(index + 1), account,
+      package: { name: '20 Mb', price: 150000n, costPrice: 0n } }));
+    const prisma = { psbOrder: { findMany: vi.fn().mockResolvedValue(orders), count: vi.fn().mockResolvedValue(orders.length) },
+      $transaction: vi.fn((queries: Promise<unknown>[]) => Promise.all(queries)) };
+    const warnings = ['Sebagian sesi accounting belum diperbarui.'];
+    const network = { accountPresence: vi.fn().mockResolvedValue({ states: new Map([['online', true], ['offline', false], ['stale', null]]), warnings }) };
+    const service = new PsbService(prisma as any, {} as any, {} as any, {} as any, {} as any, network as any);
+    const result = await service.list({ id: '1', role: 'admin' });
+    expect(network.accountPresence).toHaveBeenCalledWith(accounts);
+    expect(result.data.map(order => order.internetOnline)).toEqual([true, false, null, null, false]);
+    expect(result.warnings).toEqual(warnings);
+  });
+});
+
 describe('PSB fee paid to technician', () => {
   function setup(fee = 150000) {
     const order = { id: 1n, status: 'ACTIVATED', pppoeAccountId: 2n, customerNumber: 1n,

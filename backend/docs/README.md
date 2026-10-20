@@ -7,6 +7,21 @@ Worker read-only unzanet-vpn-status.timer berjalan setiap 10 detik, web memuat
 ulang setiap 15 detik. Installer/update memasangnya melalui setup-vpn-sync.sh.
 Bagian 9.6 memuat pemeriksaan timer dan show sessions.
 
+Bagian 9.7 membedakan status layanan Aktif dari sesi PPPoE Online/Offline/Belum
+diketahui, serta memeriksa mismatch zona UTC/WIB pada accounting. Instalasi baru
+memakai sesi SQL UTC dan pembacaan backend UTC; tampilan tetap WIB. Pasang Baru
+dan Data Pelanggan membaca radacct tanpa API MikroTik.
+
+Jam server, backend/bot dan proses FreeRADIUS memakai Asia/Jakarta; NTP server
+diaktifkan. MySQL dipatok +00:00 saat berjalan dan restart, serta koneksi SQL
+FreeRADIUS memakai UTC untuk radacct. Authdate ditulis waktu proses Jakarta dan
+dibaca dengan RADIUS_LOG_TIMEZONE=WIB. Bagian 9.9 memuat pemeriksaan dan langkah
+VPS lama yang accounting-nya sudah UTC. Script NAS juga mengatur zona Jakarta;
+NTP router perlu diperiksa melalui Winbox sesuai versi RouterOS.
+Bagian 9.8 dan [panduan bandwidth](pppoe-bandwidth.md) memuat kasus terverifikasi
+queue wisnu 20M/20M dengan counter nol: setelah profil memakai parent CLIENT dan
+login ulang, counter bertambah, rate download 19.1 Mbps dan speedtest berhasil.
+
 Panduan aktif adalah [instalasi VPS Ubuntu](instalasi-ubuntu-vpn.md),
 [FreeRADIUS](pppoe-freeradius.md), [operasi Router dan PPPoE](router-pppoe-operations.md),
 [isolir](pppoe-isolation.md), dan [backup darurat](pppoe-backup.md).

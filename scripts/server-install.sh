@@ -62,6 +62,21 @@ reload_installer_if_updated() {
   fi
 }
 
+configure_server_time() {
+  local mysql_config_dir="${1:-/etc/mysql/mysql.conf.d}"
+  log 'Menyelaraskan jam server ke WIB Asia/Jakarta dan mengaktifkan NTP'
+  timedatectl set-timezone Asia/Jakarta
+  timedatectl set-ntp true
+  [[ "$(timedatectl show --property=Timezone --value)" == Asia/Jakarta ]] || die 'Zona waktu server belum Asia/Jakarta.'
+  export TZ=Asia/Jakarta
+  # Keep SQL DATETIME storage stable across host timezone changes and MySQL restarts.
+  install -d -m 0755 "$mysql_config_dir"
+  printf '[mysqld]\ndefault-time-zone = "+00:00"\n' > "$mysql_config_dir/99-unzanet-timezone.cnf"
+  chmod 0644 "$mysql_config_dir/99-unzanet-timezone.cnf"
+  systemctl enable --now mysql
+  mysql --protocol=socket -e "SET GLOBAL time_zone = '+00:00'"
+}
+
 main() {
   if [[ "${1:-}" == --help ]]; then
     printf 'UNZANET installer Ubuntu 24.04\nJalankan: npm run install\nKonfigurasi ditanyakan sekali dan disimpan privat di /etc/unzanet/install.json\n'
@@ -105,16 +120,14 @@ main() {
   apt-get update
   apt-get install -y mysql-server apache2 freeradius freeradius-mysql freeradius-utils \
     sstp-client ppp python3 build-essential pkg-config libssl-dev ufw openssl openssh-server netcat-openbsd \
-    certbot python3-certbot-apache
+    certbot python3-certbot-apache tzdata
   if ! command -v node >/dev/null || [[ "$(node -p 'process.versions.node.split(".")[0]')" != 22 ]]; then
     curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/unzanet-nodesource-22.sh
     bash /tmp/unzanet-nodesource-22.sh
     apt-get install -y nodejs
   fi
   [[ "$(node -p 'process.versions.node.split(".")[0]')" == 22 ]] || die 'Node.js 22 belum tersedia.'
-  timedatectl set-timezone Asia/Jakarta
-  timedatectl set-ntp true
-  systemctl enable --now mysql
+  configure_server_time
 
   install -d -m 0700 /etc/unzanet
   if [[ ! -f /etc/unzanet/install.json ]]; then

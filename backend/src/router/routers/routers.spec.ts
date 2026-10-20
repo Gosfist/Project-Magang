@@ -108,7 +108,7 @@ describe('Zero MikroTik API NAS registry', () => {
       expect(script).not.toContain('/radius set');
       expect(script).not.toContain('/ip route set');
       expect(script).not.toMatch(/ remove /);
-      expect(script.split('\n').length).toBeLessThanOrEqual(12);
+      expect(script.split('\n').length).toBeLessThanOrEqual(13);
     }
   });
 
@@ -146,6 +146,7 @@ describe('Zero MikroTik API NAS registry', () => {
     const result = await service.getRouterScript('7');
     expect(result).toMatchObject({ radiusServerIp: router.radiusServerIp, nasSrcAddress: router.nasname, authPort: 1812, coaPort: 3799 });
     for (const script of [result.scriptRos6, result.scriptRos7]) {
+      expect(script).toContain('/system clock set time-zone-autodetect=no time-zone-name=Asia/Jakarta;');
       expect(script).toContain('service=ppp authentication-port=1812 accounting-port=1813');
       expect(script).toContain('src-address="10.88.0.3"');
       expect(script).toContain('/radius incoming set accept=yes port=3799');

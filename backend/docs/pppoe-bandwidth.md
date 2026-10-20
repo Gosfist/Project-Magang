@@ -13,7 +13,7 @@ CoA/API dengan fallback disconnect. Jangan menyalin urutan download/upload
 di komentar referensi: dokumentasi MikroTik menetapkan upload/download.
 
 Perubahan RADIUS hanya diterapkan saat autentikasi. Project Magang memakai
-API pemutusan sesi yang sudah ada sebagai cara kompatibel agar modem login ulang
+RADIUS Disconnect-Request UDP 3799 agar modem login ulang
 dengan limit/pool baru. Ini dilakukan setelah transaksi RADIUS tersimpan saat
 kecepatan atau pool paket berubah, serta saat paket/router akun diganti.
 Edit harga/nama saja tidak memutus sesi. Kegagalan pemutusan menghasilkan
@@ -61,3 +61,42 @@ Ulangi pengujian: counter child harus bertambah dan kecepatan mendekati batas
 paket; 5 Mbps setara 0,625 MB/s sebelum overhead. Build/unit test tidak membuktikan
 hasil throughput perangkat. Perbaikan router dan pengujian ulang masih perlu
 dibuktikan melalui output pengguna.
+
+### Temuan terverifikasi 20 Oktober 2026
+
+Akun wisnu mempunyai `Mikrotik-Rate-Limit := 20M/20M` di SQL dan queue dinamis
+`<pppoe-wisnu>` dengan max-limit=20M/20M tanpa burst. FastTrack kosong dan
+koneksi FastTrack=0. Queue CLIENT di urutan pertama sudah mencakup
+192.168.75.0/24, tetapi queue wisnu mempunyai parent=none dan bytes/packets=0.
+Queue yang lebih dahulu cocok dapat menangkap trafik sebelum queue pelanggan;
+ini berbeda dari kasus target parent yang belum mencakup subnet pada 11 Oktober.
+
+Perbaikan khusus router tersebut, melalui Terminal Winbox:
+
+```routeros
+/ppp profile set [find where name="UNZANET-INTERNET-1"] parent-queue=CLIENT
+/ppp active remove [find where name="wisnu" service=pppoe]
+```
+
+Baris kedua memutus hanya sesi wisnu agar modem login ulang dan queue dibuat
+sebagai anak CLIENT. Setelahnya pengguna mengirim parent=CLIENT,
+max-limit=20M/20M, rate download=19.1Mbps, bytes=267859/9868583 dan
+packets=4250/7064, serta mengonfirmasi speedtest berhasil dibatasi.
+Penyebab terverifikasi pada susunan queue router, bukan pengiriman limit RADIUS.
+`limit-bytes-in/out=0` pada PPP Active adalah kuota byte, bukan batas Mbps.
+
+Nama parent berbeda pada tiap router. Jangan menambahkan CLIENT ke script semua
+NAS: router tanpa queue tersebut akan gagal. Atur Parent Queue pada profil
+internet NAS sesuai queue induk yang benar dan pastikan target induk mencakup
+subnet pelanggan. Pengaturan profil bertahan untuk login berikutnya; pemasangan
+ulang profil baru melalui script add tetap memerlukan pemeriksaan queue router.
+
+Untuk keluaran yang tidak terpotong saat speedtest:
+
+```routeros
+/queue simple print detail without-paging where dynamic=yes
+/queue simple print stats without-paging where dynamic=yes
+```
+
+Rujukan: [urutan dan parent Simple Queue](https://help.mikrotik.com/docs/spaces/ROS/pages/328088/Queues)
+dan [parent-queue pada profil PPP](https://help.mikrotik.com/docs/spaces/ROS/pages/132350049/PPP+AAA).

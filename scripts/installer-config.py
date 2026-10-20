@@ -184,7 +184,7 @@ def render(config):
         'RADIUS_DISCONNECT_SOURCE_IP': config['VPN_RADIUS_IP'] if config.get('NETWORK_MODE', 'vpn') != 'web' else '',
         'VPN_SSTP_HOST': config.get('VPN_SERVER', '') if config.get('NETWORK_MODE') == 'server' else '',
         'RADIUS_ACCOUNTING_STALE_SECONDS': '900',
-        'RADIUS_ACCOUNTING_TIMEZONE': 'WIB',
+        'RADIUS_ACCOUNTING_TIMEZONE': 'UTC',
         'UPLOADS_DIR': root + '/uploads',
     }
     bot = {
@@ -193,6 +193,7 @@ def render(config):
     }
     files = {
         **refresh_files(config),
+        '/etc/systemd/system/freeradius.service.d/99-unzanet-timezone.conf': '[Service]\nEnvironment=TZ=Asia/Jakarta\n',
         root + '/backend/.env': '\n'.join(env_line(k, v) for k, v in backend.items()) + '\n',
         root + '/bot_whatsapp/.env': '\n'.join(env_line(k, v) for k, v in bot.items()) + '\n',
         '/etc/ppp/peers/sstp-radius': f'''# Managed by UNZANET installer
@@ -258,6 +259,7 @@ sql {{
     read_clients = yes
     client_table = "nas"
     group_attribute = "SQL-Group"
+    open_query = "SET time_zone = '+00:00'"
     pool {{
         start = 1
         min = 1

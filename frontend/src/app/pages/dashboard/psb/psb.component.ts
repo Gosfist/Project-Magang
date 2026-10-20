@@ -322,7 +322,7 @@ export class PsbComponent implements OnInit, OnDestroy {
     return value === 'COMPLETED' ? 'Selesai' : 'Proses';
   }
   internetLabel(item: PsbOrder) {
-    return item.internetOnline ? 'Aktif' : 'Offline';
+    return item.internetOnline === true ? 'Online' : item.internetOnline === false ? 'Offline' : 'Belum diketahui';
   }
   formatDate(value?: string | null) {
     if (!value) return '-';
