@@ -112,9 +112,9 @@ npm run install
 | --- | --- |
 | URL browser | https://DOMAIN_WEBSITE |
 | Tahap jaringan | web |
-| Email administrator | Email administrator Anda |
 
-6. Tunggu aplikasi siap. Gunakan VPS/database baru; database.sql hanya diimpor pada database kosong. Update kode tidak memigrasikan skema database lama.
+6. Akun administrator awal dibuat otomatis: email admin@unzanet.com dan password 123. Installer tidak meminta isian email/password administrator.
+7. Tunggu aplikasi siap. Gunakan VPS/database baru; database.sql hanya diimpor pada database kosong. Update kode tidak memigrasikan skema database lama.
 
 ## 4 Aktifkan HTTPS website
 
@@ -156,13 +156,14 @@ sudo freeradius -XC
 
 ## 6 Login dan buat klien VPN
 
-1. Baca login administrator awal melalui SSH VPS:
+1. Buka https://DOMAIN_WEBSITE dan gunakan akun awal berikut:
 
-~~~bash
-sudo cat /etc/unzanet/credentials.txt
-~~~
+| Isian login | Nilai |
+| --- | --- |
+| Email | admin@unzanet.com |
+| Password | 123 |
 
-2. Login pada https://DOMAIN_WEBSITE. Ganti password administrator melalui profil.
+2. Klik Login. Jika password pernah Anda ubah melalui profil, gunakan password terbaru; mengulang installer tidak mereset password akun yang sudah ada.
 3. Buka Router > Klien VPN > Tambah VPN.
 
 | Isian | Contoh |
@@ -229,6 +230,33 @@ sudo systemctl status unzanet-radius-nas-refresh.timer --no-pager
 8. Buka Login Bot Wa lalu pindai QR menggunakan ponsel jika memakai Bot WhatsApp.
 
 ## 9 Pemulihan dan perawatan
+
+### 9.1 Installer berhenti saat menyiapkan firewall
+
+1. Jika log berhenti setelah Menyiapkan firewall dan service otomatis saat boot, versi lama dapat menunjukkan baris 223. Pada versi itu perintah sshd -T membaca port SSH, tetapi pesan errornya disembunyikan. Jalankan pada SSH VPS yang masih terbuka:
+
+~~~bash
+sudo /usr/sbin/sshd -T 2>&1 | head -n 12
+~~~
+
+2. Jika muncul Missing privilege separation directory: /run/sshd, buat folder runtime lalu periksa konfigurasi SSH:
+
+~~~bash
+sudo install -d -o root -g root -m 0755 /run/sshd
+sudo /usr/sbin/sshd -t
+~~~
+
+3. Jika sshd -t selesai tanpa pesan error, jalankan installer kembali dari folder project:
+
+~~~bash
+cd /var/www/Project-Magang
+npm run install
+~~~
+
+4. Ulangi instalasi tanpa menghapus database atau membangun ulang frontend. Jika muncul error SSH lain, kirim pesan lengkapnya; jangan melewati pemeriksaan atau menebak port firewall. Pertahankan sesi SSH yang masih tersambung.
+5. AH00558 dengan Syntax OK adalah peringatan Apache; npm notice juga bukan kegagalan instalasi. Rujukan: [ServerName Apache](https://httpd.apache.org/docs/2.4/mod/core.html#servername).
+
+### 9.2 Akun VPN dan sertifikat
 
 1. Jika akun terus Menunggu server, jalankan pada SSH VPS:
 

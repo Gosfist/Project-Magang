@@ -13,6 +13,26 @@ ask() {
 }
 setting() { python3 "$ROOT_DIR/scripts/installer-config.py" get --key "$1"; }
 as_repo_owner() { runuser -u "$REPO_OWNER" -- "$@"; }
+prepare_ssh_firewall() {
+  local runtime_dir="${1:-/run/sshd}" sshd_command="${2:-/usr/sbin/sshd}"
+  local ssh_config ssh_ports port client_ip client_port server_ip server_port
+  # A fresh/socket-activated Ubuntu host may not have created this directory yet.
+  install -d -o root -g root -m 0755 "$runtime_dir"
+  if ! ssh_config="$("$sshd_command" -T)"; then
+    die 'Pemeriksaan SSH gagal; lihat pesan sshd di atas. Firewall belum diubah. Periksa sudo /usr/sbin/sshd -T.'
+  fi
+  ssh_ports="$(awk '$1=="port" {print $2}' <<< "$ssh_config")"
+  [[ -n "$ssh_ports" ]] || die 'Port SSH tidak ditemukan; firewall belum diubah.'
+  # Keep the current connection reachable even with a custom ssh.socket port.
+  if [[ -n "${SSH_CONNECTION:-}" ]]; then
+    read -r client_ip client_port server_ip server_port <<< "$SSH_CONNECTION"
+    ssh_ports+=$'\n'"$server_port"
+  fi
+  for port in $ssh_ports; do
+    [[ "$port" =~ ^[0-9]{1,5}$ ]] && (( 10#$port >= 1 && 10#$port <= 65535 )) || die 'Port SSH tidak valid; firewall belum diubah.'
+  done
+  for port in $(sort -nu <<< "$ssh_ports"); do ufw allow "$port/tcp"; done
+}
 wait_http() {
   local address="$1" expected="$2" code
   for _ in {1..40}; do
@@ -115,11 +135,11 @@ main() {
     else
       die 'Mode harus web, local atau vpn.'
     fi
-    ask ADMIN_EMAIL 'Email administrator awal' admin@unzanet.com
     python3 "$ROOT_DIR/scripts/installer-config.py" create
     unset VPN_PASSWORD
   fi
   [[ "$(setting ROOT_DIR)" == "$ROOT_DIR" ]] || die 'Lokasi repo berbeda dengan instalasi awal.'
+  python3 "$ROOT_DIR/scripts/installer-config.py" admin-defaults
   WEB_URL="$(setting WEB_URL)"
   VPN_NETWORK="$(setting VPN_NETWORK)"
   VPN_RADIUS_IP="$(setting VPN_RADIUS_IP)"
@@ -219,9 +239,7 @@ JS
   apache2ctl configtest
 
   log 'Menyiapkan firewall dan service otomatis saat boot'
-  local ssh_ports
-  ssh_ports="$(/usr/sbin/sshd -T 2>/dev/null | awk '$1=="port" {print $2}')"
-  for port in ${ssh_ports:-22}; do ufw allow "$port/tcp"; done
+  prepare_ssh_firewall
   ufw allow 80/tcp
   if [[ "$NETWORK_MODE" == vpn ]]; then
     ufw allow in on sstp-radius from "$VPN_NETWORK" to any port 1812 proto udp
@@ -251,7 +269,7 @@ JS
   done
   touch /etc/unzanet/install-complete
   log "Aplikasi siap dibuka: $WEB_URL"
-  printf 'Login awal tersimpan privat: sudo cat /etc/unzanet/credentials.txt\n'
+  printf 'Login administrator awal: admin@unzanet.com / 123\n'
   if [[ "$NETWORK_MODE" == local ]]; then
     printf 'Mode LAN: uji ping %s, lalu tambah NAS dengan IP tersebut.\n' "$VPN_ROUTER_IP"
   elif [[ "$NETWORK_MODE" == web ]]; then

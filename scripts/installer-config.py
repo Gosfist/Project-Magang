@@ -9,6 +9,22 @@ import secrets
 from urllib.parse import urlsplit
 
 
+def initial_administrator(config):
+    return {**config, 'ADMIN_EMAIL': 'admin@unzanet.com', 'ADMIN_PASSWORD': '123'}
+
+
+def create_config(environment):
+    keys = ['ROOT_DIR', 'WEB_URL', 'VPN_SERVER', 'VPN_USERNAME', 'VPN_PASSWORD',
+            'VPN_RADIUS_IP', 'VPN_ROUTER_IP', 'VPN_NETWORK']
+    config = {key: environment[key] for key in keys}
+    config['NETWORK_MODE'] = environment.get('NETWORK_MODE', 'vpn')
+    for key in ['DB_PASSWORD', 'RADIUS_DB_PASSWORD', 'JWT_SECRET', 'BOT_API_KEY']:
+        config[key] = secrets.token_hex(24)
+    config = initial_administrator(config)
+    validate(config)
+    return config
+
+
 def validate(config):
     mode = config.get('NETWORK_MODE', 'vpn')
     if mode not in ('web', 'local', 'vpn', 'server'):
@@ -369,7 +385,7 @@ def disable_unused_eap(config_root=Path('/etc/freeradius/3.0')):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['create', 'get', 'render', 'queries', 'refresh', 'sql-module', 'configure-vpn', 'radius-modules'])
+    parser.add_argument('action', choices=['create', 'get', 'render', 'queries', 'refresh', 'sql-module', 'configure-vpn', 'radius-modules', 'admin-defaults'])
     parser.add_argument('--config', default='/etc/unzanet/install.json')
     parser.add_argument('--key')
     parser.add_argument('--source')
@@ -380,12 +396,7 @@ def main():
         print('Modul EAP bawaan dinonaktifkan; PPPoE memakai PAP, CHAP dan MS-CHAP.')
         return
     if args.action == 'create':
-        keys = ['ROOT_DIR', 'WEB_URL', 'VPN_SERVER', 'VPN_USERNAME', 'VPN_PASSWORD', 'VPN_RADIUS_IP', 'VPN_ROUTER_IP', 'VPN_NETWORK', 'ADMIN_EMAIL']
-        config = {key: os.environ[key] for key in keys}
-        config['NETWORK_MODE'] = os.environ.get('NETWORK_MODE', 'vpn')
-        for key in ['DB_PASSWORD', 'RADIUS_DB_PASSWORD', 'JWT_SECRET', 'BOT_API_KEY', 'ADMIN_PASSWORD']:
-            config[key] = secrets.token_hex(24)
-        validate(config)
+        config = create_config(os.environ)
         with state.open('x', encoding='utf-8') as file:
             os.chmod(state, 0o600)
             json.dump(config, file, indent=2)
@@ -401,6 +412,15 @@ def main():
         validate(config)
     elif args.action != 'refresh':
         raise ValueError('State installer tidak ditemukan.')
+    if args.action == 'admin-defaults':
+        updated = initial_administrator(config)
+        if updated != config:
+            pending = state.with_name(state.name + '.tmp')
+            with pending.open('w', encoding='utf-8') as file:
+                os.chmod(pending, 0o600)
+                json.dump(updated, file, indent=2)
+            pending.replace(state)
+        return
     if args.action == 'configure-vpn':
         if os.geteuid() != 0:
             raise ValueError('Konfigurasi VPN Ubuntu harus dijalankan dengan sudo.')

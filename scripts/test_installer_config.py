@@ -1,8 +1,11 @@
 import importlib.util
 import os
+import json
 from pathlib import Path
 import tempfile
 import unittest
+import subprocess
+import sys
 from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('installer_config', Path(__file__).with_name('installer-config.py'))
@@ -11,6 +14,31 @@ spec.loader.exec_module(module)
 
 
 class InstallerConfigurationTests(unittest.TestCase):
+    def test_fresh_config_uses_fixed_admin_without_requiring_admin_environment(self):
+        environment = {key: value for key, value in self.config.items() if not key.startswith('ADMIN_')}
+        config = module.create_config(environment)
+        self.assertEqual(config['ADMIN_EMAIL'], 'admin@unzanet.com')
+        self.assertEqual(config['ADMIN_PASSWORD'], '123')
+        for key in ('DB_PASSWORD', 'RADIUS_DB_PASSWORD', 'JWT_SECRET', 'BOT_API_KEY'):
+            self.assertRegex(config[key], r'^[a-f0-9]{48}$')
+            self.assertNotEqual(config[key], self.config[key])
+        credentials = module.render(config)['/etc/unzanet/credentials.txt']
+        self.assertIn('Administrator: admin@unzanet.com', credentials)
+        self.assertIn('Initial administrator password: 123', credentials)
+        self.assertEqual(module.create_config({**environment, 'ADMIN_EMAIL': 'ignored@example.net', 'ADMIN_PASSWORD': 'ignored'})['ADMIN_PASSWORD'], '123')
+
+    def test_retry_updates_old_initial_admin_state_without_changing_application_secrets(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory) / 'install.json'
+            state.write_text(json.dumps(self.config), encoding='utf-8')
+            command = [sys.executable, str(Path(module.__file__)), 'admin-defaults', '--config', str(state)]
+            subprocess.run(command, check=True, capture_output=True)
+            updated = json.loads(state.read_text(encoding='utf-8'))
+            self.assertEqual(updated, {**self.config, 'ADMIN_EMAIL': 'admin@unzanet.com', 'ADMIN_PASSWORD': '123'})
+            before = state.read_bytes()
+            subprocess.run(command, check=True, capture_output=True)
+            self.assertEqual(state.read_bytes(), before)
+
     def test_colocated_server_keeps_radius_gateway_and_does_not_create_an_ubuntu_client(self):
         config = {**self.config, 'NETWORK_MODE': 'server', 'WEB_URL': 'https://web.example.net',
                   'VPN_RADIUS_IP': '10.88.0.1', 'VPN_ROUTER_IP': '10.88.0.2', 'VPN_SERVER': '192.0.2.10'}

@@ -14,6 +14,12 @@ Website, RADIUS, dan VPN berada satu mesin; tidak perlu VPN client Ubuntu.
 Login web, buat Klien VPN, tunggu Siap, pilih akun pada Router/NAS,
 lalu pasang script MikroTik. Akun, IP, dan CA diambil otomatis.
 SSTP memakai 4443; HTTPS website memakai 443.
+Akun administrator awal dibuat otomatis: `admin@unzanet.com` / `123`, tanpa
+pertanyaan email/password dan tanpa password admin acak. Akun yang sudah ada
+tidak direset ketika installer diulang.
+Pemulihan installer yang berhenti saat membaca port SSH ada pada bagian 9.1:
+tampilkan error `sshd -T`, buat `/run/sshd` jika memang belum ada, validasi
+konfigurasi, lalu ulangi instalasi tanpa mereset database.
 
 Panduan instalasi lama sudah dihapus agar tidak ada alur yang saling bertentangan.
 Generator `backend/scripts/generate_pppoe_virtualbox_guide.py` kini membaca sumber
