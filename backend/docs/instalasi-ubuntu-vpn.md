@@ -3,7 +3,7 @@
 ## 1 Siapkan VPS dan domain
 
 1. Gunakan VPS Ubuntu Server 24.04 LTS baru dengan akses sudo, IPv4 publik, dan dukungan PPP kernel. Website, database, FreeRADIUS, dan server SSTP dipasang pada VPS yang sama.
-2. Arahkan DNS A domain website ke IPv4 publik VPS. Ganti IP_VPS dan DOMAIN_WEBSITE pada langkah berikut dengan alamat Anda.
+2. Arahkan DNS A domain website ke IPv4 publik VPS. Ganti IP_VPS dan DOMAIN_WEBSITE pada langkah berikut dengan alamat Anda. Jika memakai Cloudflare: buka DNS > Records > Edit record website > matikan Proxied sampai DNS only berwarna abu-abu > Save. Tunggu DNS mengarah ke VPS sebelum instalasi.
 3. Catat nama VPS dan IPv4 publik dari menu Droplets di DigitalOcean. Droplet adalah sebutan DigitalOcean untuk VPS. Contoh nama pada gambar: unzanet-vps; pilih nama VPS Anda sendiri.
 4. Pastikan subnet 10.88.0.0/24 belum digunakan pada VPS maupun MikroTik. Server RADIUS memakai 10.88.0.1; router mendapat IP unik 10.88.0.2 sampai 10.88.0.254.
 
@@ -111,36 +111,30 @@ npm run install
 | Isian installer | Nilai |
 | --- | --- |
 | URL browser | https://DOMAIN_WEBSITE |
-| Tahap jaringan | web |
+| IPv4 publik VPS untuk VPN | IP_VPS, tanpa https atau port |
+| Email sertifikat HTTPS | Email aktif Anda, untuk pemberitahuan sertifikat |
 
 6. Akun administrator awal dibuat otomatis: email admin@unzanet.com dan password 123. Installer tidak meminta isian email/password administrator.
-7. Tunggu aplikasi siap. Gunakan VPS/database baru; database.sql hanya diimpor pada database kosong. Update kode tidak memigrasikan skema database lama.
+7. Tunggu installer memasang aplikasi, HTTPS Certbot dan pembaruan otomatisnya, server SSTP TCP 4443, CA, serta worker akun VPN. Tidak perlu menjalankan Certbot atau npm run setupvpnserver terpisah. Email sertifikat berbeda dari akun admin dan harus email aktif.
+8. Gunakan VPS/database baru; database.sql hanya diimpor pada database kosong. Update kode tidak memigrasikan skema database lama. Instalasi web lama dapat dilengkapi dengan git pull --ff-only lalu npm run install; isian gabungan ditanyakan sekali tanpa mereset akun/data.
 
-## 4 Aktifkan HTTPS website
+## 4 Periksa HTTPS website
 
-1. Pastikan DNS domain mengarah ke VPS. Jalankan pada SSH VPS:
+1. Pastikan installer menampilkan HTTPS origin terverifikasi dan Aplikasi siap dibuka. Periksa pada SSH VPS:
 
 ~~~bash
-sudo apt install -y certbot python3-certbot-apache
-sudo ufw allow 443/tcp
-sudo certbot --apache -d DOMAIN_WEBSITE --redirect
 sudo apache2ctl configtest
-sudo certbot renew --dry-run
+sudo systemctl is-active certbot.timer
+sudo ss -ltnp 'sport = :443'
 ~~~
 
-2. Ikuti isian email dan persetujuan Certbot. Buka https://DOMAIN_WEBSITE dan pastikan sertifikat valid sebelum login. Website memakai 80/443; SSTP memakai 4443 pada IP VPS yang sama.
+2. Buka https://DOMAIN_WEBSITE. Jika memakai Cloudflare: buka SSL/TLS > Overview > pilih Full (strict). Setelah itu buka DNS > Records > Edit record website > aktifkan Proxied berwarna oranye > Save. Buka ulang website dan pastikan HTTPS valid sebelum login. Rujukan: [Full strict Cloudflare](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/full-strict/).
+3. Jika muncul 521/522, periksa DNS dan firewall provider 80/443, ubah sementara ke DNS only, lalu ulangi npm run install. Installer tidak melaporkan selesai jika sertifikat atau koneksi HTTPS origin gagal.
+4. Jika URL hanya http://IP_VPS, installer menyediakan HTTP tanpa sertifikat domain. Untuk instalasi HTTPS, isi domain website pada isian awal. Website memakai 80/443; SSTP memakai 4443 pada IP VPS yang sama.
 
-## 5 Pasang server VPN pada VPS yang sama
+## 5 Periksa server VPN pada VPS yang sama
 
-1. Jalankan pada SSH VPS dari root project:
-
-~~~bash
-cd /var/www/Project-Magang
-npm run setupvpnserver
-~~~
-
-2. Isi IPv4 publik VPS tanpa https, garis miring, atau port. Installer membuat CA, sertifikat SSTP, gateway 10.88.0.1, firewall, dan worker akun.
-3. Periksa:
+1. Server VPN sudah dipasang oleh npm run install. Periksa:
 
 ~~~bash
 sudo systemctl is-active accel-ppp
@@ -151,8 +145,8 @@ sudo ss -ltnp 'sport = :4443'
 sudo freeradius -XC
 ~~~
 
-4. Pastikan 10.88.0.1/32 terpasang pada lo dan TCP 4443 mendengarkan. Tidak perlu akun VPN Ubuntu atau menjalankan npm run setupvpn.
-5. CA publik di /etc/unzanet-public/sstp-ca.crt dipakai otomatis oleh website. Private key tetap pada VPS.
+2. Pastikan 10.88.0.1/32 terpasang pada lo dan TCP 4443 mendengarkan. Tidak perlu akun VPN Ubuntu atau menjalankan npm run setupvpn.
+3. CA publik di /etc/unzanet-public/sstp-ca.crt dipakai otomatis oleh website. Private key tetap pada VPS. Pengulangan installer memakai CA dan akun VPN yang sama.
 
 ## 6 Login dan buat klien VPN
 
@@ -255,6 +249,7 @@ npm run install
 
 4. Ulangi instalasi tanpa menghapus database atau membangun ulang frontend. Jika muncul error SSH lain, kirim pesan lengkapnya; jangan melewati pemeriksaan atau menebak port firewall. Pertahankan sesi SSH yang masih tersambung.
 5. AH00558 dengan Syntax OK adalah peringatan Apache; npm notice juga bukan kegagalan instalasi. Rujukan: [ServerName Apache](https://httpd.apache.org/docs/2.4/mod/core.html#servername).
+6. Jika tempelan memunculkan ^[[200~ atau ^[[201~ dan command not found, tekan Ctrl+C. Ketik manual bind 'set enable-bracketed-paste off' lalu Enter. Tempel satu perintah setiap kali, tekan Enter dan tunggu selesai. Jangan ikut menyalin tulisan root@server atau tanda #.
 
 ### 9.2 Akun VPN dan sertifikat
 

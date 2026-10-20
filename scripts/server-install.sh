@@ -43,6 +43,14 @@ wait_http() {
   die "Pemeriksaan $address gagal. Lihat journalctl service terkait."
 }
 
+finish_network_installation() {
+  bash "$ROOT_DIR/scripts/setup-web-https.sh"
+  if [[ "$NETWORK_MODE" == server ]]; then
+    log 'Memasang atau melanjutkan server VPN SSTP pada VPS yang sama'
+    bash "$ROOT_DIR/install-sstp-ubuntu24.sh" "$(setting VPN_SERVER)" --integrated
+  fi
+}
+
 reload_installer_if_updated() {
   local previous_revision="$1" current_revision="$2"
   if [[ "$previous_revision" != "$current_revision" ]]; then
@@ -96,7 +104,8 @@ main() {
   add-apt-repository -y universe
   apt-get update
   apt-get install -y mysql-server apache2 freeradius freeradius-mysql freeradius-utils \
-    sstp-client ppp python3 build-essential pkg-config libssl-dev ufw openssl openssh-server netcat-openbsd
+    sstp-client ppp python3 build-essential pkg-config libssl-dev ufw openssl openssh-server netcat-openbsd \
+    certbot python3-certbot-apache
   if ! command -v node >/dev/null || [[ "$(node -p 'process.versions.node.split(".")[0]')" != 22 ]]; then
     curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/unzanet-nodesource-22.sh
     bash /tmp/unzanet-nodesource-22.sh
@@ -112,34 +121,31 @@ main() {
     log 'Isi konfigurasi instalasi baru'
     local detected_ip
     detected_ip="$(ip -4 route get 1.1.1.1 | awk '{for(i=1;i<=NF;i++) if($i=="src") {print $(i+1); exit}}')"
-    ask WEB_URL 'URL browser website (http/https dengan IP/domain VPS)' "http://$detected_ip"
-    ask NETWORK_MODE 'Tahap jaringan: web (aplikasi dahulu), vpn (VPN sudah siap), local (lab LAN)' web
-    if [[ "$NETWORK_MODE" == web ]]; then
-      export VPN_SERVER='' VPN_USERNAME='' VPN_PASSWORD=''
-      # Planned private tunnel addresses; no static LAN address is installed.
-      export VPN_RADIUS_IP=10.88.0.2 VPN_ROUTER_IP=10.88.0.3 VPN_NETWORK=10.88.0.0/24
-    elif [[ "$NETWORK_MODE" == local ]]; then
-      export VPN_SERVER='' VPN_USERNAME='' VPN_PASSWORD=''
-      ask VPN_RADIUS_IP 'IP LAN Ubuntu RADIUS yang sudah terpasang' "$detected_ip"
-      ask VPN_ROUTER_IP 'IP LAN MikroTik pertama'
-      ask VPN_NETWORK 'Subnet LAN lab yang sebenarnya'
-    elif [[ "$NETWORK_MODE" == vpn ]]; then
-      ask VPN_SERVER 'IP/domain VPS gateway SSTP tanpa port'
-      ask VPN_USERNAME 'Username SSTP khusus Ubuntu RADIUS' vpn_radius
-      read -r -s -p 'Password SSTP Ubuntu RADIUS (tidak ditampilkan): ' VPN_PASSWORD </dev/tty
-      printf '\n'
-      export VPN_PASSWORD
-      ask VPN_RADIUS_IP 'IP VPN tetap Ubuntu RADIUS' 10.88.0.2
-      ask VPN_ROUTER_IP 'IP VPN MikroTik pertama' 10.88.0.3
-      ask VPN_NETWORK 'Subnet VPN' 10.88.0.0/24
-    else
-      die 'Mode harus web, local atau vpn.'
-    fi
+    export WEB_URL="http://$detected_ip"
+    # The supported new deployment is one VPS for web, RADIUS and SSTP.
+    NETWORK_MODE=web
+    export NETWORK_MODE
+    export VPN_SERVER='' VPN_USERNAME='' VPN_PASSWORD=''
+    export VPN_RADIUS_IP=10.88.0.2 VPN_ROUTER_IP=10.88.0.3 VPN_NETWORK=10.88.0.0/24
     python3 "$ROOT_DIR/scripts/installer-config.py" create
     unset VPN_PASSWORD
   fi
   [[ "$(setting ROOT_DIR)" == "$ROOT_DIR" ]] || die 'Lokasi repo berbeda dengan instalasi awal.'
   python3 "$ROOT_DIR/scripts/installer-config.py" admin-defaults
+  if [[ "$(setting INSTALL_BUNDLE_VERSION)" != 1 ]]; then
+    log 'Konfigurasi satu VPS: website HTTPS, RADIUS, dan server VPN'
+    local current_web detected_public_ip
+    current_web="$(setting WEB_URL)"
+    detected_public_ip="$(ip -4 route get 1.1.1.1 | awk '{for(i=1;i<=NF;i++) if($i=="src") {print $(i+1); exit}}')"
+    if [[ "$(setting NETWORK_MODE)" == server ]]; then
+      detected_public_ip="$(setting VPN_SERVER)"
+    fi
+    ask WEB_URL 'Domain/URL website sebenarnya (domain otomatis memakai HTTPS)' "$current_web"
+    ask VPS_PUBLIC_IP 'IPv4 publik VPS untuk VPN, tanpa URL/port' "$detected_public_ip"
+    # This is the real certificate contact, separate from the fixed admin login.
+    ask TLS_EMAIL 'Email aktif untuk sertifikat HTTPS (boleh kosong jika URL hanya IP)'
+    python3 "$ROOT_DIR/scripts/installer-config.py" configure-server
+  fi
   WEB_URL="$(setting WEB_URL)"
   VPN_NETWORK="$(setting VPN_NETWORK)"
   VPN_RADIUS_IP="$(setting VPN_RADIUS_IP)"
@@ -241,6 +247,7 @@ JS
   log 'Menyiapkan firewall dan service otomatis saat boot'
   prepare_ssh_firewall
   ufw allow 80/tcp
+  ufw allow 443/tcp
   if [[ "$NETWORK_MODE" == vpn ]]; then
     ufw allow in on sstp-radius from "$VPN_NETWORK" to any port 1812 proto udp
     ufw allow in on sstp-radius from "$VPN_NETWORK" to any port 1813 proto udp
@@ -257,13 +264,11 @@ JS
   systemctl enable unzanet-backend unzanet-botwa freeradius apache2
   systemctl restart unzanet-backend unzanet-botwa freeradius apache2
   bash "$ROOT_DIR/scripts/setup-radius-refresh.sh"
-  if [[ "$NETWORK_MODE" == server ]]; then
-    bash "$ROOT_DIR/scripts/setup-vpn-sync.sh"
-  fi
   wait_http http://127.0.0.1:3001/api/auth/me 401
   wait_http http://127.0.0.1:3002/api/wa/health 200
   wait_http http://127.0.0.1/api/wa/health 200
   wait_http http://127.0.0.1/ 200
+  finish_network_installation
   for service in mysql apache2 freeradius unzanet-backend unzanet-botwa; do
     systemctl is-active --quiet "$service"
   done
@@ -272,8 +277,6 @@ JS
   printf 'Login administrator awal: admin@unzanet.com / 123\n'
   if [[ "$NETWORK_MODE" == local ]]; then
     printf 'Mode LAN: uji ping %s, lalu tambah NAS dengan IP tersebut.\n' "$VPN_ROUTER_IP"
-  elif [[ "$NETWORK_MODE" == web ]]; then
-    printf 'Aplikasi terpasang. Jalankan npm run setupvpnserver pada VPS ini, lalu buka website > Router > Klien VPN.\n'
   elif [[ "$NETWORK_MODE" == server ]]; then
     printf 'Server VPN lokal tersedia pada TCP 4443. Buat/pilih Klien VPN di website; IP RADIUS 10.88.0.1.\n'
   elif ip -4 -o addr show dev sstp-radius 2>/dev/null | grep -Fq " $VPN_RADIUS_IP/"; then

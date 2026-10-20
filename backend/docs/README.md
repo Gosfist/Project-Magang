@@ -9,7 +9,10 @@ menu yang diklik, aturan 22/80/443/4443, Sources/Action, Outbound Rules,
 Apply to Droplets, dan pemeriksaan hasil. Gambar ilustrasi serta satu screenshot
 resmi berada di `images/`; sumber gambar dicantumkan pada panduan.
 Urutan: siapkan VPS/DNS, build frontend di laptop, commit/push paket,
-clone/pull VPS, `npm run install` mode `web`, HTTPS, lalu `npm run setupvpnserver`.
+clone/pull VPS, lalu sekali `npm run install` untuk aplikasi, HTTPS, dan server VPN.
+Installer meminta domain, IPv4 publik VPS, serta email aktif untuk sertifikat satu
+kali. Email ini berbeda dari akun administrator. Gunakan DNS only pada Cloudflare
+saat instalasi; aktifkan Proxied dan Full (strict) setelah HTTPS berhasil.
 Website, RADIUS, dan VPN berada satu mesin; tidak perlu VPN client Ubuntu.
 Login web, buat Klien VPN, tunggu Siap, pilih akun pada Router/NAS,
 lalu pasang script MikroTik. Akun, IP, dan CA diambil otomatis.
@@ -17,6 +20,9 @@ SSTP memakai 4443; HTTPS website memakai 443.
 Akun administrator awal dibuat otomatis: `admin@unzanet.com` / `123`, tanpa
 pertanyaan email/password dan tanpa password admin acak. Akun yang sudah ada
 tidak direset ketika installer diulang.
+Instalasi lama dapat dilengkapi melalui perintah install yang sama. Sertifikat
+HTTPS diperiksa langsung pada origin dan timer pembaruannya diaktifkan; CA dan
+akun SSTP terkelola dipertahankan ketika instalasi diulang.
 Pemulihan installer yang berhenti saat membaca port SSH ada pada bagian 9.1:
 tampilkan error `sshd -T`, buat `/run/sshd` jika memang belum ada, validasi
 konfigurasi, lalu ulangi instalasi tanpa mereset database.

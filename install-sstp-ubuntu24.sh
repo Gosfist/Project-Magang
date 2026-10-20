@@ -1,15 +1,28 @@
 #!/usr/bin/env bash
 # Installer SSTP Accel-PPP 1.14.0 untuk Ubuntu 24.04.
-# Jalankan pada VPS aplikasi: npm run setupvpnserver
+# Dipanggil otomatis oleh npm run install; setupvpnserver tetap alias perawatan.
 set -euo pipefail
 umask 077
+
+verify_key_pair() {
+    local certificate_public key_public
+    certificate_public="$(openssl x509 -in "$1" -pubkey -noout)"
+    key_public="$(openssl pkey -in "$2" -pubout)"
+    [[ "$certificate_public" == "$key_public" ]] || {
+        echo 'Sertifikat dan private key SSTP tidak cocok; pulihkan pasangan asli. File tidak diganti.' >&2
+        return 1
+    }
+}
 
 if [[ "${EUID}" -ne 0 ]]; then
     echo "Jalankan dengan sudo."
     exit 1
 fi
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-[[ -f /etc/unzanet/install-complete ]] || { echo 'Jalankan npm run install dahulu pada VPS ini.'; exit 1; }
+if [[ "${2:-}" != --integrated ]]; then
+    [[ -f /etc/unzanet/install-complete ]] || { echo 'Jalankan npm run install dahulu pada VPS ini.'; exit 1; }
+fi
+[[ -f /etc/unzanet/install.json && -f "$ROOT_DIR/backend/.env" ]] || { echo 'State aplikasi belum tersedia; jalankan npm run install.'; exit 1; }
 . /etc/os-release
 if [[ "${ID:-}" != ubuntu || "${VERSION_ID:-}" != 24.04 ]]; then
     echo "Installer ini khusus Ubuntu 24.04."
@@ -30,19 +43,17 @@ for octet in "${octets[@]}"; do
         exit 1
     fi
 done
-if [[ -e /etc/accel-ppp.conf || -e /etc/sstp-vpn ]]; then
-    echo "Konfigurasi Accel-PPP/SSTP sudah ada. Installer berhenti agar tidak menimpanya."
-    exit 1
-fi
-if ss -H -ltn 'sport = :4443' | grep -q .; then
+SSTP_RESUME="$(python3 "$ROOT_DIR/scripts/installer-config.py" sstp-state --public-ip "$VPS_IP")"
+if [[ "$SSTP_RESUME" == fresh ]] && ss -H -ltn 'sport = :4443' | grep -q .; then
     echo "TCP 4443 sedang digunakan. Periksa: sudo ss -ltnp 'sport = :4443'"
     exit 1
 fi
-if ip -4 route show table all | grep -Eq '(^|[[:space:]])10\.88\.0\.'; then
+if [[ "$SSTP_RESUME" == fresh ]] && ip -4 route show table all | grep -Eq '(^|[[:space:]])10\.88\.0\.'; then
     echo "Ada route 10.88.0.x. Gunakan subnet VPN lain sebelum melanjutkan."
     exit 1
 fi
 
+if [[ "$SSTP_RESUME" == fresh || ! -x /usr/sbin/accel-pppd ]]; then
 apt-get update
 apt-get install -y build-essential cmake git pkg-config libssl-dev \
     libpcre2-dev openssl ca-certificates iptables iproute2 kmod python3
@@ -58,18 +69,31 @@ cmake -S "$BUILD_DIR/source" -B "$BUILD_DIR/build" \
 cmake --build "$BUILD_DIR/build" --parallel 2
 cmake --install "$BUILD_DIR/build"
 ldconfig
+fi
 modprobe ppp_generic
 modprobe ppp_async
 
 install -d -m 700 /etc/sstp-vpn
+# Written before certificate/config creation so an interrupted run is resumable.
+printf '%s\n' "$VPS_IP" > /etc/sstp-vpn/.unzanet-server-ip
 install -d -m 750 /var/log/accel-ppp
+if [[ ! -e /etc/sstp-vpn/ca.key && ! -e /etc/sstp-vpn/ca.crt ]]; then
 openssl req -x509 -newkey rsa:3072 -nodes -sha256 -days 3650 \
     -keyout /etc/sstp-vpn/ca.key -out /etc/sstp-vpn/ca.crt \
     -subj "/CN=UNZANET-SSTP-CA" \
     -addext "basicConstraints=critical,CA:TRUE,pathlen:0" \
     -addext "keyUsage=critical,keyCertSign,cRLSign"
-openssl req -new -newkey rsa:2048 -nodes -sha256 \
-    -keyout /etc/sstp-vpn/server.key -out /etc/sstp-vpn/server.csr \
+elif [[ ! -s /etc/sstp-vpn/ca.key || ! -s /etc/sstp-vpn/ca.crt ]]; then
+    echo 'CA SSTP tidak lengkap; pulihkan backup CA. CA yang ada tidak diganti.' >&2
+    exit 1
+fi
+verify_key_pair /etc/sstp-vpn/ca.crt /etc/sstp-vpn/ca.key
+if [[ ! -e /etc/sstp-vpn/server.crt ]]; then
+if [[ ! -e /etc/sstp-vpn/server.key ]]; then
+    openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /etc/sstp-vpn/server.key
+fi
+openssl req -new -sha256 \
+    -key /etc/sstp-vpn/server.key -out /etc/sstp-vpn/server.csr \
     -subj "/CN=$VPS_IP"
 cat > /etc/sstp-vpn/server.ext <<EOF
 basicConstraints=critical,CA:FALSE
@@ -81,14 +105,19 @@ openssl x509 -req -in /etc/sstp-vpn/server.csr \
     -CA /etc/sstp-vpn/ca.crt -CAkey /etc/sstp-vpn/ca.key \
     -CAcreateserial -out /etc/sstp-vpn/server.crt \
     -days 365 -sha256 -extfile /etc/sstp-vpn/server.ext
+fi
+verify_key_pair /etc/sstp-vpn/server.crt /etc/sstp-vpn/server.key
 openssl verify -CAfile /etc/sstp-vpn/ca.crt /etc/sstp-vpn/server.crt
+openssl x509 -in /etc/sstp-vpn/server.crt -noout -checkip "$VPS_IP"
 cat /etc/sstp-vpn/server.crt /etc/sstp-vpn/ca.crt \
     > /etc/sstp-vpn/server-chain.pem
 install -d -m 755 /etc/unzanet-public
 install -m 644 /etc/sstp-vpn/ca.crt /etc/unzanet-public/sstp-ca.crt
 chmod 0755 /etc/unzanet-public
 
-printf '# Managed by UNZANET VPN worker\n' > /etc/sstp-vpn/chap-secrets
+if [[ ! -e /etc/sstp-vpn/chap-secrets ]]; then
+    printf '# Managed by UNZANET VPN worker\n' > /etc/sstp-vpn/chap-secrets
+fi
 
 cat > /etc/accel-ppp.conf <<'CONF'
 [modules]
@@ -188,8 +217,10 @@ state_path = pathlib.Path('/etc/unzanet/install.json')
 state = json.loads(state_path.read_text())
 # Persist server mode so rerunning the application installer retains this setup.
 state.update(NETWORK_MODE='server', VPN_SERVER=os.environ['VPS_IP'], VPN_RADIUS_IP='10.88.0.1', VPN_ROUTER_IP='10.88.0.2', VPN_NETWORK='10.88.0.0/24')
-state_path.write_text(json.dumps(state, indent=2) + '\n')
-state_path.chmod(0o600)
+pending = state_path.with_name('install.json.pending')
+pending.write_text(json.dumps(state, indent=2) + '\n')
+pending.chmod(0o600)
+pending.replace(state_path)
 env = root / 'backend/.env'
 lines = env.read_text().splitlines()
 values = {'VPN_SSTP_HOST': os.environ['VPS_IP'], 'RADIUS_SERVER_IP': '10.88.0.1', 'RADIUS_DISCONNECT_SOURCE_IP': '10.88.0.1'}
@@ -199,7 +230,15 @@ PY
 systemctl daemon-reload
 systemctl enable --now unzanet-vpn-ping.service accel-ppp.service
 systemctl is-active --quiet accel-ppp.service
+listening=0
+for _ in {1..20}; do
+    if ss -H -ltn 'sport = :4443' | grep -q .; then listening=1; break; fi
+    sleep 1
+done
+[[ "$listening" == 1 ]] || { echo 'SSTP belum mendengarkan pada 4443. Periksa journalctl -u accel-ppp.' >&2; exit 1; }
+systemctl is-active --quiet unzanet-vpn-ping.service
 bash "$ROOT_DIR/scripts/setup-vpn-sync.sh"
+systemctl is-active --quiet unzanet-vpn-sync.timer
 systemctl restart unzanet-backend
 
 echo 'Server SSTP aktif pada TCP 4443; buka port ini di firewall provider VPS.'

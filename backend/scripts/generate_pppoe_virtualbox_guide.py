@@ -156,7 +156,9 @@ def build(source, destination):
             image.relative_to(source.parent.resolve())
             paragraph = document.add_paragraph()
             paragraph.paragraph_format.keep_with_next = True
-            paragraph.add_run().add_picture(str(image), width=Cm(17.0))
+            # Fit the official screenshot with its introduction and caption.
+            width = 16.0 if image.name == 'digitalocean-firewall-official.png' else 17.0
+            paragraph.add_run().add_picture(str(image), width=Cm(width))
             paragraph = document.add_paragraph(caption)
             paragraph.paragraph_format.space_after = Pt(8)
             for run in paragraph.runs:

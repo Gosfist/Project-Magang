@@ -25,6 +25,78 @@ def create_config(environment):
     return config
 
 
+def configure_server(config, environment):
+    """Complete both fresh and old web-only installs without changing secrets."""
+    url_text = environment['WEB_URL'].strip()
+    if '://' not in url_text:
+        url_text = 'https://' + url_text
+    url = urlsplit(url_text)
+    # Validate the submitted URL before canonicalizing it (never discard paths).
+    validate({**config, 'WEB_URL': url_text})
+    host = url.hostname.lower()
+    try:
+        ipaddress.IPv4Address(host)
+        domain = ''
+    except ValueError:
+        if not re.fullmatch(r'(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}', host):
+            raise ValueError('Isi domain website lengkap atau IPv4 publik VPS.')
+        domain = host
+    if url.port not in (None, 80 if url.scheme == 'http' else 443):
+        raise ValueError('Installer gabungan memakai port website standar 80 dan 443.')
+    if not domain and url.scheme == 'https':
+        raise ValueError('HTTPS otomatis memerlukan domain. Untuk IP saja gunakan http://IP_VPS.')
+    address = ipaddress.IPv4Address(environment['VPS_PUBLIC_IP'])
+    if address.is_unspecified or address.is_loopback or address.is_multicast:
+        raise ValueError('Isi IPv4 publik VPS yang dapat diakses MikroTik.')
+    email = environment.get('TLS_EMAIL', '').strip()
+    if domain and not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', email):
+        raise ValueError('Isi email aktif untuk pemberitahuan sertifikat HTTPS, bukan email login administrator.')
+    updated = {**config, 'WEB_URL': ('https://' if domain else 'http://') + host,
+               'NETWORK_MODE': 'server', 'VPN_SERVER': str(address),
+               'VPN_USERNAME': '', 'VPN_PASSWORD': '', 'VPN_RADIUS_IP': '10.88.0.1',
+               'VPN_ROUTER_IP': '10.88.0.2', 'VPN_NETWORK': '10.88.0.0/24',
+               'TLS_DOMAIN': domain, 'TLS_EMAIL': email if domain else '',
+               'INSTALL_BUNDLE_VERSION': '1'}
+    validate(updated)
+    return updated
+
+
+def save_state(state, config):
+    pending = state.with_name(state.name + '.pending')
+    with pending.open('w', encoding='utf-8') as file:
+        os.chmod(pending, 0o600)
+        json.dump(config, file, indent=2)
+        file.write('\n')
+    pending.replace(state)
+
+
+def sstp_install_state(public_ip, etc=Path('/etc')):
+    """Resume only our own server, including the previous unmarked installer."""
+    address = str(ipaddress.IPv4Address(public_ip))
+    directory = etc / 'sstp-vpn'
+    config = etc / 'accel-ppp.conf'
+    marker = directory / '.unzanet-server-ip'
+    if marker.is_file():
+        if marker.read_text().strip() != address:
+            raise ValueError('IPv4 VPS berubah; perbarui sertifikat SSTP secara terencana. CA dan akun tidak ditimpa.')
+        return 'resume'
+    if not directory.exists() and not config.exists():
+        return 'fresh'
+    # Recognize the exact essential paths of our previous installer; never
+    # adopt an unrelated Accel-PPP configuration or a standalone certificate dir.
+    unit = etc / 'systemd/system/accel-ppp.service'
+    required = ('ca.key', 'ca.crt', 'server.key', 'server.crt', 'chap-secrets')
+    if (config.is_file() and unit.is_file()
+            and all((directory / name).is_file() for name in required)
+            and 'Description=SSTP VPN with Accel-PPP' in unit.read_text()
+            and 'ExecStart=/usr/sbin/accel-pppd -c /etc/accel-ppp.conf' in unit.read_text()
+            and all(line in config.read_text().splitlines() for line in (
+                'chap-secrets=/etc/sstp-vpn/chap-secrets', 'gw-ip-address=10.88.0.1',
+                'port=4443', 'ssl-keyfile=/etc/sstp-vpn/server.key'))):
+        return 'resume'
+    raise ValueError('Konfigurasi SSTP bukan instalasi UNZANET yang dikenali. File yang ada tidak ditimpa.')
+
+
 def validate(config):
     mode = config.get('NETWORK_MODE', 'vpn')
     if mode not in ('web', 'local', 'vpn', 'server'):
@@ -385,12 +457,16 @@ def disable_unused_eap(config_root=Path('/etc/freeradius/3.0')):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['create', 'get', 'render', 'queries', 'refresh', 'sql-module', 'configure-vpn', 'radius-modules', 'admin-defaults'])
+    parser.add_argument('action', choices=['create', 'get', 'render', 'queries', 'refresh', 'sql-module', 'configure-vpn', 'radius-modules', 'admin-defaults', 'configure-server', 'sstp-state'])
     parser.add_argument('--config', default='/etc/unzanet/install.json')
     parser.add_argument('--key')
     parser.add_argument('--source')
+    parser.add_argument('--public-ip')
     args = parser.parse_args()
     state = Path(args.config)
+    if args.action == 'sstp-state':
+        print(sstp_install_state(args.public_ip))
+        return
     if args.action == 'radius-modules':
         disable_unused_eap()
         print('Modul EAP bawaan dinonaktifkan; PPPoE memakai PAP, CHAP dan MS-CHAP.')
@@ -412,6 +488,9 @@ def main():
         validate(config)
     elif args.action != 'refresh':
         raise ValueError('State installer tidak ditemukan.')
+    if args.action == 'configure-server':
+        save_state(state, configure_server(config, os.environ))
+        return
     if args.action == 'admin-defaults':
         updated = initial_administrator(config)
         if updated != config:
