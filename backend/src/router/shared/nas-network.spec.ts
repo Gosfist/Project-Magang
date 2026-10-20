@@ -15,24 +15,16 @@ describe('Router NAS prefix pools', () => {
     expect(() => nasNetwork(3, '192.168.75.1/24', '192.168.75.129/25')).toThrow('tumpang tindih');
     expect(() => nasNetwork(3, '192.168.75.129/25', '192.168.75.1/24')).toThrow('tumpang tindih');
   });
-  it('generates short direct commands for create and edit with the same pool/profile names', () => {
+  it('always adds pools, profiles and firewall rules without installation checks', () => {
     const network = nasNetwork(3, '192.168.75.1/24', '192.168.100.1/24');
-    const add = nasNetworkScript(3, network, false), edit = nasNetworkScript(3, network, true);
+    const add = nasNetworkScript(3, network);
     expect(add).toContain('/ip pool add name="Internet" ranges="192.168.75.2-192.168.75.254"');
     expect(add).toContain('copy-from=default name="UNZANET-INTERNET-3" local-address="192.168.75.1"');
     expect(add).toContain('name="UNZANET-ISOLIR-3" local-address="192.168.100.1" remote-address="pool-isolir" use-ipv6=no');
-    expect(edit).toContain('/ip pool set [find where name="Internet"]');
-    expect(edit).toContain('/ppp profile set [find where name="UNZANET-ISOLIR-3"]');
-    const editRules = edit.split('\n').filter(line => line.startsWith('/ip firewall filter set'));
-    expect(editRules).toHaveLength(3);
-    expect(editRules[0]).toContain('(comment="UNZANET-RADIUS:ISOLIR" && chain=forward && dst-address="0.0.0.0/0") || comment="UNZANET-ISOLIR:3:OUT"');
-    expect(editRules[1]).toContain('(comment="UNZANET-RADIUS:ISOLIR" && chain=forward && src-address="0.0.0.0/0") || comment="UNZANET-ISOLIR:3:IN"');
-    expect(editRules[2]).toContain('(comment="UNZANET-RADIUS:ISOLIR" && chain=input) || comment="UNZANET-ISOLIR:3:ROUTER"');
-    for (const script of [add, edit]) {
-      expect(script).not.toMatch(/:if|:local|:len|filter move/);
-      expect(script).toContain('chain=forward src-address="192.168.100.0/24" dst-address="0.0.0.0/0" action=drop');
-      const assignedComments = [...script.matchAll(/(?:^|\] | )comment="([^"]+)";/gm)].map(match => match[1]);
-      expect(assignedComments).toEqual(['UNZANET-RADIUS:INTERNET', ...Array(4).fill('UNZANET-RADIUS:ISOLIR')]);
-    }
+    expect(add.split('\n').filter(line => line.startsWith('/ip firewall filter add'))).toHaveLength(3);
+    expect(add).not.toMatch(/:if|:local|:len|filter move|\bset\b|\bfind\b|UNZANET-ISOLIR:/);
+    expect(add).toContain('chain=forward src-address="192.168.100.0/24" action=drop');
+    const assignedComments = [...add.matchAll(/comment="([^"]+)";/g)].map(match => match[1]);
+    expect(assignedComments).toEqual(['UNZANET-RADIUS:INTERNET', ...Array(4).fill('UNZANET-RADIUS:ISOLIR')]);
   });
 });

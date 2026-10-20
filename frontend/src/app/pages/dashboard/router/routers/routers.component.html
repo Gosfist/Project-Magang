@@ -64,15 +64,8 @@
   <app-modal [open]="scriptModalOpen()" [title]="'Script Pengaturan MikroTik - ' + (scriptData()?.routerName || '')" (closeModal)="closeScript()">
     @if (scriptData(); as data) {
       <div class="space-y-4">
-        <div><label class="label" for="nas-script-mode">Konfigurasi di MikroTik</label><select id="nas-script-mode" class="input" [ngModel]="scriptMode()" (ngModelChange)="changeScriptMode($event)" [disabled]="confirming()"><option value="install">Belum terpasang — Pemasangan awal</option><option value="update">Sudah terpasang — Perbarui konfigurasi</option></select></div>
-        <pre class="max-h-[380px] overflow-auto rounded-xl bg-slate-950 p-4 font-mono text-xs leading-relaxed text-slate-100">{{ scriptMode() === 'install' ? data.scriptInstall : data.scriptUpdate }}</pre>
+        <pre class="max-h-[380px] overflow-auto rounded-xl bg-slate-950 p-4 font-mono text-xs leading-relaxed text-slate-100">{{ data.script }}</pre>
         <div class="flex justify-end"><button type="button" class="btn-secondary" (click)="copyScript()">@if (copied()) { <svg lucideCheck [size]="14"></svg> Tersalin } @else { <svg lucideCopy [size]="14"></svg> Salin Script }</button></div>
-        @if (data.networkNeedsConfirmation) {
-          <div class="space-y-3 border-t border-slate-200 pt-4">
-            <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="scriptInstalled" [(ngModel)]="scriptInstalled" [disabled]="confirming()" /><span>Pool dan profil sudah dipasang. Rule isolir sudah diperiksa berada sebelum accept/FastTrack.</span></label>
-            <div class="flex justify-end"><button type="button" class="btn-primary" (click)="confirmNetwork()" [disabled]="!scriptInstalled || confirming()">{{ confirming() ? 'Mengaktifkan...' : 'Konfirmasi Pemasangan' }}</button></div>
-          </div>
-        }
       </div>
     }
   </app-modal>

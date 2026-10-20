@@ -24,7 +24,7 @@ Gunakan `RADIUS_ACCOUNTING_TIMEZONE=WIB` untuk query MySQL yang menyimpan DATETI
 
 ## Paket dan perangkat
 
-Rate limit disimpan dari sisi pelanggan upload/download, lalu dikirim sebagai atribut MikroTik sesuai konvensi router. Prefix pool Internet/Isolir diisi pada Tambah/Edit Router NAS. Setelah script dipasang dan dikonfirmasi, Framed-Pool dan Mikrotik-Group memakai pool/profil NAS pelanggan; Harga Paket mengatur harga, kecepatan dan masa aktif. Sebelum konfirmasi, NAS lama tetap memakai referensi pool paket. PPPoE Server dan interface/NAT awal tetap dipilih operator sesuai jaringan fisik; profil gateway dibuat script NAS. Tidak ada pembacaan RouterOS.
+Rate limit disimpan dari sisi pelanggan upload/download, lalu dikirim sebagai atribut MikroTik sesuai konvensi router. Prefix pool Internet/Isolir diisi pada Tambah/Edit Router NAS. Simpan NAS langsung memperbarui konfigurasi yang dipakai Framed-Pool dan Mikrotik-Group tanpa centang konfirmasi; Harga Paket mengatur harga, kecepatan dan masa aktif. NAS lama tanpa prefix tersimpan tetap memakai referensi pool paket. Pasang script add melalui Terminal Winbox. PPPoE Server dan interface/NAT awal tetap dipilih operator sesuai jaringan fisik; profil gateway dibuat script NAS. Tidak ada pembacaan RouterOS.
 
 Jangan membuat PPP secret lokal untuk username RADIUS yang sama: RouterOS mendahulukan akun lokal. Backup darurat lokal tetap berupa script unduhan yang dijalankan operator, tanpa koneksi API.
 

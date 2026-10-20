@@ -169,8 +169,10 @@ export class IsolationService implements OnModuleInit, OnModuleDestroy {
         for (const result of results) { job.reconnected += result.completed; warnings.push(...result.warnings); }
       }
       if (warnings.length) throw new Error(warnings.join(' '));
-      await this.prisma.appSetting.update({ where: { key: isolationKey(routerId) }, data: { value: JSON.stringify({ ...config, syncPending: false }) } });
-      job.status = 'completed'; job.message = 'Sinkronisasi RADIUS selesai. IP berubah setelah pelanggan reconnect; pemasangan router tetap diverifikasi manual.';
+      const cleared = await this.prisma.appSetting.updateMany({ where: { key: isolationKey(routerId), value: JSON.stringify(config) }, data: { value: JSON.stringify({ ...config, syncPending: false }) } });
+      job.status = 'completed'; job.message = cleared.count
+        ? 'Sinkronisasi RADIUS selesai. IP berubah setelah pelanggan reconnect.'
+        : 'Konfigurasi berubah selama proses. Pengaturan terbaru akan disinkronkan pada putaran berikutnya.';
     } catch (error) { job.status = 'failed'; job.message = `Sinkronisasi tertunda. ${error instanceof Error ? error.message : 'Periksa RADIUS dan koneksi NAS.'} Akan dicoba ulang secara berkala.`; }
   }
 }

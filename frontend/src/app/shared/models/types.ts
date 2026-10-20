@@ -19,7 +19,6 @@ export type PppoeAccount = { id: string; pppoePackageId: string; customerName: s
 export type RouterItem = {
   internetCidr?: string;
   isolationCidr?: string;
-  networkInstalled?: boolean;
   vpnStatus?: 'online' | 'offline' | 'unknown' | 'not_configured';
   vpnCheckedAt?: string | null;
   vpnClientId?: string | null;
@@ -42,10 +41,7 @@ export type RouterItem = {
 export type VpnClientItem = { id: string; name: string; username: string; password?: string; vpnIp: string; isActive: boolean; provisionedAt: string | null; routers: { id: number; name: string | null }[] };
 
 export type RouterScriptData = {
-  scriptInstall: string;
-  scriptUpdate: string;
-  networkFingerprint?: string | null;
-  networkNeedsConfirmation?: boolean;
+  script: string;
   routerName: string;
   radiusServerIp: string;
   nasSrcAddress: string;

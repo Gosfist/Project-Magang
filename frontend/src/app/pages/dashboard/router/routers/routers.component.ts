@@ -54,10 +54,6 @@ export class RoutersComponent implements OnInit {
   scriptModalOpen = signal(false);
   scriptData = signal<RouterScriptData | null>(null);
   copied = signal(false);
-  confirming = signal(false);
-  scriptInstalled = false;
-  scriptMode = signal<'install' | 'update'>('install');
-  scriptRouterId: string | null = null;
 
   saving = signal(false);
 
@@ -150,7 +146,6 @@ export class RoutersComponent implements OnInit {
         this.form.secret = '';
         this.open.set(false);
         this.toast.set({ message: r.message, type: 'success' });
-        this.scriptRouterId = r.router?.id ?? this.editing()?.id ?? null;
         this.showScript(r.setup);
         this.load();
       },
@@ -182,16 +177,14 @@ export class RoutersComponent implements OnInit {
     this.api
       .get<RouterScriptData>(`/router/nas/${item.id}/script`)
       .subscribe({
-        next: (r) => { this.scriptRouterId = item.id; this.showScript(r); },
+        next: (r) => this.showScript(r),
         error: (e) => this.toast.set({ message: e.message, type: 'error' }),
       });
   }
 
   private showScript(data: RouterScriptData): void {
     this.scriptData.set(data);
-    this.scriptMode.set('install');
     this.copied.set(false);
-    this.scriptInstalled = false;
     this.scriptModalOpen.set(true);
   }
 
@@ -202,31 +195,8 @@ export class RoutersComponent implements OnInit {
   }
 
   closeScript(): void {
-    if (this.confirming()) return;
     this.scriptModalOpen.set(false);
     this.scriptData.set(null);
-    this.scriptRouterId = null;
-    this.scriptInstalled = false;
-  }
-
-  changeScriptMode(mode: 'install' | 'update'): void {
-    this.scriptMode.set(mode);
-    this.copied.set(false);
-    this.scriptInstalled = false;
-  }
-
-  confirmNetwork(): void {
-    const data = this.scriptData(), id = this.scriptRouterId;
-    if (!id || !data?.networkFingerprint || !this.scriptInstalled || this.confirming()) return;
-    this.confirming.set(true);
-    this.api.post<{ message: string }>(`/router/nas/${id}/network/confirm`, { fingerprint: data.networkFingerprint }).subscribe({
-      next: result => {
-        this.confirming.set(false);
-        this.scriptData.set({ ...data, networkNeedsConfirmation: false });
-        this.toast.set({ message: result.message, type: 'success' }); this.load();
-      },
-      error: error => { this.confirming.set(false); this.toast.set({ message: error.message, type: 'error' }); },
-    });
   }
 
   copyScript(): void {
@@ -236,8 +206,7 @@ export class RoutersComponent implements OnInit {
       this.toast.set({ message: 'Pilih dan salin script secara manual, atau buka aplikasi melalui HTTPS untuk penyalinan otomatis.', type: 'error' });
       return;
     }
-    const script = this.scriptMode() === 'install' ? data.scriptInstall : data.scriptUpdate;
-    navigator.clipboard.writeText(script).then(() => {
+    navigator.clipboard.writeText(data.script).then(() => {
       this.copied.set(true);
       setTimeout(() => this.copied.set(false), 2000);
     }).catch(() => this.toast.set({ message: 'Penyalinan otomatis tidak tersedia. Pilih dan salin script secara manual.', type: 'error' }));

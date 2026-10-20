@@ -57,11 +57,10 @@ describe('Zero MikroTik API NAS registry', () => {
     expect(result.setup.scriptRos7).toContain('password="one-time-vpn-password"');
     expect(result.setup.scriptRos7).toContain('verify-server-certificate=no');
     expect(result.setup.scriptRos7).toContain('add-default-route=no');
-    expect(result.setup.scriptInstall).toBe(result.setup.scriptRos7);
-    expect(result.setup.scriptInstall).toContain('/interface sstp-client add');
-    expect(result.setup.scriptInstall).toContain('/ip route add');
-    expect(result.setup.scriptInstall).not.toContain('set [find');
-    expect(result.setup.scriptUpdate).toContain('/interface sstp-client set [find');
+    expect(result.setup.script).toBe(result.setup.scriptRos7);
+    expect(result.setup.script).toContain('/interface sstp-client add');
+    expect(result.setup.script).toContain('/ip route add');
+    expect(result.setup.script).not.toContain('set [find');
   });
 
   it('redacts RADIUS secrets and legacy API credentials from the list', async () => {
@@ -183,37 +182,34 @@ describe('Zero MikroTik API NAS registry', () => {
     for (const key of ['username', 'password', 'port']) expect(result).not.toHaveProperty(key);
   });
 
-  it('saves prefix plans atomically with NAS, generates pool commands and activates only after confirmation', async () => {
+  it('saves and activates prefixes atomically without installation confirmation, always returning add', async () => {
     const { service, pools, settings, prisma } = setup();
     const result = await service.createRouter({ name: router.name, nasname: router.nasname, radiusServerIp: router.radiusServerIp, internetCidr: '192.168.75.1/24', isolationCidr: '192.168.100.1/24' });
-    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function));
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: 'Serializable' });
     expect(pools).toEqual(expect.arrayContaining([expect.objectContaining({ routerNasId: 7, name: 'Internet', networkStart: '192.168.75.2', networkEnd: '192.168.75.254' })]));
-    expect(settings.has(activeNetworkKey(7))).toBe(false);
-    expect(settings.has('pppoe_isolation_router_7')).toBe(false);
-    expect(result.setup.networkNeedsConfirmation).toBe(true);
-    expect(result.setup.scriptRos7).toContain('/ip pool add name="Internet"');
-    await expect(service.confirmNetwork('7', 'wrong-script')).rejects.toThrow('Prefix pool berubah');
-    await service.confirmNetwork('7', result.setup.networkFingerprint!);
     expect(settings.has(activeNetworkKey(7))).toBe(true);
+    expect(settings.has('pppoe_isolation_router_7')).toBe(true);
+    expect(result.setup).not.toHaveProperty('networkNeedsConfirmation');
+    expect(result.setup).not.toHaveProperty('scriptUpdate');
+    expect(result.setup.scriptRos7).toContain('/ip pool add name="Internet"');
     const reopened = await service.getRouterScript('7');
     for (const command of ['/radius add', '/ip pool add name="Internet"', '/ip pool add name="pool-isolir"', '/ppp profile add', '/ip firewall filter add']) {
-      expect(reopened.scriptInstall).toContain(command);
+      expect(reopened.script).toContain(command);
     }
-    expect(reopened.scriptInstall).not.toContain('set [find');
-    expect(reopened.scriptInstall.indexOf('/ip pool add name="Internet"')).toBeLessThan(reopened.scriptInstall.indexOf('name="UNZANET-INTERNET-7"'));
-    expect(reopened.scriptInstall.indexOf('/ip pool add name="pool-isolir"')).toBeLessThan(reopened.scriptInstall.indexOf('name="UNZANET-ISOLIR-7"'));
+    expect(reopened.script).not.toContain('set [find');
+    expect(reopened.script.indexOf('/ip pool add name="Internet"')).toBeLessThan(reopened.script.indexOf('name="UNZANET-INTERNET-7"'));
+    expect(reopened.script.indexOf('/ip pool add name="pool-isolir"')).toBeLessThan(reopened.script.indexOf('name="UNZANET-ISOLIR-7"'));
     expect(JSON.parse(settings.get('pppoe_isolation_router_7')!)).toMatchObject({ enabled: true, poolName: 'pool-isolir', subnet: '192.168.100.0/24', localAddress: '192.168.100.1', syncPending: true });
     const updated = await service.updateRouter('7', { name: router.name, nasname: router.nasname, internetCidr: '192.168.76.1/24', isolationCidr: '192.168.100.1/24' });
-    expect(updated.setup.scriptInstall).toContain('/radius add');
-    expect(updated.setup.scriptUpdate).toContain('/radius set [find where comment="UNZANET-RADIUS:VPN"]');
-    expect(updated.setup.scriptUpdate).toContain('/ip pool set [find where name="Internet"] name="Internet" ranges="192.168.76.2-192.168.76.254"');
-    expect(JSON.parse(settings.get(activeNetworkKey(7))!).internet.cidr).toBe('192.168.75.1/24');
+    expect(updated.setup.script).toContain('/radius add');
+    expect(updated.setup.script).not.toContain('set [find');
+    expect(updated.setup.script).toContain('/ip pool add name="Internet" ranges="192.168.76.2-192.168.76.254"');
+    expect(JSON.parse(settings.get(activeNetworkKey(7))!).internet.cidr).toBe('192.168.76.1/24');
     expect(JSON.parse(settings.get(networkKey(7))!).internet.cidr).toBe('192.168.76.1/24');
-    await expect(service.confirmNetwork('7', result.setup.networkFingerprint!)).rejects.toThrow('Prefix pool berubah');
-    await expect(service.confirmNetwork('7', updated.setup.networkFingerprint!)).rejects.toThrow('Tunggu sinkronisasi');
     const config = JSON.parse(settings.get('pppoe_isolation_router_7')!); config.syncPending = false;
     settings.set('pppoe_isolation_router_7', JSON.stringify(config));
-    await service.confirmNetwork('7', updated.setup.networkFingerprint!);
+    await service.updateRouter('7', { name: router.name, nasname: router.nasname, internetCidr: '192.168.76.1/24', isolationCidr: '192.168.100.1/24' });
+    expect(JSON.parse(settings.get('pppoe_isolation_router_7')!).syncPending).toBe(false);
     expect(JSON.parse(settings.get(activeNetworkKey(7))!).internet.cidr).toBe('192.168.76.1/24');
   });
 
@@ -228,14 +224,11 @@ describe('Zero MikroTik API NAS registry', () => {
     const { service, pools } = setup();
     pools.push({ id: 9n, routerNasId: 7, name: 'Internet', networkStart: '192.168.75.1', networkEnd: '192.168.75.254' });
     const result = await service.updateRouter('7', { name: router.name, nasname: router.nasname, internetCidr: '192.168.75.1/24', isolationCidr: '192.168.100.1/24' });
-    expect(result.setup.scriptInstall).toContain('/ip pool add name="Internet"');
-    expect(result.setup.scriptInstall).not.toContain('set [find');
-    expect(result.setup.scriptInstall).toContain('/ppp profile add copy-from=default name="UNZANET-INTERNET-7"');
-    expect(result.setup.scriptUpdate).toContain('/ip pool set [find where name="Internet"]');
-    expect(result.setup.scriptUpdate).toContain('/ppp profile set [find where name="UNZANET-INTERNET-7"]');
+    expect(result.setup.script).toContain('/ip pool add name="Internet"');
+    expect(result.setup.script).not.toContain('set [find');
+    expect(result.setup.script).toContain('/ppp profile add copy-from=default name="UNZANET-INTERNET-7"');
     expect(pools.filter(pool => pool.name === 'Internet')).toHaveLength(1);
     const reopened = await service.getRouterScript('7');
-    expect(reopened.scriptInstall).toBe(result.setup.scriptInstall);
-    expect(reopened.scriptUpdate).toBe(result.setup.scriptUpdate);
+    expect(reopened.script).toBe(result.setup.script);
   });
 });

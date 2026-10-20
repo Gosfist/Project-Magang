@@ -37,16 +37,14 @@ export class RoutersService {
       this.prisma.nas.count({ where }),
     ]);
     const snapshot = await this.vpnStatus.snapshot();
-    const networks = await this.prisma.appSetting.findMany({ where: { key: { in: items.flatMap(item => [networkKey(item.id), activeNetworkKey(item.id)]) } } });
+    const networks = await this.prisma.appSetting.findMany({ where: { key: { in: items.map(item => networkKey(item.id)) } } });
     const values = new Map(networks.map(row => [row.key, row.value]));
     return serialize({ data: items.map(item => {
       const raw = values.get(networkKey(item.id));
-      let network: NasNetwork | null = null, activeFingerprint: string | null = null;
-      const active = values.get(activeNetworkKey(item.id));
-      try { network = raw ? JSON.parse(raw) as NasNetwork : null; activeFingerprint = active ? (JSON.parse(active) as NasNetwork).fingerprint : null; } catch { /* Keep the edit form reachable so invalid stored prefixes can be corrected. */ }
+      let network: NasNetwork | null = null;
+      try { network = raw ? JSON.parse(raw) as NasNetwork : null; } catch { /* Keep the edit form reachable so invalid stored prefixes can be corrected. */ }
       return { ...this.publicRouter(item), ...this.vpnStatus.forRouter(item, snapshot),
-        internetCidr: network?.internet?.cidr ?? '', isolationCidr: network?.isolation?.cidr ?? '',
-        networkInstalled: !!network && activeFingerprint === network.fingerprint };
+        internetCidr: network?.internet?.cidr ?? '', isolationCidr: network?.isolation?.cidr ?? '' };
     }), meta: pageMeta(page, 10, total) });
   }
 
@@ -67,7 +65,7 @@ export class RoutersService {
         const item = await tx.nas.create({ data: { ...data, createdAt: new Date() } });
         await this.saveNetwork(tx, item.id, nasNetwork(item.id, network.internet.cidr, network.isolation.cidr));
         return item;
-      }) : await this.prisma.nas.create({ data: { ...data, createdAt: new Date() } });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }) : await this.prisma.nas.create({ data: { ...data, createdAt: new Date() } });
       return serialize({ message: 'NAS ditambahkan. Salin script ke Terminal MikroTik. Konfigurasi NAS diterapkan FreeRADIUS dalam sekitar 60 detik.', router: this.publicRouter(item), setup: await this.setup(item, dto.vpnPassword, managed ? 4443 : 443) });
     } catch (error) { this.unique(error); }
   }
@@ -83,8 +81,8 @@ export class RoutersService {
         const item = await tx.nas.update({ where: { id: current.id }, data });
         await this.saveNetwork(tx, item.id, network);
         return item;
-      }) : await this.prisma.nas.update({ where: { id: current.id }, data });
-      return serialize({ message: 'NAS diperbarui. Pilih script sesuai konfigurasi yang ada di MikroTik.', router: this.publicRouter(item), setup: await this.setup(item, dto.vpnPassword, managed ? 4443 : 443) });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }) : await this.prisma.nas.update({ where: { id: current.id }, data });
+      return serialize({ message: 'NAS diperbarui. Salin script ke Terminal MikroTik.', router: this.publicRouter(item), setup: await this.setup(item, dto.vpnPassword, managed ? 4443 : 443) });
     } catch (error) { this.unique(error); }
   }
 
@@ -114,20 +112,13 @@ export class RoutersService {
   private async setup(router: Nas, vpnPassword?: string, vpnPort = 443) {
     const radiusServerIp = this.serverIp(router.radiusServerIp);
     const network = await readNasNetwork(this.prisma, router.id, false);
-    const active = network ? await readNasNetwork(this.prisma, router.id) : null;
-    // Database edits/confirmation are not evidence that any item exists on RouterOS.
-    // Return both actions explicitly; installation must always create missing items.
-    const build = (update: boolean) => radiusSetupScript(router, radiusServerIp, router.nasname, true, vpnPassword, vpnPort, update)
-      + (network ? '\n' + nasNetworkScript(router.id, network, update) : '');
-    const scriptInstall = build(false), scriptUpdate = build(true);
+    const script = radiusSetupScript(router, radiusServerIp, router.nasname, true, vpnPassword, vpnPort)
+      + (network ? '\n\n' + nasNetworkScript(router.id, network) : '');
     return {
       routerName: router.name, radiusServerIp, nasSrcAddress: router.nasname,
       authPort: router.ports || 1812, coaPort: router.coaPort || 3799,
-      scriptInstall, scriptUpdate,
-      // Keep old clients working, with installation as their default script too.
-      scriptRos7: scriptInstall, scriptRos6: scriptInstall,
-      networkFingerprint: network?.fingerprint ?? null,
-      networkNeedsConfirmation: !!network && network.fingerprint !== active?.fingerprint,
+      // Legacy version fields remain aliases of the same add-only script.
+      script, scriptRos7: script, scriptRos6: script,
     };
   }
 
@@ -146,29 +137,25 @@ export class RoutersService {
         create: { routerNasId: id, name, networkStart: pool.start, networkEnd: pool.end, createdAt: new Date(), updatedAt: new Date() },
         update: { networkStart: pool.start, networkEnd: pool.end, updatedAt: new Date() } });
     }
-    const value = JSON.stringify(network);
-    await tx.appSetting.upsert({ where: { key: networkKey(id) }, create: { key: networkKey(id), value }, update: { value } });
-  }
-
-  async confirmNetwork(id: string, fingerprint: string) {
-    const router = await this.findRouter(id);
-    await this.prisma.$transaction(async tx => {
-      const network = await readNasNetwork(tx, router.id, false);
-      if (!network || network.fingerprint !== fingerprint) throw new ConflictException('Prefix pool berubah. Buka script terbaru sebelum konfirmasi pemasangan.');
-      const active = await readNasNetwork(tx, router.id);
-      if (active?.fingerprint === network.fingerprint) return;
-      const previous = await tx.appSetting.findUnique({ where: { key: isolationKey(router.id) } });
-      if (previous && (JSON.parse(previous.value) as { syncPending?: boolean }).syncPending) {
-        throw new ConflictException('Tunggu sinkronisasi pool sebelumnya selesai sebelum mengonfirmasi prefix baru.');
-      }
-      const config = { enabled: true, poolName: isolationPoolName, subnet: network.isolation.subnet,
-        localAddress: network.isolation.gateway, profileName: isolationProfile(router.id), syncPending: true };
-      for (const [key, data] of [[activeNetworkKey(router.id), network], [isolationKey(router.id), config]] as const) {
-        const value = JSON.stringify(data);
-        await tx.appSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
-      }
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-    return { message: 'Pemasangan dikonfirmasi. RADIUS akan menyinkronkan pool internet dan isolir serta sesi pelanggan secara berkala.' };
+    const active = await readNasNetwork(tx, id);
+    const previous = await tx.appSetting.findUnique({ where: { key: isolationKey(id) } });
+    const config = { enabled: true, poolName: isolationPoolName, subnet: network.isolation.subnet,
+      localAddress: network.isolation.gateway, profileName: isolationProfile(id), syncPending: true };
+    let unchanged = false;
+    try {
+      const stored = previous ? JSON.parse(previous.value) as typeof config : null;
+      unchanged = active?.fingerprint === network.fingerprint && stored?.enabled === true
+        && stored.poolName === config.poolName && stored.subnet === config.subnet
+        && stored.localAddress === config.localAddress && stored.profileName === config.profileName;
+    } catch { /* Saving repairs an invalid old isolation configuration. */ }
+    for (const key of [networkKey(id), activeNetworkKey(id)]) {
+      const value = JSON.stringify(network);
+      await tx.appSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
+    }
+    if (!unchanged) {
+      const key = isolationKey(id), value = JSON.stringify(config);
+      await tx.appSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
+    }
   }
 
   private routerData(dto: SaveRouterDto, current?: Nas) {

@@ -54,30 +54,19 @@ export async function readNasNetwork(tx: Pick<Prisma.TransactionClient, 'appSett
   } catch { throw new BadRequestException('Prefix pool Router/NAS tersimpan tidak valid. Perbaiki pada Edit Router NAS.'); }
 }
 
-export function nasNetworkScript(id: number, network: NasNetwork, update: boolean) {
+export function nasNetworkScript(id: number, network: NasNetwork) {
   const q = rosQuote, lines = ['# 4. IP Pool Internet dan Isolir'];
   for (const [kind, pool, name, profile] of [
     ['INTERNET', network.internet, internetPoolName, internetProfile(id)],
     ['ISOLIR', network.isolation, isolationPoolName, isolationProfile(id)],
   ] as const) {
-    const poolUpdate = update;
-    const profileUpdate = update;
-    const poolTarget = poolUpdate ? ` [find where name=${q(name)}]` : '';
-    const profileTarget = profileUpdate ? ` [find where name=${q(profile)}]` : '';
-    lines.push(`/ip pool ${poolUpdate ? 'set' : 'add'}${poolTarget} name=${q(name)} ranges=${q(`${pool.start}-${pool.end}`)} next-pool=none comment=${q(`UNZANET-RADIUS:${kind}`)};`);
-    lines.push(`/ppp profile ${profileUpdate ? 'set' : 'add'}${profileTarget}${profileUpdate ? '' : ' copy-from=default'} name=${q(profile)} local-address=${q(pool.gateway)} remote-address=${q(name)}${kind === 'ISOLIR' ? ' use-ipv6=no' : ''} only-one=yes change-tcp-mss=yes;`);
+    lines.push(`/ip pool add name=${q(name)} ranges=${q(`${pool.start}-${pool.end}`)} next-pool=none comment=${q(`UNZANET-RADIUS:${kind}`)};`);
+    lines.push(`/ppp profile add copy-from=default name=${q(profile)} local-address=${q(pool.gateway)} remote-address=${q(name)}${kind === 'ISOLIR' ? ' use-ipv6=no' : ''} only-one=yes change-tcp-mss=yes;`);
   }
-  lines.push('# 5. Firewall subnet isolir');
-  for (const [chain, field, tag] of [['forward', 'src-address', 'OUT'], ['forward', 'dst-address', 'IN'], ['input', 'src-address', 'ROUTER']] as const) {
-    const change = update;
+  lines.push('', '# 5. Firewall subnet isolir');
+  for (const [chain, field] of [['forward', 'src-address'], ['forward', 'dst-address'], ['input', 'src-address']] as const) {
     const comment = q('UNZANET-RADIUS:ISOLIR');
-    // Shared comments need a direction selector. Keep the opposite address explicit
-    // so future edits still find the right rule after the isolation subnet changes.
-    const opposite = tag === 'OUT' ? ' dst-address="0.0.0.0/0"' : tag === 'IN' ? ' src-address="0.0.0.0/0"' : '';
-    const legacy = q(`UNZANET-ISOLIR:${id}:${tag}`);
-    const selector = `(comment=${comment} && chain=${chain}${opposite ? ` &&${opposite}` : ''}) || comment=${legacy}`;
-    const target = change ? ` [find where ${selector}]` : '';
-    lines.push(`/ip firewall filter ${change ? 'set' : 'add'}${target} chain=${chain} ${field}=${q(network.isolation.subnet)}${opposite} action=drop disabled=no comment=${comment};`);
+    lines.push(`/ip firewall filter add chain=${chain} ${field}=${q(network.isolation.subnet)} action=drop disabled=no comment=${comment};`);
   }
   lines.push('# Pastikan ketiga rule isolir berada sebelum accept/FastTrack melalui Winbox.');
   return lines.join('\n');

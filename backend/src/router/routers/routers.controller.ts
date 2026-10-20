@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Header, Param, ParseIntPipe, Patch, Post
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard.js';
 import { AdminGuard } from '../../auth/roles.guard.js';
 import { RoutersService } from './routers.service.js';
-import { ConfirmNasNetworkDto, SaveRouterDto } from './routers.dto.js';
+import { SaveRouterDto } from './routers.dto.js';
 
 @Controller('router')
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -50,8 +50,4 @@ export class RoutersController {
     return this.routerService.getRouterScript(id);
   }
 
-  @Post('nas/:id/network/confirm')
-  confirmNetwork(@Param('id') id: string, @Body() dto: ConfirmNasNetworkDto) {
-    return this.routerService.confirmNetwork(id, dto.fingerprint);
-  }
 }

@@ -22,7 +22,3 @@ export class SaveRouterDto {
   @Transform(trim) @IsOptional() @IsString() @MaxLength(18) internetCidr?: string;
   @Transform(trim) @IsOptional() @IsString() @MaxLength(18) isolationCidr?: string;
 }
-
-export class ConfirmNasNetworkDto {
-  @IsString() @Matches(/^[a-f0-9]{64}$/) fingerprint: string;
-}

@@ -14,6 +14,10 @@ function setup() {
     findMany: vi.fn(async () => [...settings].map(([key, value]) => ({ key, value }))),
     upsert: vi.fn(async ({ where, create, update }) => { settings.set(where.key, settings.has(where.key) ? update.value : create.value); }),
     update: vi.fn(async ({ where, data }) => { settings.set(where.key, data.value); }),
+    updateMany: vi.fn(async ({ where, data }) => {
+      if (settings.get(where.key) !== where.value) return { count: 0 };
+      settings.set(where.key, data.value); return { count: 1 };
+    }),
   };
   const prisma = { appSetting,
     nas: { findUnique: vi.fn().mockResolvedValue({ id: 3, isActive: true, nasname: '10.99.0.2', ipAddress: '10.99.0.2' }) },
@@ -116,7 +120,18 @@ describe('RADIUS isolation with manually installed router scripts', () => {
     await expect(service.save(3, { ...dto, scriptInstalled: true, scriptFingerprint: draft.scriptFingerprint })).rejects.toThrow('data pool berubah');
     expect(settings.size).toBe(0); expect(network.disconnect).not.toHaveBeenCalled();
   });
-  it('reconnects normal and isolated sessions when NAS prefixes are confirmed, then avoids repeating matching sessions', async () => {
+  it('does not overwrite a newer NAS configuration saved during synchronization', async () => {
+    const { enable, settings, network, service } = setup();
+    network.disconnect.mockImplementationOnce(async () => {
+      const latest = { ...JSON.parse(settings.get('pppoe_isolation_router_3')!), subnet: '192.168.101.0/24', localAddress: '192.168.101.1', syncPending: true };
+      settings.set('pppoe_isolation_router_3', JSON.stringify(latest));
+      return { completed: 1, warnings: [] };
+    });
+    await enable();
+    expect(JSON.parse(settings.get('pppoe_isolation_router_3')!)).toMatchObject({ subnet: '192.168.101.0/24', localAddress: '192.168.101.1', syncPending: true });
+    expect(service.status(3).job?.message).toContain('putaran berikutnya');
+  });
+  it('reconnects normal and isolated sessions when NAS prefixes are saved, then avoids repeating matching sessions', async () => {
     const { settings, enable, network, replies, sessions, service } = setup();
     settings.set(activeNetworkKey(3), JSON.stringify(nasNetwork(3, '192.168.76.1/24', '192.168.100.1/24')));
     await enable();

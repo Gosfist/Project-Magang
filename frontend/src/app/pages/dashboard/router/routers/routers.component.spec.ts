@@ -5,7 +5,7 @@ import { RouterItem } from '../../../../shared/models/types';
 import { RoutersComponent } from './routers.component';
 
 describe('Router / NAS RADIUS setup', () => {
-  const setupScript = { routerName: 'Lab', radiusServerIp: '10.255.0.1', nasSrcAddress: '10.255.0.2', authPort: 1812, coaPort: 3799, scriptRos7: '/radius add address=10.255.0.1', scriptRos6: '/radius add address=10.255.0.1', scriptInstall: '/radius add address=10.255.0.1', scriptUpdate: '/radius set [find where comment="UNZANET-RADIUS:VPN"] address=10.255.0.1' };
+  const setupScript = { routerName: 'Lab', radiusServerIp: '10.255.0.1', nasSrcAddress: '10.255.0.2', authPort: 1812, coaPort: 3799, scriptRos7: '/radius add address=10.255.0.1', scriptRos6: '/radius add address=10.255.0.1', script: '/radius add address=10.255.0.1' };
   function setup() {
     const api = jasmine.createSpyObj('ApiService', ['get', 'post', 'patch']);
     api.get.and.returnValue(of({ data: [], meta: { currentPage: 1, lastPage: 1, perPage: 10, total: 0 } }));
@@ -71,27 +71,25 @@ describe('Router / NAS RADIUS setup', () => {
     expect(headers).toContain('Status VPN');
     expect(headers).not.toContain('Pendaftaran NAS');
   });
-  it('opens installation for an existing NAS and copies the operator-selected action', fakeAsync(() => {
+  it('copies the same add script for an existing NAS without installation questions', fakeAsync(() => {
     const { fixture, component, api } = setup();
     api.get.and.returnValue(of(setupScript));
-    component.openScript({ id: '7', networkInstalled: true } as RouterItem); fixture.detectChanges();
-    expect(component.scriptMode()).toBe('install');
-    expect(fixture.nativeElement.querySelector('pre').textContent).toBe(setupScript.scriptInstall);
+    component.openScript({ id: '7' } as RouterItem); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('pre').textContent).toBe(setupScript.script);
+    expect(fixture.nativeElement.querySelector('#nas-script-mode')).toBeNull();
+    expect(fixture.nativeElement.querySelector('input[name="scriptInstalled"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Konfirmasi Pemasangan');
     const clipboard = jasmine.createSpyObj('Clipboard', ['writeText']);
     clipboard.writeText.and.returnValue(Promise.resolve());
     spyOnProperty(navigator, 'clipboard', 'get').and.returnValue(clipboard);
     component.copyScript(); tick();
-    expect(clipboard.writeText).toHaveBeenCalledWith(setupScript.scriptInstall);
-    component.scriptInstalled = true;
-    const select = fixture.nativeElement.querySelector('#nas-script-mode') as HTMLSelectElement;
-    select.value = 'update'; select.dispatchEvent(new Event('change')); fixture.detectChanges();
-    expect(component.scriptInstalled).toBeFalse();
-    expect(fixture.nativeElement.querySelector('pre').textContent).toBe(setupScript.scriptUpdate);
-    component.copyScript(); tick();
-    expect(clipboard.writeText).toHaveBeenCalledWith(setupScript.scriptUpdate);
+    expect(clipboard.writeText).toHaveBeenCalledWith(setupScript.script);
     component.closeScript();
     component.openScript({ id: '7' } as RouterItem);
-    expect(component.scriptMode()).toBe('install');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('pre').textContent).toBe(setupScript.script);
+    component.copyScript(); tick();
+    expect(clipboard.writeText).toHaveBeenCalledWith(setupScript.script);
     tick(2000); fixture.destroy();
   }));
   it('refreshes session status periodically and stops after leaving the page', fakeAsync(() => {
@@ -103,17 +101,15 @@ describe('Router / NAS RADIUS setup', () => {
     tick(15000);
     expect(api.get).toHaveBeenCalledTimes(2);
   }));
-  it('keeps prefixes on edit and requires installation confirmation from the script dialog', () => {
+  it('keeps prefixes on edit and saves without another confirmation request', () => {
     const { fixture, component, api } = setup();
-    const fingerprint = 'a'.repeat(64);
-    api.patch.and.returnValue(of({ message: 'Disimpan', router: { id: '7' }, setup: { ...setupScript, networkFingerprint: fingerprint, networkNeedsConfirmation: true } }));
+    api.patch.and.returnValue(of({ message: 'Disimpan', router: { id: '7' }, setup: setupScript }));
     component.show({ id: '7', name: 'Cabang', nasname: '10.88.0.2', isActive: true, internetCidr: '192.168.75.1/24', isolationCidr: '192.168.100.1/24' } as RouterItem);
     expect(component.form.internetCidr).toBe('192.168.75.1/24');
     component.save(); fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Konfirmasi Pemasangan');
-    component.confirmNetwork(); expect(api.post).not.toHaveBeenCalled();
-    component.scriptInstalled = true; component.confirmNetwork();
-    expect(api.post).toHaveBeenCalledOnceWith('/router/nas/7/network/confirm', { fingerprint });
-    expect(component.scriptData()?.networkNeedsConfirmation).toBeFalse();
+    expect(api.patch).toHaveBeenCalledTimes(1);
+    expect(api.post).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).not.toContain('Konfirmasi Pemasangan');
+    expect(fixture.nativeElement.querySelector('pre').textContent).toBe(setupScript.script);
   });
 });
