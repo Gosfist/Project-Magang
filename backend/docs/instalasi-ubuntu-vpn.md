@@ -168,7 +168,7 @@ sudo freeradius -XC
 
 4. Klik Buat Akun VPN. Tunggu penerapan ke server sekitar 15 detik. Gunakan Muat Ulang bila perlu.
 5. Daftar menampilkan No, Nama, Username, Password langsung, IP VPN, Router / NAS, dan Aksi. Tidak ada kolom Status atau tombol Tampilkan/Sembunyikan.
-6. Klik ikon pensil untuk Edit. Ganti nama, username atau password lalu klik Simpan Perubahan. Password kosong saat edit mempertahankan password lama; IP VPN tetap. Jika username/password berubah, tunggu sekitar 15 detik lalu buka Winbox > Interfaces > pilih radius-cloud-ID_NAS > tab Dial Out, ubah User/Password, lalu Apply. Jangan paste ulang script add untuk mengganti kredensial tunnel yang sudah ada.
+6. Klik ikon pensil untuk Edit. Ganti nama, username atau password lalu klik Simpan Perubahan. Password kosong saat edit mempertahankan password lama; IP VPN tetap. Jika username/password berubah, tunggu sekitar 15 detik lalu buka Winbox > Interfaces > pilih UNZANET-RADIUS:VPN > tab Dial Out, ubah User/Password, lalu Apply. Jangan paste ulang script add untuk mengganti kredensial tunnel yang sudah ada.
 7. Klik ikon tempat sampah untuk Hapus, lalu konfirmasi. Akun yang masih dipakai NAS harus dilepas/diganti pada NAS dahulu. Penghapusan diterapkan ke file akun server sekitar 15 detik; sesi tunnel yang sudah tersambung tidak diputus otomatis.
 
 ## 7 Tambah Router NAS dari klien VPN
@@ -186,9 +186,10 @@ sudo freeradius -XC
 
 2. Klik Simpan & Buat Script. Pilih versi RouterOS 6/7 sesuai perangkat, lalu salin script.
 3. Buka Winbox > New Terminal pada MikroTik tujuan. Paste script dari web. Tiga bagiannya mengatur SSTP port 4443, RADIUS/Disconnect beserta rute dan firewall, lalu PPP AAA/accounting. Tidak ada blok impor CA.
-4. Host, IP, username dan password otomatis berasal dari klien terpilih. Script langsung memakai add tanpa :if atau pemeriksaan duplikat. Gunakan sekali untuk pemasangan awal. Paste ulang dapat membuat RADIUS/rute/firewall ganda atau gagal karena nama tunnel sudah dipakai.
+4. Host, IP, username dan password otomatis berasal dari klien terpilih. Nama interface SSTP, gateway rute, dan seluruh komentar memakai UNZANET-RADIUS:VPN. Script langsung memakai add tanpa :if atau pemeriksaan duplikat. Gunakan sekali untuk pemasangan awal. Paste ulang dapat membuat RADIUS/rute/firewall ganda atau gagal karena nama tunnel sudah dipakai.
 5. Tunggu penerapan NAS ke FreeRADIUS sekitar 60 detik. Kolom Status VPN mengikuti sesi SSTP, bukan tanda pendaftaran NAS. Online berarti username dan IP VPN cocok dengan sesi SSTP active di server; tabel sesi kosong berarti Offline. Pemeriksaan gagal/data lebih dari 45 detik tampil Tidak diketahui; NAS lokal tampil Tanpa VPN. Web memuat ulang status setiap 15 detik, pengumpul sesi setiap 10 detik. Simpan NAS belum membuktikan script sudah dipasang pada MikroTik.
 6. Mode sederhana memakai verify-server-certificate=no dan verify-server-address-from-certificate=no. Trafik tetap memakai TLS, tetapi identitas server tidak diverifikasi sehingga berisiko tersambung ke server palsu dan kredensial VPN dapat diserang. VPN tidak otomatis aman hanya karena terenkripsi. Rujukan: [sertifikat SSTP MikroTik](https://help.mikrotik.com/docs/spaces/ROS/pages/2031645/SSTP).
+7. Pada router yang sudah terpasang, buka Winbox > Interfaces dan ganti nama tunnel lama radius-cloud-ID_NAS menjadi UNZANET-RADIUS:VPN. Periksa IP > Routes agar rute 10.88.0.1/32 memakai gateway tersebut. Ubah komentar SSTP, rute, RADIUS, serta kedua rule firewall terkelola menjadi UNZANET-RADIUS:VPN. Jangan paste ulang script add.
 
 ## 8 Periksa tunnel dan uji PPPoE
 
@@ -327,7 +328,7 @@ sudo systemctl restart accel-ppp
 /ping 10.88.0.1 count=5
 ~~~
 
-6. Interface radius-cloud-ID_NAS harus memiliki tanda R (running), mendapat IP VPN sesuai akun, use-radius=yes, dan ping gateway berhasil. Ini membuktikan tunnel/jalur dasar; lanjutkan dial PPPoE nyata, accounting, dan Disconnect sesuai tahap 8. Rujukan: [properti klien SSTP MikroTik](https://help.mikrotik.com/docs/spaces/ROS/pages/2031645/SSTP).
+6. Interface UNZANET-RADIUS:VPN harus memiliki tanda R (running), mendapat IP VPN sesuai akun, use-radius=yes, dan ping gateway berhasil. Ini membuktikan tunnel/jalur dasar; lanjutkan dial PPPoE nyata, accounting, dan Disconnect sesuai tahap 8. Rujukan: [properti klien SSTP MikroTik](https://help.mikrotik.com/docs/spaces/ROS/pages/2031645/SSTP).
 
 ### 9.5 Memasang template MikroTik sederhana tanpa impor CA
 

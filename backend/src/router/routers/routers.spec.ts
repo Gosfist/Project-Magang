@@ -79,7 +79,11 @@ describe('Zero MikroTik API NAS registry', () => {
       expect(script).toContain('verify-server-certificate=no verify-server-address-from-certificate=no');
       expect(script).toContain('/radius incoming set accept=yes port=3799');
       expect(script).not.toMatch(/:if|:len|:local/);
-      expect(script).toContain('/interface sstp-client add name="radius-cloud-7"');
+      expect(script).toContain('/interface sstp-client add name="UNZANET-RADIUS:VPN"');
+      const comments = Array.from(script.matchAll(/comment="([^"]+)"/g), match => match[1]);
+      expect(comments).toHaveLength(5);
+      expect(new Set(comments)).toEqual(new Set(['UNZANET-RADIUS:VPN']));
+      expect(script).not.toContain('/ip firewall filter move');
       expect(script).toContain('/ip route add dst-address=');
       expect(script).toContain('/radius add address=');
       expect(script).not.toContain('/interface sstp-client set');
@@ -128,10 +132,9 @@ describe('Zero MikroTik API NAS registry', () => {
       expect(script).toContain('src-address="10.88.0.3"');
       expect(script).toContain('/radius incoming set accept=yes port=3799');
       expect(script).toContain(`chain=input protocol=tcp connection-state=new src-address="${router.radiusServerIp}" action=drop`);
-      expect(script).toContain('UNZANET-RADIUS:7:MGMT-DENY');
+      expect(script).not.toContain('/ip firewall filter move');
       expect(script).not.toContain('/interface sstp-client add');
-      expect(script).toContain(`dst-address="${router.radiusServerIp}/32" gateway="radius-cloud-7"`);
-      expect(script).toContain('UNZANET-RADIUS:7:RADIUS-ROUTE');
+      expect(script).toContain(`dst-address="${router.radiusServerIp}/32" gateway="UNZANET-RADIUS:VPN" comment="UNZANET-RADIUS:VPN"`);
       expect(script).toContain('Gunakan tunnel yang sudah ada');
       expect(script).not.toContain('dst-address="0.0.0.0/0"');
       expect(script).not.toContain('/ip hotspot profile');
@@ -144,7 +147,7 @@ describe('Zero MikroTik API NAS registry', () => {
     expect(routerOsQuote('a"$\\\n\u00e9')).toBe('"a\\"\\$\\\\\\0A\\C3\\A9"');
     const script = radiusSetupScript({ ...router, secret: '$[/user remove [find]]"' } as any, router.radiusServerIp, router.nasname, true);
     expect(script).toContain('secret="\\$[/user remove [find]]\\""');
-    expect(script).toContain('comment="UNZANET-RADIUS:7"');
+    expect(script).toContain('comment="UNZANET-RADIUS:VPN"');
   });
 
   it('does not delete a NAS with linked subscribers', async () => {

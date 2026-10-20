@@ -1,6 +1,5 @@
 <div class="space-y-4">
   <div class="card p-4 space-y-3">
-    <p class="text-sm text-slate-500">Daftarkan MikroTik sebagai NAS FreeRADIUS. Simpan menghasilkan script untuk dipasang melalui Terminal Winbox. Status VPN mengikuti sesi SSTP di server dan diperbarui otomatis.</p>
     <div class="flex gap-3">
       <div class="relative flex-1"><svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg><input class="input input-with-icon" placeholder="Cari nama router, IP, atau shortname..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" /></div>
       <button class="btn-primary" (click)="show()"><svg lucidePlus [size]="18"></svg> Tambah Router</button>

@@ -25,6 +25,8 @@ Login web, buat Klien VPN, tunggu penerapan sekitar 15 detik, pilih akun pada Ro
 lalu pasang script MikroTik sederhana dalam tiga bagian dengan add langsung, tanpa :if.
 Akun dan IP diambil otomatis. Gunakan sekali untuk pemasangan awal; pengulangan
 dapat membuat entri ganda atau bentrok nama tunnel.
+Nama interface SSTP, gateway rute, dan seluruh komentar memakai `UNZANET-RADIUS:VPN`.
+Bagian 7 menjelaskan penggantian nama tunnel lama melalui Winbox tanpa paste ulang.
 Tidak ada impor CA; verifikasi sertifikat server dimatikan sesuai mode sederhana.
 TLS tetap dipakai, tetapi identitas server tidak diverifikasi sehingga ada risiko server palsu.
 Password langsung terlihat pada daftar khusus admin; kolom Status dihapus.

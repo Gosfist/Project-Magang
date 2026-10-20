@@ -1,7 +1,7 @@
 import { Component, DestroyRef, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { LucidePencil, LucideTrash2 } from '@lucide/angular';
+import { LucidePencil, LucidePlus, LucideTrash2 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
 import { latestRequest } from '../../../../core/services/latest-request';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
@@ -9,10 +9,16 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
 import { VpnClientItem } from '../../../../shared/models/types';
 
 @Component({
-  selector: 'app-vpn-client', standalone: true, imports: [FormsModule, LucidePencil, LucideTrash2, ModalComponent, ToastComponent],
+  selector: 'app-vpn-client', standalone: true, imports: [FormsModule, LucidePencil, LucidePlus, LucideTrash2, ModalComponent, ToastComponent],
   template: `
-    <div class="card p-4 space-y-4">
-      <div class="flex flex-wrap items-center justify-between gap-3"><p class="text-sm">Server SSTP: {{ server() || 'Belum tersedia' }}</p><div class="flex gap-2"><button class="btn-secondary" (click)="load()">Muat Ulang</button><button class="btn-primary" (click)="show()">Tambah VPN</button></div></div>
+    <div class="space-y-4">
+      <div class="card flex flex-wrap items-center justify-between gap-3 p-4">
+        <p class="text-sm">Server SSTP: {{ server() || 'Belum tersedia' }}</p>
+        <div class="flex gap-3">
+          <button type="button" class="btn-secondary" (click)="load()">Muat Ulang</button>
+          <button type="button" class="btn-primary" (click)="show()"><svg lucidePlus [size]="18"></svg> Tambah VPN</button>
+        </div>
+      </div>
       <div class="table-wrap"><table><thead><tr><th>No</th><th>Nama</th><th>Username</th><th>Password</th><th>IP VPN</th><th>Router / NAS</th><th>Aksi</th></tr></thead><tbody>
         @for (item of items(); track item.id; let i = $index) {
           <tr><td>{{ i + 1 }}</td><td>{{ item.name }}</td><td>{{ item.username }}</td><td class="break-all">{{ item.password || '-' }}</td><td>{{ item.vpnIp }}</td><td>{{ item.routers.at(0)?.name || '-' }}</td><td><div class="flex gap-2">
