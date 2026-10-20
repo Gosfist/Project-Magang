@@ -1,20 +1,4 @@
 import type { Nas } from '@prisma/client';
-import { BadRequestException } from '@nestjs/common';
-import { X509Certificate } from 'node:crypto';
-
-export function vpnCaCertificate(value?: string): { pem: string; fingerprint: string } | undefined {
-  const pem = value?.trim();
-  if (!pem) return undefined;
-  try {
-    // A single public CA only, never a private key or an unvalidated script fragment.
-    if (pem.length > 3900 || !/^-----BEGIN CERTIFICATE-----\r?\n[A-Za-z0-9+/=\r\n]+\r?\n-----END CERTIFICATE-----$/.test(pem)) throw new Error();
-    const cert = new X509Certificate(pem);
-    if (!cert.ca) throw new Error();
-    return { pem: cert.toString(), fingerprint: cert.fingerprint256.replaceAll(':', '').toLowerCase() };
-  } catch {
-    throw new BadRequestException('Sertifikat VPN harus satu CA publik PEM yang valid, maksimal 3900 karakter. Jangan masukkan private key.');
-  }
-}
 
 export function routerOsQuote(value: string): string {
   let result = '"';
@@ -26,82 +10,46 @@ export function routerOsQuote(value: string): string {
   return result + '"';
 }
 
-export function radiusSetupScript(router: Nas, serverIp: string, sourceIp: string, ros7: boolean, vpnPassword?: string, ca?: ReturnType<typeof vpnCaCertificate>, vpnPort = 443) {
+export function radiusSetupScript(router: Nas, serverIp: string, sourceIp: string, _ros7: boolean, vpnPassword?: string, vpnPort = 443) {
   const q = routerOsQuote;
   const tag = `UNZANET-RADIUS:${router.id}`;
   const coaPort = router.coaPort || 3799;
   const tunnelName = `radius-cloud-${router.id}`;
-  const lines = [
-    `# UNZANET Zero-MikroTik API - NAS ${router.id}, RouterOS ${ros7 ? '7' : '6'}`,
-    '# Script berisi shared secret RADIUS: simpan hanya di lokasi tepercaya.',
-    '# PPPoE server, profil dasar/local-address, serta pool pelanggan harus sudah tersedia.',
-    '# NAS baru/perubahan secret diterapkan server dalam sekitar 60 detik; periksa FreeRADIUS.',
-    '{',
-  ];
-  if (router.vpnHost && router.vpnUsername && vpnPassword) {
-    if (ca) {
-      const filename = `unzanet-ca-${router.id}-${ca.fingerprint.slice(0, 16)}`;
-      const cert = `[/certificate find where fingerprint=${q(ca.fingerprint)}]`;
-      const file = `[/file find where name=${q(filename + '.txt')}]`;
-      lines.push(
-        '# Impor CA publik dari form web dalam script yang sama sebelum membuat SSTP.',
-        `:if ([:len ${cert}] = 0) do={`,
-        `  :if ([:len ${file}] > 0) do={ :error "File sementara CA sudah ada. Periksa dan hapus file tersebut sebelum mencoba ulang."; };`,
-        `  /file print file=${q(filename)}; :delay 1s;`,
-        '  :do {',
-        `    /file set ${file} contents=${q(ca.pem)};`,
-        `    /certificate import file-name=${q(filename + '.txt')} passphrase="";`,
-        `  } on-error={ /file remove ${file}; :error "Impor CA VPN gagal. SSTP belum dipasang."; };`,
-        `  /file remove ${file};`,
-        '};',
-        `:if ([:len ${cert}] != 1) do={ :error "Fingerprint CA VPN tidak sesuai. SSTP belum dipasang."; };`,
-        `/certificate set ${cert} trusted=yes;`,
-      );
-    }
-    const params = `name=${q(tunnelName)} connect-to=${q(router.vpnHost)} port=${vpnPort} user=${q(router.vpnUsername)} password=${q(vpnPassword)} profile=default allow=mschap2 add-default-route=no verify-server-certificate=yes verify-server-address-from-certificate=yes disabled=no`;
+  const lines: string[] = [];
+  // Preserve NAS markers: reapplying updates the same entries without deleting them.
+  // New entries stay disabled until all settings have been assigned.
+  const upsert = (menu: string, marker: string, initial: string, params: string) => {
+    const find = `[${menu} find where comment=${q(marker)}]`;
     lines.push(
-      ca ? '# CA sudah diimpor; verifikasi sertifikat dan hostname tetap aktif.' : '# CA VPN harus sudah dipercaya router. Isi CA publik pada form web untuk impor otomatis.',
-      `:local tunnel [/interface sstp-client find where comment=${q(`${tag}:VPN`)}];`,
-      ':if ([:len $tunnel] > 1) do={ :error "Tunnel terkelola ganda. Periksa sebelum melanjutkan."; };',
-      `:if ([:len $tunnel] = 0) do={ :if ([:len [/interface find where name=${q(tunnelName)}]] > 0) do={ :error "Nama tunnel sudah digunakan konfigurasi lain."; }; /interface sstp-client add ${params} comment=${q(`${tag}:VPN`)}; } else={ /interface sstp-client set $tunnel ${params}; };`,
-      '# IP VPN router harus statis sesuai nasname di web; server SSTP menetapkan remote-address.',
+      `:if ([:len ${find}] = 0) do={ ${menu} add ${initial}disabled=yes comment=${q(marker)}; };`,
+      `${menu} set ${find} ${params} disabled=no;`,
     );
-  } else if (router.vpnHost) {
-    lines.push('# Password VPN tidak disimpan di website. Tunnel yang sudah ada dipertahankan.', '# Untuk membuat/mengubah tunnel, isi ulang password VPN lalu simpan router di web.');
-  }
+  };
   if (router.vpnHost) {
-    const routeTag = q(`${tag}:RADIUS-ROUTE`);
-    lines.push(
-      `:if ([:len [/interface sstp-client find where name=${q(tunnelName)} and comment=${q(`${tag}:VPN`)}]] != 1) do={ :error "Tunnel terkelola belum ada. Isi ulang password VPN dan buat script lagi."; };`,
-      '# Hanya IP server RADIUS dirutekan ke tunnel. Trafik internet pelanggan tidak dialihkan.',
-      `:local route [/ip route find where comment=${routeTag}];`,
-      ':if ([:len $route] > 1) do={ :error "Rute RADIUS terkelola ganda. Periksa manual."; };',
-      `:if ([:len $route] = 0) do={ /ip route add dst-address=${q(`${serverIp}/32`)} gateway=${q(tunnelName)} comment=${routeTag}; } else={ /ip route set $route dst-address=${q(`${serverIp}/32`)} gateway=${q(tunnelName)} disabled=no; };`,
-    );
+    lines.push('# 1. Hubungkan VPN SSTP ke server RADIUS');
+    if (router.vpnUsername && vpnPassword) {
+      // Requested simple mode: no CA import or server identity verification.
+      upsert('/interface sstp-client', `${tag}:VPN`, `name=${q(tunnelName)} connect-to=${q(router.vpnHost)} `,
+        `name=${q(tunnelName)} connect-to=${q(router.vpnHost)} port=${vpnPort} user=${q(router.vpnUsername)} password=${q(vpnPassword)} profile=default authentication=mschap2 add-default-route=no verify-server-certificate=no verify-server-address-from-certificate=no`);
+    } else {
+      lines.push('# Gunakan tunnel yang sudah ada; isi password VPN untuk membuat atau memperbaruinya.');
+    }
+    upsert('/ip route', `${tag}:RADIUS-ROUTE`, `dst-address=${q(`${serverIp}/32`)} gateway=${q(tunnelName)} `,
+      `dst-address=${q(`${serverIp}/32`)} gateway=${q(tunnelName)}`);
   }
-  const params = `address=${q(serverIp)} secret=${q(router.secret)} src-address=${q(sourceIp)} service=ppp authentication-port=${router.ports || 1812} accounting-port=1813 timeout=3s`;
+  lines.push('# 2. Atur FreeRADIUS dan Disconnect UDP 3799');
+  upsert('/radius', tag, `address=${q(serverIp)} `,
+    `address=${q(serverIp)} secret=${q(router.secret)} src-address=${q(sourceIp)} service=ppp authentication-port=${router.ports || 1812} accounting-port=1813 timeout=3s`);
+  lines.push(`/radius incoming set accept=yes port=${coaPort};`);
+  upsert('/ip firewall filter', `${tag}:COA`, 'chain=input ',
+    `chain=input protocol=udp src-address=${q(serverIp)} dst-port=${coaPort} action=accept`);
+  lines.push(`:if ([:len [/ip firewall filter find]] > 1) do={ /ip firewall filter move [find where comment=${q(`${tag}:COA`)}] 0; };`);
+  upsert('/ip firewall filter', `${tag}:MGMT-DENY`, 'chain=input ',
+    `chain=input protocol=tcp connection-state=new src-address=${q(serverIp)} action=drop`);
   lines.push(
-    `:local entry [/radius find where comment=${q(tag)}];`,
-    ':if ([:len $entry] > 1) do={ :error "Entri RADIUS terkelola ganda. Periksa sebelum melanjutkan."; };',
-    `:if ([:len $entry] = 0) do={ /radius add ${params} comment=${q(tag)}; } else={ /radius set $entry ${params} disabled=no; };`,
-    '/ppp aaa set use-radius=yes accounting=yes interim-update=5m;',
-    `/radius incoming set accept=yes port=${coaPort};`,
-    `:local rule [/ip firewall filter find where comment=${q(`${tag}:COA`)}];`,
-    ':if ([:len $rule] > 1) do={ :error "Rule Disconnect terkelola ganda. Periksa sebelum melanjutkan."; };',
-    `:if ([:len $rule] = 0) do={ /ip firewall filter add chain=input protocol=udp src-address=${q(serverIp)} dst-port=${coaPort} action=accept comment=${q(`${tag}:COA`)}; } else={ /ip firewall filter set $rule chain=input protocol=udp src-address=${q(serverIp)} dst-port=${coaPort} action=accept disabled=no; };`,
-    `:if ([:len [/ip firewall filter find]] > 1) do={ /ip firewall filter move [find where comment=${q(`${tag}:COA`)}] 0; };`,
-    '# Tolak koneksi TCP baru dari IP server billing ke layanan administrasi router.',
-    '# Balasan koneksi yang dimulai router (termasuk SSTP) tetap dapat lewat.',
-    `:local management [/ip firewall filter find where comment=${q(`${tag}:MGMT-DENY`)}];`,
-    ':if ([:len $management] > 1) do={ :error "Rule pembatasan administrasi ganda. Periksa manual."; };',
-    `:if ([:len $management] = 0) do={ /ip firewall filter add chain=input protocol=tcp connection-state=new src-address=${q(serverIp)} action=drop comment=${q(`${tag}:MGMT-DENY`)}; } else={ /ip firewall filter set $management chain=input protocol=tcp connection-state=new src-address=${q(serverIp)} action=drop disabled=no; };`,
     `:if ([:len [/ip firewall filter find]] > 1) do={ /ip firewall filter move [find where comment=${q(`${tag}:MGMT-DENY`)}] 0; };`,
-    '}',
-    '# Batasi port Disconnect pada firewall ke IP server RADIUS di atas; audit rule accept lain.',
-    '# Jalur server -> IP VPN NAS harus tersedia. Uji ping dua arah sebelum dial PPPoE.',
-    '# /radius print ; /radius monitor [find where service=ppp] ; /ppp active print',
-    '# Akun PPP lokal dengan username sama diprioritaskan; pakai akun uji tanpa secret lokal.',
-    '# Script ini tidak memerlukan password admin/API dan tidak mengaktifkan hotspot/login RADIUS.',
+    '# 3. Aktifkan RADIUS dan accounting PPPoE',
+    '/ppp aaa set use-radius=yes accounting=yes interim-update=5m;',
   );
   return lines.join('\n');
 }

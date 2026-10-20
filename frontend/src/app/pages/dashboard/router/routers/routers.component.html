@@ -43,7 +43,6 @@
       </fieldset>
       <div class="grid gap-4 sm:grid-cols-2">
         <div><label class="label">Nama Router *</label><input class="input" required [(ngModel)]="form.name" name="name" placeholder="MikroTik Cabang 1" /></div>
-        <div><label class="label">Tipe Router *</label><select class="input" required [(ngModel)]="form.type" name="type"><option value="mikrotik">MikroTik Router</option><option value="gateway">Gateway VPS</option><option value="other">Other NAS Device</option></select></div>
         <div><label class="label">IP NAS / Sumber RADIUS *</label><input class="input" required [(ngModel)]="form.nasname" [readonly]="!!form.vpnClientId" name="nasname" placeholder="IP VPN router, misalnya 10.88.0.2" /></div>
         <div><label class="label">IP Tujuan Disconnect</label><input class="input" [(ngModel)]="form.ipAddress" [readonly]="!!form.vpnClientId" name="ipAddress" placeholder="Kosong = IP NAS" /></div>
         <div><label class="label">IP Server FreeRADIUS</label><input class="input" [(ngModel)]="form.radiusServerIp" [readonly]="!!form.vpnClientId" name="radiusServerIp" placeholder="Kosong = pengaturan server" /></div>

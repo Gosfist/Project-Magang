@@ -146,7 +146,7 @@ sudo freeradius -XC
 ~~~
 
 2. Pastikan 10.88.0.1/32 terpasang pada lo dan TCP 4443 mendengarkan. Tidak perlu akun VPN Ubuntu atau menjalankan npm run setupvpn.
-3. CA publik di /etc/unzanet-public/sstp-ca.crt dipakai otomatis oleh website. Private key tetap pada VPS. Pengulangan installer memakai CA dan akun VPN yang sama.
+3. Sertifikat TLS tetap dipakai server SSTP dan private key tetap pada VPS. Script MikroTik versi sederhana tidak mengimpor CA dan menonaktifkan verifikasi sertifikat server. Pengulangan installer mempertahankan sertifikat dan akun VPN.
 
 ## 6 Login dan buat klien VPN
 
@@ -166,18 +166,18 @@ sudo freeradius -XC
 | Username | vpn_router01 |
 | Password | Kosongkan untuk password acak atau isi minimal 12 karakter |
 
-4. Klik Buat Akun VPN. Tunggu sekitar 15 detik sampai status Siap; daftar diperbarui otomatis selama ada akun menunggu. Gunakan Muat Ulang bila perlu.
-5. Daftar menampilkan No, Nama, Username, Password dengan tombol Tampilkan, IP VPN, Status, dan Router / NAS.
-6. Siap berarti akun sudah diterapkan ke server SSTP, belum berarti tunnel online. Buat satu akun berbeda untuk setiap router.
+4. Klik Buat Akun VPN. Tunggu penerapan ke server sekitar 15 detik. Gunakan Muat Ulang bila perlu.
+5. Daftar menampilkan No, Nama, Username, Password langsung, IP VPN, Router / NAS, dan Aksi. Tidak ada kolom Status atau tombol Tampilkan/Sembunyikan.
+6. Klik ikon pensil untuk Edit. Ganti nama, username atau password lalu klik Simpan Perubahan. Password kosong saat edit mempertahankan password lama; IP VPN tetap. Jika username/password berubah, tunggu sekitar 15 detik lalu ambil ulang script pada Router / NAS dan terapkan di MikroTik.
+7. Klik ikon tempat sampah untuk Hapus, lalu konfirmasi. Akun yang masih dipakai NAS harus dilepas/diganti pada NAS dahulu. Penghapusan diterapkan ke file akun server sekitar 15 detik; sesi tunnel yang sudah tersambung tidak diputus otomatis.
 
 ## 7 Tambah Router NAS dari klien VPN
 
-1. Buka Router > Router / NAS > Tambah Router NAS. Pilih klien VPN yang Siap dan belum dipakai router lain.
+1. Buka Router > Router / NAS > Tambah Router NAS. Pilih klien VPN yang sudah dapat dipilih dan belum dipakai router lain. Jika opsi masih Menunggu server, tutup form lalu buka kembali setelah sekitar 15 detik; jika tetap menunggu, periksa worker pada bagian 9.2.
 
 | Isian | Nilai |
 | --- | --- |
 | Nama Router | MikroTik Cabang 1 |
-| Tipe Router | MikroTik Router |
 | Klien VPN | vpn_router01 dan IP yang tampil |
 | IP NAS dan Disconnect | Otomatis dari klien VPN |
 | IP Server RADIUS | Otomatis 10.88.0.1 |
@@ -185,9 +185,10 @@ sudo freeradius -XC
 | Shared secret | Kosongkan untuk nilai acak |
 
 2. Klik Simpan & Buat Script. Pilih versi RouterOS 6/7 sesuai perangkat, lalu salin script.
-3. Buka Winbox > New Terminal pada MikroTik tujuan. Paste script sekali. Script mengimpor CA, membuat SSTP port 4443, rute /32 ke RADIUS, PPP AAA, accounting, incoming Disconnect, dan firewall.
-4. Username/password/CA otomatis berasal dari klien terpilih. Tombol Script dapat membuat ulang script lengkap tanpa mengetik password lagi.
+3. Buka Winbox > New Terminal pada MikroTik tujuan. Paste script dari web. Tiga bagiannya mengatur SSTP port 4443, RADIUS/Disconnect beserta rute dan firewall, lalu PPP AAA/accounting. Tidak ada blok impor CA.
+4. Host, IP, username dan password otomatis berasal dari klien terpilih. Tombol Script membuat ulang script tanpa mengetik password lagi. Penanda NAS tetap dipakai agar penerapan ulang memperbarui entri yang sama.
 5. Tunggu penerapan NAS ke FreeRADIUS sekitar 60 detik. Simpan NAS belum membuktikan script sudah dipasang pada MikroTik.
+6. Mode sederhana memakai verify-server-certificate=no dan verify-server-address-from-certificate=no. Trafik tetap memakai TLS, tetapi identitas server tidak diverifikasi sehingga berisiko tersambung ke server palsu dan kredensial VPN dapat diserang. VPN tidak otomatis aman hanya karena terenkripsi. Rujukan: [sertifikat SSTP MikroTik](https://help.mikrotik.com/docs/spaces/ROS/pages/2031645/SSTP).
 
 ## 8 Periksa tunnel dan uji PPPoE
 
@@ -201,7 +202,7 @@ sudo freeradius -XC
 /ppp aaa print
 ~~~
 
-2. Pastikan tunnel running, port 4443, sertifikat terverifikasi, use-radius=yes, accounting aktif, dan incoming Disconnect port 3799.
+2. Pastikan tunnel running, port 4443, use-radius=yes, accounting aktif, dan incoming Disconnect port 3799. Script sederhana tidak memverifikasi sertifikat server.
 3. Pada SSH VPS, ganti IP_KLIEN_VPN dengan IP dari daftar:
 
 ~~~bash
@@ -253,7 +254,7 @@ npm run install
 
 ### 9.2 Akun VPN dan sertifikat
 
-1. Jika akun terus Menunggu server, jalankan pada SSH VPS:
+1. Jika pilihan akun pada form Router / NAS terus Menunggu server, jalankan pada SSH VPS:
 
 ~~~bash
 sudo systemctl status unzanet-vpn-sync.service --no-pager
@@ -271,7 +272,7 @@ sudo ufw status numbered
 sudo ss -ltnp 'sport = :4443'
 ~~~
 
-4. Cocokkan IP publik, username/password VPN, jam router, CA, serta firewall provider TCP 4443. Jangan membagikan private key atau screenshot kredensial.
+4. Cocokkan IP publik, username/password VPN, serta firewall provider TCP 4443. Script sederhana tidak memerlukan impor CA di MikroTik. Jangan membagikan private key atau screenshot kredensial.
 5. Jika EAP FreeRADIUS gagal saat install, jalankan git pull --ff-only lalu npm run install kembali. Installer menonaktifkan modul EAP bawaan yang tidak dipakai, tanpa menghapus database.
 6. Jika setup VPN terhenti setelah konfigurasi dibuat, periksa error dahulu. Pasang ulang worker tanpa menimpa sertifikat/akun:
 
@@ -300,3 +301,37 @@ sudo systemctl restart accel-ppp
 
 9. Restart SSTP menyambung ulang tunnel router. Jadwalkan perawatan dan periksa sesi/accounting sesudahnya. HTTPS website diperbarui terpisah melalui Certbot.
 10. Backup database, uploads, secret instalasi, dan CA/private key secara privat. npm run update hanya memperbarui kode, tanpa memigrasikan database lama.
+
+### 9.3 Menu tidak berpindah dan file halaman gagal dimuat
+
+1. Jika klik menu membuat URL tetap /dashboard, buka Console dengan Ctrl+Shift+J. Pesan Failed to fetch dynamically imported module menunjukkan file JavaScript halaman gagal dimuat. Catat nama file chunk dari pesan tersebut.
+2. Jika halaman bisa dibuka lewat URL langsung, tekan Ctrl+Shift+R pada tab dashboard lama lalu coba menu lagi. Ini memuat ulang browser, bukan npm run update dan bukan instalasi ulang VPS. Browser akan memuat ulang aplikasi beserta file halamannya.
+3. Jika masih gagal, tutup tab dashboard lama dan buka https://DOMAIN_WEBSITE/dashboard pada tab baru. Coba Data Pelanggan, Harga Paket, IP Pool, dan Isolir PPPoE. Login kembali jika sesi memang sudah berakhir.
+4. Jika tetap gagal, buka F12 > Network, aktifkan Preserve log, lalu klik menu sekali. Pilih permintaan chunk yang merah dan kirim Request URL, Status Code, serta Content-Type. Respons JavaScript yang benar harus berisi JavaScript; respons HTML atau 404 perlu diperiksa pada file frontend dan cache CDN.
+5. Jika file versi yang dibutuhkan hilang, pastikan kode dan releases/frontend.tar.gz yang cocok sudah di-push ke GitHub, lalu jalankan npm run updatefe pada VPS. Paket dibangun di laptop sesuai tahap 2. Jangan membangun Angular di VPS, menghapus chunk lama, atau mengganti label Content-Type HTML menjadi JavaScript.
+6. URL langsung yang berhasil dan file chunk yang kembali merespons benar tidak memerlukan perubahan akun RADIUS, firewall VPN, atau skema database. Jika respons file masih 403, periksa aturan akses/CDN untuk permintaan tersebut sebelum mengubah konfigurasi aplikasi.
+
+### 9.4 Terminal MikroTik menampilkan bad parameter allow
+
+1. Pesan bad parameter allow saat paste script berarti perintah SSTP gagal; konfigurasi mungkin baru terpasang sebagian. Jangan menganggap tunnel dan RADIUS sudah aktif hanya karena terminal kembali menampilkan prompt.
+2. Parameter klien SSTP yang benar adalah authentication=mschap2. Jika VPS belum memakai perbaikan template, salin script Router / NAS ke Notepad Windows. Tekan Ctrl+H, ganti seluruh allow=mschap2 menjadi authentication=mschap2, lalu paste script lengkap yang sudah diperbaiki ke Terminal MikroTik. Simpan script secara privat karena memuat kredensial.
+3. Untuk memasang perbaikan permanen, setelah kode terbaru di-push ke GitHub jalankan npm run updatebe pada VPS. Buka ulang Router / NAS > Script dan salin ulang script untuk router yang sama. Perbaikan template ini hanya di backend; tidak perlu membangun ulang frontend khusus untuk perbaikan ini.
+4. Salin script terbaru dari web dan terapkan pada NAS yang sama. Template sederhana tidak mengimpor CA dan tetap memakai penanda NAS untuk memperbarui entri lama. Tidak perlu menghapus sertifikat yang sudah ada, tunnel lain, atau konfigurasi PPPoE. Script unduhan lama tidak berubah otomatis.
+5. Periksa pada Terminal MikroTik:
+
+~~~routeros
+/interface sstp-client print
+/ip address print
+/radius print
+/ppp aaa print
+/ping 10.88.0.1 count=5
+~~~
+
+6. Interface radius-cloud-ID_NAS harus memiliki tanda R (running), mendapat IP VPN sesuai akun, use-radius=yes, dan ping gateway berhasil. Ini membuktikan tunnel/jalur dasar; lanjutkan dial PPPoE nyata, accounting, dan Disconnect sesuai tahap 8. Rujukan: [properti klien SSTP MikroTik](https://help.mikrotik.com/docs/spaces/ROS/pages/2031645/SSTP).
+
+### 9.5 Memasang template MikroTik sederhana tanpa impor CA
+
+1. Setelah kode terbaru di-commit dan di-push ke GitHub, jalankan npm run updatebe pada SSH VPS. Perubahan template dihasilkan backend; tidak perlu build Angular khusus untuk template ini.
+2. Buka Router > Router / NAS > Script untuk router yang sama. Salin ulang script terbaru, lalu paste ke Terminal MikroTik. Script terdiri dari tiga bagian dan memperbarui entri dengan penanda NAS yang sama.
+3. Jika juga menerapkan perubahan UI Klien VPN/Router sebelumnya, commit perubahan frontend di laptop, jalankan npm.cmd run preparefe, lalu commit/push releases/frontend.tar.gz bersama perubahan kode. Sesudah itu jalankan npm run update pada VPS untuk backend dan frontend sekaligus. Jangan membangun Angular di VPS.
+4. Periksa tunnel dan ping sesuai tahap 8. Tidak ada impor CA atau verifikasi identitas server pada mode sederhana; sertifikat TLS di VPS tetap diperlukan. Jangan menyatakan PPPoE berhasil sebelum dial dan accounting benar-benar diuji.

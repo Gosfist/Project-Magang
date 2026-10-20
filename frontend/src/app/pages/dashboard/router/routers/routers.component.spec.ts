@@ -36,7 +36,7 @@ describe('Router / NAS RADIUS setup', () => {
     expect(body.vpnPassword).toBeUndefined();
     for (const key of ['username', 'password', 'port', 'authMode']) expect(key in body).toBeFalse();
     expect(component.form.vpnPassword).toBe('');
-    expect(component.form.vpnCaCertificate).toBe('');
+    expect(body).not.toEqual(jasmine.objectContaining({ vpnCaCertificate: jasmine.anything() }));
     expect(component.scriptModalOpen()).toBeTrue();
     expect(element.textContent).toContain('NAS tersimpan. Pasang script');
     component.closeScript(); expect(component.scriptData()).toBeNull();

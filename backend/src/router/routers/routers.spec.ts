@@ -5,8 +5,6 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { SaveRouterDto } from './routers.dto.js';
 import { RoutersService } from './routers.service.js';
 import { radiusSetupScript, routerOsQuote } from '../shared/radius-setup-script.js';
-import { rootCertificates } from 'node:tls';
-import { X509Certificate } from 'node:crypto';
 
 const router = {
   id: 7, name: 'Router cabang', nasname: '10.88.0.3', ipAddress: '10.88.0.3', shortname: 'cabang',
@@ -42,7 +40,7 @@ describe('Zero MikroTik API NAS registry', () => {
     for (const key of ['username', 'password', 'port', 'authMode', 'vpnPassword']) expect(data).not.toHaveProperty(key);
     expect(result.router).not.toHaveProperty('secret');
     expect(result.setup.scriptRos7).toContain('password="one-time-vpn-password"');
-    expect(result.setup.scriptRos7).toContain('verify-server-certificate=yes');
+    expect(result.setup.scriptRos7).toContain('verify-server-certificate=no');
     expect(result.setup.scriptRos7).toContain('add-default-route=no');
   });
 
@@ -53,46 +51,32 @@ describe('Zero MikroTik API NAS registry', () => {
     for (const key of ['username', 'password', 'port', 'authMode', 'secret', 'vpnPassword']) expect(result.data[0]).not.toHaveProperty(key);
   });
 
-  it('embeds a validated public CA before SSTP for one paste on RouterOS 6 and 7 without storing it', async () => {
-    const { nas, service } = setup();
-    const pem = rootCertificates.find(value => value.length < 3900 && new X509Certificate(value).ca)!;
-    const fingerprint = new X509Certificate(pem).fingerprint256.replaceAll(':', '').toLowerCase();
+  it('creates short RouterOS 6/7 scripts without CA import and preserves managed entries on reapply', async () => {
+    const { service } = setup();
     const result = await service.createRouter({
       name: router.name, nasname: router.nasname, radiusServerIp: router.radiusServerIp,
-      vpnHost: 'vpn.example.test', vpnUsername: 'nas07', vpnPassword: 'one-time-vpn-password', vpnCaCertificate: pem,
+      vpnHost: 'vpn.example.test', vpnUsername: 'nas07', vpnPassword: 'one-time-vpn-password',
     });
     for (const script of [result.setup.scriptRos6, result.setup.scriptRos7]) {
-      expect(script).toContain('-----BEGIN CERTIFICATE-----');
-      expect(script).toContain(`fingerprint="${fingerprint}"`);
-      expect(script).toContain('trusted=yes');
-      expect(script).toContain('/file remove');
-      expect(script.indexOf('/certificate import')).toBeLessThan(script.indexOf('/interface sstp-client add'));
-      expect(script).toContain('verify-server-certificate=yes verify-server-address-from-certificate=yes');
+      expect(script).toContain('authentication=mschap2');
+      expect(script).not.toMatch(/\ballow=/);
+      expect(script).not.toContain('/certificate');
+      expect(script).not.toContain('/file');
+      expect(script).not.toContain('BEGIN CERTIFICATE');
+      expect(script).toContain('verify-server-certificate=no verify-server-address-from-certificate=no');
       expect(script).toContain('/radius incoming set accept=yes port=3799');
+      for (const marker of ['UNZANET-RADIUS:7:VPN', 'UNZANET-RADIUS:7:RADIUS-ROUTE', 'UNZANET-RADIUS:7', 'UNZANET-RADIUS:7:COA', 'UNZANET-RADIUS:7:MGMT-DENY']) {
+        expect(script).toContain(`find where comment="${marker}"`);
+      }
+      expect(script).not.toMatch(/ remove /);
+      expect(script.split('\n').length).toBeLessThanOrEqual(20);
     }
-    expect(nas.create.mock.calls[0][0].data).not.toHaveProperty('vpnCaCertificate');
-    expect(result.router).not.toHaveProperty('vpnCaCertificate');
   });
 
-  it('rejects invalid or private certificate material before creating or updating a NAS', async () => {
-    const { nas, service } = setup();
-    for (const pem of ['-----BEGIN PRIVATE KEY-----\nsecret\n-----END PRIVATE KEY-----', '-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----', 'fake\n/user add name=attacker']) {
-      const dto = { name: router.name, nasname: router.nasname, radiusServerIp: router.radiusServerIp, vpnCaCertificate: pem };
-      await expect(service.createRouter(dto)).rejects.toThrow('CA publik PEM');
-      await expect(service.updateRouter('7', dto)).rejects.toThrow('CA publik PEM');
-    }
-    expect(nas.create).not.toHaveBeenCalled();
-    expect(nas.update).not.toHaveBeenCalled();
-  });
-
-  it('requires a VPN password when embedding a CA and accepts the PEM field through HTTP validation', async () => {
-    const pem = rootCertificates.find(value => value.length < 3900 && new X509Certificate(value).ca)!;
-    const { nas, service } = setup();
-    await expect(service.createRouter({ name: router.name, nasname: router.nasname, radiusServerIp: router.radiusServerIp, vpnCaCertificate: pem })).rejects.toThrow('Isi password VPN');
-    expect(nas.create).not.toHaveBeenCalled();
+  it('strips the removed CA field at the HTTP boundary', async () => {
     const pipe = new ValidationPipe({ transform: true, whitelist: true });
-    const result = await pipe.transform({ name: router.name, nasname: router.nasname, vpnCaCertificate: pem }, { type: 'body', metatype: SaveRouterDto });
-    expect(result.vpnCaCertificate).toBe(pem.trim());
+    const dto = await pipe.transform({ name: router.name, nasname: router.nasname, vpnCaCertificate: 'old-client-value' }, { type: 'body', metatype: SaveRouterDto });
+    expect(dto).not.toHaveProperty('vpnCaCertificate');
   });
 
   it('preserves existing secret on blank edit and allows clearing VPN metadata', async () => {
@@ -131,7 +115,7 @@ describe('Zero MikroTik API NAS registry', () => {
       expect(script).not.toContain('/interface sstp-client add');
       expect(script).toContain(`dst-address="${router.radiusServerIp}/32" gateway="radius-cloud-7"`);
       expect(script).toContain('UNZANET-RADIUS:7:RADIUS-ROUTE');
-      expect(script).toContain('Tunnel terkelola belum ada');
+      expect(script).toContain('Gunakan tunnel yang sudah ada');
       expect(script).not.toContain('dst-address="0.0.0.0/0"');
       expect(script).not.toContain('/ip hotspot profile');
       expect(script).not.toContain('service=ppp,hotspot,login');

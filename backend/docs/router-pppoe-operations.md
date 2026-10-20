@@ -4,9 +4,9 @@
 
 Buat akun melalui Router > Klien VPN. Server SSTP berjalan pada VPS website/FreeRADIUS yang sama, TCP 4443. Akun mendapat IP unik 10.88.0.2-254, server RADIUS 10.88.0.1. Worker root menerapkan akun sekitar 15 detik. Siap berarti akun diterapkan, belum berarti tunnel online. Password tersimpan terenkripsi dan dapat ditampilkan administrator; endpoint kredensial tidak di-cache.
 
-Pada tambah/edit NAS pilih klien VPN yang Siap dan belum dipakai router lain. IP sumber RADIUS, tujuan Disconnect, host, dan username berasal dari akun. Password/CA otomatis dimasukkan dalam script tanpa disalin ke tabel NAS. Satu klien untuk satu router juga ditegakkan database. Kredensial API/admin MikroTik tidak digunakan.
+Pada tambah/edit NAS pilih klien VPN yang Siap dan belum dipakai router lain. IP sumber RADIUS, tujuan Disconnect, host, dan username berasal dari akun. Password otomatis dimasukkan dalam script tanpa disalin ke tabel NAS. Tidak ada impor CA pada script sederhana. Satu klien untuk satu router juga ditegakkan database. Kredensial API/admin MikroTik tidak digunakan.
 
-Simpan membuka script untuk dipasang melalui Terminal perangkat: impor CA, SSTP terverifikasi port 4443, rute /32 ke RADIUS, PPP AAA/accounting, incoming Disconnect 3799, dan firewall. Tombol Script membuat ulang script lengkap dari akun tersimpan. Uji tunnel dan PPPoE nyata tetap diperlukan. NAS lokal tanpa VPN masih dapat diisi manual.
+Simpan membuka script tiga bagian untuk dipasang melalui Terminal perangkat: SSTP port 4443, RADIUS/Disconnect beserta rute /32 dan firewall, lalu PPP AAA/accounting. Verifikasi sertifikat server dimatikan pada mode sederhana. TLS tetap dipakai, tetapi identitas server tidak diverifikasi sehingga ada risiko server palsu. Tombol Script membuat ulang script lengkap dari akun tersimpan. Uji tunnel dan PPPoE nyata tetap diperlukan. NAS lokal tanpa VPN masih dapat diisi manual.
 
 Worker root terpisah menerapkan perubahan client SQL sekitar setiap 60 detik setelah config check. Web tidak diberi sudo. Lihat [panduan instalasi](instalasi-ubuntu-vpn.md).
 

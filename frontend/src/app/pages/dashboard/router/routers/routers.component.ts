@@ -61,9 +61,9 @@ export class RoutersComponent implements OnInit {
   vpnClients = signal<VpnClientItem[]>([]);
 
   private emptyForm() {
-    return { vpnClientId: '', name: '', nasname: '', ipAddress: '', type: 'mikrotik', ports: 1812,
+    return { vpnClientId: '', name: '', nasname: '', ipAddress: '', ports: 1812,
       coaPort: 3799, radiusServerIp: '', secret: '', vpnHost: '', vpnUsername: '',
-      vpnPassword: '', vpnCaCertificate: '', description: '', isActive: true };
+      vpnPassword: '', description: '', isActive: true };
   }
 
   ngOnInit(): void {
@@ -102,7 +102,6 @@ export class RoutersComponent implements OnInit {
           name: item.name ?? '',
           nasname: item.nasname,
           ipAddress: item.ipAddress ?? item.nasname,
-          type: item.type || 'mikrotik',
           ports: item.ports ?? 1812,
           coaPort: item.coaPort ?? 3799,
           radiusServerIp: item.radiusServerIp ?? '',
@@ -110,7 +109,6 @@ export class RoutersComponent implements OnInit {
           vpnHost: item.vpnHost ?? '',
           vpnUsername: item.vpnUsername ?? '',
           vpnPassword: '',
-          vpnCaCertificate: '',
           description: item.description ?? '',
           isActive: item.isActive,
         }
@@ -130,7 +128,6 @@ export class RoutersComponent implements OnInit {
       coaPort: Number(this.form.coaPort) || 3799,
       secret: this.form.secret || undefined,
       vpnPassword: this.form.vpnPassword || undefined,
-      vpnCaCertificate: this.form.vpnCaCertificate || undefined,
     };
 
     const req = this.editing()
@@ -141,7 +138,6 @@ export class RoutersComponent implements OnInit {
       next: (r) => {
         this.saving.set(false);
         this.form.vpnPassword = '';
-        this.form.vpnCaCertificate = '';
         this.form.secret = '';
         this.open.set(false);
         this.toast.set({ message: r.message, type: 'success' });
@@ -164,7 +160,7 @@ export class RoutersComponent implements OnInit {
   }
 
   selectVpn(): void {
-    this.form.vpnHost = ''; this.form.vpnUsername = ''; this.form.vpnPassword = ''; this.form.vpnCaCertificate = '';
+    this.form.vpnHost = ''; this.form.vpnUsername = ''; this.form.vpnPassword = '';
     const client = this.vpnClients().find(c => c.id === this.form.vpnClientId);
     if (client) {
       this.form.nasname = client.vpnIp; this.form.ipAddress = client.vpnIp;
@@ -191,7 +187,6 @@ export class RoutersComponent implements OnInit {
   closeForm(): void {
     this.open.set(false);
     this.form.vpnPassword = '';
-    this.form.vpnCaCertificate = '';
     this.form.secret = '';
   }
 
