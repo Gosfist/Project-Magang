@@ -10,6 +10,8 @@ Mode pool isolir diaktifkan per NAS. Pelanggan isolir tetap menerima Access Acce
 4. Periksa pool/profil dan tiga rule drop. Posisikan drop isolir sebelum accept/FastTrack melalui Winbox. Centang pernyataan pemasangan di dialog script lalu Konfirmasi Pemasangan untuk mengaktifkan prefix dan sinkronisasi.
 5. Uji dial pelanggan isolir, IP subnet isolir, blok internet dan akses router. Uji ACC/janji bayar mengembalikan pool normal melalui reconnect.
 
+Pool internet memakai komentar UNZANET-RADIUS:INTERNET. Pool dan ketiga firewall isolir memakai UNZANET-RADIUS:ISOLIR; script Edit membedakan rule melalui chain dan arah trafik serta mengenali komentar lama UNZANET-ISOLIR:ID:OUT/IN/ROUTER. Perubahan komentar tidak mengganti nama pool/profil yang dipakai RADIUS.
+
 Konfirmasi operator tidak berarti backend memeriksa isi router. UI tidak boleh menyatakan perangkat telah diverifikasi otomatis. Subnet/pool harus cukup kapasitas dan tidak tumpang tindih; gateway bukan alamat yang dibagikan ke pelanggan. Untuk IPv6, profil isolir menonaktifkannya sesuai script.
 
 ## Sinkronisasi

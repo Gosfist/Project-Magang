@@ -10,6 +10,8 @@ Pada tambah/edit NAS pilih klien VPN yang Siap dan belum dipakai router lain. IP
 
 Simpan membuka script SSTP port 4443, RADIUS/Disconnect, PPP AAA/accounting, kedua pool/profil PPP dan firewall isolir. Tambah menghasilkan add; Edit menghasilkan set untuk konfigurasi terpasang dan add untuk pool/profil baru. Semua perintah langsung tanpa if. Verifikasi sertifikat server dimatikan pada mode sederhana. Script unduhan tidak dieksekusi aplikasi. Uji tunnel dan PPPoE nyata tetap diperlukan; NAS lokal tetap didukung.
 
+Komentar script NAS dikelompokkan menurut fungsi: UNZANET-RADIUS:VPN untuk VPN/RADIUS, UNZANET-RADIUS:INTERNET untuk pool internet, dan UNZANET-RADIUS:ISOLIR untuk pool serta firewall isolir. Edit memakai nama pool dan membedakan ketiga rule isolir lewat chain/arah trafik, sehingga komentar bersama tidak membuat rule tertukar saat prefix berubah. Komentar firewall lama UNZANET-ISOLIR:ID:OUT/IN/ROUTER tetap dikenali lalu diganti menjadi komentar baru. Nama pool/profil tetap sama.
+
 Worker root terpisah menerapkan perubahan client SQL sekitar setiap 60 detik setelah config check. Web tidak diberi sudo. Lihat [panduan instalasi](instalasi-ubuntu-vpn.md).
 
 ## IP Pool

@@ -66,14 +66,20 @@ export function nasNetworkScript(id: number, network: NasNetwork, update: boolea
     const profileUpdate = update || kind === 'ISOLIR' && network.existingIsolationProfile;
     const poolTarget = poolUpdate ? ` [find where name=${q(name)}]` : '';
     const profileTarget = profileUpdate ? ` [find where name=${q(profile)}]` : '';
-    lines.push(`/ip pool ${poolUpdate ? 'set' : 'add'}${poolTarget} name=${q(name)} ranges=${q(`${pool.start}-${pool.end}`)} next-pool=none comment=${q(`UNZANET-POOL:${id}:${kind}`)};`);
+    lines.push(`/ip pool ${poolUpdate ? 'set' : 'add'}${poolTarget} name=${q(name)} ranges=${q(`${pool.start}-${pool.end}`)} next-pool=none comment=${q(`UNZANET-RADIUS:${kind}`)};`);
     lines.push(`/ppp profile ${profileUpdate ? 'set' : 'add'}${profileTarget}${profileUpdate ? '' : ' copy-from=default'} name=${q(profile)} local-address=${q(pool.gateway)} remote-address=${q(name)}${kind === 'ISOLIR' ? ' use-ipv6=no' : ''} only-one=yes change-tcp-mss=yes;`);
   }
   lines.push('# 5. Firewall subnet isolir');
   for (const [chain, field, tag] of [['forward', 'src-address', 'OUT'], ['forward', 'dst-address', 'IN'], ['input', 'src-address', 'ROUTER']] as const) {
     const change = update || network.existingIsolationProfile;
-    const comment = q(`UNZANET-ISOLIR:${id}:${tag}`), target = change ? ` [find where comment=${comment}]` : '';
-    lines.push(`/ip firewall filter ${change ? 'set' : 'add'}${target} chain=${chain} ${field}=${q(network.isolation.subnet)} action=drop disabled=no comment=${comment};`);
+    const comment = q('UNZANET-RADIUS:ISOLIR');
+    // Shared comments need a direction selector. Keep the opposite address explicit
+    // so future edits still find the right rule after the isolation subnet changes.
+    const opposite = tag === 'OUT' ? ' dst-address="0.0.0.0/0"' : tag === 'IN' ? ' src-address="0.0.0.0/0"' : '';
+    const legacy = q(`UNZANET-ISOLIR:${id}:${tag}`);
+    const selector = `(comment=${comment} && chain=${chain}${opposite ? ` &&${opposite}` : ''}) || comment=${legacy}`;
+    const target = change ? ` [find where ${selector}]` : '';
+    lines.push(`/ip firewall filter ${change ? 'set' : 'add'}${target} chain=${chain} ${field}=${q(network.isolation.subnet)}${opposite} action=drop disabled=no comment=${comment};`);
   }
   lines.push('# Pastikan ketiga rule isolir berada sebelum accept/FastTrack melalui Winbox.');
   return lines.join('\n');
