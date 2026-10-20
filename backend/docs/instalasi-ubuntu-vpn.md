@@ -183,13 +183,16 @@ sudo freeradius -XC
 | IP Server RADIUS | Otomatis 10.88.0.1 |
 | Port autentikasi dan Disconnect | 1812 dan 3799 |
 | Shared secret | Kosongkan untuk nilai acak |
+| IP Pool Internet | 192.168.75.1/24 |
+| IP Pool Isolir | 192.168.100.1/24 |
 
 2. Klik Simpan & Buat Script. Pilih versi RouterOS 6/7 sesuai perangkat, lalu salin script.
-3. Buka Winbox > New Terminal pada MikroTik tujuan. Paste script dari web. Tiga bagiannya mengatur SSTP port 4443, RADIUS/Disconnect beserta rute dan firewall, lalu PPP AAA/accounting. Tidak ada blok impor CA.
-4. Host, IP, username dan password otomatis berasal dari klien terpilih. Nama interface SSTP, gateway rute, dan seluruh komentar memakai UNZANET-RADIUS:VPN. Script langsung memakai add tanpa :if atau pemeriksaan duplikat. Gunakan sekali untuk pemasangan awal. Paste ulang dapat membuat RADIUS/rute/firewall ganda atau gagal karena nama tunnel sudah dipakai.
+3. Buka Winbox > New Terminal pada MikroTik tujuan. Klik Salin Script lalu paste. Script mengatur SSTP, RADIUS/Disconnect, PPP AAA/accounting, kedua pool/profil PPP, dan firewall isolir. Tidak ada impor CA atau blok if.
+4. Isi prefix di form Router NAS, bukan submenu IP Pool/Isolir. Alamat sebelum prefix menjadi gateway; 192.168.75.1/24 menghasilkan pool Internet 192.168.75.2-192.168.75.254. Pool isolir bernama pool-isolir. Gateway tidak dibagikan ke pelanggan. Subnet internet/isolir tidak boleh tumpang tindih atau mencakup IP VPN NAS/RADIUS. Tambah memakai add, Edit memakai set untuk konfigurasi yang sudah terpasang dan add untuk pool/profil baru. Pool lama bernama Internet yang sudah terdaftar digunakan kembali. Nama interface SSTP dan komentar RADIUS tetap UNZANET-RADIUS:VPN.
 5. Tunggu penerapan NAS ke FreeRADIUS sekitar 60 detik. Kolom Status VPN mengikuti sesi SSTP, bukan tanda pendaftaran NAS. Online berarti username dan IP VPN cocok dengan sesi SSTP active di server; tabel sesi kosong berarti Offline. Pemeriksaan gagal/data lebih dari 45 detik tampil Tidak diketahui; NAS lokal tampil Tanpa VPN. Web memuat ulang status setiap 15 detik, pengumpul sesi setiap 10 detik. Simpan NAS belum membuktikan script sudah dipasang pada MikroTik.
 6. Mode sederhana memakai verify-server-certificate=no dan verify-server-address-from-certificate=no. Trafik tetap memakai TLS, tetapi identitas server tidak diverifikasi sehingga berisiko tersambung ke server palsu dan kredensial VPN dapat diserang. VPN tidak otomatis aman hanya karena terenkripsi. Rujukan: [sertifikat SSTP MikroTik](https://help.mikrotik.com/docs/spaces/ROS/pages/2031645/SSTP).
 7. Pada router yang sudah terpasang, buka Winbox > Interfaces dan ganti nama tunnel lama radius-cloud-ID_NAS menjadi UNZANET-RADIUS:VPN. Periksa IP > Routes agar rute 10.88.0.1/32 memakai gateway tersebut. Ubah komentar SSTP, rute, RADIUS, serta kedua rule firewall terkelola menjadi UNZANET-RADIUS:VPN. Jangan paste ulang script add.
+8. Periksa pool Internet dan pool-isolir, profil UNZANET-INTERNET-ID_NAS/UNZANET-ISOLIR-ID_NAS, serta tiga rule isolir di Winbox. Geser rule isolir ke sebelum accept/FastTrack. Setelah benar, centang pernyataan pemasangan pada dialog script lalu klik Konfirmasi Pemasangan. RADIUS menyinkronkan pool/profil dan Disconnect sesi sekitar setiap menit. Simpan form saja belum mengaktifkan prefix baru. Setelah mengubah prefix, pasang script Edit dan konfirmasikan lagi; jangan mengulang script Tambah.
 
 ## 8 Periksa tunnel dan uji PPPoE
 
@@ -214,7 +217,7 @@ sudo systemctl status unzanet-radius-nas-refresh.timer --no-pager
 ~~~
 
 4. Cocokkan username/IP sesi dengan klien yang dipilih pada NAS. Rute VPS harus menuju interface SSTP router tersebut.
-5. Siapkan PPPoE Server pada interface pelanggan yang benar dan profil PPP dengan local-address valid. Daftarkan IP Pool serta Harga Paket di website dan pasang script pool pada router yang sama.
+5. Siapkan PPPoE Server pada interface pelanggan yang benar. Gunakan profil UNZANET-INTERNET-ID_NAS yang dibuat script. Buat Harga Paket untuk harga, kecepatan dan masa aktif; pool/gateway mengikuti NAS pelanggan setelah pemasangan dikonfirmasi. Submenu IP Pool dan Isolir PPPoE sudah dipindahkan ke Router / NAS.
 6. Buat/aktifkan akun pelanggan dengan NAS tersebut. Dial dari perangkat pelanggan memakai username/password PPPoE, terpisah dari akun VPN router.
 
 ~~~routeros
@@ -307,7 +310,7 @@ sudo systemctl restart accel-ppp
 
 1. Jika klik menu membuat URL tetap /dashboard, buka Console dengan Ctrl+Shift+J. Pesan Failed to fetch dynamically imported module menunjukkan file JavaScript halaman gagal dimuat. Catat nama file chunk dari pesan tersebut.
 2. Jika halaman bisa dibuka lewat URL langsung, tekan Ctrl+Shift+R pada tab dashboard lama lalu coba menu lagi. Ini memuat ulang browser, bukan npm run update dan bukan instalasi ulang VPS. Browser akan memuat ulang aplikasi beserta file halamannya.
-3. Jika masih gagal, tutup tab dashboard lama dan buka https://DOMAIN_WEBSITE/dashboard pada tab baru. Coba Data Pelanggan, Harga Paket, IP Pool, dan Isolir PPPoE. Login kembali jika sesi memang sudah berakhir.
+3. Jika masih gagal, tutup tab dashboard lama dan buka https://DOMAIN_WEBSITE/dashboard pada tab baru. Coba Data Pelanggan, Harga Paket, dan Router / NAS. Login kembali jika sesi memang sudah berakhir.
 4. Jika tetap gagal, buka F12 > Network, aktifkan Preserve log, lalu klik menu sekali. Pilih permintaan chunk yang merah dan kirim Request URL, Status Code, serta Content-Type. Respons JavaScript yang benar harus berisi JavaScript; respons HTML atau 404 perlu diperiksa pada file frontend dan cache CDN.
 5. Jika file versi yang dibutuhkan hilang, pastikan kode dan releases/frontend.tar.gz yang cocok sudah di-push ke GitHub, lalu jalankan npm run updatefe pada VPS. Paket dibangun di laptop sesuai tahap 2. Jangan membangun Angular di VPS, menghapus chunk lama, atau mengganti label Content-Type HTML menjadi JavaScript.
 6. URL langsung yang berhasil dan file chunk yang kembali merespons benar tidak memerlukan perubahan akun RADIUS, firewall VPN, atau skema database. Jika respons file masih 403, periksa aturan akses/CDN untuk permintaan tersebut sebelum mengubah konfigurasi aplikasi.
@@ -317,7 +320,7 @@ sudo systemctl restart accel-ppp
 1. Pesan bad parameter allow saat paste script berarti perintah SSTP gagal; konfigurasi mungkin baru terpasang sebagian. Jangan menganggap tunnel dan RADIUS sudah aktif hanya karena terminal kembali menampilkan prompt.
 2. Parameter klien SSTP yang benar adalah authentication=mschap2. Jika memakai script lama, salin ke Notepad Windows lalu Ctrl+H untuk mengganti allow=mschap2 menjadi authentication=mschap2. Pada pemasangan baru gunakan script yang sudah diperbaiki. Jika sebagian konfigurasi sudah terpasang, jangan paste ulang semua perintah add; periksa entri yang sudah ada melalui Winbox. Simpan script secara privat karena memuat kredensial.
 3. Untuk memasang perbaikan permanen, setelah kode terbaru di-push ke GitHub jalankan npm run updatebe pada VPS. Buka ulang Router / NAS > Script dan salin ulang script untuk router yang sama. Perbaikan template ini hanya di backend; tidak perlu membangun ulang frontend khusus untuk perbaikan ini.
-4. Template terbaru langsung memakai add tanpa pemeriksaan entri lama. Untuk konfigurasi yang sudah terpasang, ubah parameter interface melalui Winbox; jangan paste ulang script add. Tidak perlu menghapus sertifikat, tunnel lain, atau konfigurasi PPPoE. Script unduhan lama tidak berubah otomatis.
+4. Template memakai perintah langsung tanpa if. Tambah menggunakan add; Edit menggunakan set untuk entri yang sudah terpasang. Untuk router lama, pastikan nama interface/komentar sesuai tahap 7. Jangan paste ulang script Tambah pada konfigurasi terpasang. Script unduhan lama tidak berubah otomatis.
 5. Periksa pada Terminal MikroTik:
 
 ~~~routeros
@@ -333,7 +336,7 @@ sudo systemctl restart accel-ppp
 ### 9.5 Memasang template MikroTik sederhana tanpa impor CA
 
 1. Setelah kode terbaru di-commit dan di-push ke GitHub, jalankan npm run updatebe pada SSH VPS. Perubahan template dihasilkan backend; tidak perlu build Angular khusus untuk template ini.
-2. Untuk router yang belum dikonfigurasi, buka Router > Router / NAS > Script, salin script terbaru, lalu paste ke Terminal MikroTik sekali. Script terdiri dari tiga bagian dengan perintah add langsung, tanpa :if dan tanpa impor CA. Untuk router yang sudah dikonfigurasi, ubah entri melalui Winbox; script tidak memperbarui atau menghapus entri lama.
+2. Untuk router baru, buka Router > Router / NAS > Tambah, isi kedua prefix, simpan dan salin script ke Terminal MikroTik sekali. Untuk konfigurasi terpasang, gunakan Edit dan pasang script perubahan. Periksa rule isolir sebelum accept/FastTrack lalu Konfirmasi Pemasangan. Lihat tahap 7.
 3. Jika juga menerapkan perubahan UI Klien VPN/Router sebelumnya, commit perubahan frontend di laptop, jalankan npm.cmd run preparefe, lalu commit/push releases/frontend.tar.gz bersama perubahan kode. Sesudah itu jalankan npm run update pada VPS untuk backend dan frontend sekaligus. Jangan membangun Angular di VPS.
 4. Periksa tunnel dan ping sesuai tahap 8. Tidak ada impor CA atau verifikasi identitas server pada mode sederhana; sertifikat TLS di VPS tetap diperlukan. Jangan menyatakan PPPoE berhasil sebelum dial dan accounting benar-benar diuji.
 

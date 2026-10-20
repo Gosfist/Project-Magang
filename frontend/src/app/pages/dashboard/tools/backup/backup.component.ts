@@ -5,7 +5,7 @@ import { ApiService } from '../../../../core/services/api.service';
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
 
 type Settings = { localAddress: string; baseProfile: string };
-type RouterOption = { id: number; name: string; count: number; isActive: boolean; settings: Settings };
+type RouterOption = { id: number; name: string; count: number; isActive: boolean; settings: Settings; networkManaged?: boolean };
 type Preview = { total: number; create: number; update: number; token: string | null; errors: { row: number; message: string }[]; rows: { row: number; customerNumber: string; customerName: string; username: string; packageName: string; routerName: string; action: string }[] };
 
 @Component({ selector: 'app-backup', standalone: true, imports: [FormsModule, ToastComponent], templateUrl: './backup.component.html' })
@@ -26,6 +26,7 @@ export class BackupComponent implements OnInit {
   }
   selectRouter() { this.settings = { ...(this.routers().find(router => router.id === this.routerId)?.settings || { localAddress: '', baseProfile: 'default' }) }; }
   selectedCount() { return this.routers().find(router => router.id === this.routerId)?.count || 0; }
+  networkManaged() { return this.routers().find(router => router.id === this.routerId)?.networkManaged === true; }
   settingsSaved() { const saved = this.routers().find(router => router.id === this.routerId)?.settings; return !!saved?.localAddress && saved.localAddress === this.settings.localAddress && saved.baseProfile === this.settings.baseProfile.trim(); }
   saveSettings() {
     if (this.busy() || !this.routerId) return;

@@ -97,11 +97,7 @@ export const routes: Routes = [
       },
       {
         path: 'pppoe/ip-pools',
-        loadComponent: () =>
-          import('./pages/dashboard/pppoe/ip-pools/ip-pools.component').then(
-            (m) => m.IpPoolsComponent,
-          ),
-        canActivate: [roleGuard('admin')],
+        redirectTo: 'router/routers', pathMatch: 'full',
       },
       {
         path: 'router/routers',
@@ -112,7 +108,7 @@ export const routes: Routes = [
         canActivate: [roleGuard('admin')],
       },
       { path: 'router/vpn-client', loadComponent: () => import('./pages/dashboard/router/vpn-client/vpn-client.component').then(m => m.VpnClientComponent), canActivate: [roleGuard('admin')] },
-      { path: 'pppoe/isolation', loadComponent: () => import('./pages/dashboard/pppoe/isolation/isolation.component').then(m => m.IsolationComponent), canActivate: [roleGuard('admin')] },
+      { path: 'pppoe/isolation', redirectTo: 'router/routers', pathMatch: 'full' },
       {
         path: 'tools/kalkulator-redaman',
         loadComponent: () => import('./pages/dashboard/tools/kalkulator-redaman/kalkulator-redaman.component').then(m => m.KalkulatorRedamanComponent),

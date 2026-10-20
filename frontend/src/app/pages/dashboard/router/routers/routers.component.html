@@ -48,6 +48,11 @@
         <div><label class="label">Port Auth RADIUS</label><input type="number" min="1" max="65535" required class="input" [(ngModel)]="form.ports" name="ports" /></div>
         <div><label class="label">Port Disconnect</label><input type="number" min="1" max="65535" required class="input" [(ngModel)]="form.coaPort" name="coaPort" /></div>
       </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div><label class="label" for="nas-internet-cidr">IP Pool Internet *</label><input id="nas-internet-cidr" class="input" required name="internetCidr" [(ngModel)]="form.internetCidr" placeholder="192.168.75.1/24" /></div>
+        <div><label class="label" for="nas-isolation-cidr">IP Pool Isolir *</label><input id="nas-isolation-cidr" class="input" required name="isolationCidr" [(ngModel)]="form.isolationCidr" placeholder="192.168.100.1/24" /></div>
+      </div>
+      <p class="text-xs text-slate-500">Alamat sebelum prefix menjadi gateway PPPoE. Contoh 192.168.75.1/24 menghasilkan rentang 192.168.75.2–192.168.75.254.</p>
       <div><label class="label">Shared Secret RADIUS</label><div class="flex gap-2"><input type="password" class="input font-mono" [(ngModel)]="form.secret" name="secret" autocomplete="new-password" [placeholder]="editing() ? 'Kosong = tetap memakai secret tersimpan' : 'Kosong = dibuat otomatis oleh server'" /><button type="button" class="btn-secondary whitespace-nowrap" (click)="randomizeSecret()"><svg lucideRefreshCw [size]="15"></svg> Acak</button></div></div>
 
       <div><label class="label">Deskripsi / Catatan</label><textarea class="input" rows="2" [(ngModel)]="form.description" name="description"></textarea></div>
@@ -63,6 +68,12 @@
         <div class="flex gap-2"><button type="button" class="btn-secondary" (click)="scriptTab.set('ros7')" [class.bg-indigo-100]="scriptTab() === 'ros7'">RouterOS 7.x</button><button type="button" class="btn-secondary" (click)="scriptTab.set('ros6')" [class.bg-indigo-100]="scriptTab() === 'ros6'">RouterOS 6.x</button></div>
         <pre class="max-h-[380px] overflow-auto rounded-xl bg-slate-950 p-4 font-mono text-xs leading-relaxed text-slate-100">{{ scriptTab() === 'ros7' ? data.scriptRos7 : data.scriptRos6 }}</pre>
         <div class="flex justify-end"><button type="button" class="btn-secondary" (click)="copyScript()">@if (copied()) { <svg lucideCheck [size]="14"></svg> Tersalin } @else { <svg lucideCopy [size]="14"></svg> Salin Script }</button></div>
+        @if (data.networkNeedsConfirmation) {
+          <div class="space-y-3 border-t border-slate-200 pt-4">
+            <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="scriptInstalled" [(ngModel)]="scriptInstalled" [disabled]="confirming()" /><span>Pool dan profil sudah dipasang. Rule isolir sudah diperiksa berada sebelum accept/FastTrack.</span></label>
+            <div class="flex justify-end"><button type="button" class="btn-primary" (click)="confirmNetwork()" [disabled]="!scriptInstalled || confirming()">{{ confirming() ? 'Mengaktifkan...' : 'Konfirmasi Pemasangan' }}</button></div>
+          </div>
+        }
       </div>
     }
   </app-modal>

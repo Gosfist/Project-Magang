@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { SecretService } from '../../pppoe/shared/secret.service.js';
 import { BackupService } from './backup.service.js';
 import { HEADERS, parseWorkbook, table } from './backup-workbook.js';
+import { activeNetworkKey, nasNetwork } from '../../router/shared/nas-network.js';
 
 async function file(values: Record<string, string>[], formula = false) {
   const book = new ExcelJS.Workbook();
@@ -120,5 +121,18 @@ describe('PPPoE backup Excel and restoration', () => {
     expect(prisma.appSetting.findUnique).not.toHaveBeenCalled();
     expect(prisma.pppoeAccount.findMany).not.toHaveBeenCalled();
     expect(script).not.toContain('password=');
+  });
+  it('uses confirmed NAS gateway/profile for backup without separate backup settings', async () => {
+    const { service, state, secrets, pkg } = setup();
+    state.settings.push({ key: activeNetworkKey(3), value: JSON.stringify(nasNetwork(3, '192.168.76.1/24', '192.168.100.1/24')) });
+    state.accounts.push({ id: 1n, routerNasId: 3, customerNumber: 123, username: 'customer', password: secrets.encrypt('test-only'), isActive: true, expiresAt: null, pppoePackageId: 2n, paymentPromises: [], package: pkg });
+    const options = await service.options();
+    expect(options.routers[0]).toMatchObject({ networkManaged: true, settings: { localAddress: '192.168.76.1', baseProfile: 'UNZANET-INTERNET-3' } });
+    const stream = (await service.script(3, 'local', false)).getStream(), parts: Buffer[] = [];
+    for await (const part of stream) parts.push(Buffer.from(part));
+    const script = Buffer.concat(parts).toString();
+    expect(script).toContain('remote-address="Internet"');
+    expect(script).toContain('local-address="192.168.76.1"');
+    await expect(service.saveSettings(3, { localAddress: '192.168.1.1', baseProfile: 'default' })).rejects.toThrow('prefix Router/NAS');
   });
 });

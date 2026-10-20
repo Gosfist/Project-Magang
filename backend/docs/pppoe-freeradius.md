@@ -4,7 +4,7 @@ NestJS mengelola paket, pelanggan, billing, dan atribut RADIUS di database MySQL
 
 ## Instalasi dan pendaftaran NAS
 
-Ikuti [panduan instalasi](instalasi-ubuntu-vpn.md): website, FreeRADIUS, dan SSTP berjalan pada satu VPS Ubuntu. Jalankan npm run install untuk memasang aplikasi, HTTPS, serta server SSTP dalam satu proses. Administrator membuat akun pada Klien VPN, menunggu Siap, kemudian memilihnya pada Router/NAS. IP serta username/password VPN masuk otomatis ke script MikroTik tiga bagian. Script sederhana tidak mengimpor CA dan tidak memverifikasi sertifikat server; ada risiko tersambung ke server palsu meskipun koneksi memakai TLS. Password VPN tersimpan terenkripsi di tabel klien; secret RADIUS tetap disimpan pada NAS. SSTP memakai TCP 4443 dan gateway RADIUS 10.88.0.1. Uji tunnel, PPPoE, accounting dan Disconnect secara nyata.
+Ikuti [panduan instalasi](instalasi-ubuntu-vpn.md): website, FreeRADIUS, dan SSTP berjalan pada satu VPS Ubuntu. Jalankan npm run install untuk memasang aplikasi, HTTPS, serta server SSTP dalam satu proses. Administrator membuat akun pada Klien VPN, menunggu Siap, kemudian memilihnya pada Router/NAS. IP serta username/password VPN masuk otomatis ke script MikroTik yang juga memuat kedua pool/profil dan firewall isolir. Script sederhana tidak mengimpor CA dan tidak memverifikasi sertifikat server; ada risiko tersambung ke server palsu meskipun koneksi memakai TLS. Password VPN tersimpan terenkripsi di tabel klien; secret RADIUS tetap disimpan pada NAS. SSTP memakai TCP 4443 dan gateway RADIUS 10.88.0.1. Uji tunnel, PPPoE, accounting dan Disconnect secara nyata.
 
 Aktifkan modul SQL pada authorize, accounting, session, dan post auth. Modul memakai `read_clients = yes`, tabel `nas`, dan query client dengan `WHERE is_active = 1`. Daftar client dibaca saat startup. Installer memasang worker root yang membandingkan fingerprint client setiap sekitar 60 detik, validasi `freeradius -XC`, lalu restart saat berubah. Worker tidak memberi sudo kepada web dan tidak mencetak secret.
 
@@ -24,7 +24,7 @@ Gunakan `RADIUS_ACCOUNTING_TIMEZONE=WIB` untuk query MySQL yang menyimpan DATETI
 
 ## Paket dan perangkat
 
-Rate limit disimpan dari sisi pelanggan upload/download, lalu dikirim sebagai atribut MikroTik sesuai konvensi router. Framed-Pool mengacu nama pool yang harus benar benar tersedia pada NAS. IP Pool di web adalah metadata/rencana plus script pemasangan, bukan pembacaan RouterOS. PPPoE Server, profil dasar dengan local address, firewall dan NAT awal dipilih operator sesuai jaringan fisik.
+Rate limit disimpan dari sisi pelanggan upload/download, lalu dikirim sebagai atribut MikroTik sesuai konvensi router. Prefix pool Internet/Isolir diisi pada Tambah/Edit Router NAS. Setelah script dipasang dan dikonfirmasi, Framed-Pool dan Mikrotik-Group memakai pool/profil NAS pelanggan; Harga Paket mengatur harga, kecepatan dan masa aktif. Sebelum konfirmasi, NAS lama tetap memakai referensi pool paket. PPPoE Server dan interface/NAT awal tetap dipilih operator sesuai jaringan fisik; profil gateway dibuat script NAS. Tidak ada pembacaan RouterOS.
 
 Jangan membuat PPP secret lokal untuk username RADIUS yang sama: RouterOS mendahulukan akun lokal. Backup darurat lokal tetap berupa script unduhan yang dijalankan operator, tanpa koneksi API.
 

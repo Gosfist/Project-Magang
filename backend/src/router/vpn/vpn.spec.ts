@@ -51,7 +51,7 @@ describe('VPS SSTP account provisioning', () => {
   it('derives all NAS tunnel settings from the selected client and regenerates a complete SSTP script', async () => {
     const forRouter = vi.fn(async () => ({ id: 3n, ip: '10.88.0.2', radiusIp: '10.88.0.1', host: '192.0.2.8', username: 'vpn_cabang', password: 'test-password-123' }));
     let saved: any;
-    const prisma = { nas: { findFirst: vi.fn(async () => null), create: vi.fn(async ({ data }) => (saved = { id: 7, ...data })), findUnique: vi.fn(async () => saved) } };
+    const prisma = { appSetting: { findUnique: vi.fn(async () => null) }, nas: { findFirst: vi.fn(async () => null), create: vi.fn(async ({ data }) => (saved = { id: 7, ...data })), findUnique: vi.fn(async () => saved) } };
     const service = new RoutersService(prisma as any, { forRouter } as any);
     const response = await service.createRouter({ name: 'Cabang', nasname: '192.0.2.99', vpnClientId: '3' });
     expect(saved).toMatchObject({ vpnClientId: 3n, nasname: '10.88.0.2', ipAddress: '10.88.0.2', radiusServerIp: '10.88.0.1' });

@@ -22,11 +22,17 @@ kali. Email ini berbeda dari akun administrator. Gunakan DNS only pada Cloudflar
 saat instalasi; aktifkan Proxied dan Full (strict) setelah HTTPS berhasil.
 Website, RADIUS, dan VPN berada satu mesin; tidak perlu VPN client Ubuntu.
 Login web, buat Klien VPN, tunggu penerapan sekitar 15 detik, pilih akun pada Router/NAS,
-lalu pasang script MikroTik sederhana dalam tiga bagian dengan add langsung, tanpa :if.
+lalu isi prefix IP Pool Internet dan Isolir pada form Router NAS. Script mengatur
+SSTP, RADIUS/Disconnect, PPP AAA, kedua pool/profil dan firewall isolir. Tambah
+memakai add; Edit memakai set untuk konfigurasi terpasang dan add untuk entri baru,
+tanpa blok if. Submenu IP Pool dan Isolir lama diarahkan ke Router / NAS.
 Akun dan IP diambil otomatis. Gunakan sekali untuk pemasangan awal; pengulangan
 dapat membuat entri ganda atau bentrok nama tunnel.
 Nama interface SSTP, gateway rute, dan seluruh komentar memakai `UNZANET-RADIUS:VPN`.
 Bagian 7 menjelaskan penggantian nama tunnel lama melalui Winbox tanpa paste ulang.
+Setelah paste script, periksa rule isolir sebelum accept/FastTrack, lalu Konfirmasi
+Pemasangan di dialog Router NAS. Pool aktif lama dipertahankan sampai konfirmasi
+fingerprint terbaru. Harga Paket mengatur harga/kecepatan, pool mengikuti NAS.
 Tidak ada impor CA; verifikasi sertifikat server dimatikan sesuai mode sederhana.
 TLS tetap dipakai, tetapi identitas server tidak diverifikasi sehingga ada risiko server palsu.
 Password langsung terlihat pada daftar khusus admin; kolom Status dihapus.
@@ -50,7 +56,7 @@ jika file benar-benar hilang. Membuka ulang browser berbeda dari update VPS.
 Bagian 9.4 memperbaiki bad parameter allow pada script SSTP: gunakan
 authentication=mschap2, pasang pembaruan backend, lalu salin ulang script dan
 periksa tunnel. Pada router yang sudah terpasang, ubah entri melalui Winbox;
-script add bukan pembaruan konfigurasi lama.
+script Tambah tidak dipakai ulang pada konfigurasi terpasang; gunakan hasil Edit.
 Bagian 9.5 memuat pemasangan template sederhana tanpa impor CA dan pilihan
 update backend saja atau seluruh UI beserta paket frontend laptop.
 

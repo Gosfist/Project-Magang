@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { RadiusService } from './radius.service.js';
 import { isolationProfile } from './isolation-config.js';
+import { activeNetworkKey, nasNetwork } from '../../router/shared/nas-network.js';
 
 describe('RADIUS pool isolation', () => {
   function setup(enabled = true) {
     const config = { enabled, poolName: 'pool-isolir', subnet: '192.168.100.0/24', localAddress: '192.168.100.1', profileName: isolationProfile(3) };
     const tx = {
-      appSetting: { findUnique: vi.fn().mockResolvedValue({ value: JSON.stringify(config) }) },
+      appSetting: { findUnique: vi.fn(async ({ where }) => where.key.startsWith('pppoe_isolation_router_') ? { value: JSON.stringify(config) } : null) },
       paymentPromise: { findFirst: vi.fn().mockResolvedValue(null) },
       radcheck: { deleteMany: vi.fn(), createMany: vi.fn() }, radreply: { deleteMany: vi.fn(), createMany: vi.fn() },
     };
@@ -54,5 +55,29 @@ describe('RADIUS pool isolation', () => {
     tx.appSetting.findUnique.mockResolvedValue({ value: '{broken' });
     await expect(service.sync(tx as any, account as any)).rejects.toThrow('Konfigurasi pool isolir');
     expect(tx.radreply.createMany).not.toHaveBeenCalled();
+  });
+  it('uses NAS Internet pool/profile only after installation and keeps isolation on the same NAS', async () => {
+    const { tx, account, service, config } = setup();
+    account.isActive = true; account.expiresAt = new Date('2099-01-01');
+    let installed = false;
+    const network = nasNetwork(3, '192.168.75.1/24', '192.168.100.1/24');
+    tx.appSetting.findUnique.mockImplementation(async ({ where }) => {
+      if (where.key.startsWith('pppoe_isolation_router_')) return { value: JSON.stringify(config) };
+      return installed && where.key === activeNetworkKey(3) ? { value: JSON.stringify(network) } : null;
+    });
+    await service.sync(tx as any, account as any);
+    expect(tx.radreply.createMany.mock.calls.at(-1)![0].data).toContainEqual(expect.objectContaining({ attribute: 'Framed-Pool', value: 'internet' }));
+    installed = true;
+    await service.sync(tx as any, account as any);
+    expect(tx.radreply.createMany.mock.calls.at(-1)![0].data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ attribute: 'Framed-Pool', value: 'Internet' }),
+      expect.objectContaining({ attribute: 'Mikrotik-Group', value: 'UNZANET-INTERNET-3' }),
+    ]));
+    account.isActive = false;
+    await service.sync(tx as any, account as any);
+    expect(tx.radreply.createMany.mock.calls.at(-1)![0].data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ attribute: 'Framed-Pool', value: 'pool-isolir' }),
+      expect.objectContaining({ attribute: 'Mikrotik-Group', value: 'UNZANET-ISOLIR-3' }),
+    ]));
   });
 });

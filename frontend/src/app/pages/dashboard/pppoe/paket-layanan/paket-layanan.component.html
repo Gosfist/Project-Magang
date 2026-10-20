@@ -13,7 +13,7 @@
     <table>
       <thead>
         <tr>
-          <th>Harga Paket</th><th>Kecepatan</th><th>IP Pool</th><th>Masa Aktif</th><th>Akun</th><th>Status</th><th>Aksi</th>
+          <th>Harga Paket</th><th>Kecepatan</th><th>Masa Aktif</th><th>Akun</th><th>Status</th><th>Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -25,7 +25,6 @@
               <p class="table-meta text-sm text-slate-500">Harga Jual: Rp {{ formatPrice(item.price) }}</p>
             </td>
             <td>{{ item.downloadMbps }}M ↓ / {{ item.uploadMbps }}M ↑</td>
-            <td>{{ item.ipPool?.name || item.addressPool || '—' }}</td>
             <td>{{ item.validityDays }} hari</td>
             <td>{{ item.accountsCount ?? 0 }}</td>
             <td>
@@ -46,7 +45,7 @@
           </tr>
         }
         @if (items().length === 0) {
-          <tr><td colspan="7" class="py-8 text-center text-slate-400">Harga paket belum tersedia.</td></tr>
+          <tr><td colspan="6" class="py-8 text-center text-slate-400">Harga paket belum tersedia.</td></tr>
         }
       </tbody>
     </table>
@@ -84,18 +83,7 @@
           <input class="input" type="number" min="1" required [(ngModel)]="form.uploadMbps" name="uploadMbps" />
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="label">IP Pool</label>
-          <select class="input" [(ngModel)]="form.addressPool" name="addressPool">
-            <option value="">-- Pilih IP Pool --</option>
-            @if (showStoredPoolOption()) { <option [value]="form.addressPool">{{ form.addressPool }}</option> }
-            @for (pool of ipPools(); track pool.id) {
-              <option [value]="pool.name">{{ pool.name }} ({{ pool.networkStart }} - {{ pool.networkEnd }})</option>
-            }
-          </select>
-          <p class="mt-1 text-xs text-slate-500">Pool berasal dari pendaftaran di web. Pastikan script pool sudah dipasang pada setiap NAS yang menggunakan paket ini.</p>
-        </div>
+      <div>
         <div>
           <label class="label">Masa Aktif (hari) *</label>
           <input class="input" type="number" min="1" required [(ngModel)]="form.validityDays" name="validityDays" />

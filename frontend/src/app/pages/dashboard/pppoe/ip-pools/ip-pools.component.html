@@ -147,8 +147,16 @@
     </form>
   </app-modal>
 
-  <app-modal [open]="script() !== null" title="Script Konfigurasi IP Pool" (closeModal)="script.set(null)">
-    <div class="space-y-3"><p class="text-sm text-amber-800">Data rencana tersimpan. Salin script ini ke Terminal Winbox router yang dipilih. Aplikasi belum memeriksa konfigurasi perangkat.</p><pre class="max-h-96 overflow-auto rounded-lg bg-slate-950 p-4 text-xs text-slate-100">{{ script() }}</pre></div>
+  <app-modal [open]="script() !== null" title="Script Konfigurasi IP Pool" (closeModal)="closeScript()">
+    <div class="space-y-3">
+      <p class="text-sm text-amber-800">Data rencana tersimpan. Salin script ini ke Terminal Winbox router yang dipilih. Aplikasi belum memeriksa konfigurasi perangkat.</p>
+      <div class="flex justify-end">
+        <button type="button" class="btn-secondary" (click)="copyScript()" [disabled]="!script()">
+          @if (copied()) { <svg lucideCheck [size]="14"></svg> Tersalin } @else { <svg lucideCopy [size]="14"></svg> Salin Script }
+        </button>
+      </div>
+      <pre class="max-h-96 overflow-auto rounded-lg bg-slate-950 p-4 text-xs text-slate-100">{{ script() }}</pre>
+    </div>
   </app-modal>
 
   @if (toast()) {

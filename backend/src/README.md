@@ -53,6 +53,9 @@ service akun lama `pppoe/pppoe.service.ts`. Tes billing berada di
 Arsitektur tanpa API MikroTik menghapus endpoint monitoring router dan tes login
 API. Pemutusan sesi melalui RADIUS Disconnect UDP 3799; status sesi menggunakan
 accounting yang masih segar. Metadata pool dan konfigurasi perangkat menghasilkan
-script yang dipasang operator. Instalasi lama memerlukan migrasi
-`prisma/updates/20261018_zero_mikrotik_api.sql` melalui jalur update dengan backup.
+script yang dipasang operator. Skema aktif sudah langsung berada di
+`prisma/database.sql` untuk instalasi baru pada database kosong. Tidak ada file
+migrasi terpisah; updater tidak mengubah skema database lama.
 Jalankan `npm run build` dan `npm test` dari folder `backend` untuk verifikasi.
+Lihat [hasil audit lokal tanpa API MikroTik](../docs/audit-tanpa-api-mikrotik.md)
+untuk cakupan pemeriksaan, jalur tiap fitur, hasil tes, dan batas validasinya.

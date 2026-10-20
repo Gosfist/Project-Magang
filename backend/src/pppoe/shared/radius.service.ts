@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { PppoeAccount, PppoePackage, Prisma } from '@prisma/client';
 import { SecretService } from './secret.service.js';
 import { readIsolation, isolatedService } from './isolation-config.js';
+import { internetPoolName, internetProfile, readNasNetwork } from '../../router/shared/nas-network.js';
 
 @Injectable()
 export class RadiusService {
@@ -12,6 +13,7 @@ export class RadiusService {
     await tx.radcheck.deleteMany({ where: { username: { in: usernames } } });
     await tx.radreply.deleteMany({ where: { username: { in: usernames } } });
     const config = await readIsolation(tx, account.routerNasId);
+    const network = await readNasNetwork(tx, account.routerNasId);
     const promise = await tx.paymentPromise.findFirst({ where: { pppoeAccountId: account.id, status: 'ACTIVE' }, orderBy: { id: 'desc' } });
     const isolated = isolatedService(account, promise);
     if ((!account.isActive || !account.package.isActive) && !config.enabled) return { isolationEnabled: false, isolated: true };
@@ -29,9 +31,10 @@ export class RadiusService {
     await tx.radcheck.createMany({ data: checks });
     const replies = [{ username: account.username, attribute: 'Mikrotik-Rate-Limit', op: ':=', value: `${account.package.uploadMbps}M/${account.package.downloadMbps}M` }];
 
-    const poolName = config.enabled && isolated ? config.poolName : account.package.ipPool?.name || account.package.addressPool;
+    const poolName = config.enabled && isolated ? config.poolName : network ? internetPoolName : account.package.ipPool?.name || account.package.addressPool;
     if (poolName) replies.push({ username: account.username, attribute: 'Framed-Pool', op: ':=', value: poolName });
     if (config.enabled && isolated) replies.push({ username: account.username, attribute: 'Mikrotik-Group', op: ':=', value: config.profileName });
+    else if (network) replies.push({ username: account.username, attribute: 'Mikrotik-Group', op: ':=', value: internetProfile(account.routerNasId!) });
 
     await tx.radreply.createMany({ data: replies });
     return { isolationEnabled: config.enabled, isolated };

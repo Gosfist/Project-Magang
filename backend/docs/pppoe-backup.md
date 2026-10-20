@@ -12,9 +12,10 @@ Backup darurat tetap dipasang melalui Terminal dan tidak mengaktifkan koneksi AP
 ## Persiapan sebelum gangguan
 
 1. Login admin, buka Pengaturan, pilih tab Backup dan router yang sesuai.
-2. Isi Gateway PPPoE Internet serta nama Profil Dasar PPPoE yang benar-benar
-   tersedia pada router. Profil dasar menjadi sumber DNS, parent queue, dan
-   pengaturan lainnya. Simpan Pengaturan Backup.
+2. Untuk NAS dengan prefix terkonfirmasi, gateway/profil/pool internet otomatis
+   mengikuti Router NAS dan tidak perlu disimpan ulang di Backup. Untuk NAS lama,
+   isi Gateway PPPoE Internet serta Profil Dasar PPPoE yang benar-benar tersedia,
+   lalu Simpan Pengaturan Backup. Profil dasar menjadi sumber DNS/parent queue.
 3. Unduh Script Lokal Darurat dan Script Kembali ke RADIUS. Simpan keduanya di
    komputer yang dapat digunakan ketika web/server tidak tersedia. Unduh ulang
    setelah perubahan akun/password/paket/status pelanggan.

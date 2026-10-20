@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
 import { latestRequest } from '../../../../core/services/latest-request';
-import { PppoePackage, PageMeta, IpPool } from '../../../../shared/models/types';
+import { PppoePackage, PageMeta } from '../../../../shared/models/types';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
@@ -35,22 +35,13 @@ export class PaketLayananComponent implements OnInit {
   editing = signal<PppoePackage | null>(null);
   form = { name: '', title: '', description: '', downloadMbps: '', uploadMbps: '', price: '', addressPool: '', ipPoolId: '', validityDays: '30', isPopular: false };
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
-  ipPools = signal<IpPool[]>([]);
 
   ngOnInit(): void {
     this.load();
-    this.api.get<{ data: IpPool[]; warnings?: string[] }>('/pppoe/ip-pools/options').subscribe({ next: (r) => {
-      this.ipPools.set(r.data.filter((pool, index, all) => all.findIndex((p) => p.name === pool.name) === index));
-      if (r.warnings?.length) this.toast.set({ message: r.warnings.join(' '), type: 'error' });
-    }, error: (e) => this.toast.set({ message: e.message, type: 'error' }) });
   }
 
   formatPrice(price: number): string {
     return price.toLocaleString('id-ID');
-  }
-
-  showStoredPoolOption(): boolean {
-    return !!this.form.addressPool && !this.ipPools().some(pool => pool.name === this.form.addressPool);
   }
 
   load(): void {

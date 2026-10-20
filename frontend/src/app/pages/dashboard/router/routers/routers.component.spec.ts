@@ -21,11 +21,14 @@ describe('Router / NAS RADIUS setup', () => {
     const element = fixture.nativeElement as HTMLElement;
     for (const name of ['username', 'password', 'port', 'authMode']) expect(element.querySelector(`[name="${name}"]`)).toBeNull();
     component.form.name = 'Lab'; component.form.nasname = '10.255.0.2';
+    component.form.internetCidr = '192.168.75.1/24'; component.form.isolationCidr = '192.168.100.1/24';
     component.vpnClients.set([{ id: '11', name: 'Lab', username: 'vpn_lab', vpnIp: '10.88.0.2', isActive: true, provisionedAt: '2026-10-20', routers: [] }]);
     component.form.vpnClientId = '11'; component.selectVpn(); fixture.detectChanges();
     expect(element.querySelector('select[name="vpnClientId"]')).not.toBeNull();
     expect(element.querySelector('textarea[name="vpnCaCertificate"]')).toBeNull();
     expect((element.querySelector('input[name="nasname"]') as HTMLInputElement).readOnly).toBeTrue();
+    expect(element.querySelector('input[name="internetCidr"]')).not.toBeNull();
+    expect(element.querySelector('input[name="isolationCidr"]')).not.toBeNull();
     component.save(); fixture.detectChanges();
     const [url, body] = api.post.calls.mostRecent().args;
     expect(url).toBe('/router/nas');
@@ -33,6 +36,7 @@ describe('Router / NAS RADIUS setup', () => {
     expect(body.vpnClientId).toBe('11');
     expect(body.nasname).toBe('10.88.0.2');
     expect(body.radiusServerIp).toBe('10.88.0.1');
+    expect(body.internetCidr).toBe('192.168.75.1/24'); expect(body.isolationCidr).toBe('192.168.100.1/24');
     expect(body.vpnPassword).toBeUndefined();
     for (const key of ['username', 'password', 'port', 'authMode']) expect(key in body).toBeFalse();
     expect(component.form.vpnPassword).toBe('');
@@ -73,4 +77,17 @@ describe('Router / NAS RADIUS setup', () => {
     tick(15000);
     expect(api.get).toHaveBeenCalledTimes(2);
   }));
+  it('keeps prefixes on edit and requires installation confirmation from the script dialog', () => {
+    const { fixture, component, api } = setup();
+    const fingerprint = 'a'.repeat(64);
+    api.patch.and.returnValue(of({ message: 'Disimpan', router: { id: '7' }, setup: { ...setupScript, networkFingerprint: fingerprint, networkNeedsConfirmation: true } }));
+    component.show({ id: '7', name: 'Cabang', nasname: '10.88.0.2', isActive: true, internetCidr: '192.168.75.1/24', isolationCidr: '192.168.100.1/24' } as RouterItem);
+    expect(component.form.internetCidr).toBe('192.168.75.1/24');
+    component.save(); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Konfirmasi Pemasangan');
+    component.confirmNetwork(); expect(api.post).not.toHaveBeenCalled();
+    component.scriptInstalled = true; component.confirmNetwork();
+    expect(api.post).toHaveBeenCalledOnceWith('/router/nas/7/network/confirm', { fingerprint });
+    expect(component.scriptData()?.networkNeedsConfirmation).toBeFalse();
+  });
 });

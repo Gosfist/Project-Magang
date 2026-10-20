@@ -10,8 +10,8 @@ describe('Registered IP pool plans', () => {
     const api = jasmine.createSpyObj('ApiService', ['get', 'post', 'patch', 'delete']);
     api.get.and.callFake((url: string) => of(url === '/pppoe/nas/options' ? { data: [{ id: 3, nasname: '10.255.0.2', shortname: 'Lab' }] } : { data: [pool], meta: { currentPage: 1, lastPage: 1, perPage: 10, total: 1 } }));
     api.post.and.returnValue(of({ message: 'Rencana tersimpan', script: '/ip pool add name=customers' }));
-    api.patch.and.returnValue(of({ message: 'NAS pool diperbarui', script: '/ip pool add name=customers' }));
-    api.delete.and.returnValue(of({ message: 'Rencana dihapus', script: '/ip pool remove $item' }));
+    api.patch.and.returnValue(of({ message: 'NAS pool diperbarui', script: '/ip pool set [find where name=customers] ranges=10.0.0.2-10.0.0.254' }));
+    api.delete.and.returnValue(of({ message: 'Rencana dihapus', script: '/ip pool remove [find where name=customers]' }));
     TestBed.configureTestingModule({ imports: [IpPoolsComponent], providers: [{ provide: ApiService, useValue: api }] });
     const fixture = TestBed.createComponent(IpPoolsComponent); fixture.detectChanges();
     return { fixture, component: fixture.componentInstance, api };
@@ -30,8 +30,8 @@ describe('Registered IP pool plans', () => {
     spyOn(window, 'confirm').and.returnValue(true);
     component.remove(pool); fixture.detectChanges();
     expect(api.delete).toHaveBeenCalledWith('/pppoe/ip-pools/12');
-    expect(component.script()).toBe('/ip pool remove $item');
-    expect(fixture.nativeElement.textContent).toContain('/ip pool remove $item');
+    expect(component.script()).toBe('/ip pool remove [find where name=customers]');
+    expect(fixture.nativeElement.textContent).toContain('/ip pool remove [find where name=customers]');
   });
   it('allows assigning a legacy pool to a NAS while keeping assigned pools on their owner', async () => {
     const { fixture, component, api } = setup();
@@ -42,5 +42,44 @@ describe('Registered IP pool plans', () => {
     expect(api.patch).toHaveBeenCalledWith('/pppoe/ip-pools/12', jasmine.objectContaining({ routerNasId: 3 }));
     component.show(pool); fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('select[name="routerNasId"]').disabled).toBeTrue();
+  });
+  it('copies the displayed script from its button and resets feedback when closed', async () => {
+    const { fixture, component } = setup();
+    const writeText = jasmine.createSpy('writeText').and.resolveTo();
+    spyOnProperty(navigator, 'clipboard', 'get').and.returnValue({ writeText } as unknown as Clipboard);
+    component.script.set('/ip pool add name="Internet" ranges="192.168.75.1-192.168.75.254";');
+    fixture.detectChanges();
+    const button = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>).find(item => item.textContent?.includes('Salin Script'))!;
+    button.click(); await fixture.whenStable(); fixture.detectChanges();
+    expect(writeText).toHaveBeenCalledOnceWith(component.script());
+    expect(button.textContent).toContain('Tersalin');
+    component.closeScript();
+    expect(component.copied()).toBeFalse(); expect(component.script()).toBeNull();
+  });
+  it('copies automatically through the fallback when Clipboard API is unavailable', async () => {
+    const { component } = setup();
+    spyOnProperty(navigator, 'clipboard', 'get').and.returnValue(undefined as unknown as Clipboard);
+    const text = '/ip pool remove [find where name="Internet"];';
+    component.script.set(text);
+    const copy = spyOn(document, 'execCommand').and.callFake(command => {
+      expect(command).toBe('copy');
+      expect((document.querySelector('body > textarea') as HTMLTextAreaElement).value).toBe(text);
+      return true;
+    });
+    await component.copyScript();
+    expect(copy).toHaveBeenCalledOnceWith('copy');
+    expect(component.copied()).toBeTrue();
+    expect(document.querySelector('body > textarea')).toBeNull();
+  });
+  it('reports a clipboard failure without claiming the script was copied', async () => {
+    const { component } = setup();
+    const writeText = jasmine.createSpy('writeText').and.rejectWith(new Error('Denied'));
+    spyOnProperty(navigator, 'clipboard', 'get').and.returnValue({ writeText } as unknown as Clipboard);
+    spyOn(document, 'execCommand').and.returnValue(false);
+    component.script.set('/ip pool add name="Internet";');
+    await component.copyScript();
+    expect(component.copied()).toBeFalse();
+    expect(component.toast()?.message).toContain('Script gagal disalin');
+    expect(document.querySelector('body > textarea')).toBeNull();
   });
 });

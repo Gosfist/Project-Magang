@@ -11,6 +11,7 @@ import { isolatedService, readIsolation } from '../../pppoe/shared/isolation-con
 import { BackupRouterDto, type BackupImportDto } from './backup.dto.js';
 import { HEADERS, parseWorkbook, table, type ParsedRow } from './backup-workbook.js';
 import { localScript, radiusScript, type LocalSettings } from './routeros-backup.js';
+import { activeNetworkKey, internetPoolName, internetProfile, readNasNetwork, type NasNetwork } from '../../router/shared/nas-network.js';
 
 type Client = Prisma.TransactionClient;
 type ImportData = Prisma.PppoeAccountUncheckedCreateInput;
@@ -26,13 +27,15 @@ export class BackupService {
   async options() {
     const [routers, configs, unassigned] = await Promise.all([
       this.prisma.nas.findMany({ orderBy: { id: 'asc' }, select: { id: true, name: true, nasname: true, isActive: true, _count: { select: { accounts: true } } } }),
-      this.prisma.appSetting.findMany({ where: { key: { startsWith: 'pppoe_backup_router_' } } }),
+      this.prisma.appSetting.findMany({ where: { OR: [{ key: { startsWith: 'pppoe_backup_router_' } }, { key: { startsWith: 'nas_network_active_' } }] } }),
       this.prisma.pppoeAccount.count({ where: { routerNasId: null } }),
     ]);
     return { routers: routers.map(router => {
       let settings = defaultSettings();
       try { const value = configs.find(config => config.key === key(router.id)); if (value) settings = JSON.parse(value.value); } catch { /* Allow fixing corrupt non-sensitive settings in the form. */ }
-      return { id: router.id, name: router.name || router.nasname, isActive: router.isActive, count: router._count.accounts, settings };
+      const network = configs.find(config => config.key === activeNetworkKey(router.id));
+      if (network) { const value = JSON.parse(network.value) as NasNetwork; settings = { localAddress: value.internet.gateway, baseProfile: internetProfile(router.id) }; }
+      return { id: router.id, name: router.name || router.nasname, isActive: router.isActive, count: router._count.accounts, settings, networkManaged: !!network };
     }), unassigned };
   }
   private async router(id: number) {
@@ -42,6 +45,7 @@ export class BackupService {
   }
   async saveSettings(routerId: number, dto: BackupRouterDto) {
     await this.router(routerId);
+    if (await readNasNetwork(this.prisma, routerId)) throw new BadRequestException('Gateway dan profil mengikuti prefix Router/NAS. Ubah melalui Edit Router NAS.');
     const settings = { localAddress: dto.localAddress, baseProfile: dto.baseProfile.trim() };
     if (settings.baseProfile.startsWith('UNZANET-BACKUP-')) throw new BadRequestException('Gunakan profil dasar PPPoE asli, bukan profil backup.');
     const value = JSON.stringify(settings);
@@ -53,15 +57,16 @@ export class BackupService {
     let script: string;
     if (mode === 'radius') script = radiusScript(routerId);
     else {
-      const row = await this.prisma.appSetting.findUnique({ where: { key: key(routerId) } });
-      if (!row) throw new BadRequestException('Simpan gateway dan profil dasar backup untuk router ini terlebih dahulu.');
+      const network = await readNasNetwork(this.prisma, routerId);
+      const row = network ? null : await this.prisma.appSetting.findUnique({ where: { key: key(routerId) } });
+      if (!row && !network) throw new BadRequestException('Simpan gateway dan profil dasar backup untuk router ini terlebih dahulu.');
       let settings: LocalSettings;
-      try { settings = JSON.parse(row.value); } catch { throw new BadRequestException('Simpan ulang pengaturan backup router.'); }
+      try { settings = network ? { localAddress: network.internet.gateway, baseProfile: internetProfile(routerId) } : JSON.parse(row!.value); } catch { throw new BadRequestException('Simpan ulang pengaturan backup router.'); }
       if (!isIPv4(settings.localAddress) || !settings.baseProfile?.trim()) throw new BadRequestException('Simpan ulang gateway dan profil dasar backup router.');
       const accounts = await this.prisma.pppoeAccount.findMany({ where: { routerNasId: routerId }, include: { package: { include: { ipPool: true } }, paymentPromises: { where: { status: 'ACTIVE' }, orderBy: { id: 'desc' }, take: 1 } }, orderBy: { customerNumber: 'asc' } });
       const isolation = await readIsolation(this.prisma, routerId);
       const now = Date.now();
-      script = localScript(routerId, accounts.map(account => ({ customerNumber: String(account.customerNumber), username: account.username, password: this.secrets.decrypt(account.password), pool: account.package.ipPool?.name || account.package.addressPool || '', rate: `${account.package.uploadMbps}M/${account.package.downloadMbps}M`, packageId: String(account.pppoePackageId), isolated: isolatedService(account, account.paymentPromises[0] || null, now) })), settings, isolation, reconnect);
+      script = localScript(routerId, accounts.map(account => ({ customerNumber: String(account.customerNumber), username: account.username, password: this.secrets.decrypt(account.password), pool: network ? internetPoolName : account.package.ipPool?.name || account.package.addressPool || '', rate: `${account.package.uploadMbps}M/${account.package.downloadMbps}M`, packageId: String(account.pppoePackageId), isolated: isolatedService(account, account.paymentPromises[0] || null, now) })), settings, isolation, reconnect);
     }
     return new StreamableFile(Buffer.from(script), { type: 'text/plain; charset=utf-8', disposition: `attachment; filename="pppoe-${mode}-router-${routerId}-${filenameDate()}.rsc"` });
   }

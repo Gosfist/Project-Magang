@@ -8,7 +8,18 @@ export function rosQuote(value: string): string {
   }
   return result + '"';
 }
-export function poolScript(pool: { id: bigint; routerNasId: number | null; name: string; networkStart: string; networkEnd: string }, oldName = pool.name) {
+type PoolPlan = { id: bigint; routerNasId: number | null; name: string; networkStart: string; networkEnd: string };
+
+export function poolScript(pool: PoolPlan, oldName?: string) {
+  const tag = rosQuote(`UNZANET-POOL:${pool.routerNasId}:${pool.id}`);
+  const values = `name=${rosQuote(pool.name)} ranges=${rosQuote(`${pool.networkStart}-${pool.networkEnd}`)}`;
+  return oldName === undefined
+    ? `/ip pool add ${values} comment=${tag};`
+    : `/ip pool set [find where name=${rosQuote(oldName)} and comment=${tag}] ${values} next-pool=none;`;
+}
+
+// Isolation setup can be installed after the pool already exists on the router.
+export function ensurePoolScript(pool: PoolPlan, oldName = pool.name) {
   const tag = `UNZANET-POOL:${pool.routerNasId}:${pool.id}`;
   const name = rosQuote(pool.name), old = rosQuote(oldName), ranges = rosQuote(`${pool.networkStart}-${pool.networkEnd}`);
   return [

@@ -3,9 +3,7 @@ import { Component, inject, model, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
-  LucideShieldCheck,
   LucideBellRing,
-  LucideDatabase,
   LucideBot,
   LucideActivity,
   LucideFileText,
@@ -52,9 +50,7 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
   standalone: true,
   imports: [
     NgTemplateOutlet,
-    LucideShieldCheck,
     LucideBellRing,
-    LucideDatabase,
     LucideBot,
     LucideActivity,
     LucideFileText,
@@ -133,8 +129,6 @@ export class SidebarComponent implements OnInit {
   readonly pppoeLinks = [
     ['Data Pelanggan', '/dashboard/pppoe/data-pelanggan'],
     ['Harga Paket', '/dashboard/pppoe/harga-paket'],
-    ['IP Pool', '/dashboard/pppoe/ip-pools'],
-    ['Isolir PPPoE', '/dashboard/pppoe/isolation'],
   ];
   readonly botWaLinks = [
     ['Login Bot Wa', '/dashboard/bot-whatsapp/status'],

@@ -54,9 +54,7 @@ export class IpPoolsService {
     if (await isolationPoolInUse(this.prisma, current.name, current.routerNasId ?? undefined)) throw new BadRequestException('Pool isolir aktif/pending tidak dapat dihapus.');
     await this.prisma.ipPool.delete({ where: { id: current.id } });
     const tag = `UNZANET-POOL:${current.routerNasId}:${current.id}`;
-    const script = ['# Jalankan hanya pada NAS tujuan setelah memeriksa pool tidak digunakan.', '{',
-      `:local item [/ip pool find where name=${rosQuote(current.name)} and comment=${rosQuote(tag)}];`,
-      ':if ([:len $item] = 1) do={ /ip pool remove $item; } else={ :put "Pool nonkelola/tidak ditemukan. Periksa manual."; };', '}'].join('\n');
+    const script = `/ip pool remove [find where name=${rosQuote(current.name)} and comment=${rosQuote(tag)}];`;
     return { message: 'Pool dihapus dari daftar aplikasi. Penghapusan pada router memerlukan script/manual.', script };
   }
 }

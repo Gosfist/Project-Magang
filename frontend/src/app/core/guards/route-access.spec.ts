@@ -3,6 +3,7 @@ import { Router, ActivatedRouteSnapshot, RouterStateSnapshot, Routes, CanActivat
 import { firstValueFrom, isObservable } from 'rxjs';
 import { routes } from '../../app.routes';
 import { AuthService } from '../services/auth.service';
+import { SidebarComponent } from '../../pages/layout/sidebar/sidebar.component';
 
 describe('Dashboard URL access', () => {
   let role: string | null;
@@ -26,6 +27,13 @@ describe('Dashboard URL access', () => {
   it('registers admin VPN clients and Router / NAS', () => {
     expect(dashboard.children!.some(route => route.path === 'router/vpn-client')).toBeTrue();
     expect(dashboard.children!.some(route => route.path === 'router/routers')).toBeTrue();
+  });
+  it('moves pool/isolation URLs to NAS and removes their standalone submenu entries', () => {
+    for (const path of ['pppoe/ip-pools', 'pppoe/isolation']) {
+      expect(dashboard.children!.find(route => route.path === path)?.redirectTo).toBe('router/routers');
+    }
+    const sidebar = TestBed.runInInjectionContext(() => new SidebarComponent());
+    expect(sidebar.pppoeLinks.map(link => link[0])).toEqual(['Data Pelanggan', 'Harga Paket']);
   });
   it('removes router monitoring while retaining server and RADIUS monitoring', () => {
     expect(dashboard.children!.some(route => route.path === 'monitoring/router')).toBeFalse();

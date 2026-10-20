@@ -6,6 +6,7 @@ import { SaveRouterDto } from './routers.dto.js';
 import { RoutersService } from './routers.service.js';
 import { radiusSetupScript, routerOsQuote } from '../shared/radius-setup-script.js';
 import { VpnStatusService } from '../vpn/vpn-status.service.js';
+import { activeNetworkKey, networkKey } from '../shared/nas-network.js';
 
 const router = {
   id: 7, name: 'Router cabang', nasname: '10.88.0.3', ipAddress: '10.88.0.3', shortname: 'cabang',
@@ -22,8 +23,21 @@ function setup() {
     findMany: vi.fn(async () => [{ ...router, username: 'legacy-admin', password: 'legacy-password', _count: { accounts: 12 } }]),
     count: vi.fn(async () => 1), delete: vi.fn(),
   };
-  const prisma = { nas, pppoeAccount: { count: vi.fn(async () => 0) }, $transaction: vi.fn((queries) => Promise.all(queries)) };
-  return { nas, prisma, service: new RoutersService(prisma as unknown as PrismaService) };
+  const settings = new Map<string, string>();
+  const pools: any[] = [];
+  const prisma: any = { nas, pppoeAccount: { count: vi.fn(async () => 0) },
+    appSetting: {
+      findUnique: vi.fn(async ({ where }) => settings.has(where.key) ? { key: where.key, value: settings.get(where.key)! } : null),
+      findMany: vi.fn(async ({ where }) => [...settings].filter(([key]) => where.key.in.includes(key)).map(([key, value]) => ({ key, value }))),
+      upsert: vi.fn(async ({ where, create, update }) => { settings.set(where.key, settings.has(where.key) ? update.value : create.value); }),
+    },
+    ipPool: { findMany: vi.fn(async ({ where }) => pools.filter(pool => pool.routerNasId === where.routerNasId && where.name.in.includes(pool.name))), upsert: vi.fn(async ({ where, create, update }) => {
+      const current = pools.find(pool => pool.routerNasId === where.routerNasId_name.routerNasId && pool.name === where.routerNasId_name.name);
+      if (current) Object.assign(current, update); else pools.push({ id: BigInt(pools.length + 1), ...create });
+    }) },
+  };
+  prisma.$transaction = vi.fn((queries: any) => typeof queries === 'function' ? queries(prisma) : Promise.all(queries));
+  return { nas, prisma, settings, pools, service: new RoutersService(prisma as unknown as PrismaService) };
 }
 
 describe('Zero MikroTik API NAS registry', () => {
@@ -162,5 +176,49 @@ describe('Zero MikroTik API NAS registry', () => {
     const result = await pipe.transform({ name: 'Router', nasname: '10.88.0.3', username: 'admin', password: 'test-only', port: 8728 }, { type: 'body', metatype: SaveRouterDto });
     expect(result).toMatchObject({ name: 'Router', nasname: '10.88.0.3' });
     for (const key of ['username', 'password', 'port']) expect(result).not.toHaveProperty(key);
+  });
+
+  it('saves prefix plans atomically with NAS, generates pool commands and activates only after confirmation', async () => {
+    const { service, pools, settings, prisma } = setup();
+    const result = await service.createRouter({ name: router.name, nasname: router.nasname, radiusServerIp: router.radiusServerIp, internetCidr: '192.168.75.1/24', isolationCidr: '192.168.100.1/24' });
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function));
+    expect(pools).toEqual(expect.arrayContaining([expect.objectContaining({ routerNasId: 7, name: 'Internet', networkStart: '192.168.75.2', networkEnd: '192.168.75.254' })]));
+    expect(settings.has(activeNetworkKey(7))).toBe(false);
+    expect(settings.has('pppoe_isolation_router_7')).toBe(false);
+    expect(result.setup.networkNeedsConfirmation).toBe(true);
+    expect(result.setup.scriptRos7).toContain('/ip pool add name="Internet"');
+    await expect(service.confirmNetwork('7', 'wrong-script')).rejects.toThrow('Prefix pool berubah');
+    await service.confirmNetwork('7', result.setup.networkFingerprint!);
+    expect(settings.has(activeNetworkKey(7))).toBe(true);
+    expect(JSON.parse(settings.get('pppoe_isolation_router_7')!)).toMatchObject({ enabled: true, poolName: 'pool-isolir', subnet: '192.168.100.0/24', localAddress: '192.168.100.1', syncPending: true });
+    const updated = await service.updateRouter('7', { name: router.name, nasname: router.nasname, internetCidr: '192.168.76.1/24', isolationCidr: '192.168.100.1/24' });
+    expect(updated.setup.scriptRos7).toContain('/radius set [find where comment="UNZANET-RADIUS:VPN"]');
+    expect(updated.setup.scriptRos7).toContain('/ip pool set [find where name="Internet"] name="Internet" ranges="192.168.76.2-192.168.76.254"');
+    expect(JSON.parse(settings.get(activeNetworkKey(7))!).internet.cidr).toBe('192.168.75.1/24');
+    expect(JSON.parse(settings.get(networkKey(7))!).internet.cidr).toBe('192.168.76.1/24');
+    await expect(service.confirmNetwork('7', result.setup.networkFingerprint!)).rejects.toThrow('Prefix pool berubah');
+    await expect(service.confirmNetwork('7', updated.setup.networkFingerprint!)).rejects.toThrow('Tunggu sinkronisasi');
+    const config = JSON.parse(settings.get('pppoe_isolation_router_7')!); config.syncPending = false;
+    settings.set('pppoe_isolation_router_7', JSON.stringify(config));
+    await service.confirmNetwork('7', updated.setup.networkFingerprint!);
+    expect(JSON.parse(settings.get(activeNetworkKey(7))!).internet.cidr).toBe('192.168.76.1/24');
+  });
+
+  it('validates both prefixes and VPN overlap before writing the NAS', async () => {
+    const { service, nas } = setup();
+    const base = { name: router.name, nasname: router.nasname, radiusServerIp: router.radiusServerIp };
+    await expect(service.createRouter({ ...base, internetCidr: '192.168.75.1/24' })).rejects.toThrow('IP Pool Isolir');
+    await expect(service.createRouter({ ...base, internetCidr: '10.88.0.1/24', isolationCidr: '192.168.100.1/24' })).rejects.toThrow('IP NAS');
+    expect(nas.create).not.toHaveBeenCalled();
+  });
+  it('reuses a previously registered Internet pool while adding the new PPP profiles', async () => {
+    const { service, pools } = setup();
+    pools.push({ id: 9n, routerNasId: 7, name: 'Internet', networkStart: '192.168.75.1', networkEnd: '192.168.75.254' });
+    const result = await service.updateRouter('7', { name: router.name, nasname: router.nasname, internetCidr: '192.168.75.1/24', isolationCidr: '192.168.100.1/24' });
+    expect(result.setup.scriptRos7).toContain('/ip pool set [find where name="Internet"]');
+    expect(result.setup.scriptRos7).not.toContain('/ip pool add name="Internet"');
+    expect(result.setup.scriptRos7).toContain('/ppp profile add copy-from=default name="UNZANET-INTERNET-7"');
+    expect(pools.filter(pool => pool.name === 'Internet')).toHaveLength(1);
+    expect((await service.getRouterScript('7')).scriptRos7).toBe(result.setup.scriptRos7);
   });
 });

@@ -16,15 +16,12 @@ describe('Registered NAS pool plans and installation scripts', () => {
     const network = { listPools: vi.fn().mockResolvedValue({ data: [], warnings: ['registered only'] }) };
     return { service: new IpPoolsService(prisma as unknown as PrismaService, network as unknown as PppoeNetworkService), prisma, network, dto, pool };
   }
-  it('registers only the chosen NAS and returns an ownership-checked script', async () => {
+  it('registers only the chosen NAS and returns a direct add command', async () => {
     const { service, prisma, dto } = setup();
     const result = await service.createIpPool(dto);
     expect(prisma.nas.findUnique).toHaveBeenCalledWith({ where: { id: 3 } });
     expect(prisma.ipPool.create).toHaveBeenCalledWith({ data: { ...dto, createdAt: expect.any(Date), updatedAt: expect.any(Date) } });
-    expect(result.script).toContain('# NAS 3'); expect(result.script).toContain('UNZANET-POOL:3:12');
-    expect(result.script).toContain('ranges="10.0.0.2-10.0.0.254"');
-    expect(result.script).toContain('Pool nonkelola berbeda. Periksa manual; tidak ditimpa.');
-    expect(result.script).toContain('next-pool=none');
+    expect(result.script).toBe('/ip pool add name="customers" ranges="10.0.0.2-10.0.0.254" comment="UNZANET-POOL:3:12";');
   });
   it('rejects inactive NAS and reversed ranges before storing a pool', async () => {
     const { service, prisma, dto } = setup();
@@ -42,8 +39,9 @@ describe('Registered NAS pool plans and installation scripts', () => {
     const { service, prisma, dto } = setup();
     for (const id of ['3:*A', '-1', 'anything']) await expect(service.updateIpPool(id, dto)).rejects.toThrow('ID pool tidak valid');
     expect(prisma.ipPool.update).not.toHaveBeenCalled();
-    await service.updateIpPool('12', dto);
+    const result = await service.updateIpPool('12', dto);
     expect(prisma.ipPool.findUnique).toHaveBeenCalledWith({ where: { id: 12n } });
+    expect(result.script).toBe('/ip pool set [find where name="customers" and comment="UNZANET-POOL:3:12"] name="customers" ranges="10.0.0.2-10.0.0.254" next-pool=none;');
   });
   it('prevents moving a pool to another NAS', async () => {
     const { service, prisma, dto } = setup();
@@ -54,7 +52,7 @@ describe('Registered NAS pool plans and installation scripts', () => {
     const { service, dto } = setup();
     const result = await service.updateIpPool('12', { ...dto, name: 'new-customers' });
     expect(result.script).toContain('find where name="customers"');
-    expect(result.script).toContain('find where name="new-customers"');
+    expect(result.script).not.toMatch(/:if|:local|[{}]/);
     expect(result.script).toContain('UNZANET-POOL:3:12');
     expect(result.script).toContain('name="new-customers" ranges=');
   });
@@ -90,8 +88,7 @@ describe('Registered NAS pool plans and installation scripts', () => {
     const { service, prisma } = setup();
     const result = await service.removeIpPool('12');
     expect(prisma.ipPool.delete).toHaveBeenCalledWith({ where: { id: 12n } });
-    expect(result.script).toContain('find where name="customers" and comment="UNZANET-POOL:3:12"');
-    expect(result.script).toContain('Pool nonkelola/tidak ditemukan. Periksa manual.');
+    expect(result.script).toBe('/ip pool remove [find where name="customers" and comment="UNZANET-POOL:3:12"];');
     expect(result.message).toContain('Penghapusan pada router memerlukan script/manual');
   });
   it('paginates registered plans without discarding device-verification warnings', async () => {

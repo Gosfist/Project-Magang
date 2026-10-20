@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { IsolationService } from './isolation.service.js';
 import { RadiusService } from '../shared/radius.service.js';
+import { activeNetworkKey, nasNetwork } from '../../router/shared/nas-network.js';
 
 function setup() {
   const settings = new Map<string, string>();
@@ -39,6 +40,7 @@ describe('RADIUS isolation with manually installed router scripts', () => {
     expect(result.script).toContain('UNZANET-ISOLIR:3:OUT');
     expect(result.script).toContain('UNZANET-ISOLIR:3:IN');
     expect(result.script).toContain('UNZANET-ISOLIR:3:ROUTER');
+    expect(result.script).toContain(':if ([:len $item] = 0) do={ /ip pool add');
     expect(settings.size).toBe(0);
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(network.disconnect).not.toHaveBeenCalled();
@@ -113,5 +115,16 @@ describe('RADIUS isolation with manually installed router scripts', () => {
     pools[1].networkEnd = '192.168.100.250';
     await expect(service.save(3, { ...dto, scriptInstalled: true, scriptFingerprint: draft.scriptFingerprint })).rejects.toThrow('data pool berubah');
     expect(settings.size).toBe(0); expect(network.disconnect).not.toHaveBeenCalled();
+  });
+  it('reconnects normal and isolated sessions when NAS prefixes are confirmed, then avoids repeating matching sessions', async () => {
+    const { settings, enable, network, replies, sessions, service } = setup();
+    settings.set(activeNetworkKey(3), JSON.stringify(nasNetwork(3, '192.168.76.1/24', '192.168.100.1/24')));
+    await enable();
+    expect(network.disconnect).toHaveBeenCalledWith('normal', null, [sessions[1]]);
+    expect(replies).toContainEqual(expect.objectContaining({ username: 'normal', attribute: 'Mikrotik-Group', value: 'UNZANET-INTERNET-3' }));
+    sessions[0].framedipaddress = '192.168.100.2'; sessions[1].framedipaddress = '192.168.76.2';
+    network.disconnect.mockClear();
+    await service.refreshExpired();
+    expect(network.disconnect).not.toHaveBeenCalled();
   });
 });

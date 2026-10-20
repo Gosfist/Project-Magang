@@ -55,6 +55,9 @@ export class RoutersComponent implements OnInit {
   scriptData = signal<RouterScriptData | null>(null);
   scriptTab = signal<'ros7' | 'ros6'>('ros7');
   copied = signal(false);
+  confirming = signal(false);
+  scriptInstalled = false;
+  scriptRouterId: string | null = null;
 
   saving = signal(false);
 
@@ -66,7 +69,7 @@ export class RoutersComponent implements OnInit {
   private emptyForm() {
     return { vpnClientId: '', name: '', nasname: '', ipAddress: '', ports: 1812,
       coaPort: 3799, radiusServerIp: '', secret: '', vpnHost: '', vpnUsername: '',
-      vpnPassword: '', description: '', isActive: true };
+      vpnPassword: '', description: '', isActive: true, internetCidr: '', isolationCidr: '' };
   }
 
   ngOnInit(): void {
@@ -115,6 +118,8 @@ export class RoutersComponent implements OnInit {
           vpnPassword: '',
           description: item.description ?? '',
           isActive: item.isActive,
+          internetCidr: item.internetCidr ?? '',
+          isolationCidr: item.isolationCidr ?? '',
         }
       : this.emptyForm();
     this.open.set(true);
@@ -135,8 +140,8 @@ export class RoutersComponent implements OnInit {
     };
 
     const req = this.editing()
-      ? this.api.patch<{ message: string; setup: RouterScriptData }>(`/router/nas/${this.editing()!.id}`, body)
-      : this.api.post<{ message: string; setup: RouterScriptData }>('/router/nas', body);
+      ? this.api.patch<{ message: string; router: { id: string }; setup: RouterScriptData }>(`/router/nas/${this.editing()!.id}`, body)
+      : this.api.post<{ message: string; router: { id: string }; setup: RouterScriptData }>('/router/nas', body);
 
     req.subscribe({
       next: (r) => {
@@ -145,6 +150,7 @@ export class RoutersComponent implements OnInit {
         this.form.secret = '';
         this.open.set(false);
         this.toast.set({ message: r.message, type: 'success' });
+        this.scriptRouterId = r.router?.id ?? this.editing()?.id ?? null;
         this.showScript(r.setup);
         this.load();
       },
@@ -176,7 +182,7 @@ export class RoutersComponent implements OnInit {
     this.api
       .get<RouterScriptData>(`/router/nas/${item.id}/script`)
       .subscribe({
-        next: (r) => this.showScript(r),
+        next: (r) => { this.scriptRouterId = item.id; this.showScript(r); },
         error: (e) => this.toast.set({ message: e.message, type: 'error' }),
       });
   }
@@ -185,6 +191,7 @@ export class RoutersComponent implements OnInit {
     this.scriptData.set(data);
     this.scriptTab.set('ros7');
     this.copied.set(false);
+    this.scriptInstalled = false;
     this.scriptModalOpen.set(true);
   }
 
@@ -195,8 +202,25 @@ export class RoutersComponent implements OnInit {
   }
 
   closeScript(): void {
+    if (this.confirming()) return;
     this.scriptModalOpen.set(false);
     this.scriptData.set(null);
+    this.scriptRouterId = null;
+    this.scriptInstalled = false;
+  }
+
+  confirmNetwork(): void {
+    const data = this.scriptData(), id = this.scriptRouterId;
+    if (!id || !data?.networkFingerprint || !this.scriptInstalled || this.confirming()) return;
+    this.confirming.set(true);
+    this.api.post<{ message: string }>(`/router/nas/${id}/network/confirm`, { fingerprint: data.networkFingerprint }).subscribe({
+      next: result => {
+        this.confirming.set(false);
+        this.scriptData.set({ ...data, networkNeedsConfirmation: false });
+        this.toast.set({ message: result.message, type: 'success' }); this.load();
+      },
+      error: error => { this.confirming.set(false); this.toast.set({ message: error.message, type: 'error' }); },
+    });
   }
 
   copyScript(): void {

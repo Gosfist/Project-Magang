@@ -8,15 +8,17 @@ Buat akun melalui Router > Klien VPN. Server SSTP berjalan pada VPS website/Free
 
 Pada tambah/edit NAS pilih klien VPN yang Siap dan belum dipakai router lain. IP sumber RADIUS, tujuan Disconnect, host, dan username berasal dari akun. Password otomatis dimasukkan dalam script tanpa disalin ke tabel NAS. Tidak ada impor CA pada script sederhana. Satu klien untuk satu router juga ditegakkan database. Kredensial API/admin MikroTik tidak digunakan.
 
-Simpan membuka script tiga bagian untuk dipasang melalui Terminal perangkat: SSTP port 4443, RADIUS/Disconnect beserta rute /32 dan firewall, lalu PPP AAA/accounting. Verifikasi sertifikat server dimatikan pada mode sederhana. TLS tetap dipakai, tetapi identitas server tidak diverifikasi sehingga ada risiko server palsu. Tombol Script menghasilkan perintah add langsung dari akun tersimpan, tanpa :if atau pemeriksaan duplikat. Script hanya untuk pemasangan awal. Untuk mengganti username/password akun yang sudah terpasang, edit User/Password interface SSTP melalui Winbox. Paste ulang dapat membuat entri ganda atau bentrok nama tunnel. Uji tunnel dan PPPoE nyata tetap diperlukan. NAS lokal tanpa VPN masih dapat diisi manual.
+Simpan membuka script SSTP port 4443, RADIUS/Disconnect, PPP AAA/accounting, kedua pool/profil PPP dan firewall isolir. Tambah menghasilkan add; Edit menghasilkan set untuk konfigurasi terpasang dan add untuk pool/profil baru. Semua perintah langsung tanpa if. Verifikasi sertifikat server dimatikan pada mode sederhana. Script unduhan tidak dieksekusi aplikasi. Uji tunnel dan PPPoE nyata tetap diperlukan; NAS lokal tetap didukung.
 
 Worker root terpisah menerapkan perubahan client SQL sekitar setiap 60 detik setelah config check. Web tidak diberi sudo. Lihat [panduan instalasi](instalasi-ubuntu-vpn.md).
 
 ## IP Pool
 
-Daftar pool merupakan metadata per NAS. Tambah/edit/hapus menghasilkan script untuk dipasang operator, bukan perintah ke perangkat. Pool yang dipakai paket/isolir tetap dilindungi. Pool lama tanpa relasi NAS perlu dipetakan. Pool perangkat yang tidak didaftarkan tidak muncul otomatis.
+Submenu IP Pool dan Isolir PPPoE dipindahkan ke Tambah/Edit Router NAS; URL lama mengarah ke Router / NAS. Isi IP Pool Internet dan IP Pool Isolir dengan gateway/prefix, misalnya 192.168.75.1/24 dan 192.168.100.1/24. Rentang otomatis mengecualikan network, broadcast, dan gateway. Subnet tidak boleh tumpang tindih atau mencakup IP NAS/RADIUS. Pool bernama Internet dan pool-isolir pada setiap NAS, profilnya UNZANET-INTERNET-ID dan UNZANET-ISOLIR-ID.
 
-Harga Paket menyimpan nama pool untuk Framed Pool; nama/rentang harus benar benar tersedia pada router tujuan. Penggunaan dan sisa IP pool tidak dipantau serta ditampilkan tidak diketahui. Tidak ada pembacaan /ip/pool/used atau polling SNMP.
+Klik Salin Script lalu paste ke Terminal Winbox. Pool lama bernama Internet yang sudah terdaftar digunakan kembali melalui set; profil internet baru dibuat melalui add. Pastikan rule drop isolir berada sebelum accept/FastTrack. Centang pernyataan pemasangan lalu Konfirmasi Pemasangan di dialog script. Konfirmasi ini adalah pemeriksaan operator, bukan pembacaan perangkat oleh backend.
+
+Draft dan prefix terkonfirmasi disimpan terpisah pada AppSetting. Simpan/Edit tidak langsung mengganti pool RADIUS aktif. Konfirmasi fingerprint terbaru mengaktifkan prefix dan menjadwalkan sinkronisasi sesi, termasuk reconnect normal ketika gateway/subnet internet berubah. Harga Paket mengatur harga/kecepatan/masa aktif; RADIUS memakai pool/profil NAS pelanggan. NAS lama tanpa prefix terkonfirmasi tetap memakai referensi pool paket lama. Penggunaan/sisa IP router tidak dipantau; tidak ada /ip/pool/used atau polling SNMP.
 
 ## Perubahan pelanggan dan pemutusan sesi
 

@@ -3,9 +3,10 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { RadiusService } from '../shared/radius.service.js';
 import { PppoeNetworkService, type AccountingSession } from '../shared/pppoe-network.service.js';
 import { emptyIsolation, ipNumber, isolatedService, isolationKey, isolationProfile, ISOLATION_COMMENT, rangeIntervals, readIsolation, subnetBounds, type IsolationConfig } from '../shared/isolation-config.js';
-import { poolScript, rosQuote } from '../shared/router-script.js';
+import { ensurePoolScript, rosQuote } from '../shared/router-script.js';
 import { SaveIsolationDto } from './isolation.dto.js';
 import { createHash } from 'node:crypto';
+import { internetPoolName, internetProfile, readNasNetwork } from '../../router/shared/nas-network.js';
 
 type SyncJob = { status: 'running' | 'completed' | 'failed'; processed: number; reconnected: number; message: string };
 
@@ -69,7 +70,7 @@ export class IsolationService implements OnModuleInit, OnModuleDestroy {
     const commands = ['# Periksa subnet tidak tumpang tindih dengan jaringan interface/pool lain pada router.', '{',
       `:if ([:len [/ppp profile find where name=${profile}]] > 1) do={ :error "Profil isolir ganda"; };`,
       ...['OUT', 'IN', 'ROUTER'].map(tag => `:if ([:len [/ip firewall filter find where comment=${q(`${ISOLATION_COMMENT}${routerId}:${tag}`)}]] > 1) do={ :error "Rule isolir ganda; periksa manual"; };`),
-      poolScript(pool),
+      ensurePoolScript(pool),
       `:local profile [/ppp profile find where name=${profile}];`,
       ':if ([:len $profile] > 1) do={ :error "Profil isolir ganda"; };',
       `:if ([:len $profile] = 0) do={ /ppp profile add name=${profile} local-address=${q(dto.localAddress)} remote-address=${q(dto.poolName)} use-ipv6=no only-one=yes change-tcp-mss=yes session-timeout=0s idle-timeout=0s; } else={ /ppp profile set $profile local-address=${q(dto.localAddress)} remote-address=${q(dto.poolName)} use-ipv6=no only-one=yes change-tcp-mss=yes session-timeout=0s idle-timeout=0s; };`];
@@ -120,6 +121,7 @@ export class IsolationService implements OnModuleInit, OnModuleDestroy {
   private async synchronize(routerId: number, config: IsolationConfig, previous: IsolationConfig, job: SyncJob, force = true) {
     try {
       let cursor = 0n;
+      const network = await readNasNetwork(this.prisma, routerId);
       const expectedStates = new Map<string, { isolated: boolean; changed: boolean }>();
       while (true) {
         const accounts = await this.prisma.pppoeAccount.findMany({ where: { routerNasId: routerId, id: { gt: cursor } }, include: { package: { include: { ipPool: true } }, paymentPromises: { where: { status: 'ACTIVE' }, orderBy: { id: 'desc' }, take: 1 } }, orderBy: { id: 'asc' }, take: 100 });
@@ -130,9 +132,9 @@ export class IsolationService implements OnModuleInit, OnModuleDestroy {
         const replyMap = new Map(replies.map(row => [`${row.username}:${row.attribute}`, row.value])), checkMap = new Map(checks.map(row => [`${row.username}:${row.attribute}`, row.value]));
         for (const account of accounts) {
           let isolated = isolatedService(account, account.paymentPromises[0] ?? null);
-          const pool = isolated && config.enabled ? config.poolName : account.package.ipPool?.name || account.package.addressPool;
+          const pool = isolated && config.enabled ? config.poolName : network ? internetPoolName : account.package.ipPool?.name || account.package.addressPool;
           const current = config.enabled && !force && replyMap.get(`${account.username}:Framed-Pool`) === pool
-            && replyMap.get(`${account.username}:Mikrotik-Group`) === (isolated ? config.profileName : undefined)
+            && replyMap.get(`${account.username}:Mikrotik-Group`) === (isolated ? config.profileName : network ? internetProfile(routerId) : undefined)
             && replyMap.get(`${account.username}:Mikrotik-Rate-Limit`) === `${account.package.uploadMbps}M/${account.package.downloadMbps}M`
             && checkMap.has(`${account.username}:Cleartext-Password`) && checkMap.get(`${account.username}:Simultaneous-Use`) === '1' && !checkMap.has(`${account.username}:Expiration`);
           if (!current) {
@@ -154,7 +156,11 @@ export class IsolationService implements OnModuleInit, OnModuleDestroy {
       for (const session of sessions) {
         const expected = expectedStates.get(session.username); if (!expected) continue;
         const inPool = !!bounds && !!session.framedipaddress && bounds[0] <= ipNumber(session.framedipaddress) && ipNumber(session.framedipaddress) <= bounds[1];
-        const mismatch = config.enabled ? (session.framedipaddress ? expected.isolated !== inPool : expected.changed) : expected.isolated || inPool;
+        const expectedPool = network ? expected.isolated ? network.isolation : network.internet : null;
+        const ip = session.framedipaddress ? ipNumber(session.framedipaddress) : null;
+        const mismatch = network && config.enabled
+          ? config.syncPending || (ip !== null && expectedPool ? ip < ipNumber(expectedPool.start) || ip > ipNumber(expectedPool.end) : expected.changed)
+          : config.enabled ? (session.framedipaddress ? expected.isolated !== inPool : expected.changed) : expected.isolated || inPool;
         if (mismatch) targets.set(session.username, [...(targets.get(session.username) || []), session]);
       }
       const warnings: string[] = [], entries = [...targets];
@@ -165,6 +171,6 @@ export class IsolationService implements OnModuleInit, OnModuleDestroy {
       if (warnings.length) throw new Error(warnings.join(' '));
       await this.prisma.appSetting.update({ where: { key: isolationKey(routerId) }, data: { value: JSON.stringify({ ...config, syncPending: false }) } });
       job.status = 'completed'; job.message = 'Sinkronisasi RADIUS selesai. IP berubah setelah pelanggan reconnect; pemasangan router tetap diverifikasi manual.';
-    } catch (error) { job.status = 'failed'; job.message = `Sinkronisasi tertunda. ${error instanceof Error ? error.message : 'Periksa RADIUS dan koneksi NAS.'} Jalankan Sinkron Ulang.`; }
+    } catch (error) { job.status = 'failed'; job.message = `Sinkronisasi tertunda. ${error instanceof Error ? error.message : 'Periksa RADIUS dan koneksi NAS.'} Akan dicoba ulang secara berkala.`; }
   }
 }

@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
+import { LucideCheck, LucideCopy, LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
 import { latestRequest } from '../../../../core/services/latest-request';
 import { IpPool, PageMeta } from '../../../../shared/models/types';
@@ -13,6 +13,8 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
   standalone: true,
   imports: [
     FormsModule,
+    LucideCheck,
+    LucideCopy,
     LucidePencil,
     LucidePlus,
     LucideSearch,
@@ -36,6 +38,7 @@ export class IpPoolsComponent implements OnInit {
   routers = signal<{ id: number; nasname: string; shortname: string }[]>([]);
   saving = signal(false);
   script = signal<string | null>(null);
+  copied = signal(false);
   form = { routerNasId: 0, name: '', networkStart: '', networkEnd: '' };
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -91,6 +94,7 @@ export class IpPoolsComponent implements OnInit {
       next: (r) => {
         this.saving.set(false);
         this.open.set(false);
+        this.copied.set(false);
         this.script.set(r.script);
         this.toast.set({ message: r.message, type: r.warnings?.length ? 'error' : 'success' });
         this.load();
@@ -103,11 +107,54 @@ export class IpPoolsComponent implements OnInit {
     if (!confirm(`Hapus pendaftaran IP pool ${item.name}? Konfigurasi pada router dihapus melalui script.`)) return;
     this.api.delete<{ message: string; script?: string; warnings?: string[] }>(`/pppoe/ip-pools/${item.id}`).subscribe({
       next: (r) => {
+        this.copied.set(false);
         this.script.set(r.script || null);
         this.toast.set({ message: r.message, type: r.warnings?.length ? 'error' : 'success' });
         this.load();
       },
       error: (e) => this.toast.set({ message: e.message, type: 'error' }),
     });
+  }
+
+  closeScript(): void {
+    this.script.set(null);
+    this.copied.set(false);
+  }
+
+  async copyScript(): Promise<void> {
+    const text = this.script();
+    if (!text) return;
+    this.copied.set(false);
+    try {
+      if (navigator.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          this.copyWithSelection(text);
+        }
+      } else {
+        this.copyWithSelection(text);
+      }
+      if (this.script() === text) this.copied.set(true);
+    } catch {
+      this.toast.set({ message: 'Script gagal disalin. Izinkan akses clipboard pada browser lalu coba lagi.', type: 'error' });
+    }
+  }
+
+  private copyWithSelection(text: string): void {
+    const focused = document.activeElement;
+    const input = document.createElement('textarea');
+    input.value = text;
+    input.readOnly = true;
+    input.style.position = 'fixed';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
+    try {
+      input.select();
+      if (!document.execCommand('copy')) throw new Error('Copy failed');
+    } finally {
+      input.remove();
+      if (focused instanceof HTMLElement) focused.focus({ preventScroll: true });
+    }
   }
 }
