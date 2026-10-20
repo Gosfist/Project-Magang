@@ -2,9 +2,11 @@
 
 ## Router dan script
 
-Tambah atau edit NAS menyimpan IP sumber RADIUS, alamat tujuan Disconnect, port autentikasi/Disconnect, IP server, shared secret, serta metadata VPN opsional. Tidak ada username/password admin, port API, atau login API MikroTik. Password VPN router hanya dipakai untuk menghasilkan script saat Simpan dan tidak disimpan.
+Buat akun melalui Router > Klien VPN. Server SSTP berjalan pada VPS website/FreeRADIUS yang sama, TCP 4443. Akun mendapat IP unik 10.88.0.2-254, server RADIUS 10.88.0.1. Worker root menerapkan akun sekitar 15 detik. Siap berarti akun diterapkan, belum berarti tunnel online. Password tersimpan terenkripsi dan dapat ditampilkan administrator; endpoint kredensial tidak di-cache.
 
-Simpan membuka script pemasangan otomatis. Untuk router baru, isi akun VPN router dan satu CA publik PEM pada form, lalu salin script sekali ke Terminal perangkat. Script mengimpor CA, mengatur SSTP terverifikasi, rute server RADIUS, RADIUS, incoming Disconnect 3799, serta firewall terkait. CA dari form tidak disimpan dalam tabel NAS dan tidak boleh berisi private key. Rute dua arah melalui gateway harus tersedia. Endpoint lama tes login API dan monitoring router dihapus. Status accounting/RADIUS membuktikan komunikasi sesuai data yang masuk, bukan CPU atau jangkauan seluruh router.
+Pada tambah/edit NAS pilih klien VPN yang Siap dan belum dipakai router lain. IP sumber RADIUS, tujuan Disconnect, host, dan username berasal dari akun. Password/CA otomatis dimasukkan dalam script tanpa disalin ke tabel NAS. Satu klien untuk satu router juga ditegakkan database. Kredensial API/admin MikroTik tidak digunakan.
+
+Simpan membuka script untuk dipasang melalui Terminal perangkat: impor CA, SSTP terverifikasi port 4443, rute /32 ke RADIUS, PPP AAA/accounting, incoming Disconnect 3799, dan firewall. Tombol Script membuat ulang script lengkap dari akun tersimpan. Uji tunnel dan PPPoE nyata tetap diperlukan. NAS lokal tanpa VPN masih dapat diisi manual.
 
 Worker root terpisah menerapkan perubahan client SQL sekitar setiap 60 detik setelah config check. Web tidak diberi sudo. Lihat [panduan instalasi](instalasi-ubuntu-vpn.md).
 
@@ -28,6 +30,6 @@ Form pelanggan/foto KTP, pemilihan ODP, kepemilikan role, serta workflow pembaya
 
 ## Instalasi baru dan validasi
 
-Instalasi baru memakai database.sql pada database kosong di VM baru. Skema ini sudah tidak memiliki kolom kredensial API NAS atau tabel statistik router. Tidak ada migrasi terpisah. Jika layanan lain tidak menggunakan API, nonaktifkan layanan api/api ssl pada perangkat secara manual setelah memeriksa integrasi lain.
+Instalasi baru memakai database.sql pada database kosong pada VPS baru. Skema ini sudah tidak memiliki kolom kredensial API NAS atau tabel statistik router. Tidak ada migrasi terpisah. Jika layanan lain tidak menggunakan API, nonaktifkan layanan api/api ssl pada perangkat secara manual setelah memeriksa integrasi lain.
 
 Tes script, database tiruan, dan UDP lokal tidak membuktikan NAS nyata. Uji dial pelanggan, accounting, Disconnect, isolir, dan pemulihan pada lab sebelum produksi.

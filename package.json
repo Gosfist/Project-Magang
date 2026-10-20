@@ -12,6 +12,7 @@
     "updatefe": "bash scripts/server-update.sh fe",
     "database:generate": "node scripts/generate-database-sql.mjs",
     "database:check": "node scripts/generate-database-sql.mjs --check",
-    "updatebot": "bash scripts/server-update.sh bot"
+    "updatebot": "bash scripts/server-update.sh bot",
+    "setupvpnserver": "sudo bash install-sstp-ubuntu24.sh"
   }
 }

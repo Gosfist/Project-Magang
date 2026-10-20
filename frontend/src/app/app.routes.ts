@@ -111,6 +111,7 @@ export const routes: Routes = [
           ),
         canActivate: [roleGuard('admin')],
       },
+      { path: 'router/vpn-client', loadComponent: () => import('./pages/dashboard/router/vpn-client/vpn-client.component').then(m => m.VpnClientComponent), canActivate: [roleGuard('admin')] },
       { path: 'pppoe/isolation', loadComponent: () => import('./pages/dashboard/pppoe/isolation/isolation.component').then(m => m.IsolationComponent), canActivate: [roleGuard('admin')] },
       {
         path: 'tools/kalkulator-redaman',

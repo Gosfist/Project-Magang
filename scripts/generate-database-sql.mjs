@@ -18,7 +18,7 @@ export function renderDatabaseSql(schemaSql) {
 -- Pilih database MySQL KOSONG sebelum mengimpor file ini.
 -- Impor sekali saat instalasi awal, bukan saat update aplikasi.
 -- Akun awal dibuat terpisah dengan npm run db:seed dari folder backend.
--- Tabel VPN legacy dipertahankan untuk kompatibilitas skema; fitur webnya sudah dihapus.
+-- Klien VPN SSTP dikelola web dan diterapkan oleh worker VPS; field WireGuard hanya legacy.
 
 SET NAMES utf8mb4;
 

@@ -11,6 +11,16 @@ spec.loader.exec_module(module)
 
 
 class InstallerConfigurationTests(unittest.TestCase):
+    def test_colocated_server_keeps_radius_gateway_and_does_not_create_an_ubuntu_client(self):
+        config = {**self.config, 'NETWORK_MODE': 'server', 'WEB_URL': 'https://web.example.net',
+                  'VPN_RADIUS_IP': '10.88.0.1', 'VPN_ROUTER_IP': '10.88.0.2', 'VPN_SERVER': '192.0.2.10'}
+        files = module.render(config)
+        backend = files['/var/www/Project-Magang/backend/.env']
+        self.assertIn('VPN_SSTP_HOST="192.0.2.10"', backend)
+        self.assertIn('RADIUS_DISCONNECT_SOURCE_IP="10.88.0.1"', backend)
+        self.assertNotIn('/etc/ppp/peers/sstp-radius', files)
+        self.assertIn('FRONTEND_URL="https://web.example.net"', backend)
+
     def setUp(self):
         self.config = dict(
             ROOT_DIR='/var/www/Project-Magang', WEB_URL='http://192.0.2.10',

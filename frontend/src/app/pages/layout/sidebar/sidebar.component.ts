@@ -127,6 +127,7 @@ export class SidebarComponent implements OnInit {
     ['ODP', '/dashboard/mainCore/odp'],
   ];
   readonly routerLinks = [
+    ['Klien VPN', '/dashboard/router/vpn-client'],
     ['Router / NAS', '/dashboard/router/routers'],
   ];
   readonly pppoeLinks = [

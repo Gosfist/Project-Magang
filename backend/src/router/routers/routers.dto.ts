@@ -6,6 +6,7 @@ const trim = ({ value }: { value: unknown }) => typeof value === 'string' ? valu
 export class SaveRouterDto {
   @Transform(trim) @IsString() @IsNotEmpty() @MaxLength(100) name: string;
   @Transform(trim) @IsIP('4') nasname: string;
+  @IsOptional() @IsString() @Matches(/^[1-9]\d*$/) vpnClientId?: string | null;
   @Transform(trim) @IsOptional() @IsString() @MaxLength(32) shortname?: string;
   @Transform(trim) @IsOptional() @IsString() @MaxLength(30) type?: string;
   @Transform(trim) @IsOptional() @IsIP('4') ipAddress?: string;

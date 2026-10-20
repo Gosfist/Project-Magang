@@ -29,22 +29,29 @@
 
   <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Router NAS'" (closeModal)="closeForm()">
     <form (ngSubmit)="save()" class="space-y-4">
+      <fieldset class="rounded-lg border p-3 space-y-3"><legend class="px-1 text-sm font-medium">Klien VPN</legend>
+        <label class="label" for="nas-vpn-client">Pilih Klien VPN</label>
+        <select id="nas-vpn-client" class="input" name="vpnClientId" [(ngModel)]="form.vpnClientId" (ngModelChange)="selectVpn()">
+          <option value="">Tanpa VPN (jaringan lokal)</option>
+          @for (client of vpnClients(); track client.id) {
+            @if (!client.routers.length || client.id === editing()?.vpnClientId) {
+              <option [value]="client.id" [disabled]="!client.provisionedAt || !client.isActive">{{ client.username }} / {{ client.vpnIp }}{{ client.provisionedAt ? '' : ' (Menunggu server)' }}</option>
+            }
+          }
+        </select>
+        <p class="text-xs text-slate-500">Buat akun pada menu Klien VPN terlebih dahulu. IP NAS, IP RADIUS, akun, dan CA akan diisi dari klien yang dipilih. Satu klien untuk satu router.</p>
+      </fieldset>
       <div class="grid gap-4 sm:grid-cols-2">
         <div><label class="label">Nama Router *</label><input class="input" required [(ngModel)]="form.name" name="name" placeholder="MikroTik Cabang 1" /></div>
         <div><label class="label">Tipe Router *</label><select class="input" required [(ngModel)]="form.type" name="type"><option value="mikrotik">MikroTik Router</option><option value="gateway">Gateway VPS</option><option value="other">Other NAS Device</option></select></div>
-        <div><label class="label">IP NAS / Sumber RADIUS *</label><input class="input" required [(ngModel)]="form.nasname" name="nasname" placeholder="IP VPN router, misalnya 10.255.0.2" /></div>
-        <div><label class="label">IP Tujuan Disconnect</label><input class="input" [(ngModel)]="form.ipAddress" name="ipAddress" placeholder="Kosong = IP NAS" /></div>
-        <div><label class="label">IP Server FreeRADIUS</label><input class="input" [(ngModel)]="form.radiusServerIp" name="radiusServerIp" placeholder="Kosong = pengaturan server" /></div>
+        <div><label class="label">IP NAS / Sumber RADIUS *</label><input class="input" required [(ngModel)]="form.nasname" [readonly]="!!form.vpnClientId" name="nasname" placeholder="IP VPN router, misalnya 10.88.0.2" /></div>
+        <div><label class="label">IP Tujuan Disconnect</label><input class="input" [(ngModel)]="form.ipAddress" [readonly]="!!form.vpnClientId" name="ipAddress" placeholder="Kosong = IP NAS" /></div>
+        <div><label class="label">IP Server FreeRADIUS</label><input class="input" [(ngModel)]="form.radiusServerIp" [readonly]="!!form.vpnClientId" name="radiusServerIp" placeholder="Kosong = pengaturan server" /></div>
         <div><label class="label">Port Auth RADIUS</label><input type="number" min="1" max="65535" required class="input" [(ngModel)]="form.ports" name="ports" /></div>
         <div><label class="label">Port Disconnect</label><input type="number" min="1" max="65535" required class="input" [(ngModel)]="form.coaPort" name="coaPort" /></div>
       </div>
       <div><label class="label">Shared Secret RADIUS</label><div class="flex gap-2"><input type="password" class="input font-mono" [(ngModel)]="form.secret" name="secret" autocomplete="new-password" [placeholder]="editing() ? 'Kosong = tetap memakai secret tersimpan' : 'Kosong = dibuat otomatis oleh server'" /><button type="button" class="btn-secondary whitespace-nowrap" (click)="randomizeSecret()"><svg lucideRefreshCw [size]="15"></svg> Acak</button></div></div>
-      <fieldset class="rounded-lg border p-3 space-y-3"><legend class="px-1 text-sm font-medium">VPN SSTP (opsional)</legend>
-        <p class="text-xs text-slate-500">Isi akun VPN router yang sudah dibuat pada gateway. Sertakan CA publik bila belum dipercaya router agar VPN dan RADIUS dapat dipasang dalam satu kali paste. Password VPN hanya dipakai untuk script saat ini; isi ulang melalui form ini bila perlu membuat tunnel kembali.</p>
-        <div><label class="label">Host Server VPN</label><input class="input" [(ngModel)]="form.vpnHost" name="vpnHost" placeholder="vpn.domain-anda.id" /></div>
-        <div class="grid gap-4 sm:grid-cols-2"><div><label class="label">Username VPN</label><input class="input" [(ngModel)]="form.vpnUsername" name="vpnUsername" autocomplete="off" /></div><div><label class="label">Password VPN untuk Script Ini</label><input type="password" class="input" [(ngModel)]="form.vpnPassword" name="vpnPassword" autocomplete="new-password" /></div></div>
-        <div><label class="label">Sertifikat CA VPN Publik (PEM)</label><textarea class="input font-mono text-xs" rows="4" maxlength="3900" [(ngModel)]="form.vpnCaCertificate" name="vpnCaCertificate" placeholder="-----BEGIN CERTIFICATE-----"></textarea><p class="mt-1 text-xs text-slate-500">Salin satu CA publik dari pengelola gateway. Script mengimpor dan mempercayai CA ini sebelum membuat SSTP. Jangan masukkan private key. Kosongkan jika CA sudah dipercaya router.</p></div>
-      </fieldset>
+
       <div><label class="label">Deskripsi / Catatan</label><textarea class="input" rows="2" [(ngModel)]="form.description" name="description"></textarea></div>
       @if (editing()) { <label class="flex items-center gap-3 rounded-lg border p-3"><input type="checkbox" [(ngModel)]="form.isActive" name="isActive" /><span class="text-sm">Pendaftaran NAS aktif</span></label> }
       <div class="flex justify-end gap-3 pt-2"><button type="button" class="btn-secondary" (click)="closeForm()">Batal</button><button class="btn-primary" [disabled]="saving()">{{ saving() ? 'Menyimpan...' : 'Simpan & Buat Script' }}</button></div>

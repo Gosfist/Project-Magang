@@ -11,16 +11,16 @@ from urllib.parse import urlsplit
 
 def validate(config):
     mode = config.get('NETWORK_MODE', 'vpn')
-    if mode not in ('web', 'local', 'vpn'):
-        raise ValueError('Mode jaringan harus web, local atau vpn.')
+    if mode not in ('web', 'local', 'vpn', 'server'):
+        raise ValueError('Mode jaringan harus web, local, vpn atau server.')
     root = PurePosixPath(config['ROOT_DIR'])
     if not str(root).startswith('/var/www/') or '..' in root.parts or not re.fullmatch(r'/[A-Za-z0-9_./-]+', str(root)):
         raise ValueError('Folder repo harus absolut tanpa spasi, tanda kutip, atau backslash.')
     url = urlsplit(config['WEB_URL'])
-    if (url.scheme != 'http' or not url.hostname or url.username or url.password
+    if (url.scheme not in ('http', 'https') or not url.hostname or url.username or url.password
             or url.path not in ('', '/') or url.query or url.fragment
             or (url.port is not None and not 1 <= url.port <= 65535)):
-        raise ValueError('URL web harus http://IP atau http://domain dengan port valid dan tanpa path.')
+        raise ValueError('URL web harus http:// atau https:// diikuti IP atau domain dengan port valid dan tanpa path.')
     if not re.fullmatch(r'[A-Za-z0-9.-]+', url.hostname):
         raise ValueError('Host web harus IPv4 atau domain yang valid.')
     if mode == 'vpn' and not re.fullmatch(r'[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?', config['VPN_SERVER']):
@@ -94,6 +94,7 @@ def render(config):
         'BOT_WHATSAPP_URL': 'http://127.0.0.1:3002', 'BOT_API_KEY': config['BOT_API_KEY'],
         'RADIUS_LOG_TIMEZONE': 'WIB', 'RADIUS_SERVER_IP': config['VPN_RADIUS_IP'] if config.get('NETWORK_MODE', 'vpn') != 'web' else '',
         'RADIUS_DISCONNECT_SOURCE_IP': config['VPN_RADIUS_IP'] if config.get('NETWORK_MODE', 'vpn') != 'web' else '',
+        'VPN_SSTP_HOST': config.get('VPN_SERVER', '') if config.get('NETWORK_MODE') == 'server' else '',
         'RADIUS_ACCOUNTING_STALE_SECONDS': '900',
         'RADIUS_ACCOUNTING_TIMEZONE': 'WIB',
         'UPLOADS_DIR': root + '/uploads',

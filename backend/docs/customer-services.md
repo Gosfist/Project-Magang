@@ -1,6 +1,6 @@
 # Update Data Pelanggan: filter, log, invoice, Add-ons, Janji Bayar
 
-Frontend dan backend perlu diperbarui bersama. Seluruh tabel dan perubahan tanpa API tercakup langsung dalam [`../prisma/database.sql`](../prisma/database.sql). Gunakan VM VirtualBox baru dengan database kosong; tidak ada migrasi terpisah. Jangan mengimpor ulang SQL lengkap ke database berisi data.
+Frontend dan backend perlu diperbarui bersama. Seluruh tabel dan perubahan tanpa API tercakup langsung dalam [`../prisma/database.sql`](../prisma/database.sql). Gunakan VPS Ubuntu baru dengan database kosong; tidak ada migrasi terpisah. Jangan mengimpor ulang SQL lengkap ke database berisi data.
 
 Untuk instalasi baru, sesudah membuat database kosong dan mengisi `backend/.env`, jalankan di Ubuntu:
 

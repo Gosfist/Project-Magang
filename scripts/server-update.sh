@@ -78,6 +78,10 @@ if [[ "$MODE" == "all" || "$MODE" == "be" ]]; then
     bash "$ROOT_DIR/scripts/setup-radius-refresh.sh"
   fi
 
+  if [[ -f /etc/accel-ppp.conf && -f /etc/unzanet-public/sstp-ca.crt ]]; then
+    sudo bash "$ROOT_DIR/scripts/setup-vpn-sync.sh"
+  fi
+
   log "Reload dan start backend"
   sudo systemctl daemon-reload
   sudo systemctl start "$SERVICE_NAME"

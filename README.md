@@ -9,17 +9,22 @@ Fitur yang dipertahankan: web profile, login JWT, dashboard, role admin/petugas,
 
 ## Instalasi Ubuntu baru
 
-Panduan instalasi utama adalah [`install.doc`](install.doc), dengan [sumber teks yang sama](backend/docs/instalasi-ubuntu-vpn.md). Urutannya: pasang Ubuntu VirtualBox dengan DHCP/NAT, aktifkan SSH dan remote dari CMD Windows, build frontend di laptop dengan `npm.cmd run preparefe`, commit/push paket frontend ke GitHub dan clone repo beserta paket di Ubuntu, jalankan `npm run install`, sambungkan VPN Ubuntu dengan `npm run setupvpn`, buka website dan uji login, kemudian tambah NAS untuk membuat satu script VPN/RADIUS MikroTik. VirtualBox meneruskan host `127.0.0.1:2222` ke guest SSH port 22 serta host `127.0.0.1:8080` ke guest Apache port 80. Internet boleh dari Wi-Fi, hotspot, atau provider; Ubuntu dan MikroTik tidak perlu satu LAN. Pada VPS gunakan jaringan provider. Installer ditujukan untuk Ubuntu Server 24.04 LTS baru, repo di `/var/www/Project-Magang`, Node.js 22, internet, dan user sudo.
+Panduan utama adalah [`install.doc`](install.doc), dengan [sumber yang sama](backend/docs/instalasi-ubuntu-vpn.md). Website, MySQL, FreeRADIUS, dan server SSTP berjalan langsung pada satu VPS Ubuntu Server 24.04 LTS. Website memakai 80/443; SSTP memakai TCP 4443. Tidak memerlukan VirtualBox atau layanan VPN berbayar.
 
-Setelah repo di-clone dan Node.js/npm tersedia, jalankan dari root project:
+Build frontend di laptop, commit/push kode beserta `releases/frontend.tar.gz`, lalu clone/pull pada VPS. Jalankan dari root project:
 
 ```bash
 npm run install
+npm run setupvpnserver
 ```
 
-Installer melakukan `git pull --ff-only`, memvalidasi paket frontend dari laptop, memasang paket Ubuntu/dependency backend dan bot, mengimpor `database.sql` hanya ketika database kosong, membuat administrator dengan password acak, membangun backend, memasang frontend siap pakai, menyiapkan Apache, MySQL, FreeRADIUS SQL, firewall, serta service systemd. Pilih mode default `web` dan isi URL browser (`http://127.0.0.1:8080` untuk NAT laptop atau alamat sebenarnya untuk VPS). Tahap ini tidak meminta akun VPN atau membutuhkan MikroTik. Konfigurasi serta secret disimpan privat di `/etc/unzanet/install.json`; password administrator awal tersedia melalui `sudo cat /etc/unzanet/credentials.txt`. Installer tidak membuat akun demo dari seed.
+Pada installer pilih `web` dan URL website sebenarnya. Aktifkan HTTPS melalui Certbot sesuai panduan sebelum login. Setelah aplikasi siap, `setupvpnserver` memasang SSTP, CA/sertifikat, dan worker akun pada VPS yang sama. Isi IPv4 publik tanpa URL/port. IP server RADIUS/gateway `10.88.0.1`, klien router mendapat IP unik `10.88.0.2-254`. Pastikan subnet belum dipakai. Firewall provider membuka TCP 22, 80, 443, 4443; UDP RADIUS hanya melalui tunnel. Tidak perlu `npm run setupvpn` atau akun VPN Ubuntu sendiri.
 
-Setelah instalasi selesai, siapkan gateway SSTP dan CA tepercaya, lalu jalankan `npm run setupvpn` pada sesi SSH Ubuntu aplikasi. Perintah ini menyiapkan tunnel tanpa menginstal ulang website/database atau mengganti secret aplikasi. Setelah VPN Ubuntu berhasil, buka website dan uji login. Kemudian isi Tambah Router/NAS beserta akun VPN router dan satu CA publik PEM, klik Simpan & Buat Script, dan paste script sekali ke Terminal MikroTik. Script mengimpor CA, membuat SSTP, rute RADIUS, PPP AAA, incoming Disconnect, dan firewall terkait. Password VPN router serta CA dari form tidak disimpan dalam tabel NAS; shared secret RADIUS tetap diperlukan/disimpan. Akun gateway disiapkan pengelola terlebih dahulu. Alamat privat tunnel tetap sesuai gateway; IP internet/DHCP Ubuntu tidak diubah. Setelah router terhubung, uji ping, PPPoE, dan Disconnect. Mode `vpn` saat instalasi tersedia jika gateway sudah siap; `local` hanya alternatif lab LAN. Autentikasi menggunakan UDP 1812, accounting UDP 1813, dan Disconnect UDP 3799 (RFC 5176, pengganti RFC 3576). Tidak ada login API MikroTik, kredensial admin router, SNMP, atau monitoring CPU/RAM/interface router.
+Administrator membuka **Router > Klien VPN > Tambah VPN**. Isi nama/username; password boleh acak atau manual minimal 12 karakter. Daftar menampilkan No, Nama, Username, Password dengan tombol tampilkan, IP VPN, Status, dan Router/NAS. Password tersimpan terenkripsi; endpoint kredensial dan script hanya admin, dengan `private, no-store`. Worker root memasang akun sekitar 15 detik tanpa sudo pada backend. Siap berarti akun diterapkan, belum berarti tunnel online.
+
+Pada **Router / NAS**, pilih klien yang Siap. Satu klien hanya untuk satu router, ditegakkan juga oleh database. IP NAS/Disconnect dan RADIUS diisi dari akun; username/password/CA otomatis dipakai pada script. Klik Simpan & Buat Script dan salin ke Terminal Winbox. Script dapat diambil ulang lengkap tanpa mengetik kredensial. CA/hostname tetap diverifikasi, rute hanya /32 ke RADIUS, default route pelanggan tetap. Uji tunnel, PPPoE, accounting, Disconnect, serta isolir sesuai panduan.
+
+Installer menyiapkan dependency, database baru, administrator dengan password acak, backend, frontend siap pakai, Apache, MySQL, FreeRADIUS SQL, firewall dan systemd. Secret instalasi ada di `/etc/unzanet/install.json` (root-only); login administrator awal ada di `/etc/unzanet/credentials.txt` (root-only). Sertifikat SSTP berlaku 365 hari; langkah pembaruan dengan CA yang sama ada di panduan. Mode gateway terpisah `vpn` dan lab `local` masih tersedia untuk instalasi lama.
 
 FreeRADIUS membaca client SQL saat startup. Worker root terpisah memvalidasi lalu menerapkan perubahan client aktif sekitar setiap 60 detik; backend web tidak diberi sudo. Status sesi bersumber dari accounting dengan batas kesegaran awal 900 detik. IP Pool berupa metadata per NAS dan script, sedangkan isolir diaktifkan setelah operator mengonfirmasi script pool/profil/firewall dipasang. QR WhatsApp tetap dipindai manual. Script tidak menebak port WAN, port pelanggan, profil dasar, atau konfigurasi PPPoE awal.
 
@@ -102,7 +107,7 @@ Frontend tersedia di `http://localhost:3000`, REST API di `http://localhost:3001
 
 ## Database
 
-File SQL untuk **instalasi baru** adalah [`backend/prisma/database.sql`](backend/prisma/database.sql). Semua perubahan tanpa API MikroTik sudah langsung berada di file ini, termasuk metadata NAS, Disconnect, pool per NAS, dan pengaturan awal. Gunakan database kosong pada VM VirtualBox baru. Tidak ada file migrasi terpisah.
+File SQL untuk **instalasi baru** adalah [`backend/prisma/database.sql`](backend/prisma/database.sql). Semua perubahan tanpa API MikroTik sudah langsung berada di file ini, termasuk metadata NAS, Disconnect, pool per NAS, dan pengaturan awal. Gunakan database kosong pada VPS Ubuntu baru. Tidak ada file migrasi terpisah.
 
 Setelah membuat database kosong dan mengisi `backend/.env`, jalankan:
 
@@ -124,7 +129,7 @@ npm run database:generate
 npm run database:check
 ```
 
-Kedua perintah tersebut menghasilkan/memeriksa file SQL tanpa menghubungi database. Tabel VPN legacy masih ada untuk kompatibilitas; fitur Klien VPN di aplikasi sudah dihapus.
+Kedua perintah tersebut menghasilkan/memeriksa file SQL tanpa menghubungi database. Klien VPN SSTP tersedia pada menu Router; field server/WireGuard lama dipertahankan untuk kompatibilitas skema.
 
 Akun seed pengembangan:
 

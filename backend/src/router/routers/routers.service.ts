@@ -6,17 +6,18 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { pageMeta, serialize } from '../../common/serialize.js';
 import { SaveRouterDto } from './routers.dto.js';
 import { radiusSetupScript, vpnCaCertificate } from '../shared/radius-setup-script.js';
+import { VpnService } from '../vpn/vpn.service.js';
 
 @Injectable()
 export class RoutersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly vpn?: VpnService) {}
 
   private publicRouter(router: Nas & { _count?: { accounts: number } }) {
     // Explicit allowlist prevents old credentials and RADIUS secrets leaking in list/save responses.
     return {
       id: router.id, name: router.name, nasname: router.nasname, shortname: router.shortname,
       type: router.type, ipAddress: router.ipAddress, ports: router.ports, coaPort: router.coaPort,
-      radiusServerIp: router.radiusServerIp, vpnHost: router.vpnHost, vpnUsername: router.vpnUsername,
+      radiusServerIp: router.radiusServerIp, vpnHost: router.vpnHost, vpnUsername: router.vpnUsername, vpnClientId: router.vpnClientId,
       description: router.description, isActive: router.isActive,
       createdAt: router.createdAt, updatedAt: router.updatedAt,
       ...(router._count ? { accountsCount: router._count.accounts } : {}),
@@ -43,23 +44,25 @@ export class RoutersService {
   }
 
   async createRouter(dto: SaveRouterDto) {
+    const managed = await this.managedVpn(dto);
     const data = this.routerData(dto);
     const ca = this.scriptCa(dto);
     await this.assertUniqueNas(data.nasname);
     try {
       const item = await this.prisma.nas.create({ data: { ...data, createdAt: new Date() } });
-      return serialize({ message: 'NAS ditambahkan. Salin script ke Terminal MikroTik. Konfigurasi NAS diterapkan FreeRADIUS dalam sekitar 60 detik.', router: this.publicRouter(item), setup: this.setup(item, dto.vpnPassword, ca) });
+      return serialize({ message: 'NAS ditambahkan. Salin script ke Terminal MikroTik. Konfigurasi NAS diterapkan FreeRADIUS dalam sekitar 60 detik.', router: this.publicRouter(item), setup: this.setup(item, dto.vpnPassword, ca, managed ? 4443 : 443) });
     } catch (error) { this.unique(error); }
   }
 
   async updateRouter(id: string, dto: SaveRouterDto) {
     const current = await this.findRouter(id);
+    const managed = await this.managedVpn(dto, current);
     const data = this.routerData(dto, current);
     const ca = this.scriptCa(dto);
     await this.assertUniqueNas(data.nasname, current.id);
     try {
       const item = await this.prisma.nas.update({ where: { id: current.id }, data });
-      return serialize({ message: 'NAS diperbarui. Terapkan script jika konfigurasi berubah. FreeRADIUS menerapkan perubahan dalam sekitar 60 detik.', router: this.publicRouter(item), setup: this.setup(item, dto.vpnPassword, ca) });
+      return serialize({ message: 'NAS diperbarui. Terapkan script jika konfigurasi berubah. FreeRADIUS menerapkan perubahan dalam sekitar 60 detik.', router: this.publicRouter(item), setup: this.setup(item, dto.vpnPassword, ca, managed ? 4443 : 443) });
     } catch (error) { this.unique(error); }
   }
 
@@ -71,7 +74,20 @@ export class RoutersService {
     return { message: 'NAS dihapus. FreeRADIUS menerapkan perubahan dalam sekitar 60 detik. Konfigurasi pada perangkat tidak dihapus otomatis.' };
   }
 
-  async getRouterScript(id: string) { return serialize(this.setup(await this.findRouter(id))); }
+  async getRouterScript(id: string) {
+    const router = await this.findRouter(id);
+    const managed = router.vpnClientId && this.vpn ? await this.vpn.forRouter(String(router.vpnClientId), router.id) : undefined;
+    return serialize(this.setup(router, managed?.password, managed?.ca, managed ? 4443 : 443));
+  }
+
+  private async managedVpn(dto: SaveRouterDto, current?: Nas) {
+    const id = dto.vpnClientId === undefined ? current?.vpnClientId?.toString() : dto.vpnClientId;
+    if (!id) return undefined;
+    if (!this.vpn) throw new BadRequestException('Layanan VPN tidak tersedia.');
+    const client = await this.vpn.forRouter(id, current?.id);
+    Object.assign(dto, { vpnClientId: id, nasname: client.ip, ipAddress: client.ip, radiusServerIp: client.radiusIp, vpnHost: client.host, vpnUsername: client.username, vpnPassword: client.password, vpnCaCertificate: client.ca!.pem });
+    return client;
+  }
 
   private scriptCa(dto: SaveRouterDto) {
     const ca = vpnCaCertificate(dto.vpnCaCertificate);
@@ -79,13 +95,13 @@ export class RoutersService {
     return ca;
   }
 
-  private setup(router: Nas, vpnPassword?: string, ca?: ReturnType<typeof vpnCaCertificate>) {
+  private setup(router: Nas, vpnPassword?: string, ca?: ReturnType<typeof vpnCaCertificate>, vpnPort = 443) {
     const radiusServerIp = this.serverIp(router.radiusServerIp);
     return {
       routerName: router.name, radiusServerIp, nasSrcAddress: router.nasname,
       authPort: router.ports || 1812, coaPort: router.coaPort || 3799,
-      scriptRos7: radiusSetupScript(router, radiusServerIp, router.nasname, true, vpnPassword, ca),
-      scriptRos6: radiusSetupScript(router, radiusServerIp, router.nasname, false, vpnPassword, ca),
+      scriptRos7: radiusSetupScript(router, radiusServerIp, router.nasname, true, vpnPassword, ca, vpnPort),
+      scriptRos6: radiusSetupScript(router, radiusServerIp, router.nasname, false, vpnPassword, ca, vpnPort),
     };
   }
 
@@ -107,6 +123,7 @@ export class RoutersService {
     if (secret.length > 60 || !secret.trim()) throw new BadRequestException('Shared secret harus berisi 1 sampai 60 karakter.');
     return {
       name, nasname, ipAddress, radiusServerIp, vpnHost, vpnUsername, ports, coaPort, secret,
+      vpnClientId: dto.vpnClientId ? BigInt(dto.vpnClientId) : null,
       shortname: dto.shortname?.trim() || name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 32),
       type: dto.type?.trim() || current?.type || 'mikrotik', description: dto.description?.trim() || null,
       isActive: dto.isActive ?? current?.isActive ?? true, updatedAt: new Date(),

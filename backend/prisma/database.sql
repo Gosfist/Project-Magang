@@ -3,7 +3,7 @@
 -- Pilih database MySQL KOSONG sebelum mengimpor file ini.
 -- Impor sekali saat instalasi awal, bukan saat update aplikasi.
 -- Akun awal dibuat terpisah dengan npm run db:seed dari folder backend.
--- Tabel VPN legacy dipertahankan untuk kompatibilitas skema; fitur webnya sudah dihapus.
+-- Klien VPN SSTP dikelola web dan diterapkan oleh worker VPS; field WireGuard hanya legacy.
 
 SET NAMES utf8mb4;
 
@@ -362,6 +362,9 @@ CREATE TABLE `vpn_clients` (
     `name` VARCHAR(100) NOT NULL,
     `vpn_server_id` BIGINT UNSIGNED NULL,
     `vpn_ip` VARCHAR(45) NOT NULL,
+    `username` VARCHAR(64) NULL,
+    `password_encrypted` TEXT NULL,
+    `provisioned_at` DATETIME(3) NULL,
     `client_public_key` TEXT NULL,
     `client_private_key` TEXT NULL,
     `allowed_ips` VARCHAR(100) NOT NULL DEFAULT '10.200.0.0/24',
@@ -372,8 +375,10 @@ CREATE TABLE `vpn_clients` (
     `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `vpn_type` VARCHAR(20) NOT NULL DEFAULT 'legacy',
 
+    UNIQUE INDEX `vpn_clients_username_key`(`username`),
     INDEX `vpn_clients_vpn_server_id_idx`(`vpn_server_id`),
     INDEX `vpn_clients_vpn_ip_idx`(`vpn_ip`),
+    UNIQUE INDEX `vpn_clients_vpn_type_vpn_ip_key`(`vpn_type`, `vpn_ip`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -402,6 +407,7 @@ CREATE TABLE `nas` (
     `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     UNIQUE INDEX `nas_nasname_key`(`nasname`),
+    UNIQUE INDEX `nas_vpn_client_id_key`(`vpn_client_id`),
     INDEX `nas_vpn_client_id_idx`(`vpn_client_id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

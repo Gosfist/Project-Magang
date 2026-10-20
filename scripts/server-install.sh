@@ -40,7 +40,7 @@ main() {
     return
   fi
   [[ $# == 0 ]] || die 'Argumen tidak dikenal. Gunakan --help.'
-  [[ "$(uname -s)" == Linux ]] || die 'Installer hanya dijalankan pada Ubuntu VM baru.'
+  [[ "$(uname -s)" == Linux ]] || die 'Installer hanya dijalankan pada Ubuntu VPS baru.'
   ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
   export ROOT_DIR
   [[ "$ROOT_DIR" != *[[:space:]]* ]] || die 'Gunakan folder tanpa spasi, contoh /var/www/Project-Magang.'
@@ -92,7 +92,7 @@ main() {
     log 'Isi konfigurasi instalasi baru'
     local detected_ip
     detected_ip="$(ip -4 route get 1.1.1.1 | awk '{for(i=1;i<=NF;i++) if($i=="src") {print $(i+1); exit}}')"
-    ask WEB_URL 'URL browser (NAT: http://127.0.0.1:8080; VPS: IP/domain sebenarnya)' 'http://127.0.0.1:8080'
+    ask WEB_URL 'URL browser website (http/https dengan IP/domain VPS)' "http://$detected_ip"
     ask NETWORK_MODE 'Tahap jaringan: web (aplikasi dahulu), vpn (VPN sudah siap), local (lab LAN)' web
     if [[ "$NETWORK_MODE" == web ]]; then
       export VPN_SERVER='' VPN_USERNAME='' VPN_PASSWORD=''
@@ -239,6 +239,9 @@ JS
   systemctl enable unzanet-backend unzanet-botwa freeradius apache2
   systemctl restart unzanet-backend unzanet-botwa freeradius apache2
   bash "$ROOT_DIR/scripts/setup-radius-refresh.sh"
+  if [[ "$NETWORK_MODE" == server ]]; then
+    bash "$ROOT_DIR/scripts/setup-vpn-sync.sh"
+  fi
   wait_http http://127.0.0.1:3001/api/auth/me 401
   wait_http http://127.0.0.1:3002/api/wa/health 200
   wait_http http://127.0.0.1/api/wa/health 200
@@ -252,7 +255,9 @@ JS
   if [[ "$NETWORK_MODE" == local ]]; then
     printf 'Mode LAN: uji ping %s, lalu tambah NAS dengan IP tersebut.\n' "$VPN_ROUTER_IP"
   elif [[ "$NETWORK_MODE" == web ]]; then
-    printf 'Aplikasi terpasang. Siapkan gateway/CA, jalankan npm run setupvpn, lalu buka website dan pastikan login berjalan sebelum menambah NAS.\n'
+    printf 'Aplikasi terpasang. Jalankan npm run setupvpnserver pada VPS ini, lalu buka website > Router > Klien VPN.\n'
+  elif [[ "$NETWORK_MODE" == server ]]; then
+    printf 'Server VPN lokal tersedia pada TCP 4443. Buat/pilih Klien VPN di website; IP RADIUS 10.88.0.1.\n'
   elif ip -4 -o addr show dev sstp-radius 2>/dev/null | grep -Fq " $VPN_RADIUS_IP/"; then
     printf 'Ubuntu sudah mendapat IP VPN %s. Lanjutkan setup SSTP MikroTik di install.doc.\n' "$VPN_RADIUS_IP"
   else

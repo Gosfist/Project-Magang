@@ -1,17 +1,15 @@
 # Panduan arsitektur tanpa API MikroTik
 
-Panduan aktif adalah [instalasi Ubuntu dan VirtualBox](instalasi-ubuntu-vpn.md),
+Panduan aktif adalah [instalasi VPS Ubuntu](instalasi-ubuntu-vpn.md),
 [FreeRADIUS](pppoe-freeradius.md), [operasi Router dan PPPoE](router-pppoe-operations.md),
 [isolir](pppoe-isolation.md), dan [backup darurat](pppoe-backup.md).
 Versi Word terbaru berada pada `install.doc` di root repo.
-Urutan instalasi: Ubuntu VirtualBox DHCP/NAT, aktifkan SSH, remote dari CMD,
-build frontend di laptop dengan `npm.cmd run preparefe`, commit dan push
-`releases/frontend.tar.gz` ke GitHub, clone repo beserta paket di Ubuntu,
-`npm run install` (mode `web`, tanpa build frontend di server),
-setup VPN Ubuntu dengan `npm run setupvpn`,
-buka website dan uji login, lalu tambah NAS untuk memperoleh satu script
-VPN/RADIUS MikroTik. Isi CA publik PEM pada form untuk impor CA dalam script
-yang sama. IP LAN tertentu dan jaringan fisik yang sama tidak diperlukan.
+Urutan: siapkan VPS/DNS, build frontend di laptop, commit/push paket,
+clone/pull VPS, `npm run install` mode `web`, HTTPS, lalu `npm run setupvpnserver`.
+Website, RADIUS, dan VPN berada satu mesin; tidak perlu VPN client Ubuntu.
+Login web, buat Klien VPN, tunggu Siap, pilih akun pada Router/NAS,
+lalu pasang script MikroTik. Akun, IP, dan CA diambil otomatis.
+SSTP memakai 4443; HTTPS website memakai 443.
 
 Panduan instalasi lama sudah dihapus agar tidak ada alur yang saling bertentangan.
 Generator `backend/scripts/generate_pppoe_virtualbox_guide.py` kini membaca sumber

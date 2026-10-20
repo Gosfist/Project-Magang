@@ -38,7 +38,7 @@ describe('feature folder wiring', () => {
     expect(routes).toContain('0:pppoe/packages');
     expect(routes).toContain('0:pppoe/ip-pools');
     expect(routes.some(route => route.includes('router/vpn-server'))).toBe(false);
-    expect(routes.some(route => route.includes('router/vpn-client'))).toBe(false);
+    expect(routes).toContain('0:router/vpn-clients');
     expect(routes).toContain('0:router/nas');
     expect(routes).toContain('0:finance/summary');
     expect(routes).toContain('0:finance/deposits/invoices');

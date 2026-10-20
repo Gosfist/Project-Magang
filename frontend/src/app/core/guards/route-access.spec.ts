@@ -23,8 +23,8 @@ describe('Dashboard URL access', () => {
     'tools/kalkulator-redaman': ['admin', 'teknisi'],
   };
   const dashboard = routes.find(r => r.path === 'dashboard')!;
-  it('removes the VPN client URL while keeping Router / NAS available', () => {
-    expect(dashboard.children!.some(route => route.path === 'router/vpn-client')).toBeFalse();
+  it('registers admin VPN clients and Router / NAS', () => {
+    expect(dashboard.children!.some(route => route.path === 'router/vpn-client')).toBeTrue();
     expect(dashboard.children!.some(route => route.path === 'router/routers')).toBeTrue();
   });
   it('removes router monitoring while retaining server and RADIUS monitoring', () => {

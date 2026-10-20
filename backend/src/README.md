@@ -17,6 +17,7 @@ pppoe/
   shared/                  RADIUS, Disconnect UDP, accounting, script PPPoE
 router/
   routers/                 router NAS
+  vpn/                     klien SSTP VPS dan kredensial terenkripsi
   shared/                  pembuat script setup NAS tanpa koneksi API router
 finance/
   transactions/

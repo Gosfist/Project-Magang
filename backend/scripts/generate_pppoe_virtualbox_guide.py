@@ -97,8 +97,8 @@ def build(source, destination):
     code_style.paragraph_format.line_spacing = 1.0
     code_style.paragraph_format.space_after = Pt(6)
     code_style.paragraph_format.keep_together = True
-    document.core_properties.title = 'Instalasi UNZANET tanpa API MikroTik'
-    document.core_properties.subject = 'VirtualBox Ubuntu FreeRADIUS SSTP dan Disconnect'
+    document.core_properties.title = 'Instalasi UNZANET di VPS'
+    document.core_properties.subject = 'VPS Ubuntu website FreeRADIUS SSTP dan Disconnect'
     document.core_properties.author = 'UNZANET'
     lines = source.read_text(encoding='utf-8-sig').splitlines()
     index = 0
@@ -121,6 +121,9 @@ def build(source, destination):
         elif line.startswith('# '):
             document.add_paragraph(line[2:], 'Title')
         elif line.startswith('## '):
+            previous = document.paragraphs[-2:]
+            if len(previous) == 2 and all(re.match(r'^\d+\. ', paragraph.text) for paragraph in previous):
+                previous[0].paragraph_format.keep_with_next = True
             document.add_paragraph(line[3:], 'Heading 1')
         elif line.startswith('### '):
             document.add_paragraph(line[4:], 'Heading 2')

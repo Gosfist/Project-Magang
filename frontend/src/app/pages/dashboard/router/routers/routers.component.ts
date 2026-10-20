@@ -12,7 +12,7 @@ import {
 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
 import { latestRequest } from '../../../../core/services/latest-request';
-import { PageMeta, RouterItem, RouterScriptData } from '../../../../shared/models/types';
+import { PageMeta, RouterItem, RouterScriptData, VpnClientItem } from '../../../../shared/models/types';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
@@ -58,9 +58,10 @@ export class RoutersComponent implements OnInit {
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
   form = this.emptyForm();
+  vpnClients = signal<VpnClientItem[]>([]);
 
   private emptyForm() {
-    return { name: '', nasname: '', ipAddress: '', type: 'mikrotik', ports: 1812,
+    return { vpnClientId: '', name: '', nasname: '', ipAddress: '', type: 'mikrotik', ports: 1812,
       coaPort: 3799, radiusServerIp: '', secret: '', vpnHost: '', vpnUsername: '',
       vpnPassword: '', vpnCaCertificate: '', description: '', isActive: true };
   }
@@ -93,9 +94,11 @@ export class RoutersComponent implements OnInit {
   }
 
   show(item?: RouterItem): void {
+    this.api.get<{ data: VpnClientItem[] }>('/router/vpn-clients').subscribe({ next: r => this.vpnClients.set(r.data), error: e => this.toast.set({ message: e.message, type: 'error' }) });
     this.editing.set(item ?? null);
     this.form = item
       ? {
+          vpnClientId: item.vpnClientId ?? '',
           name: item.name ?? '',
           nasname: item.nasname,
           ipAddress: item.ipAddress ?? item.nasname,
@@ -120,6 +123,7 @@ export class RoutersComponent implements OnInit {
     this.saving.set(true);
     const body = {
       ...this.form,
+      vpnClientId: this.form.vpnClientId || null,
       ipAddress: this.form.ipAddress || undefined,
       radiusServerIp: this.form.radiusServerIp || undefined,
       ports: Number(this.form.ports) || 1812,
@@ -157,6 +161,15 @@ export class RoutersComponent implements OnInit {
       },
       error: (e) => this.toast.set({ message: e.message, type: 'error' }),
     });
+  }
+
+  selectVpn(): void {
+    this.form.vpnHost = ''; this.form.vpnUsername = ''; this.form.vpnPassword = ''; this.form.vpnCaCertificate = '';
+    const client = this.vpnClients().find(c => c.id === this.form.vpnClientId);
+    if (client) {
+      this.form.nasname = client.vpnIp; this.form.ipAddress = client.vpnIp;
+      this.form.radiusServerIp = '10.88.0.1';
+    }
   }
 
   openScript(item: RouterItem): void {

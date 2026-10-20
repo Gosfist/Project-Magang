@@ -26,7 +26,7 @@ export function routerOsQuote(value: string): string {
   return result + '"';
 }
 
-export function radiusSetupScript(router: Nas, serverIp: string, sourceIp: string, ros7: boolean, vpnPassword?: string, ca?: ReturnType<typeof vpnCaCertificate>) {
+export function radiusSetupScript(router: Nas, serverIp: string, sourceIp: string, ros7: boolean, vpnPassword?: string, ca?: ReturnType<typeof vpnCaCertificate>, vpnPort = 443) {
   const q = routerOsQuote;
   const tag = `UNZANET-RADIUS:${router.id}`;
   const coaPort = router.coaPort || 3799;
@@ -58,7 +58,7 @@ export function radiusSetupScript(router: Nas, serverIp: string, sourceIp: strin
         `/certificate set ${cert} trusted=yes;`,
       );
     }
-    const params = `name=${q(tunnelName)} connect-to=${q(router.vpnHost)} user=${q(router.vpnUsername)} password=${q(vpnPassword)} profile=default add-default-route=no verify-server-certificate=yes verify-server-address-from-certificate=yes disabled=no`;
+    const params = `name=${q(tunnelName)} connect-to=${q(router.vpnHost)} port=${vpnPort} user=${q(router.vpnUsername)} password=${q(vpnPassword)} profile=default allow=mschap2 add-default-route=no verify-server-certificate=yes verify-server-address-from-certificate=yes disabled=no`;
     lines.push(
       ca ? '# CA sudah diimpor; verifikasi sertifikat dan hostname tetap aktif.' : '# CA VPN harus sudah dipercaya router. Isi CA publik pada form web untuk impor otomatis.',
       `:local tunnel [/interface sstp-client find where comment=${q(`${tag}:VPN`)}];`,

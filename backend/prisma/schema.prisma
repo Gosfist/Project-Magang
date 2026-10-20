@@ -367,6 +367,9 @@ model VpnClient {
   name             String    @db.VarChar(100)
   vpnServerId      BigInt?   @map("vpn_server_id") @db.UnsignedBigInt
   vpnIp            String    @map("vpn_ip") @db.VarChar(45)
+  username         String?   @unique @db.VarChar(64)
+  passwordEncrypted String?  @map("password_encrypted") @db.Text
+  provisionedAt    DateTime? @map("provisioned_at")
   clientPublicKey  String?   @map("client_public_key") @db.Text
   clientPrivateKey String?   @map("client_private_key") @db.Text
   allowedIps       String    @default("10.200.0.0/24") @map("allowed_ips") @db.VarChar(100)
@@ -378,10 +381,11 @@ model VpnClient {
   // Nullable legacy WireGuard fields preserve existing records during conversion.
   vpnType          String    @default("legacy") @map("vpn_type") @db.VarChar(20)
   vpnServer        VpnServer? @relation(fields: [vpnServerId], references: [id], onDelete: Cascade)
-  routers          Nas[]
+  routers          Nas?
 
   @@index([vpnServerId])
   @@index([vpnIp])
+  @@unique([vpnType, vpnIp])
   @@map("vpn_clients")
 }
 
@@ -401,7 +405,7 @@ model Nas {
   server          String?        @db.VarChar(64)
   community       String?        @db.VarChar(50)
   description     String?        @default("RADIUS Client") @db.VarChar(200)
-  vpnClientId     BigInt?        @map("vpn_client_id") @db.UnsignedBigInt
+  vpnClientId     BigInt?        @unique @map("vpn_client_id") @db.UnsignedBigInt
   isActive        Boolean        @default(true) @map("is_active")
   requireMa       String         @default("auto") @map("require_ma") @db.VarChar(4)
   limitProxyState String         @default("auto") @map("limit_proxy_state") @db.VarChar(4)
