@@ -53,7 +53,6 @@ export class RoutersComponent implements OnInit {
 
   scriptModalOpen = signal(false);
   scriptData = signal<RouterScriptData | null>(null);
-  scriptTab = signal<'ros7' | 'ros6'>('ros7');
   copied = signal(false);
   confirming = signal(false);
   scriptInstalled = false;
@@ -189,7 +188,6 @@ export class RoutersComponent implements OnInit {
 
   private showScript(data: RouterScriptData): void {
     this.scriptData.set(data);
-    this.scriptTab.set('ros7');
     this.copied.set(false);
     this.scriptInstalled = false;
     this.scriptModalOpen.set(true);
@@ -230,8 +228,7 @@ export class RoutersComponent implements OnInit {
       this.toast.set({ message: 'Pilih dan salin script secara manual, atau buka aplikasi melalui HTTPS untuk penyalinan otomatis.', type: 'error' });
       return;
     }
-    const text = this.scriptTab() === 'ros7' ? data.scriptRos7 : data.scriptRos6;
-    navigator.clipboard.writeText(text).then(() => {
+    navigator.clipboard.writeText(data.scriptRos7).then(() => {
       this.copied.set(true);
       setTimeout(() => this.copied.set(false), 2000);
     }).catch(() => this.toast.set({ message: 'Penyalinan otomatis tidak tersedia. Pilih dan salin script secara manual.', type: 'error' }));

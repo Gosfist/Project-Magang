@@ -186,7 +186,7 @@ sudo freeradius -XC
 | IP Pool Internet | 192.168.75.1/24 |
 | IP Pool Isolir | 192.168.100.1/24 |
 
-2. Klik Simpan & Buat Script. Pilih versi RouterOS 6/7 sesuai perangkat, lalu salin script.
+2. Klik Simpan & Buat Script, lalu klik Salin Script.
 3. Buka Winbox > New Terminal pada MikroTik tujuan. Klik Salin Script lalu paste. Script mengatur SSTP, RADIUS/Disconnect, PPP AAA/accounting, kedua pool/profil PPP, dan firewall isolir. Tidak ada impor CA atau blok if.
 4. Isi prefix di form Router NAS, bukan submenu IP Pool/Isolir. Alamat sebelum prefix menjadi gateway; 192.168.75.1/24 menghasilkan pool Internet 192.168.75.2-192.168.75.254. Pool isolir bernama pool-isolir. Gateway tidak dibagikan ke pelanggan. Subnet internet/isolir tidak boleh tumpang tindih atau mencakup IP VPN NAS/RADIUS. Tambah memakai add, Edit memakai set untuk konfigurasi yang sudah terpasang dan add untuk pool/profil baru. Pool lama bernama Internet yang sudah terdaftar digunakan kembali. Komentar VPN memakai UNZANET-RADIUS:VPN, pool internet UNZANET-RADIUS:INTERNET, serta pool dan firewall isolir UNZANET-RADIUS:ISOLIR. Edit mengenali komentar isolir lama dan menggantinya; ketiga rule dibedakan lewat chain dan arah trafik.
 5. Tunggu penerapan NAS ke FreeRADIUS sekitar 60 detik. Kolom Status VPN mengikuti sesi SSTP, bukan tanda pendaftaran NAS. Online berarti username dan IP VPN cocok dengan sesi SSTP active di server; tabel sesi kosong berarti Offline. Pemeriksaan gagal/data lebih dari 45 detik tampil Tidak diketahui; NAS lokal tampil Tanpa VPN. Web memuat ulang status setiap 15 detik, pengumpul sesi setiap 10 detik. Simpan NAS belum membuktikan script sudah dipasang pada MikroTik.

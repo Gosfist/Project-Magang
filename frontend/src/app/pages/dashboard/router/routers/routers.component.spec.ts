@@ -42,7 +42,10 @@ describe('Router / NAS RADIUS setup', () => {
     expect(component.form.vpnPassword).toBe('');
     expect(body).not.toEqual(jasmine.objectContaining({ vpnCaCertificate: jasmine.anything() }));
     expect(component.scriptModalOpen()).toBeTrue();
-    expect(element.textContent).toContain('NAS tersimpan. Pasang script');
+    expect(element.querySelector('pre')?.textContent).toBe(setupScript.scriptRos7);
+    expect(element.textContent).toContain('Salin Script');
+    expect(element.textContent).not.toContain('NAS tersimpan. Pasang script');
+    expect(element.textContent).not.toMatch(/RouterOS [67]\.x/);
     component.closeScript(); expect(component.scriptData()).toBeNull();
   });
   it('keeps editable NAS/Disconnect addresses and preserves the existing secret on edit', () => {

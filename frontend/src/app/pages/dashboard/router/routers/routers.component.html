@@ -64,9 +64,7 @@
   <app-modal [open]="scriptModalOpen()" [title]="'Script Pengaturan MikroTik - ' + (scriptData()?.routerName || '')" (closeModal)="closeScript()">
     @if (scriptData(); as data) {
       <div class="space-y-4">
-        <p class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">NAS tersimpan. Pasang script di Terminal Winbox / SSH, lalu uji autentikasi PPPoE, accounting dan Disconnect. Penyimpanan di web belum membuktikan konfigurasi router terpasang. Script berisi shared secret; simpan dengan akses terbatas.</p>
-        <div class="flex gap-2"><button type="button" class="btn-secondary" (click)="scriptTab.set('ros7')" [class.bg-indigo-100]="scriptTab() === 'ros7'">RouterOS 7.x</button><button type="button" class="btn-secondary" (click)="scriptTab.set('ros6')" [class.bg-indigo-100]="scriptTab() === 'ros6'">RouterOS 6.x</button></div>
-        <pre class="max-h-[380px] overflow-auto rounded-xl bg-slate-950 p-4 font-mono text-xs leading-relaxed text-slate-100">{{ scriptTab() === 'ros7' ? data.scriptRos7 : data.scriptRos6 }}</pre>
+        <pre class="max-h-[380px] overflow-auto rounded-xl bg-slate-950 p-4 font-mono text-xs leading-relaxed text-slate-100">{{ data.scriptRos7 }}</pre>
         <div class="flex justify-end"><button type="button" class="btn-secondary" (click)="copyScript()">@if (copied()) { <svg lucideCheck [size]="14"></svg> Tersalin } @else { <svg lucideCopy [size]="14"></svg> Salin Script }</button></div>
         @if (data.networkNeedsConfirmation) {
           <div class="space-y-3 border-t border-slate-200 pt-4">
