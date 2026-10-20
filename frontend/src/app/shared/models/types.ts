@@ -42,6 +42,8 @@ export type RouterItem = {
 export type VpnClientItem = { id: string; name: string; username: string; password?: string; vpnIp: string; isActive: boolean; provisionedAt: string | null; routers: { id: number; name: string | null }[] };
 
 export type RouterScriptData = {
+  scriptInstall: string;
+  scriptUpdate: string;
   networkFingerprint?: string | null;
   networkNeedsConfirmation?: boolean;
   routerName: string;

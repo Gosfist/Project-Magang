@@ -23,12 +23,14 @@ saat instalasi; aktifkan Proxied dan Full (strict) setelah HTTPS berhasil.
 Website, RADIUS, dan VPN berada satu mesin; tidak perlu VPN client Ubuntu.
 Login web, buat Klien VPN, tunggu penerapan sekitar 15 detik, pilih akun pada Router/NAS,
 lalu isi prefix IP Pool Internet dan Isolir pada form Router NAS. Script mengatur
-SSTP, RADIUS/Disconnect, PPP AAA, kedua pool/profil dan firewall isolir. Tambah
-memakai add; Edit memakai set untuk konfigurasi terpasang dan add untuk entri baru,
-tanpa blok if. Submenu IP Pool dan Isolir lama diarahkan ke Router / NAS.
+SSTP, RADIUS/Disconnect, PPP AAA, kedua pool/profil dan firewall isolir. Pilihan
+Pemasangan awal memakai add; Perbarui konfigurasi memakai set untuk entri yang
+sudah ada, tanpa blok if. Dialog selalu mulai dari Pemasangan awal, terlepas dari
+status simpan/konfirmasi database. Submenu IP Pool dan Isolir lama diarahkan ke Router / NAS.
 Akun dan IP diambil otomatis. Gunakan sekali untuk pemasangan awal; pengulangan
 dapat membuat entri ganda atau bentrok nama tunnel.
-Nama interface SSTP, gateway rute, dan seluruh komentar memakai `UNZANET-RADIUS:VPN`.
+Nama interface SSTP, gateway rute dan komentar VPN memakai `UNZANET-RADIUS:VPN`;
+pool internet memakai `UNZANET-RADIUS:INTERNET`, pool/firewall isolir `UNZANET-RADIUS:ISOLIR`.
 Bagian 7 menjelaskan penggantian nama tunnel lama melalui Winbox tanpa paste ulang.
 Setelah paste script, periksa rule isolir sebelum accept/FastTrack, lalu Konfirmasi
 Pemasangan di dialog Router NAS. Pool aktif lama dipertahankan sampai konfirmasi
@@ -56,9 +58,9 @@ jika file benar-benar hilang. Membuka ulang browser berbeda dari update VPS.
 Bagian 9.4 memperbaiki bad parameter allow pada script SSTP: gunakan
 authentication=mschap2, pasang pembaruan backend, lalu salin ulang script dan
 periksa tunnel. Pada router yang sudah terpasang, ubah entri melalui Winbox;
-script Tambah tidak dipakai ulang pada konfigurasi terpasang; gunakan hasil Edit.
-Bagian 9.5 memuat pemasangan template sederhana tanpa impor CA dan pilihan
-update backend saja atau seluruh UI beserta paket frontend laptop.
+script Pemasangan awal tidak dipakai ulang pada konfigurasi terpasang; pilih Perbarui konfigurasi.
+Bagian 9.5 memuat pemasangan template sederhana tanpa impor CA, pilihan
+Pemasangan awal/Perbarui konfigurasi, serta pembaruan backend dan UI beserta paket frontend laptop.
 
 Panduan instalasi lama sudah dihapus agar tidak ada alur yang saling bertentangan.
 Generator `backend/scripts/generate_pppoe_virtualbox_guide.py` kini membaca sumber

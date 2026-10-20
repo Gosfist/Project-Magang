@@ -6,7 +6,7 @@ Mode pool isolir diaktifkan per NAS. Pelanggan isolir tetap menerima Access Acce
 
 1. Pastikan RADIUS 1812/1813 dan jalur server ke NAS pada UDP 3799 berfungsi.
 2. Buka Router > Router / NAS > Tambah/Edit. Isi IP Pool Internet, misalnya 192.168.75.1/24, dan IP Pool Isolir, misalnya 192.168.100.1/24. IP sebelum prefix menjadi gateway; rentang setelahnya sampai host terakhir dipakai pelanggan. Gateway host terakhir memakai rentang sebelum gateway. Network, broadcast, dan gateway tidak masuk pool.
-3. Simpan & Buat Script, klik Salin Script, lalu paste ke Terminal NAS yang benar. Pool bernama Internet/pool-isolir, profil UNZANET-INTERNET-ID/UNZANET-ISOLIR-ID. Submenu IP Pool/Isolir lama diarahkan ke Router / NAS. Penyimpanan ini belum mengganti atribut RADIUS aktif.
+3. Simpan & Buat Script. Pilih Belum terpasang — Pemasangan awal untuk membuat pool/profil/firewall dengan add; gunakan Sudah terpasang — Perbarui konfigurasi hanya untuk entri yang sudah ada. Klik Salin Script lalu paste ke Terminal NAS yang benar. Pool bernama Internet/pool-isolir, profil UNZANET-INTERNET-ID/UNZANET-ISOLIR-ID. Data web tidak membuktikan entri ada pada MikroTik. Submenu IP Pool/Isolir lama diarahkan ke Router / NAS. Penyimpanan ini belum mengganti atribut RADIUS aktif.
 4. Periksa pool/profil dan tiga rule drop. Posisikan drop isolir sebelum accept/FastTrack melalui Winbox. Centang pernyataan pemasangan di dialog script lalu Konfirmasi Pemasangan untuk mengaktifkan prefix dan sinkronisasi.
 5. Uji dial pelanggan isolir, IP subnet isolir, blok internet dan akses router. Uji ACC/janji bayar mengembalikan pool normal melalui reconnect.
 
@@ -24,6 +24,6 @@ Status dan IP sesi berasal dari accounting dengan batas kesegaran, bukan daftar 
 
 ## Menonaktifkan atau mengganti konfigurasi
 
-Ubah prefix melalui Edit Router NAS, pasang script perubahan, lalu konfirmasi lagi. Prefix aktif lama dipertahankan sampai konfirmasi. Bila sinkronisasi sebelumnya masih pending, tunggu selesai sebelum mengonfirmasi prefix berikutnya. Sesi normal maupun isolir disambungkan ulang saat konfigurasi baru dikonfirmasi. Tidak ada penghapusan otomatis konfigurasi lain pada perangkat. Periksa dan bersihkan artefak lama melalui Winbox setelah tidak dipakai.
+Ubah prefix melalui Edit Router NAS, pilih Sudah terpasang — Perbarui konfigurasi bila pool/profil/rule sudah ada, pasang script perubahan, lalu konfirmasi lagi. Jika belum terpasang, gunakan Pemasangan awal meskipun NAS sudah lama tersimpan. Prefix aktif lama dipertahankan sampai konfirmasi. Bila sinkronisasi sebelumnya masih pending, tunggu selesai sebelum mengonfirmasi prefix berikutnya. Sesi normal maupun isolir disambungkan ulang saat konfigurasi baru dikonfirmasi. Tidak ada penghapusan otomatis konfigurasi lain pada perangkat. Periksa dan bersihkan artefak lama melalui Winbox setelah tidak dipakai.
 
 Tes lokal memeriksa script, transaksi, dan protokol UDP; belum membuktikan IP/firewall/dial PPPoE pada perangkat. Lihat [panduan instalasi dan uji](instalasi-ubuntu-vpn.md) dan [RADIUS MikroTik](https://help.mikrotik.com/docs/spaces/ROS/pages/328097/RADIUS).

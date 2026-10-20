@@ -56,6 +56,7 @@ export class RoutersComponent implements OnInit {
   copied = signal(false);
   confirming = signal(false);
   scriptInstalled = false;
+  scriptMode = signal<'install' | 'update'>('install');
   scriptRouterId: string | null = null;
 
   saving = signal(false);
@@ -188,6 +189,7 @@ export class RoutersComponent implements OnInit {
 
   private showScript(data: RouterScriptData): void {
     this.scriptData.set(data);
+    this.scriptMode.set('install');
     this.copied.set(false);
     this.scriptInstalled = false;
     this.scriptModalOpen.set(true);
@@ -204,6 +206,12 @@ export class RoutersComponent implements OnInit {
     this.scriptModalOpen.set(false);
     this.scriptData.set(null);
     this.scriptRouterId = null;
+    this.scriptInstalled = false;
+  }
+
+  changeScriptMode(mode: 'install' | 'update'): void {
+    this.scriptMode.set(mode);
+    this.copied.set(false);
     this.scriptInstalled = false;
   }
 
@@ -228,7 +236,8 @@ export class RoutersComponent implements OnInit {
       this.toast.set({ message: 'Pilih dan salin script secara manual, atau buka aplikasi melalui HTTPS untuk penyalinan otomatis.', type: 'error' });
       return;
     }
-    navigator.clipboard.writeText(data.scriptRos7).then(() => {
+    const script = this.scriptMode() === 'install' ? data.scriptInstall : data.scriptUpdate;
+    navigator.clipboard.writeText(script).then(() => {
       this.copied.set(true);
       setTimeout(() => this.copied.set(false), 2000);
     }).catch(() => this.toast.set({ message: 'Penyalinan otomatis tidak tersedia. Pilih dan salin script secara manual.', type: 'error' }));

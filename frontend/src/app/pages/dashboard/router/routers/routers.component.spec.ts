@@ -5,7 +5,7 @@ import { RouterItem } from '../../../../shared/models/types';
 import { RoutersComponent } from './routers.component';
 
 describe('Router / NAS RADIUS setup', () => {
-  const setupScript = { routerName: 'Lab', radiusServerIp: '10.255.0.1', nasSrcAddress: '10.255.0.2', authPort: 1812, coaPort: 3799, scriptRos7: '/radius add address=10.255.0.1', scriptRos6: '/radius add address=10.255.0.1' };
+  const setupScript = { routerName: 'Lab', radiusServerIp: '10.255.0.1', nasSrcAddress: '10.255.0.2', authPort: 1812, coaPort: 3799, scriptRos7: '/radius add address=10.255.0.1', scriptRos6: '/radius add address=10.255.0.1', scriptInstall: '/radius add address=10.255.0.1', scriptUpdate: '/radius set [find where comment="UNZANET-RADIUS:VPN"] address=10.255.0.1' };
   function setup() {
     const api = jasmine.createSpyObj('ApiService', ['get', 'post', 'patch']);
     api.get.and.returnValue(of({ data: [], meta: { currentPage: 1, lastPage: 1, perPage: 10, total: 0 } }));
@@ -71,6 +71,29 @@ describe('Router / NAS RADIUS setup', () => {
     expect(headers).toContain('Status VPN');
     expect(headers).not.toContain('Pendaftaran NAS');
   });
+  it('opens installation for an existing NAS and copies the operator-selected action', fakeAsync(() => {
+    const { fixture, component, api } = setup();
+    api.get.and.returnValue(of(setupScript));
+    component.openScript({ id: '7', networkInstalled: true } as RouterItem); fixture.detectChanges();
+    expect(component.scriptMode()).toBe('install');
+    expect(fixture.nativeElement.querySelector('pre').textContent).toBe(setupScript.scriptInstall);
+    const clipboard = jasmine.createSpyObj('Clipboard', ['writeText']);
+    clipboard.writeText.and.returnValue(Promise.resolve());
+    spyOnProperty(navigator, 'clipboard', 'get').and.returnValue(clipboard);
+    component.copyScript(); tick();
+    expect(clipboard.writeText).toHaveBeenCalledWith(setupScript.scriptInstall);
+    component.scriptInstalled = true;
+    const select = fixture.nativeElement.querySelector('#nas-script-mode') as HTMLSelectElement;
+    select.value = 'update'; select.dispatchEvent(new Event('change')); fixture.detectChanges();
+    expect(component.scriptInstalled).toBeFalse();
+    expect(fixture.nativeElement.querySelector('pre').textContent).toBe(setupScript.scriptUpdate);
+    component.copyScript(); tick();
+    expect(clipboard.writeText).toHaveBeenCalledWith(setupScript.scriptUpdate);
+    component.closeScript();
+    component.openScript({ id: '7' } as RouterItem);
+    expect(component.scriptMode()).toBe('install');
+    tick(2000); fixture.destroy();
+  }));
   it('refreshes session status periodically and stops after leaving the page', fakeAsync(() => {
     const { fixture, api } = setup();
     expect(api.get).toHaveBeenCalledTimes(1);

@@ -6,7 +6,7 @@ import { rosQuote } from '../../pppoe/shared/router-script.js';
 import { isolationProfile } from '../../pppoe/shared/isolation-config.js';
 
 export type PrefixPool = { cidr: string; gateway: string; subnet: string; start: string; end: string };
-export type NasNetwork = { internet: PrefixPool; isolation: PrefixPool; fingerprint: string; update?: boolean; existingPools?: string[]; existingIsolationProfile?: boolean };
+export type NasNetwork = { internet: PrefixPool; isolation: PrefixPool; fingerprint: string };
 export const networkKey = (id: number) => `nas_network_${id}`;
 export const activeNetworkKey = (id: number) => `nas_network_active_${id}`;
 export const internetPoolName = 'Internet';
@@ -50,9 +50,7 @@ export async function readNasNetwork(tx: Pick<Prisma.TransactionClient, 'appSett
   if (!row) return null;
   try {
     const data = JSON.parse(row.value) as NasNetwork;
-    return { ...nasNetwork(id, data.internet.cidr, data.isolation.cidr), update: data.update === true,
-      existingPools: Array.isArray(data.existingPools) ? data.existingPools.filter(name => [internetPoolName, isolationPoolName].includes(name)) : [],
-      existingIsolationProfile: data.existingIsolationProfile === true };
+    return nasNetwork(id, data.internet.cidr, data.isolation.cidr);
   } catch { throw new BadRequestException('Prefix pool Router/NAS tersimpan tidak valid. Perbaiki pada Edit Router NAS.'); }
 }
 
@@ -62,8 +60,8 @@ export function nasNetworkScript(id: number, network: NasNetwork, update: boolea
     ['INTERNET', network.internet, internetPoolName, internetProfile(id)],
     ['ISOLIR', network.isolation, isolationPoolName, isolationProfile(id)],
   ] as const) {
-    const poolUpdate = update || network.existingPools?.includes(name);
-    const profileUpdate = update || kind === 'ISOLIR' && network.existingIsolationProfile;
+    const poolUpdate = update;
+    const profileUpdate = update;
     const poolTarget = poolUpdate ? ` [find where name=${q(name)}]` : '';
     const profileTarget = profileUpdate ? ` [find where name=${q(profile)}]` : '';
     lines.push(`/ip pool ${poolUpdate ? 'set' : 'add'}${poolTarget} name=${q(name)} ranges=${q(`${pool.start}-${pool.end}`)} next-pool=none comment=${q(`UNZANET-RADIUS:${kind}`)};`);
@@ -71,7 +69,7 @@ export function nasNetworkScript(id: number, network: NasNetwork, update: boolea
   }
   lines.push('# 5. Firewall subnet isolir');
   for (const [chain, field, tag] of [['forward', 'src-address', 'OUT'], ['forward', 'dst-address', 'IN'], ['input', 'src-address', 'ROUTER']] as const) {
-    const change = update || network.existingIsolationProfile;
+    const change = update;
     const comment = q('UNZANET-RADIUS:ISOLIR');
     // Shared comments need a direction selector. Keep the opposite address explicit
     // so future edits still find the right rule after the isolation subnet changes.

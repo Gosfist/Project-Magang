@@ -81,10 +81,10 @@ export class RoutersService {
     try {
       const item = network ? await this.prisma.$transaction(async tx => {
         const item = await tx.nas.update({ where: { id: current.id }, data });
-        await this.saveNetwork(tx, item.id, { ...network, update: true });
+        await this.saveNetwork(tx, item.id, network);
         return item;
       }) : await this.prisma.nas.update({ where: { id: current.id }, data });
-      return serialize({ message: 'NAS diperbarui. Pasang script perubahan pada router yang sama, lalu konfirmasikan pemasangan pool.', router: this.publicRouter(item), setup: await this.setup(item, dto.vpnPassword, managed ? 4443 : 443, true) });
+      return serialize({ message: 'NAS diperbarui. Pilih script sesuai konfigurasi yang ada di MikroTik.', router: this.publicRouter(item), setup: await this.setup(item, dto.vpnPassword, managed ? 4443 : 443) });
     } catch (error) { this.unique(error); }
   }
 
@@ -111,17 +111,21 @@ export class RoutersService {
     return client;
   }
 
-  private async setup(router: Nas, vpnPassword?: string, vpnPort = 443, update?: boolean) {
+  private async setup(router: Nas, vpnPassword?: string, vpnPort = 443) {
     const radiusServerIp = this.serverIp(router.radiusServerIp);
     const network = await readNasNetwork(this.prisma, router.id, false);
     const active = network ? await readNasNetwork(this.prisma, router.id) : null;
-    update ??= !!active || network?.update === true;
-    const append = network ? '\n' + nasNetworkScript(router.id, network, update && !!active) : '';
+    // Database edits/confirmation are not evidence that any item exists on RouterOS.
+    // Return both actions explicitly; installation must always create missing items.
+    const build = (update: boolean) => radiusSetupScript(router, radiusServerIp, router.nasname, true, vpnPassword, vpnPort, update)
+      + (network ? '\n' + nasNetworkScript(router.id, network, update) : '');
+    const scriptInstall = build(false), scriptUpdate = build(true);
     return {
       routerName: router.name, radiusServerIp, nasSrcAddress: router.nasname,
       authPort: router.ports || 1812, coaPort: router.coaPort || 3799,
-      scriptRos7: radiusSetupScript(router, radiusServerIp, router.nasname, true, vpnPassword, vpnPort, update) + append,
-      scriptRos6: radiusSetupScript(router, radiusServerIp, router.nasname, false, vpnPassword, vpnPort, update) + append,
+      scriptInstall, scriptUpdate,
+      // Keep old clients working, with installation as their default script too.
+      scriptRos7: scriptInstall, scriptRos6: scriptInstall,
       networkFingerprint: network?.fingerprint ?? null,
       networkNeedsConfirmation: !!network && network.fingerprint !== active?.fingerprint,
     };
@@ -137,16 +141,6 @@ export class RoutersService {
   }
 
   private async saveNetwork(tx: Prisma.TransactionClient, id: number, network: NasNetwork) {
-    const previous = await readNasNetwork(tx, id, false);
-    if (previous) {
-      network.existingPools = previous.existingPools;
-      network.existingIsolationProfile = previous.existingIsolationProfile;
-    } else {
-      const pools = await tx.ipPool.findMany({ where: { routerNasId: id, name: { in: [internetPoolName, isolationPoolName] } } });
-      network.existingPools = pools.map(pool => pool.name);
-      const isolation = await tx.appSetting.findUnique({ where: { key: isolationKey(id) } });
-      network.existingIsolationProfile = !!isolation && (JSON.parse(isolation.value) as { enabled?: boolean }).enabled === true;
-    }
     for (const [name, pool] of [[internetPoolName, network.internet], [isolationPoolName, network.isolation]] as const) {
       await tx.ipPool.upsert({ where: { routerNasId_name: { routerNasId: id, name } },
         create: { routerNasId: id, name, networkStart: pool.start, networkEnd: pool.end, createdAt: new Date(), updatedAt: new Date() },
