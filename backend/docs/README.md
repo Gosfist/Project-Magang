@@ -1,5 +1,16 @@
 # Panduan arsitektur tanpa API MikroTik
 
+Dashboard administrator merangkum pelanggan, pemasangan dalam proses, akun PSB
+yang menunggu penyelesaian, Router/NAS terdaftar, Finance bulan berjalan (WIB),
+setoran menunggu ACC, tagihan belum lunas seluruh periode, status Bot WhatsApp,
+serta jaringan dan tim. Akses Cepat mengarah ke sepuluh menu utama. Data berasal
+dari API dan diperbarui setiap menit saat halaman terlihat; tombol Perbarui dapat
+digunakan kapan saja. Kegagalan satu sumber ditampilkan sebagai data tidak tersedia,
+bukan angka nol atau status bot terputus. Kartu Router/NAS menunjukkan jumlah
+perangkat terdaftar. Dashboard role Finance, Sales, Kolektor dan Teknisi
+tetap menggunakan ringkasan masing-masing. Pembaruan ini memerlukan backend dan
+frontend terbaru.
+
 Halaman publik menampilkan menu hamburger di layar di bawah 768px untuk Beranda,
 Tentang Kami, Layanan, dan Kontak. Menu ditutup setelah memilih tautan, menekan
 tombol lagi, atau menekan Escape. Kartu paket tersusun satu kolom di bawah 640px,

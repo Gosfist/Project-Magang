@@ -1,4 +1,5 @@
 import { SalesComponent } from '../sales/sales.component';
+import { AdminDashboardComponent } from '../admin/admin-dashboard.component';
 import { FinanceSummaryComponent } from '../finance/summary/finance-summary.component';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { LucideGitBranch, LucideNetwork, LucideServer, LucideUsers } from '@lucide/angular';
@@ -19,7 +20,7 @@ type StatCard = {
 @Component({
   selector: 'app-dashboard-home',
   standalone: true,
-  imports: [SalesComponent, FinanceSummaryComponent, FormsModule, CommonModule, RouterLink, LucideGitBranch, LucideNetwork, LucideServer, LucideUsers],
+  imports: [AdminDashboardComponent, SalesComponent, FinanceSummaryComponent, FormsModule, CommonModule, RouterLink, LucideGitBranch, LucideNetwork, LucideServer, LucideUsers],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })
@@ -42,6 +43,7 @@ export class HomeComponent implements OnInit {
   private monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
   ngOnInit(): void {
+    if (this.auth.activeRole() === 'admin') return;
     if (this.auth.isFinance()) return;
     if (this.auth.isKolektor()) {
       this.api.get<{ summary: AreaBillingSummary }>('/areas/customers').subscribe({

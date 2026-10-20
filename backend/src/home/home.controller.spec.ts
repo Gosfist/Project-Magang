@@ -2,6 +2,50 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { HomeController } from './home.controller.js';
 import { currentSalaryMonth } from '../finance/salary/finance-salary.service.js';
 
+describe('administrator overview', () => {
+  function setup() {
+    const prisma = {
+      mainCore: { count: vi.fn().mockResolvedValue(3) },
+      user: { count: vi.fn().mockResolvedValue(4) },
+      pppoeAccount: { count: vi.fn().mockResolvedValue(120) },
+      nas: { count: vi.fn().mockResolvedValue(2) },
+      psbOrder: { count: vi.fn().mockImplementation(({ where }) => Promise.resolve(where.status === 'PROCESS' ? 5 : 2)) },
+      invoice: { aggregate: vi.fn().mockResolvedValue({ _count: { _all: 8 }, _sum: { amount: 1200000n } }) },
+      collectorDeposit: { count: vi.fn().mockResolvedValue(4) },
+      $transaction: vi.fn((queries: Promise<unknown>[]) => Promise.all(queries)),
+    };
+    return { prisma, controller: new HomeController(prisma as any, {} as any) };
+  }
+
+  it('returns live operational totals and sums only unpaid invoices', async () => {
+    const { controller, prisma } = setup();
+    const result = await controller.stats({ user: { id: '1', role: 'admin' } } as any);
+    expect(result).toMatchObject({ totalCustomers: 120, totalRouters: 2, newOrders: 5,
+      activatedOrders: 2, unpaidInvoices: 8, unpaidInvoiceAmount: 1200000 });
+    expect(prisma.invoice.aggregate).toHaveBeenCalledWith({
+      where: { status: { in: ['PENDING', 'OVERDUE'] } }, _count: { _all: true }, _sum: { amount: true },
+    });
+    expect(prisma.psbOrder.count).toHaveBeenCalledWith({ where: { status: 'PROCESS' } });
+    expect(prisma.psbOrder.count).toHaveBeenCalledWith({ where: { status: 'ACTIVATED' } });
+    expect(() => JSON.stringify(result)).not.toThrow();
+  });
+
+  it('returns zero for a genuinely empty invoice aggregate', async () => {
+    const { controller, prisma } = setup();
+    prisma.invoice.aggregate.mockResolvedValue({ _count: { _all: 0 }, _sum: { amount: null } } as any);
+    const result = await controller.stats({ user: { id: '1', role: 'admin' } } as any);
+    expect(result).toMatchObject({ unpaidInvoices: 0, unpaidInvoiceAmount: 0 });
+  });
+
+  it.each(['finance', 'kolektor'])('does not query global administrator data in the %s context', async role => {
+    const { controller, prisma } = setup();
+    const result = await controller.stats({ user: { id: '2', role } } as any);
+    expect(result).not.toHaveProperty('unpaidInvoiceAmount');
+    expect(prisma.invoice.aggregate).not.toHaveBeenCalled();
+    expect(prisma.nas.count).not.toHaveBeenCalled();
+  });
+});
+
 describe('monthly salary', () => {
   beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date('2026-10-11T05:00:00Z')); });
   afterEach(() => vi.useRealTimers());

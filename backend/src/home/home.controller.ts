@@ -23,6 +23,22 @@ export class HomeController {
     if (request.user.role === 'admin') {
       result.totalTeknisi = await this.prisma.user.count({ where: { role: 'teknisi' } });
       result.totalUsers = await this.prisma.user.count();
+      const [totalCustomers, totalRouters, newOrders, activatedOrders, unpaid] = await this.prisma.$transaction([
+        this.prisma.pppoeAccount.count(),
+        this.prisma.nas.count(),
+        this.prisma.psbOrder.count({ where: { status: 'PROCESS' } }),
+        this.prisma.psbOrder.count({ where: { status: 'ACTIVATED' } }),
+        this.prisma.invoice.aggregate({
+          where: { status: { in: ['PENDING', 'OVERDUE'] } },
+          _count: { _all: true },
+          _sum: { amount: true },
+        }),
+      ]);
+      Object.assign(result, {
+        totalCustomers, totalRouters, newOrders, activatedOrders,
+        unpaidInvoices: unpaid._count._all,
+        unpaidInvoiceAmount: Number(unpaid._sum.amount ?? 0),
+      });
     } else if (request.user.role === 'teknisi') {
       const rates = await this.salary.settings();
       const monthlyCompletedOrders = await this.prisma.psbOrder.count({ where: { completedByUserId: BigInt(request.user.id), status: 'COMPLETED', completedAt: currentSalaryMonth() } });

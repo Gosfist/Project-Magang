@@ -1,4 +1,6 @@
-@if (auth.isFinance()) {
+@if (auth.activeRole() === 'admin') {
+  <app-admin-dashboard />
+} @else if (auth.isFinance()) {
   <app-finance-summary />
 } @else {
 <div class="space-y-5">

@@ -1,0 +1,139 @@
+<div class="admin-dashboard space-y-5" [attr.aria-busy]="loading()">
+  <header class="card flex flex-wrap items-center justify-between gap-4 p-5">
+    <div>
+      <p class="mb-1 text-xs font-medium uppercase tracking-wider text-blue-700">Administrator</p>
+      <h2>Dashboard Administrator</h2>
+      <p class="mt-1 text-sm text-slate-500">Selamat datang, {{ auth.user()?.name }}. Pantau layanan dan operasional Anda di sini.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <p class="text-xs text-slate-500" role="status">{{ loading() ? 'Memperbarui ringkasan...' : 'Diperiksa ' + checkedAt() }}</p>
+      <button type="button" class="btn-secondary" [disabled]="loading()" (click)="refresh()">
+        <svg lucideRefreshCw [size]="16" aria-hidden="true"></svg> Perbarui
+      </button>
+    </div>
+  </header>
+
+  <section aria-label="Ringkasan operasional">
+    @if (!loading() && !stats()) {
+      <div role="alert" class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800">Ringkasan operasional belum dapat dimuat. Tekan Perbarui untuk mencoba lagi.</div>
+    }
+    <div class="admin-metrics">
+      @for (metric of metrics; track metric.key) {
+        <a [routerLink]="metric.path" class="card metric-card group p-5 hover:border-blue-300">
+          <div class="mb-4 flex items-start justify-between gap-2">
+            <span class="inline-flex rounded-lg bg-blue-50 p-2.5 text-blue-700"><ng-container [ngTemplateOutlet]="menuIcon" [ngTemplateOutletContext]="{ $implicit: metric.icon }" /></span>
+            <svg lucideArrowUpRight [size]="16" class="text-slate-400 group-hover:text-blue-700" aria-hidden="true"></svg>
+          </div>
+          <p class="text-sm text-slate-600">{{ metric.label }}</p>
+          <p class="mt-1 text-3xl font-semibold text-slate-950">{{ count(stats()?.[metric.key]) }}</p>
+          <p class="mt-1 text-xs text-slate-500">{{ metric.description }}</p>
+        </a>
+      }
+    </div>
+  </section>
+
+  <div class="admin-summary">
+    <section class="card min-w-0 p-5" aria-labelledby="finance-heading">
+      <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 id="finance-heading">Ringkasan Finance</h3>
+          <p class="mt-1 text-xs text-slate-500">{{ period() }} · Transaksi tercatat</p>
+        </div>
+        <a routerLink="/dashboard/finance/dashboard" class="inline-flex min-h-10 items-center gap-1 text-sm font-medium text-blue-700 hover:underline">Lihat Finance <svg lucideArrowUpRight [size]="16" aria-hidden="true"></svg></a>
+      </div>
+      @if (finance(); as summary) {
+        <div class="finance-totals">
+          <div class="rounded-lg border border-emerald-100 bg-emerald-50/70 p-4">
+            <p class="text-sm text-emerald-800">Pemasukan</p>
+            <p class="summary-amount mt-2 text-emerald-800">{{ currency(summary.monthlyIncome) }}</p>
+            <p class="mt-2 text-xs text-slate-500">{{ count(summary.monthlyIncomeCount) }} transaksi</p>
+          </div>
+          <div class="rounded-lg border border-red-100 bg-red-50/60 p-4">
+            <p class="text-sm text-red-800">Pengeluaran</p>
+            <p class="summary-amount mt-2 text-red-800">{{ currency(summary.monthlyExpense) }}</p>
+            <p class="mt-2 text-xs text-slate-500">{{ count(summary.monthlyExpenseCount) }} transaksi</p>
+          </div>
+          <div class="rounded-lg border border-blue-100 bg-blue-50/70 p-4">
+            <p class="text-sm text-blue-800">Selisih Bulan Ini</p>
+            <p class="summary-amount mt-2" [class.text-red-700]="summary.monthlyBalance < 0" [class.text-blue-900]="summary.monthlyBalance >= 0">{{ currency(summary.monthlyBalance) }}</p>
+            <p class="mt-2 text-xs text-slate-500">Pemasukan − pengeluaran</p>
+          </div>
+        </div>
+      } @else {
+        <p class="rounded-lg bg-slate-50 p-4 text-sm text-slate-500" [attr.role]="loading() ? 'status' : 'alert'">{{ loading() ? 'Memuat ringkasan keuangan...' : 'Ringkasan keuangan belum dapat dimuat.' }}</p>
+      }
+      <div class="mt-5 divide-y divide-slate-100 border-t border-slate-100">
+        <a routerLink="/dashboard/finance/setoran" class="flex min-h-14 items-center justify-between gap-4 py-3 hover:text-blue-700">
+          <span><span class="block text-sm">Setoran Menunggu ACC</span><span class="text-xs text-slate-500">Perlu diperiksa Finance</span></span>
+          <span class="text-lg font-semibold">{{ count(finance()?.pendingDeposits) }}</span>
+        </a>
+        <a routerLink="/dashboard/finance/tagihan" class="flex min-h-14 flex-wrap items-center justify-between gap-2 py-3 hover:text-blue-700">
+          <span><span class="block text-sm">Tagihan Belum Lunas</span><span class="text-xs text-slate-500">{{ count(stats()?.unpaidInvoices) }} invoice · Seluruh periode</span></span>
+          <span class="font-semibold">{{ stats() ? currency(stats()!.unpaidInvoiceAmount) : '—' }}</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="card flex min-w-0 flex-col p-5" aria-labelledby="bot-heading">
+      <div class="mb-5 flex items-center gap-3">
+        <span class="rounded-lg bg-emerald-50 p-2.5 text-emerald-700"><svg lucideBot [size]="22" aria-hidden="true"></svg></span>
+        <h3 id="bot-heading">Bot WhatsApp</h3>
+      </div>
+      <div class="rounded-xl border p-4" [class.border-emerald-200]="bot()?.status === 'connected'" [class.bg-emerald-50]="bot()?.status === 'connected'" [class.border-slate-200]="bot()?.status !== 'connected'" [class.bg-slate-50]="bot()?.status !== 'connected'">
+        <p class="flex items-center gap-2 font-semibold" [class.text-emerald-800]="bot()?.status === 'connected'">
+          <span class="h-2.5 w-2.5 shrink-0 rounded-full" [class.bg-emerald-500]="bot()?.status === 'connected'" [class.bg-amber-500]="bot() && bot()?.status !== 'connected'" [class.bg-slate-400]="!bot()"></span>
+          {{ botLabel }}
+        </p>
+        <p class="mt-2 text-sm leading-relaxed text-slate-500">{{ botDescription }}</p>
+      </div>
+      <dl class="my-5 space-y-3 text-sm">
+        <div class="flex flex-wrap justify-between gap-2"><dt class="text-slate-500">Nomor Bot</dt><dd class="break-all font-medium">{{ bot()?.botNumber || '—' }}</dd></div>
+        <div class="flex flex-wrap justify-between gap-2"><dt class="text-slate-500">Durasi Koneksi</dt><dd class="font-medium">{{ botUptime }}</dd></div>
+      </dl>
+      <a routerLink="/dashboard/bot-whatsapp/status" class="btn-secondary mt-auto justify-center">Buka Bot WhatsApp <svg lucideArrowUpRight [size]="16" aria-hidden="true"></svg></a>
+    </section>
+  </div>
+
+  <section class="card p-5" aria-labelledby="shortcuts-heading">
+    <div class="mb-5">
+      <h3 id="shortcuts-heading">Akses Cepat</h3>
+      <p class="mt-1 text-xs text-slate-500">Menu utama administrator</p>
+    </div>
+    <div class="admin-shortcuts">
+      @for (shortcut of shortcuts; track shortcut.path) {
+        <a [routerLink]="shortcut.path" class="shortcut-link group rounded-xl border border-slate-200 p-4 hover:border-blue-300 hover:bg-blue-50">
+          <span class="mb-3 inline-flex rounded-lg bg-slate-100 p-2 text-slate-600 group-hover:bg-white group-hover:text-blue-700"><ng-container [ngTemplateOutlet]="menuIcon" [ngTemplateOutletContext]="{ $implicit: shortcut.icon }" /></span>
+          <span class="block text-sm font-medium">{{ shortcut.label }}</span>
+        </a>
+      }
+    </div>
+  </section>
+
+  <section class="card p-5" aria-labelledby="network-heading">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <h3 id="network-heading">Jaringan & Tim</h3>
+      <a routerLink="/dashboard/mainCore/traceJalur" class="inline-flex min-h-10 items-center gap-1 text-sm font-medium text-blue-700 hover:underline">Telusuri Jalur <svg lucideArrowUpRight [size]="16" aria-hidden="true"></svg></a>
+    </div>
+    <dl class="network-totals">
+      <div><dt>Server Inti</dt><dd>{{ count(stats()?.totalServerCores) }}</dd></div>
+      <div><dt>ODC</dt><dd>{{ count(stats()?.totalOdcs) }}</dd></div>
+      <div><dt>ODP</dt><dd>{{ count(stats()?.totalOdps) }}</dd></div>
+      <div><dt>Teknisi</dt><dd>{{ count(stats()?.totalTeknisi) }}</dd></div>
+      <div><dt>Akun Pengguna</dt><dd>{{ count(stats()?.totalUsers) }}</dd></div>
+    </dl>
+  </section>
+</div>
+
+<ng-template #menuIcon let-icon>
+  @switch (icon) {
+    @case ('users') { <svg lucideUsers [size]="22" aria-hidden="true"></svg> }
+    @case ('router') { <svg lucideRouter [size]="22" aria-hidden="true"></svg> }
+    @case ('network') { <svg lucideNetwork [size]="22" aria-hidden="true"></svg> }
+    @case ('tags') { <svg lucideTags [size]="22" aria-hidden="true"></svg> }
+    @case ('hardhat') { <svg lucideHardHat [size]="22" aria-hidden="true"></svg> }
+    @case ('wallet') { <svg lucideWallet [size]="22" aria-hidden="true"></svg> }
+    @case ('map') { <svg lucideMapPin [size]="22" aria-hidden="true"></svg> }
+    @case ('bot') { <svg lucideBot [size]="22" aria-hidden="true"></svg> }
+    @case ('settings') { <svg lucideSettings [size]="22" aria-hidden="true"></svg> }
+  }
+</ng-template>
