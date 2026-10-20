@@ -13,6 +13,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from docx.shared import Cm, Pt, RGBColor
 
 
@@ -21,12 +22,33 @@ SOURCE = ROOT / 'backend/docs/instalasi-ubuntu-vpn.md'
 
 
 def text_runs(paragraph, text):
-    # Preserve literal command text; Markdown inline backticks are presentation.
-    for index, part in enumerate(text.split(chr(96))):
-        run = paragraph.add_run(part)
-        if index % 2:
+    # Keep command literals and make the panel/source links clickable in Word.
+    tokens = re.split(r'(`[^`]+`|\[[^\]]+\]\(https?://[^)]+\))', text)
+    for part in tokens:
+        link = re.fullmatch(r'\[([^\]]+)\]\((https?://[^)]+)\)', part)
+        if link:
+            hyperlink = OxmlElement('w:hyperlink')
+            hyperlink.set(qn('r:id'), paragraph.part.relate_to(link[2], RT.HYPERLINK, is_external=True))
+            run = OxmlElement('w:r')
+            properties = OxmlElement('w:rPr')
+            color = OxmlElement('w:color')
+            color.set(qn('w:val'), '0563C1')
+            properties.append(color)
+            underline = OxmlElement('w:u')
+            underline.set(qn('w:val'), 'single')
+            properties.append(underline)
+            run.append(properties)
+            value = OxmlElement('w:t')
+            value.text = link[1]
+            run.append(value)
+            hyperlink.append(run)
+            paragraph._p.append(hyperlink)
+        elif part.startswith('`') and part.endswith('`'):
+            run = paragraph.add_run(part[1:-1])
             run.font.name = 'Consolas'
             run.font.size = Pt(9)
+        else:
+            paragraph.add_run(part)
 
 
 def no_row_split(row):
@@ -78,8 +100,8 @@ def build(source, destination):
     normal = document.styles['Normal']
     normal.font.name = 'Calibri'
     normal.font.size = Pt(10.5)
-    normal.paragraph_format.space_after = Pt(5)
-    normal.paragraph_format.line_spacing = 1.08
+    normal.paragraph_format.space_after = Pt(4)
+    normal.paragraph_format.line_spacing = 1.05
     for name, size in [('Title', 22), ('Heading 1', 14), ('Heading 2', 12)]:
         style = document.styles[name]
         style.font.name = 'Calibri'
@@ -87,7 +109,7 @@ def build(source, destination):
         style.font.color.rgb = RGBColor(0, 0, 0)
         style.font.bold = True
         style.paragraph_format.keep_with_next = True
-        style.paragraph_format.space_before = Pt(10)
+        style.paragraph_format.space_before = Pt(9)
         style.paragraph_format.space_after = Pt(5)
         for border in style.element.xpath('./w:pPr/w:pBdr'):
             border.getparent().remove(border)
@@ -95,7 +117,7 @@ def build(source, destination):
     code_style.font.name = 'Consolas'
     code_style.font.size = Pt(8.3)
     code_style.paragraph_format.line_spacing = 1.0
-    code_style.paragraph_format.space_after = Pt(6)
+    code_style.paragraph_format.space_after = Pt(5)
     code_style.paragraph_format.keep_together = True
     document.core_properties.title = 'Instalasi UNZANET di VPS'
     document.core_properties.subject = 'VPS Ubuntu website FreeRADIUS SSTP dan Disconnect'
@@ -127,6 +149,19 @@ def build(source, destination):
             document.add_paragraph(line[3:], 'Heading 1')
         elif line.startswith('### '):
             document.add_paragraph(line[4:], 'Heading 2')
+        elif re.fullmatch(r'!\[([^\]]*)\]\(([^)]+)\)', line):
+            match = re.fullmatch(r'!\[([^\]]*)\]\(([^)]+)\)', line)
+            caption, relative_path = match.groups()
+            image = (source.parent / relative_path).resolve()
+            image.relative_to(source.parent.resolve())
+            paragraph = document.add_paragraph()
+            paragraph.paragraph_format.keep_with_next = True
+            paragraph.add_run().add_picture(str(image), width=Cm(17.0))
+            paragraph = document.add_paragraph(caption)
+            paragraph.paragraph_format.space_after = Pt(8)
+            for run in paragraph.runs:
+                run.font.size = Pt(9)
+                run.italic = True
         elif line.startswith('|'):
             rows = []
             while index < len(lines) and lines[index].startswith('|'):

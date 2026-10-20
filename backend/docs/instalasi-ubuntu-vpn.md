@@ -4,15 +4,59 @@
 
 1. Gunakan VPS Ubuntu Server 24.04 LTS baru dengan akses sudo, IPv4 publik, dan dukungan PPP kernel. Website, database, FreeRADIUS, dan server SSTP dipasang pada VPS yang sama.
 2. Arahkan DNS A domain website ke IPv4 publik VPS. Ganti IP_VPS dan DOMAIN_WEBSITE pada langkah berikut dengan alamat Anda.
-3. Buka firewall provider: SSH TCP 22, HTTP TCP 80, HTTPS TCP 443, dan SSTP TCP 4443. UDP RADIUS 1812/1813 dan database tidak perlu dibuka ke internet.
+3. Catat nama VPS dan IPv4 publik dari menu Droplets di DigitalOcean. Droplet adalah sebutan DigitalOcean untuk VPS. Contoh nama pada gambar: unzanet-vps; pilih nama VPS Anda sendiri.
 4. Pastikan subnet 10.88.0.0/24 belum digunakan pada VPS maupun MikroTik. Server RADIUS memakai 10.88.0.1; router mendapat IP unik 10.88.0.2 sampai 10.88.0.254.
-5. Buka CMD Windows:
+
+### 1.1 Buka halaman firewall DigitalOcean
+
+1. Pada Chrome/Edge Windows, buka [panel DigitalOcean](https://cloud.digitalocean.com/) lalu login. Langkah firewall ini dikerjakan di browser, bukan di Terminal Ubuntu atau Winbox.
+2. Di menu kiri, klik Networking, kemudian tab Firewalls. Klik Create Firewall. Jika menunya berbeda, tombol Create di bagian atas juga menyediakan pilihan Firewall.
+3. Isi kolom Name dengan unzanet-vps atau nama yang mudah Anda ingat. Nama firewall tidak harus sama dengan nama VPS.
+
+![Gambar 1. Ilustrasi menu dan kolom nama firewall DigitalOcean.](images/digitalocean-firewall-menu.png)
+
+### 1.2 Isi aturan masuk satu per satu
+
+1. Cari bagian Inbound Rules. Artinya: koneksi yang diizinkan masuk ke VPS. Pertahankan aturan SSH TCP 22 yang sudah ada agar Anda tetap bisa masuk melalui CMD.
+2. Klik Add inbound rule. Pada tampilan lain tombolnya dapat tertulis New rule. Pilih Type HTTP; Protocol TCP dan Port 80 terisi otomatis. Pada Sources, pertahankan All IPv4. Jika kolom Action tersedia, pilih Allow. Klik Add inbound rule atau tombol simpan pada form.
+3. Tambahkan aturan lagi dengan Type HTTPS. Pastikan Protocol TCP, Port 443, Sources All IPv4, dan Action Allow.
+4. Tambahkan aturan VPN: Type Custom, Protocol TCP, Port 4443, Sources All IPv4, dan Action Allow. Simpan aturan ini.
+5. All IPv4 berarti koneksi boleh datang dari alamat internet IPv4 mana pun. Jika All IPv6 juga sudah muncul secara bawaan, boleh dibiarkan. Setelah aturan disimpan, cocokkan keempat baris berikut:
+
+![Gambar 2. Ilustrasi empat aturan masuk yang diperlukan aplikasi UNZANET.](images/digitalocean-firewall-inbound.png)
+
+6. Untuk port VPN, isi persis angka 4443. Jangan pilih UDP dan jangan membiarkan kolom Port kosong:
+
+![Gambar 3. Ilustrasi form aturan khusus untuk VPN SSTP port 4443.](images/digitalocean-firewall-custom.png)
+
+7. Pada Inbound Rules, cukup empat aturan di gambar. Jangan menambahkan All TCP atau All UDP sebagai aturan masuk. Port RADIUS 1812/1813, Disconnect 3799, dan MySQL 3306 tidak perlu dibuka ke internet; koneksi RADIUS berjalan melalui VPN.
+
+### 1.3 Pilih VPS dan simpan firewall
+
+1. Scroll ke Outbound Rules. Artinya: koneksi dari VPS menuju internet. Biarkan aturan bawaan All TCP, All UDP, dan ICMP menuju All IPv4/All IPv6 agar unduhan paket dan koneksi aplikasi berjalan.
+2. Scroll ke Apply to Droplets. Ketik nama VPS Anda, lalu klik hasil pencariannya sampai VPS benar-benar terpilih. Jangan hanya mengetik namanya lalu melewati bagian ini.
+3. Klik Create Firewall. Tunggu sampai halaman detail firewall muncul. Firewall baru bekerja pada VPS setelah VPS tersebut dipilih/ditambahkan.
+
+![Gambar 4. Ilustrasi memilih VPS dan membuat firewall.](images/digitalocean-firewall-apply.png)
+
+4. Periksa: nama firewall sudah tampil, empat aturan masuk tersedia, dan VPS Anda terdaftar pada tab Droplets. Jika firewall sudah dibuat tetapi VPS belum masuk, buka tab Droplets pada firewall lalu tambahkan VPS tersebut.
+5. Untuk melihat hasil dari sisi VPS, buka menu Droplets, klik nama VPS, buka Networking, lalu cari bagian Firewalls. Contoh tampilan asli dari dokumentasi DigitalOcean:
+
+![Gambar 5. Screenshot resmi DigitalOcean. Contoh ini hanya menunjukkan port 22, 80, dan 443; konfigurasi UNZANET juga harus memiliki TCP 4443 sesuai Gambar 2.](images/digitalocean-firewall-official.png)
+
+6. Gambar 1 sampai 4 adalah ilustrasi agar isian mudah ditiru. Nama menu mengacu ke dokumentasi DigitalOcean; susunan tampilan akun Anda dapat sedikit berbeda. Gambar 5 adalah screenshot resmi, bukan akun Anda.
+7. Jika SSH atau website belum merespons, pastikan firewall dipasang pada VPS yang benar dan tidak ada aturan Deny dari firewall lain. Website/port VPN baru dapat merespons setelah layanannya dipasang pada tahap berikutnya.
+8. Rujukan: [membuat firewall](https://docs.digitalocean.com/products/networking/firewalls/how-to/create/), [mengatur aturan](https://docs.digitalocean.com/products/networking/firewalls/how-to/configure-rules/), dan [melihat aturan pada VPS](https://docs.digitalocean.com/products/networking/firewalls/how-to/view-rules-for-droplet/). Diperiksa 20 Oktober 2026.
+
+### 1.4 Masuk ke VPS dari CMD Windows
+
+1. Setelah firewall terpasang, buka CMD Windows. Ganti USER_VPS dengan username Linux Anda dan IP_VPS dengan IPv4 publik VPS. Jika memakai login awal root dari DigitalOcean, USER_VPS adalah root:
 
 ~~~cmd
 ssh USER_VPS@IP_VPS
 ~~~
 
-6. Cocokkan fingerprint SSH melalui console provider sebelum menerima host baru. Password SSH adalah password Linux VPS, berbeda dari akun VPN.
+2. Cocokkan fingerprint SSH melalui console DigitalOcean sebelum menerima host baru. Password SSH adalah password Linux VPS, berbeda dari akun VPN. Jika Anda memilih autentikasi SSH key saat membuat VPS, gunakan key yang sesuai; password akun DigitalOcean tidak dipakai untuk SSH.
 
 ## 2 Siapkan frontend di Windows
 

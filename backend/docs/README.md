@@ -4,6 +4,10 @@ Panduan aktif adalah [instalasi VPS Ubuntu](instalasi-ubuntu-vpn.md),
 [FreeRADIUS](pppoe-freeradius.md), [operasi Router dan PPPoE](router-pppoe-operations.md),
 [isolir](pppoe-isolation.md), dan [backup darurat](pppoe-backup.md).
 Versi Word terbaru berada pada `install.doc` di root repo.
+Bagian awal memuat panduan bergambar firewall DigitalOcean untuk pemula:
+menu yang diklik, aturan 22/80/443/4443, Sources/Action, Outbound Rules,
+Apply to Droplets, dan pemeriksaan hasil. Gambar ilustrasi serta satu screenshot
+resmi berada di `images/`; sumber gambar dicantumkan pada panduan.
 Urutan: siapkan VPS/DNS, build frontend di laptop, commit/push paket,
 clone/pull VPS, `npm run install` mode `web`, HTTPS, lalu `npm run setupvpnserver`.
 Website, RADIUS, dan VPN berada satu mesin; tidak perlu VPN client Ubuntu.
