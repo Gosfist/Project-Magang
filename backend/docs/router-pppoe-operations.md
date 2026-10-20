@@ -56,7 +56,20 @@ diikuti ID pelanggan enam digit (customerNumber), misalnya 000001, pada baris
 kedua. ID ini berbeda dari username PPPoE; username tetap dipakai untuk login dan
 identitas sesi RADIUS.
 
-Form pelanggan/foto KTP, pemilihan ODP, kepemilikan role, serta workflow pembayaran tidak berubah karena transport router diganti. Edit pelanggan tidak membuat invoice pertama baru. Mode tagihan none tidak membuat invoice; full memakai harga penuh; prorate berlaku untuk POSTPAID sedangkan PREPAID tetap penuh.
+Tambah langsung pada PPPoE > Data Pelanggan memakai dua tahap:
+Data Pelanggan (identitas, foto KTP, alamat, area, dan Layanan), lalu Data Akun
+PPPoE (username/password, NAS, ODC/ODP). Layanan wajib dipilih sebelum lanjut.
+Tahap Data Pembayaran, pilihan Postpaid/Prepaid, tanggal tagihan manual, diskon,
+dan estimasi tagihan pertama dihapus dari pendaftaran baru.
+
+Pendaftaran langsung mengikuti nilai otomatis aktivasi Sales ke Teknisi:
+POSTPAID, billingDay 1, diskon 0, tanpa tanggal kedaluwarsa manual. Tanggal mulai
+berlangganan dibuat server ketika akun disimpan. Tagihan layanan pertama tidak
+dibuat saat pendaftaran; scheduler bulan berikutnya memakai tanggal mulai dan
+pengaturan penagihan global untuk nominal prorata serta jatuh tempo. Payload
+form lama dengan firstInvoice/prepaid/tanggal/diskon tidak mengubah aturan
+pendaftaran baru. Edit akun lama mempertahankan perilaku dan data pembayaran
+yang sudah tersimpan serta tidak membuat invoice pertama baru.
 
 ## Instalasi baru dan validasi
 

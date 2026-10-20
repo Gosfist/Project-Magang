@@ -10,8 +10,6 @@ import { PppoeNetworkService } from '../shared/pppoe-network.service.js';
 import { validateIdCardPhoto } from './id-card-photo.js';
 import { readInstallationPhoto } from './installation-photo.js';
 import { WhatsappNotifyService } from '../../bot-whatsapp/shared/whatsapp-notify.service.js';
-import { localBillingDate, serviceInvoiceNumber } from './billing-cycle.js';
-import { PengaturanService } from '../../tools/pengaturan/pengaturan.service.js';
 import { removeCustomerImage } from '../../common/image-storage.js';
 import { customerSearch } from '../../common/customer-search.js';
 
@@ -92,15 +90,12 @@ export class DataPelangganService {
   async createAccount(dto: SaveAccountDto) {
     if (!dto.password) throw new BadRequestException('Kata sandi PPPoE wajib diisi.');
     await this.validateAccountForm(dto, true);
-    const pkg = await this.findPackage(dto.pppoePackageId);
+    await this.findPackage(dto.pppoePackageId);
     try {
       const account = await this.createAccountTransaction(async (tx) => {
         const maximum = await tx.pppoeAccount.aggregate({ _max: { customerNumber: true } });
         const customerNumber = (maximum._max.customerNumber ?? 0n) + 1n;
         const item = await tx.pppoeAccount.create({ data: { ...this.accountData(dto, this.secrets.encrypt(dto.password!), true), customerNumber }, include: { package: { include: { ipPool: true } } } });
-        if (dto.firstInvoice && dto.firstInvoice !== 'none') {
-          await this.createFirstInvoice(tx, item, pkg, dto.discount || 0, dto.firstInvoice);
-        }
         await this.radius.sync(tx, item);
         return item;
       });
@@ -296,44 +291,17 @@ export class DataPelangganService {
       phone: dto.phone?.trim() || null, address: dto.address?.trim() || null,
       idCardNumber: dto.idCardNumber?.trim() || null,
       idCardPhoto: dto.idCardPhoto?.trim() || null,
-      subscriptionType: dto.subscriptionType || 'POSTPAID',
-      billingDay: dto.billingDay ?? 1,
-      discount: BigInt(dto.discount || 0),
+      // Direct registration follows Sales -> technician activation defaults.
+      subscriptionType: creating ? 'POSTPAID' : dto.subscriptionType || 'POSTPAID',
+      billingDay: creating ? 1 : dto.billingDay ?? 1,
+      discount: creating ? 0n : BigInt(dto.discount || 0),
       odp: dto.odp?.trim() || null,
       routerNasId: dto.routerNasId ? Number(dto.routerNasId) : null,
       areaId: dto.areaId ? BigInt(dto.areaId) : null,
-      expiresAt: dto.expiresAt ? new Date(`${dto.expiresAt}T00:00:00.000Z`) : null,
+      expiresAt: !creating && dto.expiresAt ? new Date(`${dto.expiresAt}T00:00:00.000Z`) : null,
       isActive: creating ? true : dto.isActive ?? false, notes: dto.notes?.trim() || null,
       updatedAt: now, ...(creating ? { createdAt: now } : {}),
     };
-  }
-
-  private async createFirstInvoice(tx: Prisma.TransactionClient, account: Prisma.PppoeAccountGetPayload<{}>, packageData: Prisma.PppoePackageGetPayload<{}>, discount: number, firstInvoice: string) {
-    // Pascabayar diterbitkan scheduler pada bulan setelah mulai berlangganan.
-    if (account.subscriptionType !== 'PREPAID') return;
-    const now = new Date();
-    const msPerDay = 1000 * 60 * 60 * 24;
-    const baseAmount = Math.max(0, Number(packageData.price) - discount);
-    const dueDate = account.expiresAt ?? new Date(now.getTime() + packageData.validityDays * msPerDay);
-
-    const settings = await new PengaturanService(this.prisma).billing();
-    const period = localBillingDate(account.createdAt ?? now, settings.billingTimezone);
-    const invoiceNumber = serviceInvoiceNumber(period.getUTCFullYear(), period.getUTCMonth() + 1, account.customerNumber);
-
-    await tx.invoice.create({
-      data: {
-        pppoeAccountId: account.id,
-        invoiceNumber,
-        amount: BigInt(baseAmount),
-        baseAmount: BigInt(baseAmount),
-        discount: BigInt(discount),
-        invoiceType: 'MONTHLY',
-        status: 'PENDING',
-        dueDate,
-        createdAt: now,
-        updatedAt: now,
-      },
-    });
   }
 
   private formatDate(date?: Date) {

@@ -45,10 +45,15 @@ describe('PPPoE billing and account deactivation', () => {
   beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 8, 16, 0, 0, 0)); });
   afterEach(() => vi.useRealTimers());
 
-  it('charges prepaid the full discounted price even for stale prorate payloads', async () => {
-    const { service, dto, invoice } = setup();
-    await service.createAccount(dto);
-    expect(invoice.create).toHaveBeenCalledWith({ data: expect.objectContaining({ amount: 290000n, invoiceType: 'MONTHLY' }) });
+  it('uses automatic Sales activation defaults even when an old form sends manual billing fields', async () => {
+    const { service, dto, invoice, tx, radius } = setup();
+    await service.createAccount({ ...dto, billingDay: 28, expiresAt: '2020-01-01' });
+    expect(tx.pppoeAccount.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({
+      subscriptionType: 'POSTPAID', billingDay: 1, discount: 0n, expiresAt: null,
+      createdAt: new Date(), updatedAt: new Date(), isActive: true,
+    }) }));
+    expect(invoice.create).not.toHaveBeenCalled();
+    expect(radius.sync).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ subscriptionType: 'POSTPAID', discount: 0n }));
   });
   it('uses the greatest remaining customer number plus one, including after deletion', async () => {
     const { service, dto, tx } = setup();
@@ -82,6 +87,23 @@ describe('PPPoE billing and account deactivation', () => {
   it('does not invoice postpaid immediately even for a stale full payload', async () => {
     const { service, dto, invoice } = setup();
     await service.createAccount({ ...dto, subscriptionType: 'POSTPAID', firstInvoice: 'full' });
+    expect(invoice.create).not.toHaveBeenCalled();
+  });
+  it('registers without payment fields and leaves the first service invoice to the scheduler', async () => {
+    const { service, dto, invoice, tx } = setup();
+    const { subscriptionType, billingDay, discount, firstInvoice, ...registration } = dto;
+    await service.createAccount(registration);
+    expect(tx.pppoeAccount.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({
+      subscriptionType: 'POSTPAID', billingDay: 1, discount: 0n, expiresAt: null,
+    }) }));
+    expect(invoice.create).not.toHaveBeenCalled();
+  });
+  it('preserves legacy billing data when editing an existing account', async () => {
+    const { service, dto, tx, invoice } = setup();
+    await service.updateAccount('2', { ...dto, subscriptionType: 'PREPAID', billingDay: 18, discount: 2500, expiresAt: '2027-01-01' });
+    expect(tx.pppoeAccount.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({
+      subscriptionType: 'PREPAID', billingDay: 18, discount: 2500n, expiresAt: new Date('2027-01-01T00:00:00Z'),
+    }) }));
     expect(invoice.create).not.toHaveBeenCalled();
   });
   it('disconnects after committing deactivation and allows retrying an inactive account', async () => {

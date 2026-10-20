@@ -284,14 +284,11 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
       },
     });
   }
-  prorateEstimate = signal<{amount: number, daysActive: number, daysInMonth: number, nextBilling: Date} | null>(null);
-  private billingTimezone: 'WIB' | 'WITA' | 'WIT' = 'WIB';
-
   form: any = {
     customerName: '', phone: '', idCardNumber: '', idCardPhoto: '', address: '',
-    pppoePackageId: '', subscriptionType: 'POSTPAID', billingDay: '1', discount: '0',
+    pppoePackageId: '',
     username: '', password: '', routerNasId: '', odp: '', areaId: '',
-    expiresAt: '', isActive: true, notes: '', firstInvoice: 'prorate',
+    expiresAt: '', isActive: true, notes: '',
   };
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -300,9 +297,6 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     this.load();
     this.refreshTimer = setInterval(() => this.refreshVisibleAccounts(), 5000);
     if (this.readOnly()) return;
-    this.api.get<{ billingTimezone: 'WIB' | 'WITA' | 'WIT' }>('/settings/billing').subscribe({
-      next: (settings) => { this.billingTimezone = settings.billingTimezone; this.calculateProrate(); },
-    });
     this.api.get<{ data: PppoePackage[] }>('/pppoe/packages/options').subscribe({
       next: (r) => this.packages.set(r.data),
     });
@@ -376,13 +370,12 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
           expiresAt: item.expiresAt?.slice(0, 10) ?? '',
           isActive: item.isActive,
           notes: item.notes ?? '',
-          firstInvoice: 'prorate',
         }
       : {
           customerName: '', phone: '', idCardNumber: '', idCardPhoto: '', address: '',
-          pppoePackageId: '', subscriptionType: 'POSTPAID', billingDay: '1', discount: '0',
+          pppoePackageId: '',
           username: '', password: '', routerNasId: '', odp: '', areaId: '',
-          expiresAt: '', isActive: true, notes: '', firstInvoice: 'prorate',
+          expiresAt: '', isActive: true, notes: '',
         };
     if (item && this.auth.isAdmin()) {
       this.passwordLoading.set(true);
@@ -400,30 +393,23 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
         },
       });
     }
-    this.calculateProrate();
     this.open.set(true);
     this.loadPhoto();
     if (item) this.loadInstallationPhoto(item.id, (item as AccountListItem).psbOrder?.installationPhoto);
   }
 
   customerValid(): boolean {
-    return ['customerName', 'phone', 'idCardNumber', 'idCardPhoto', 'address', 'areaId'].every(key => String(this.form[key] ?? '').trim());
-  }
-
-  paymentValid(): boolean {
-    return !!this.form.pppoePackageId && this.form.billingDay !== '' && Number(this.form.billingDay) >= 1
-      && Number(this.form.billingDay) <= 28 && this.form.discount !== '' && Number(this.form.discount) >= 0;
+    return ['customerName', 'phone', 'idCardNumber', 'idCardPhoto', 'address', 'areaId', 'pppoePackageId'].every(key => String(this.form[key] ?? '').trim());
   }
 
   nextStep(element: HTMLFormElement): void {
     if (this.uploading() || !element.reportValidity()) return;
     if (this.step() === 1 && !this.customerValid()) {
-      this.formError.set('Lengkapi seluruh data pelanggan dan unggah foto KTP sebelum melanjutkan.');
+      this.formError.set('Lengkapi data pelanggan, pilih layanan, dan unggah foto KTP sebelum melanjutkan.');
       return;
     }
-    if (this.step() === 2 && !this.paymentValid()) return;
     this.formError.set('');
-    if (this.step() < 3) this.step.set(this.step() + 1);
+    if (this.step() < 2) this.step.set(this.step() + 1);
   }
 
   uploadPhoto(event: Event): void {
@@ -458,7 +444,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   }
 
   submit(element: HTMLFormElement): void {
-    if (!this.editing() && this.step() < 3) { this.nextStep(element); return; }
+    if (!this.editing() && this.step() < 2) { this.nextStep(element); return; }
     if (this.editing()) {
       const invalid = element.querySelector<HTMLElement>('input:invalid, select:invalid, textarea:invalid');
       const panel = invalid?.closest<HTMLElement>('[data-edit-tab]');
@@ -475,32 +461,16 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     if (this.step() > 1) this.step.set(this.step() - 1);
   }
 
-  calculateProrate(): void {
-    const pkg = this.packages().find(p => String(p.id) === String(this.form.pppoePackageId));
-    if (!pkg || this.form.subscriptionType !== 'POSTPAID') { this.prorateEstimate.set(null); return; }
-    const offset = { WIB: 7, WITA: 8, WIT: 9 }[this.billingTimezone];
-    const now = new Date(Date.now() + offset * 3600000);
-    const year = now.getUTCFullYear();
-    const month = now.getUTCMonth();
-    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
-    const daysActive = daysInMonth - now.getUTCDate() + 1;
-    const nextBilling = new Date(Date.UTC(year, month + 1, 1));
-    const discount = parseInt(this.form.discount) || 0;
-    const baseAmount = Math.max(0, pkg.price - discount);
-    const amount = Math.round(baseAmount * daysActive / daysInMonth);
-    this.prorateEstimate.set({ amount, daysActive, daysInMonth, nextBilling });
-  }
-
   save(): void {
     if (this.uploading() || this.saving() || this.passwordLoading()) return;
     if (!this.editing() && !this.customerValid()) {
       this.step.set(1);
-      this.formError.set('Lengkapi seluruh data pelanggan dan unggah foto KTP.');
+      this.formError.set('Lengkapi data pelanggan, pilih layanan, dan unggah foto KTP.');
       return;
     }
-    if (!this.form.pppoePackageId || (!this.editing() && !this.paymentValid())) {
-      if (!this.editing()) this.step.set(2);
-      this.formError.set('Pilih paket dan lengkapi data pembayaran.');
+    if (!this.form.pppoePackageId) {
+      if (!this.editing()) this.step.set(1);
+      this.formError.set('Pilih layanan pelanggan.');
       return;
     }
     if (!String(this.form.customerName).trim() || !String(this.form.username).trim() || !this.form.odp
@@ -513,11 +483,9 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     this.saving.set(true);
     const body = {
       ...this.form,
-      firstInvoice: this.editing() ? 'none' : this.form.subscriptionType === 'PREPAID' ? 'full' : this.form.firstInvoice,
       password: this.editing() && this.form.password === this.storedPassword ? undefined : this.form.password || undefined,
       expiresAt: this.form.expiresAt || undefined,
-      billingDay: Number(this.form.billingDay),
-      discount: Number(this.form.discount),
+      ...(this.editing() ? { billingDay: Number(this.form.billingDay), discount: Number(this.form.discount) } : {}),
       routerNasId: this.form.routerNasId ? String(this.form.routerNasId) : undefined,
       areaId: this.form.areaId ? String(this.form.areaId) : undefined,
     };

@@ -1,5 +1,14 @@
 # Panduan arsitektur tanpa API MikroTik
 
+Panduan [Kalkulator Redaman](kalkulator-redaman.md) memuat input, rumus dan contoh
+hasil. Perhitungan frontend kini diperbarui setiap input/splitter/jalur berubah;
+hasil kosong tidak lagi tersimpan dari render awal.
+
+Tambah langsung di PPPoE > Data Pelanggan kini dua tahap: Data Pelanggan termasuk
+pilih Layanan, lalu Data Akun PPPoE. Pengaturan pembayaran manual dihapus dari
+pendaftaran baru. Pascabayar, tanggal mulai server, dan penagihan bulan berikutnya
+mengikuti aturan otomatis Sales ke Teknisi. Rincian pada panduan operasi Router/PPPoE.
+
 Kolom Router/NAS kini Status VPN, berdasarkan sesi SSTP active dengan username dan
 IP yang cocok di Accel-PPP, bukan isActive pendaftaran NAS. Sesi kosong berarti
 Offline; data gagal/usang berarti Tidak diketahui; NAS lokal tampil Tanpa VPN.

@@ -14,40 +14,45 @@ const ratios: Record<string, number[]> = {
   templateUrl: './kalkulator-redaman.component.html',
 })
 export class KalkulatorRedamanComponent {
-  source = '';
-  distance = '';
-  splitter = '1:2';
-  path = '70';
-  connectors = '2';
-  connectorLoss = '0.5';
-  cablePerKm = '0.35';
+  source = signal<number | null>(null);
+  distance = signal<number | null>(null);
+  splitter = signal('1:2');
+  path = signal('70');
+  connectors = signal<number | null>(2);
+  connectorLoss = signal<number | null>(0.5);
+  cablePerKm = signal<number | null>(0.35);
 
   readonly splitterOptions = ['1:2', '1:4', '1:8', '70:30', '80:20', '90:10'];
 
-  currentRatios = computed(() => ratios[this.splitter] ?? null);
+  currentRatios = computed(() => ratios[this.splitter()] ?? null);
 
   onSplitterChange(value: string): void {
+    this.splitter.set(value);
     const r = ratios[value];
     if (r) {
-      this.path = String(r[0]);
+      this.path.set(String(r[0]));
     }
   }
 
   result = computed(() => {
-    const asymmetric = ratios[this.splitter];
-    const percentage = Number(this.path);
+    const asymmetric = ratios[this.splitter()];
+    const percentage = Number(this.path());
     const splitterLoss = asymmetric
       ? -10 * Math.log10(percentage / 100)
-      : 10 * Math.log10(Number(this.splitter.replace('1:', '')));
+      : 10 * Math.log10(Number(this.splitter().replace('1:', '')));
 
-    const cable =
-      this.distance === '' ? NaN : (Number(this.distance) / 1000) * Number(this.cablePerKm);
-    const connector = Number(this.connectors) * Number(this.connectorLoss);
-    const redaman =
-      this.source === '' ? NaN : Number(this.source) - splitterLoss - cable - connector - 1;
+    const cable = (this.nonNegative(this.distance()) / 1000) * this.nonNegative(this.cablePerKm());
+    const connector = this.nonNegative(this.connectors()) * this.nonNegative(this.connectorLoss());
+    const source = this.source();
+    const redaman = source === null || !Number.isFinite(source)
+      ? NaN : source - splitterLoss - cable - connector - 1;
 
     return { splitterLoss, cable, connector, redaman };
   });
+
+  private nonNegative(value: number | null): number {
+    return value !== null && Number.isFinite(value) && value >= 0 ? value : NaN;
+  }
 
   show(n: number, d = 2): string {
     return Number.isFinite(n) ? n.toFixed(d).replace('.', ',') : '-';

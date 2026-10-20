@@ -218,7 +218,7 @@ sudo systemctl status unzanet-radius-nas-refresh.timer --no-pager
 
 4. Cocokkan username/IP sesi dengan klien yang dipilih pada NAS. Rute VPS harus menuju interface SSTP router tersebut.
 5. Siapkan PPPoE Server pada interface pelanggan yang benar. Gunakan profil UNZANET-INTERNET-ID_NAS yang dibuat script. Buat Harga Paket untuk harga, kecepatan dan masa aktif; pool/gateway mengikuti pengaturan NAS yang disimpan. Submenu IP Pool dan Isolir PPPoE sudah dipindahkan ke Router / NAS.
-6. Buat/aktifkan akun pelanggan dengan NAS tersebut. Dial dari perangkat pelanggan memakai username/password PPPoE, terpisah dari akun VPN router.
+6. Buat/aktifkan akun pelanggan dengan NAS tersebut. Tambah langsung melalui PPPoE > Data Pelanggan memakai dua tahap: Data Pelanggan termasuk pilih Layanan, lalu Data Akun PPPoE. Pembayaran dan tanggal otomatis mengikuti alur Sales ke Teknisi: pascabayar, mulai saat akun disimpan server, tagihan layanan pada bulan berikutnya. Dial dari perangkat pelanggan memakai username/password PPPoE, terpisah dari akun VPN router.
 
 ~~~routeros
 /ppp active print

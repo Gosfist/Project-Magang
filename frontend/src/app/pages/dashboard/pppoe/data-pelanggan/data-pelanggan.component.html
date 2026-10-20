@@ -311,7 +311,7 @@
       }
       @if (!editing()) {
         <div class="account-steps">
-          @for (s of [1, 2, 3]; track s) {
+          @for (s of [1, 2]; track s) {
             <div
               class="account-step"
               [attr.aria-current]="step() === s ? 'step' : null"
@@ -332,15 +332,11 @@
                   (step() >= s ? 'text-slate-900' : 'text-slate-400')
                 "
                 >{{
-                  s === 1
-                    ? "Data Pelanggan"
-                    : s === 2
-                      ? "Data Pembayaran"
-                      : "Data Akun PPPoE"
+                  s === 1 ? "Data Pelanggan" : "Data Akun PPPoE"
                 }}</span
               >
             </div>
-            @if (s < 3) {
+            @if (s < 2) {
               <div class="step-line bg-slate-300"></div>
             }
           }
@@ -510,125 +506,26 @@
               </p>
             }
           </div>
+          @if (!editing()) {
+            <div>
+              <label class="label">Layanan *</label>
+              <select
+                class="input"
+                required
+                [(ngModel)]="form.pppoePackageId"
+                name="pppoePackageId"
+              >
+                <option value="">Pilih layanan</option>
+                @for (p of packages(); track p.id) {
+                  <option [value]="p.id">{{ p.name }}</option>
+                }
+              </select>
+            </div>
+          }
         </div>
       }
 
-      @if (!editing() && step() === 2) {
-        <div>
-          <label class="label">Paket Internet *</label>
-          <select
-            class="input"
-            required
-            [(ngModel)]="form.pppoePackageId"
-            name="pppoePackageId"
-            (ngModelChange)="calculateProrate()"
-          >
-            <option value="">Pilih paket</option>
-            @for (p of packages(); track p.id) {
-              <option [value]="p.id">
-                {{ p.name }} — {{ p.downloadMbps }}/{{ p.uploadMbps }} Mbps
-              </option>
-            }
-          </select>
-        </div>
-        <div>
-          <label class="label">Tipe Langganan *</label>
-          <div class="grid grid-cols-2 gap-3">
-            <label
-              [class]="
-                'cursor-pointer rounded-lg border-2 p-3 text-center transition-all ' +
-                (form.subscriptionType === 'POSTPAID'
-                  ? 'border-slate-950 bg-slate-50'
-                  : 'border-slate-200 hover:border-slate-400')
-              "
-            >
-              <input
-                type="radio"
-                name="subscriptionType"
-                value="POSTPAID"
-                [(ngModel)]="form.subscriptionType"
-                (ngModelChange)="calculateProrate()"
-                class="sr-only"
-              />
-              <span class="text-sm font-semibold">Postpaid</span>
-              <p class="mt-1 text-xs text-slate-500">Bayar setelah pemakaian</p>
-            </label>
-            <label
-              [class]="
-                'cursor-pointer rounded-lg border-2 p-3 text-center transition-all ' +
-                (form.subscriptionType === 'PREPAID'
-                  ? 'border-slate-950 bg-slate-50'
-                  : 'border-slate-200 hover:border-slate-400')
-              "
-            >
-              <input
-                type="radio"
-                name="subscriptionType"
-                value="PREPAID"
-                [(ngModel)]="form.subscriptionType"
-                (ngModelChange)="calculateProrate()"
-                class="sr-only"
-              />
-              <span class="text-sm font-semibold">Prepaid</span>
-              <p class="mt-1 text-xs text-slate-500">Bayar di muka</p>
-            </label>
-          </div>
-        </div>
-        <div class="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label class="label">Tanggal Tagihan (1-28)</label>
-            <input
-              class="input"
-              type="number"
-              required
-              min="1"
-              max="28"
-              [(ngModel)]="form.billingDay"
-              name="billingDay"
-              (ngModelChange)="calculateProrate()"
-            />
-          </div>
-          <div>
-            <label class="label">Diskon (Rp)</label>
-            <input
-              class="input"
-              type="number"
-              required
-              min="0"
-              [(ngModel)]="form.discount"
-              name="discount"
-              (ngModelChange)="calculateProrate()"
-            />
-          </div>
-        </div>
-        @if (form.subscriptionType === "PREPAID" && !editing()) {
-          <p class="text-sm text-slate-600">
-            Tagihan pertama prabayar menggunakan harga penuh paket setelah
-            diskon.
-          </p>
-        }
-        @if (
-          prorateEstimate() &&
-          form.subscriptionType === "POSTPAID" &&
-          !editing()
-        ) {
-          <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-            <p class="text-sm font-semibold text-emerald-800">
-              Estimasi Tagihan Pertama
-            </p>
-            <p class="mt-1 text-2xl font-bold text-emerald-700">
-              Rp {{ prorateEstimate()!.amount.toLocaleString("id-ID") }}
-            </p>
-            <p class="mt-1 text-xs text-emerald-600">
-              {{ prorateEstimate()!.daysActive }} hari aktif dari
-              {{ prorateEstimate()!.daysInMonth }} hari.
-              Ditagih {{ prorateEstimate()!.nextBilling.toLocaleDateString('id-ID', { month: 'long', year: 'numeric', timeZone: 'UTC' }) }}.
-            </p>
-          </div>
-        }
-      }
-
-      @if (editing() || step() === 3) {
+      @if (editing() || step() === 2) {
         <div
           id="edit-account-panel"
           data-edit-tab="account"
@@ -866,7 +763,7 @@
           >
             Batal
           </button>
-          @if (!editing() && step() < 3) {
+          @if (!editing() && step() < 2) {
             <button
               type="button"
               class="btn-primary"
