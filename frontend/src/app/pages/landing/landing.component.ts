@@ -17,8 +17,7 @@ export class LandingComponent implements OnInit {
   readonly packages = signal<PublicPackage[]>([]);
   readonly loading = signal(true);
   readonly loadError = signal(false);
-  readonly canScrollLeft = signal(false);
-  readonly canScrollRight = signal(true);
+  readonly mobileMenuOpen = signal(false);
   readonly currentYear = new Date().getFullYear();
   readonly navLinks = [
     ['Beranda', 'beranda'],
@@ -52,18 +51,5 @@ export class LandingComponent implements OnInit {
 
   formatPrice(price: number): string {
     return price.toLocaleString('id-ID');
-  }
-
-  updateScroll(track: HTMLElement): void {
-    this.canScrollLeft.set(track.scrollLeft > 1);
-    this.canScrollRight.set(track.scrollLeft + track.clientWidth < track.scrollWidth - 1);
-  }
-
-  scrollPackages(track: HTMLElement, direction: number): void {
-    const card = track.querySelector<HTMLElement>('article');
-    if (!card) return;
-    const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
-    track.scrollBy({ left: direction * (card.offsetWidth + gap),
-      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
 }

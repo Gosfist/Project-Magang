@@ -1,5 +1,11 @@
 # Panduan arsitektur tanpa API MikroTik
 
+Halaman publik menampilkan menu hamburger di layar di bawah 768px untuk Beranda,
+Tentang Kami, Layanan, dan Kontak. Menu ditutup setelah memilih tautan, menekan
+tombol lagi, atau menekan Escape. Kartu paket tersusun satu kolom di bawah 640px,
+dua kolom mulai 640px, dan tiga kolom mulai 768px. Paket berikutnya turun ke baris
+baru tanpa carousel atau gulir horizontal.
+
 Panduan [Kalkulator Redaman](kalkulator-redaman.md) memuat input, rumus dan contoh
 hasil. Perhitungan frontend kini diperbarui setiap input/splitter/jalur berubah;
 hasil kosong tidak lagi tersimpan dari render awal.

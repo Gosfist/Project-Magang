@@ -34,35 +34,72 @@ describe('Landing pricing cards', () => {
     expect(cards.filter(card => card.textContent?.includes('Paling Populer')).length).toBe(1);
   });
 
-  it('shows navigation above three packages and moves by one card in either direction', () => {
+  it('opens all mobile links and closes the menu after selecting a section', () => {
     const { fixture, element } = setup();
-    const track = element.querySelector<HTMLElement>('.package-track')!;
-    const scroll = spyOn(track, 'scrollBy');
-    const right = element.querySelector<HTMLButtonElement>('[aria-label="Geser paket ke kanan"]')!;
-    expect(element.querySelector<HTMLButtonElement>('[aria-label="Geser paket ke kiri"]')!.disabled).toBeTrue();
-    right.click();
-    expect(scroll.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({ left: jasmine.any(Number) }));
-    expect((scroll.calls.mostRecent().args[0] as ScrollToOptions).left!).toBeGreaterThan(0);
-    fixture.componentInstance.canScrollLeft.set(true);
+    const toggle = element.querySelector<HTMLButtonElement>('[aria-controls="mobile-navigation"]')!;
+    const menu = element.querySelector<HTMLElement>('#mobile-navigation')!;
+    expect(menu.hidden).toBeTrue();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    toggle.click();
     fixture.detectChanges();
-    element.querySelector<HTMLButtonElement>('[aria-label="Geser paket ke kiri"]')!.click();
-    expect((scroll.calls.mostRecent().args[0] as ScrollToOptions).left!).toBeLessThan(0);
+    expect(menu.hidden).toBeFalse();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    const links = [...menu.querySelectorAll('a')];
+    expect(links.map(link => [link.textContent?.trim(), link.getAttribute('href')])).toEqual([
+      ['Beranda', '#beranda'], ['Tentang Kami', '#tentang-kami'],
+      ['Layanan', '#layanan'], ['Kontak', '#kontak'],
+    ]);
+    links[2].addEventListener('click', event => event.preventDefault());
+    links[2].click();
+    fixture.detectChanges();
+    expect(menu.hidden).toBeTrue();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('fits the responsive card count and overflows for remaining packages', () => {
-    const { element } = setup();
-    const track = element.querySelector<HTMLElement>('.package-track')!;
-    const visibleCount = matchMedia('(min-width: 768px)').matches ? 3 : matchMedia('(min-width: 640px)').matches ? 2 : 1;
-    const cards = [...track.querySelectorAll<HTMLElement>('article')];
-    expect(track.scrollWidth).toBeGreaterThan(track.clientWidth);
-    expect(cards[visibleCount - 1].getBoundingClientRect().right).toBeLessThanOrEqual(track.getBoundingClientRect().right + 1);
-    expect(cards[visibleCount].getBoundingClientRect().right).toBeGreaterThan(track.getBoundingClientRect().right);
+  it('closes the mobile menu with its toggle and Escape', () => {
+    const { fixture, element } = setup();
+    const toggle = element.querySelector<HTMLButtonElement>('[aria-controls="mobile-navigation"]')!;
+    const menu = element.querySelector<HTMLElement>('#mobile-navigation')!;
+    toggle.click();
+    fixture.detectChanges();
+    toggle.click();
+    fixture.detectChanges();
+    expect(menu.hidden).toBeTrue();
+    toggle.click();
+    fixture.detectChanges();
+    toggle.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+    expect(menu.hidden).toBeTrue();
   });
 
-  it('hides navigation when there are only three packages', () => {
-    const { element } = setup(packages.slice(0, 3));
-    expect(element.querySelector('.package-arrow')).toBeNull();
-  });
+  for (const width of [375, 640, 1280]) {
+    it(`wraps packages into rows without horizontal scrolling at ${width}px`, () => {
+      const { element } = setup();
+      const frame = document.createElement('iframe');
+      frame.style.width = `${width}px`;
+      frame.style.height = '900px';
+      document.body.appendChild(frame);
+      try {
+        const frameDocument = frame.contentDocument!;
+        const styles = frameDocument.createElement('style');
+        styles.textContent = [...document.styleSheets]
+          .flatMap(sheet => [...sheet.cssRules].map(rule => rule.cssText)).join('\n');
+        frameDocument.head.appendChild(styles);
+        frameDocument.body.appendChild(element.cloneNode(true));
+        const grid = frameDocument.querySelector<HTMLElement>('.package-grid')!;
+        const cards = [...grid.querySelectorAll<HTMLElement>('article')];
+        const columns = width >= 768 ? 3 : width >= 640 ? 2 : 1;
+        const rectangles = cards.map(card => card.getBoundingClientRect());
+        expect(grid.scrollWidth).toBeLessThanOrEqual(grid.clientWidth + 1);
+        expect(frameDocument.documentElement.scrollWidth).toBeLessThanOrEqual(width);
+        expect(rectangles[columns - 1].top).toBe(rectangles[0].top);
+        expect(rectangles[columns].top).toBeGreaterThan(rectangles[0].bottom);
+        expect(rectangles[columns].left).toBeCloseTo(rectangles[0].left, 0);
+      } finally {
+        frame.remove();
+      }
+    });
+  }
 
   it('keeps existing packages readable before a title and description are filled', () => {
     const { element } = setup([{ ...packages[0], title: '', description: '' }]);
