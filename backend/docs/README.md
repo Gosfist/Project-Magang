@@ -1,5 +1,12 @@
 # Panduan arsitektur tanpa API MikroTik
 
+Kolom Router/NAS kini Status VPN, berdasarkan sesi SSTP active dengan username dan
+IP yang cocok di Accel-PPP, bukan isActive pendaftaran NAS. Sesi kosong berarti
+Offline; data gagal/usang berarti Tidak diketahui; NAS lokal tampil Tanpa VPN.
+Worker read-only unzanet-vpn-status.timer berjalan setiap 10 detik, web memuat
+ulang setiap 15 detik. Installer/update memasangnya melalui setup-vpn-sync.sh.
+Bagian 9.6 memuat pemeriksaan timer dan show sessions.
+
 Panduan aktif adalah [instalasi VPS Ubuntu](instalasi-ubuntu-vpn.md),
 [FreeRADIUS](pppoe-freeradius.md), [operasi Router dan PPPoE](router-pppoe-operations.md),
 [isolir](pppoe-isolation.md), dan [backup darurat](pppoe-backup.md).
@@ -15,13 +22,16 @@ kali. Email ini berbeda dari akun administrator. Gunakan DNS only pada Cloudflar
 saat instalasi; aktifkan Proxied dan Full (strict) setelah HTTPS berhasil.
 Website, RADIUS, dan VPN berada satu mesin; tidak perlu VPN client Ubuntu.
 Login web, buat Klien VPN, tunggu penerapan sekitar 15 detik, pilih akun pada Router/NAS,
-lalu pasang script MikroTik sederhana dalam tiga bagian. Akun dan IP diambil otomatis.
+lalu pasang script MikroTik sederhana dalam tiga bagian dengan add langsung, tanpa :if.
+Akun dan IP diambil otomatis. Gunakan sekali untuk pemasangan awal; pengulangan
+dapat membuat entri ganda atau bentrok nama tunnel.
 Tidak ada impor CA; verifikasi sertifikat server dimatikan sesuai mode sederhana.
 TLS tetap dipakai, tetapi identitas server tidak diverifikasi sehingga ada risiko server palsu.
 Password langsung terlihat pada daftar khusus admin; kolom Status dihapus.
 Ikon Edit mengganti nama, username dan password. Ikon Hapus memakai konfirmasi;
 akun yang masih dipakai NAS harus dilepas/diganti dahulu. Setelah kredensial
-berubah, ambil ulang script NAS dan terapkan pada router. IP VPN tetap saat edit.
+berubah, ubah User/Password interface SSTP yang sudah ada melalui Winbox.
+Jangan paste ulang script add. IP VPN tetap saat edit.
 SSTP memakai 4443; HTTPS website memakai 443.
 Akun administrator awal dibuat otomatis: `admin@unzanet.com` / `123`, tanpa
 pertanyaan email/password dan tanpa password admin acak. Akun yang sudah ada
@@ -37,7 +47,8 @@ Ctrl+Shift+R atau tab baru, pemeriksaan Network, serta pemulihan paket frontend
 jika file benar-benar hilang. Membuka ulang browser berbeda dari update VPS.
 Bagian 9.4 memperbaiki bad parameter allow pada script SSTP: gunakan
 authentication=mschap2, pasang pembaruan backend, lalu salin ulang script dan
-periksa tunnel. Script dapat diterapkan ulang pada NAS yang sama.
+periksa tunnel. Pada router yang sudah terpasang, ubah entri melalui Winbox;
+script add bukan pembaruan konfigurasi lama.
 Bagian 9.5 memuat pemasangan template sederhana tanpa impor CA dan pilihan
 update backend saja atau seluruh UI beserta paket frontend laptop.
 

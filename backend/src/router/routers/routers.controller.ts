@@ -19,6 +19,7 @@ export class RoutersController {
   }
 
   @Get('nas')
+  @Header('Cache-Control', 'private, no-store')
   routers(
     @Query('search') search = '',
     @Query('page', new ParseIntPipe({ optional: true })) page = 1,

@@ -67,7 +67,7 @@ export class VpnService {
           await tx.nas.updateMany({ where: { vpnClientId: client.id }, data: { vpnUsername: username } });
         }
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-      return { message: 'Perubahan disimpan. Penerapan server sekitar 15 detik. Jika username/password berubah, ambil ulang script Router / NAS dan terapkan pada MikroTik.' };
+      return { message: 'Perubahan disimpan. Penerapan server sekitar 15 detik. Jika username/password berubah, ubah User/Password pada interface SSTP yang sudah ada melalui Winbox MikroTik. Script add hanya untuk pemasangan awal.' };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && ['P2002', 'P2034'].includes(error.code)) throw new ConflictException('Username sudah digunakan atau akun sedang diubah. Muat ulang lalu coba lagi.');
       throw error;

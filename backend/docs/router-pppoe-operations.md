@@ -2,11 +2,13 @@
 
 ## Router dan script
 
+Kolom Status VPN pada daftar NAS berasal dari sesi SSTP server: username dan IP harus cocok pada sesi active. Daftar sesi kosong berarti Offline, bukan berdasarkan isActive NAS. Worker membaca Accel-PPP setiap 10 detik; web memuat ulang daftar setiap 15 detik. Pembacaan gagal atau snapshot lebih dari 45 detik tampil Tidak diketahui, akun eksternal juga Tidak diketahui, dan NAS lokal tampil Tanpa VPN. Web hanya membaca snapshot lokal tanpa akses sudo/CLI atau API MikroTik. Status VPN bukan bukti dial PPPoE pelanggan.
+
 Buat akun melalui Router > Klien VPN. Server SSTP berjalan pada VPS website/FreeRADIUS yang sama, TCP 4443. Akun mendapat IP unik 10.88.0.2-254, server RADIUS 10.88.0.1. Worker root menerapkan akun sekitar 15 detik. Siap berarti akun diterapkan, belum berarti tunnel online. Password tersimpan terenkripsi dan dapat ditampilkan administrator; endpoint kredensial tidak di-cache.
 
 Pada tambah/edit NAS pilih klien VPN yang Siap dan belum dipakai router lain. IP sumber RADIUS, tujuan Disconnect, host, dan username berasal dari akun. Password otomatis dimasukkan dalam script tanpa disalin ke tabel NAS. Tidak ada impor CA pada script sederhana. Satu klien untuk satu router juga ditegakkan database. Kredensial API/admin MikroTik tidak digunakan.
 
-Simpan membuka script tiga bagian untuk dipasang melalui Terminal perangkat: SSTP port 4443, RADIUS/Disconnect beserta rute /32 dan firewall, lalu PPP AAA/accounting. Verifikasi sertifikat server dimatikan pada mode sederhana. TLS tetap dipakai, tetapi identitas server tidak diverifikasi sehingga ada risiko server palsu. Tombol Script membuat ulang script lengkap dari akun tersimpan. Uji tunnel dan PPPoE nyata tetap diperlukan. NAS lokal tanpa VPN masih dapat diisi manual.
+Simpan membuka script tiga bagian untuk dipasang melalui Terminal perangkat: SSTP port 4443, RADIUS/Disconnect beserta rute /32 dan firewall, lalu PPP AAA/accounting. Verifikasi sertifikat server dimatikan pada mode sederhana. TLS tetap dipakai, tetapi identitas server tidak diverifikasi sehingga ada risiko server palsu. Tombol Script menghasilkan perintah add langsung dari akun tersimpan, tanpa :if atau pemeriksaan duplikat. Script hanya untuk pemasangan awal. Untuk mengganti username/password akun yang sudah terpasang, edit User/Password interface SSTP melalui Winbox. Paste ulang dapat membuat entri ganda atau bentrok nama tunnel. Uji tunnel dan PPPoE nyata tetap diperlukan. NAS lokal tanpa VPN masih dapat diisi manual.
 
 Worker root terpisah menerapkan perubahan client SQL sekitar setiap 60 detik setelah config check. Web tidak diberi sudo. Lihat [panduan instalasi](instalasi-ubuntu-vpn.md).
 

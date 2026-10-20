@@ -5,6 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { SaveRouterDto } from './routers.dto.js';
 import { RoutersService } from './routers.service.js';
 import { radiusSetupScript, routerOsQuote } from '../shared/radius-setup-script.js';
+import { VpnStatusService } from '../vpn/vpn-status.service.js';
 
 const router = {
   id: 7, name: 'Router cabang', nasname: '10.88.0.3', ipAddress: '10.88.0.3', shortname: 'cabang',
@@ -51,7 +52,19 @@ describe('Zero MikroTik API NAS registry', () => {
     for (const key of ['username', 'password', 'port', 'authMode', 'secret', 'vpnPassword']) expect(result.data[0]).not.toHaveProperty(key);
   });
 
-  it('creates short RouterOS 6/7 scripts without CA import and preserves managed entries on reapply', async () => {
+  it('adds VPN session status to NAS lists using one snapshot, independently of registration', async () => {
+    const { prisma, nas } = setup();
+    nas.findMany.mockResolvedValueOnce([{ ...router, vpnClientId: 1n, vpnHost: '192.0.2.1', vpnUsername: 'vpn_a', isActive: true } as any]);
+    const status = new VpnStatusService();
+    const read = vi.spyOn(status, 'snapshot').mockResolvedValue({ checkedAt: new Date().toISOString(), available: true, sessions: [] });
+    const service = new RoutersService(prisma as any, undefined, status);
+    const result = await service.routers();
+    expect(result.data[0]).toMatchObject({ isActive: true, vpnStatus: 'offline' });
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(result.data[0]).not.toHaveProperty('secret');
+  });
+
+  it('creates direct add scripts for initial installation without conditions or CA import', async () => {
     const { service } = setup();
     const result = await service.createRouter({
       name: router.name, nasname: router.nasname, radiusServerIp: router.radiusServerIp,
@@ -65,11 +78,15 @@ describe('Zero MikroTik API NAS registry', () => {
       expect(script).not.toContain('BEGIN CERTIFICATE');
       expect(script).toContain('verify-server-certificate=no verify-server-address-from-certificate=no');
       expect(script).toContain('/radius incoming set accept=yes port=3799');
-      for (const marker of ['UNZANET-RADIUS:7:VPN', 'UNZANET-RADIUS:7:RADIUS-ROUTE', 'UNZANET-RADIUS:7', 'UNZANET-RADIUS:7:COA', 'UNZANET-RADIUS:7:MGMT-DENY']) {
-        expect(script).toContain(`find where comment="${marker}"`);
-      }
+      expect(script).not.toMatch(/:if|:len|:local/);
+      expect(script).toContain('/interface sstp-client add name="radius-cloud-7"');
+      expect(script).toContain('/ip route add dst-address=');
+      expect(script).toContain('/radius add address=');
+      expect(script).not.toContain('/interface sstp-client set');
+      expect(script).not.toContain('/radius set');
+      expect(script).not.toContain('/ip route set');
       expect(script).not.toMatch(/ remove /);
-      expect(script.split('\n').length).toBeLessThanOrEqual(20);
+      expect(script.split('\n').length).toBeLessThanOrEqual(12);
     }
   });
 

@@ -1,4 +1,6 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { timer } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import {
   LucideCheck,
@@ -39,6 +41,7 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
 export class RoutersComponent implements OnInit {
   private readonly latestLoad = latestRequest();
   private api = inject(ApiService);
+  private readonly destroyRef = inject(DestroyRef);
 
   items = signal<RouterItem[]>([]);
   meta = signal<PageMeta>({ currentPage: 1, lastPage: 1, perPage: 10, total: 0 });
@@ -68,6 +71,7 @@ export class RoutersComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+    timer(15000, 15000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.load());
   }
 
   load(): void {

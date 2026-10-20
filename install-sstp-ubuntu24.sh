@@ -244,6 +244,6 @@ systemctl restart unzanet-backend
 echo 'Server SSTP aktif pada TCP 4443; buka port ini di firewall provider VPS.'
 echo 'Login web, buka Router > Klien VPN, lalu Tambah VPN. Tunggu status Siap.'
 echo 'Pada Router / NAS pilih klien tersebut dan salin script ke MikroTik.'
-echo 'CA diimpor otomatis melalui script. IP server RADIUS: 10.88.0.1.'
+echo 'Script MikroTik untuk pemasangan awal tanpa impor CA. IP server RADIUS: 10.88.0.1.'
 echo 'Sertifikat server berlaku 365 hari; perbarui sebelum kedaluwarsa.'
 echo 'Periksa sesi: sudo accel-cmd show sessions'

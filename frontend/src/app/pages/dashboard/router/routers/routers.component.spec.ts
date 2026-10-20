@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { ApiService } from '../../../../core/services/api.service';
 import { RouterItem } from '../../../../shared/models/types';
@@ -53,4 +53,24 @@ describe('Router / NAS RADIUS setup', () => {
     expect(body.secret).toBeUndefined();
     expect(api.get.calls.allArgs()).toEqual([['/router/nas?search=&page=1'], ['/router/vpn-clients'], ['/router/nas?search=&page=1']]);
   });
+  it('renders VPN session status independently of NAS registration', () => {
+    const { fixture, component } = setup();
+    const statuses = ['online', 'offline', 'unknown', 'not_configured', undefined] as const;
+    component.items.set(statuses.map((vpnStatus, index) => ({ id: String(index), name: 'Router', nasname: '10.88.0.2', isActive: true, vpnStatus } as RouterItem)));
+    fixture.detectChanges();
+    const rows = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr'));
+    expect(rows.map(row => row.children[3].textContent?.trim())).toEqual(['Online', 'Offline', 'Tidak diketahui', 'Tanpa VPN', 'Tidak diketahui']);
+    const headers = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('th')).map(cell => cell.textContent);
+    expect(headers).toContain('Status VPN');
+    expect(headers).not.toContain('Pendaftaran NAS');
+  });
+  it('refreshes session status periodically and stops after leaving the page', fakeAsync(() => {
+    const { fixture, api } = setup();
+    expect(api.get).toHaveBeenCalledTimes(1);
+    tick(15000);
+    expect(api.get).toHaveBeenCalledTimes(2);
+    fixture.destroy();
+    tick(15000);
+    expect(api.get).toHaveBeenCalledTimes(2);
+  }));
 });

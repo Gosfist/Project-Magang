@@ -7,10 +7,11 @@ import { pageMeta, serialize } from '../../common/serialize.js';
 import { SaveRouterDto } from './routers.dto.js';
 import { radiusSetupScript } from '../shared/radius-setup-script.js';
 import { VpnService } from '../vpn/vpn.service.js';
+import { VpnStatusService } from '../vpn/vpn-status.service.js';
 
 @Injectable()
 export class RoutersService {
-  constructor(private readonly prisma: PrismaService, private readonly vpn?: VpnService) {}
+  constructor(private readonly prisma: PrismaService, private readonly vpn?: VpnService, private readonly vpnStatus: VpnStatusService = new VpnStatusService()) {}
 
   private publicRouter(router: Nas & { _count?: { accounts: number } }) {
     // Explicit allowlist prevents old credentials and RADIUS secrets leaking in list/save responses.
@@ -33,7 +34,8 @@ export class RoutersService {
       this.prisma.nas.findMany({ where, include: { _count: { select: { accounts: true } } }, orderBy: { id: 'desc' }, skip: (page - 1) * 10, take: 10 }),
       this.prisma.nas.count({ where }),
     ]);
-    return serialize({ data: items.map(item => this.publicRouter(item)), meta: pageMeta(page, 10, total) });
+    const snapshot = await this.vpnStatus.snapshot();
+    return serialize({ data: items.map(item => ({ ...this.publicRouter(item), ...this.vpnStatus.forRouter(item, snapshot) })), meta: pageMeta(page, 10, total) });
   }
 
   async routerOptions() {
@@ -60,7 +62,7 @@ export class RoutersService {
     await this.assertUniqueNas(data.nasname, current.id);
     try {
       const item = await this.prisma.nas.update({ where: { id: current.id }, data });
-      return serialize({ message: 'NAS diperbarui. Terapkan script jika konfigurasi berubah. FreeRADIUS menerapkan perubahan dalam sekitar 60 detik.', router: this.publicRouter(item), setup: this.setup(item, dto.vpnPassword, managed ? 4443 : 443) });
+      return serialize({ message: 'NAS diperbarui. Sesuaikan konfigurasi yang sudah terpasang melalui Winbox; script add untuk pemasangan awal. FreeRADIUS menerapkan perubahan dalam sekitar 60 detik.', router: this.publicRouter(item), setup: this.setup(item, dto.vpnPassword, managed ? 4443 : 443) });
     } catch (error) { this.unique(error); }
   }
 

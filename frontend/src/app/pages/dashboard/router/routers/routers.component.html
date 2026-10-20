@@ -1,20 +1,20 @@
 <div class="space-y-4">
   <div class="card p-4 space-y-3">
-    <p class="text-sm text-slate-500">Daftarkan MikroTik sebagai NAS FreeRADIUS. Simpan menghasilkan script untuk dipasang melalui Terminal Winbox. Status aktif di sini adalah status pendaftaran NAS.</p>
+    <p class="text-sm text-slate-500">Daftarkan MikroTik sebagai NAS FreeRADIUS. Simpan menghasilkan script untuk dipasang melalui Terminal Winbox. Status VPN mengikuti sesi SSTP di server dan diperbarui otomatis.</p>
     <div class="flex gap-3">
       <div class="relative flex-1"><svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg><input class="input input-with-icon" placeholder="Cari nama router, IP, atau shortname..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" /></div>
       <button class="btn-primary" (click)="show()"><svg lucidePlus [size]="18"></svg> Tambah Router</button>
     </div>
   </div>
   <div class="table-wrap"><table>
-    <thead><tr><th>Router</th><th>IP NAS / Disconnect</th><th>Port RADIUS</th><th>Pendaftaran NAS</th><th>Aksi</th></tr></thead>
+    <thead><tr><th>Router</th><th>IP NAS / Disconnect</th><th>Port RADIUS</th><th>Status VPN</th><th>Aksi</th></tr></thead>
     <tbody>
       @for (item of items(); track item.id) {
         <tr>
           <td><p class="text-slate-900">{{ item.name || item.nasname }}</p><p class="table-meta text-sm text-slate-500">{{ item.description || item.shortname || '-' }}</p></td>
           <td><p>NAS: {{ item.nasname }}</p><p class="table-meta text-sm text-slate-500">Disconnect: {{ item.ipAddress || item.nasname }}</p></td>
           <td><p>Auth: {{ item.ports || 1812 }} / Acct: 1813</p><p class="table-meta text-sm text-slate-500">Disconnect: {{ item.coaPort || 3799 }}</p></td>
-          <td><span [class]="'rounded-full px-2.5 py-1 text-sm ' + (item.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600')">{{ item.isActive ? 'Aktif' : 'Tidak aktif' }}</span></td>
+          <td><span [class]="'rounded-full px-2.5 py-1 text-sm ' + (item.vpnStatus === 'online' ? 'bg-green-100 text-green-700' : item.vpnStatus === 'offline' ? 'bg-red-100 text-red-700' : 'bg-slate-200 text-slate-600')">{{ item.vpnStatus === 'online' ? 'Online' : item.vpnStatus === 'offline' ? 'Offline' : item.vpnStatus === 'not_configured' ? 'Tanpa VPN' : 'Tidak diketahui' }}</span></td>
           <td><div class="flex gap-2">
             <button class="btn-secondary px-2.5 py-1.5 text-sm text-indigo-700 table-action table-action-icon" (click)="openScript(item)" title="Script Pengaturan MikroTik"><svg lucideTerminal [size]="14"></svg></button>
             <button class="btn-secondary px-2.5 py-1.5 text-sm table-action table-action-icon" (click)="show(item)" title="Edit"><svg lucidePencil [size]="14"></svg></button>
@@ -39,7 +39,7 @@
             }
           }
         </select>
-        <p class="text-xs text-slate-500">Buat akun pada menu Klien VPN terlebih dahulu. IP NAS, IP RADIUS, akun, dan CA akan diisi dari klien yang dipilih. Satu klien untuk satu router.</p>
+        <p class="text-xs text-slate-500">Buat akun pada menu Klien VPN terlebih dahulu. IP NAS, IP RADIUS, dan akun akan diisi dari klien yang dipilih. Satu klien untuk satu router.</p>
       </fieldset>
       <div class="grid gap-4 sm:grid-cols-2">
         <div><label class="label">Nama Router *</label><input class="input" required [(ngModel)]="form.name" name="name" placeholder="MikroTik Cabang 1" /></div>

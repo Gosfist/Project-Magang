@@ -4,12 +4,13 @@ import { RoutersController } from './routers/routers.controller.js';
 import { RoutersService } from './routers/routers.service.js';
 import { VpnController } from './vpn/vpn.controller.js';
 import { VpnService } from './vpn/vpn.service.js';
+import { VpnStatusService } from './vpn/vpn-status.service.js';
 import { SecretService } from '../pppoe/shared/secret.service.js';
 
 @Module({
   imports: [AuthModule],
   controllers: [RoutersController, VpnController],
-  providers: [RoutersService, VpnService, SecretService],
+  providers: [RoutersService, VpnService, VpnStatusService, SecretService],
   exports: [RoutersService],
 })
 export class RouterModule {}
