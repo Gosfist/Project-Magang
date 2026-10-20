@@ -10,7 +10,6 @@ import { VpnClientItem } from '../../../../shared/models/types';
   template: `
     <div class="card p-4 space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3"><p class="text-sm">Server SSTP: {{ server() || 'Belum tersedia' }}</p><div class="flex gap-2"><button class="btn-secondary" (click)="load()">Muat Ulang</button><button class="btn-primary" (click)="show()">Tambah VPN</button></div></div>
-      <p class="text-sm text-slate-500">Buat satu akun untuk setiap router. Setelah status Siap, pilih akun ini di Router / NAS. Siap berarti akun sudah terpasang di server VPN.</p>
       <div class="table-wrap"><table><thead><tr><th>No</th><th>Nama</th><th>Username</th><th>Password</th><th>IP VPN</th><th>Status</th><th>Router / NAS</th></tr></thead><tbody>
         @for (item of items(); track item.id; let i = $index) {
           <tr><td>{{ i + 1 }}</td><td>{{ item.name }}</td><td>{{ item.username }}</td><td><div class="flex items-center gap-2"><span class="font-mono">{{ passwords()[item.id] || '••••••••' }}</span><button class="text-sm underline" [attr.aria-label]="'Tampilkan atau sembunyikan password ' + item.username" (click)="toggle(item)">{{ passwords()[item.id] ? 'Sembunyikan' : 'Tampilkan' }}</button></div></td><td>{{ item.vpnIp }}</td><td>{{ item.provisionedAt ? 'Siap' : 'Menunggu server' }}</td><td>{{ item.routers.at(0)?.name || '-' }}</td></tr>
