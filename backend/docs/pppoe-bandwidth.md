@@ -100,3 +100,31 @@ Untuk keluaran yang tidak terpotong saat speedtest:
 
 Rujukan: [urutan dan parent Simple Queue](https://help.mikrotik.com/docs/spaces/ROS/pages/328088/Queues)
 dan [parent-queue pada profil PPP](https://help.mikrotik.com/docs/spaces/ROS/pages/132350049/PPP+AAA).
+
+### Limit terlewati lagi setelah isolir dan aktivasi kembali
+
+Output lanjutan pengguna pada 20 Oktober: SQL akun wisnu sudah aktif dengan
+20M/20M, Framed-Pool Internet dan Mikrotik-Group UNZANET-INTERNET-1. Profil router
+juga sudah parent-queue=CLIENT, tetapi queue aktif tetap parent=none dengan semua
+counter nol. Setelah hanya sesi wisnu diputus untuk login ulang, queue menjadi
+parent=CLIENT, rate download=19.9Mbps dan bytes=637091/29004059. Ini membuktikan
+sesi aktif perlu mengambil ulang konfigurasi; bukan atribut limit SQL yang hilang.
+
+Audit menemukan jalur Edit Pelanggan sebelumnya tidak meminta Disconnect saat
+isActive berubah false menjadi true. Kini perubahan status tersebut meminta
+Disconnect RADIUS sesudah commit, seperti penonaktifan. Tes mencakup urutan commit,
+warning jaringan, transaksi gagal tanpa Disconnect, dan pemulihan pool/profil/rate
+setelah siklus isolir. Ini perbaikan kode lokal; penerapan pada VPS dan pengujian
+siklus isolir setelah deploy harus dibedakan dari bukti reconnect manual di atas.
+
+PPPoE Server pengguna juga menampilkan default-profile=*6 setelah penghapusan
+profil lama. Arahkan ke profil yang ada; contoh khusus router pada output tersebut:
+
+```routeros
+/interface pppoe-server server set [find where service-name="PPPoE-UNZANET" interface=ether1] default-profile="UNZANET-INTERNET-1"
+/interface pppoe-server server print detail without-paging
+```
+
+Jangan menghapus profil yang masih dipakai sesi atau sebagai default-profile
+PPPoE Server. Ulangi uji isolir dan aktifkan kembali: queue Internet harus kembali
+ke parent yang benar, counter meningkat dan kecepatan sesuai paket.

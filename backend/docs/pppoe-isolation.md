@@ -20,6 +20,22 @@ Prefix dan konfigurasi isolir langsung disimpan atomik bersama NAS pada AppSetti
 
 Sinkronisasi menyelesaikan transaksi RADIUS lalu mengirim Disconnect Request kepada sesi accounting yang perlu berpindah IP. Backend memeriksa balasan yang sah, ACK/NAK/timeout, dan tidak menulis Accounting Stop palsu. Sesi baru memperoleh atribut yang sesuai. ACC pembayaran dan janji bayar memakai jalur yang sama setelah commit. Pemeriksaan masa aktif/pending berjalan berkala tiap menit; tidak ada jaminan seluruh proses kurang dari satu detik.
 
+Aktivasi kembali melalui Edit Pelanggan (isActive false menjadi true) juga meminta
+Disconnect setelah transaksi akun dan RADIUS tersimpan. Sebelumnya kondisi ini
+belum memicu Disconnect langsung; sesi baru menunggu login ulang atau pemeriksaan
+berkala. Kegagalan Disconnect yang dikembalikan jaringan dilaporkan sebagai
+warning, bukan bukti bahwa profil dan queue sesi sudah berubah. Edit data kontak
+tanpa perubahan status/jaringan tidak memutus sesi aktif.
+
+Saat menguji isolir lalu pemulihan, periksa IP normal, atribut Mikrotik-Group,
+max-limit queue dan counter trafik saat speedtest. SQL berisi 20M/20M tidak
+membuktikan queue sesi aktif menerima trafik. Pada kasus wisnu 20 Oktober 2026,
+profil Internet sudah parent-queue=CLIENT tetapi queue aktif masih parent=none
+dan bytes/packets=0. Login ulang manual membuat parent=CLIENT dan rate download
+19.9 Mbps dengan counter bertambah. Lihat bagian 9.8 panduan instalasi dan
+[diagnosis bandwidth](pppoe-bandwidth.md). Profil bawaan PPPoE Server juga harus
+menunjuk profil yang masih ada; periksa setelah menghapus/membuat ulang profil.
+
 Status dan IP sesi berasal dari accounting dengan batas kesegaran, bukan daftar PPP aktif langsung. Data stale bukan bukti pasti offline/online. Kegagalan jalur NAS ditampilkan dan dapat dicoba ulang melalui Sinkron Ulang/Putus Sesi.
 
 ## Menonaktifkan atau mengganti konfigurasi

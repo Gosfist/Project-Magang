@@ -41,7 +41,20 @@ setelah profil internet diberi parent-queue=CLIENT dan sesi login ulang; queue
 sebelumnya parent=none dengan counter nol di belakang CLIENT yang menangkap subnet.
 Nama parent harus mengikuti router setempat; lihat bagian 9.8 dan pppoe-bandwidth.md.
 
+Aktivasi kembali lewat Edit Pelanggan (isActive false menjadi true) meminta
+Disconnect setelah commit agar sesi memuat ulang profil Internet dan limit paket.
+Jalur lama belum meminta Disconnect langsung untuk perubahan ini. Data SQL dan
+profil yang sudah benar tidak membuktikan queue sesi telah mengikuti: pada uji
+lanjutan wisnu, queue masih parent=none/counter nol hingga login ulang, lalu
+parent=CLIENT dan download 19.9 Mbps. Periksa juga default-profile PPPoE Server
+setelah profil lama dihapus; arahkan ke profil Internet yang masih ada.
+
 ## Form pelanggan dan tagihan
+
+Tabel Tagihan Kolektor dan detail pelanggan Data Area menampilkan nama pelanggan
+diikuti ID pelanggan enam digit (customerNumber), misalnya 000001, pada baris
+kedua. ID ini berbeda dari username PPPoE; username tetap dipakai untuk login dan
+identitas sesi RADIUS.
 
 Form pelanggan/foto KTP, pemilihan ODP, kepemilikan role, serta workflow pembayaran tidak berubah karena transport router diganti. Edit pelanggan tidak membuat invoice pertama baru. Mode tagihan none tidak membuat invoice; full memakai harga penuh; prorate berlaku untuk POSTPAID sedangkan PREPAID tetap penuh.
 

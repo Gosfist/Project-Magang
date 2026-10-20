@@ -416,6 +416,13 @@ sudo systemctl restart unzanet-backend.service
 
 4. Ulangi speedtest dan perintah statistik. Pengguna mengonfirmasi berhasil: queue berubah menjadi parent=CLIENT, counter bertambah, rate download 19.1 Mbps untuk paket 20 Mbps. Penyebabnya susunan queue router, bukan limit dari RADIUS atau API MikroTik.
 5. Pertahankan Parent Queue pada profil tersebut untuk login selanjutnya. Jangan menambahkan CLIENT ke semua script NAS; router lain dapat memakai nama/struktur berbeda. Panduan rinci ada di backend/docs/pppoe-bandwidth.md.
+6. Uji lagi setelah isolir dan aktivasi. Pada output lanjutan wisnu, SQL sudah 20M/20M dan profil Internet parent-queue=CLIENT, tetapi queue sesi masih parent=none dengan counter nol. Putus sesi wisnu untuk login ulang membuat parent=CLIENT dan download 19.9 Mbps. Perbaikan backend kini meminta Disconnect setelah status di Edit Pelanggan berubah nonaktif menjadi aktif; sebelumnya jalur ini belum meminta Disconnect langsung. Deploy backend terbaru sebelum menguji alur otomatis. Jika Disconnect mengembalikan warning, periksa jalur NAS dan coba Putus Sesi kembali.
+7. Setelah menghapus/membuat ulang profil, periksa default-profile pada PPPoE Server. Output router tersebut masih *6. Hanya untuk server PPPoE-UNZANET pada ether1 di router tersebut, jalankan pada Terminal Winbox:
+
+~~~routeros
+/interface pppoe-server server set [find where service-name="PPPoE-UNZANET" interface=ether1] default-profile="UNZANET-INTERNET-1"
+/interface pppoe-server server print detail without-paging
+~~~
 
 ### 9.9 Memastikan jam WIB tanpa menggeser accounting
 

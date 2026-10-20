@@ -79,5 +79,12 @@ describe('RADIUS pool isolation', () => {
       expect.objectContaining({ attribute: 'Framed-Pool', value: 'pool-isolir' }),
       expect.objectContaining({ attribute: 'Mikrotik-Group', value: 'UNZANET-ISOLIR-3' }),
     ]));
+    account.isActive = true;
+    await service.sync(tx as any, account as any);
+    expect(tx.radreply.createMany.mock.calls.at(-1)![0].data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ attribute: 'Framed-Pool', value: 'Internet' }),
+      expect.objectContaining({ attribute: 'Mikrotik-Group', value: 'UNZANET-INTERNET-3' }),
+      expect.objectContaining({ attribute: 'Mikrotik-Rate-Limit', value: '5M/10M' }),
+    ]));
   });
 });
