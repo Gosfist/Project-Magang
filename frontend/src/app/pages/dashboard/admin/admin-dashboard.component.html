@@ -6,7 +6,6 @@
       <p class="mt-1 text-sm text-slate-500">Selamat datang, {{ auth.user()?.name }}. Pantau layanan dan operasional Anda di sini.</p>
     </div>
     <div class="flex flex-wrap items-center gap-3">
-      <p class="text-xs text-slate-500" role="status">{{ loading() ? 'Memperbarui ringkasan...' : 'Diperiksa ' + checkedAt() }}</p>
       <button type="button" class="btn-secondary" [disabled]="loading()" (click)="refresh()">
         <svg lucideRefreshCw [size]="16" aria-hidden="true"></svg> Perbarui
       </button>

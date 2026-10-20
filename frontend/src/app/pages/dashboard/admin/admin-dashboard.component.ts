@@ -42,7 +42,6 @@ export class AdminDashboardComponent implements OnInit {
   readonly finance = signal<FinanceSummary | null>(null);
   readonly bot = signal<BotStatus | null>(null);
   readonly loading = signal(true);
-  readonly checkedAt = signal('');
   readonly period = signal('');
   readonly metrics: { label: string; key: keyof AdminStats; icon: string; path: string; description: string }[] = [
     { label: 'Total Pelanggan', key: 'totalCustomers', icon: 'users', path: '/dashboard/pppoe/data-pelanggan', description: 'Pelanggan terdaftar' },
@@ -87,7 +86,6 @@ export class AdminDashboardComponent implements OnInit {
         this.finance.set(result.finance);
         this.bot.set(result.bot);
         this.loading.set(false);
-        this.checkedAt.set(new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' }).format(new Date()) + ' WIB');
       });
   }
 

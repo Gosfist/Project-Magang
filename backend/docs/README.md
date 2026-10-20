@@ -11,6 +11,11 @@ perangkat terdaftar. Dashboard role Finance, Sales, Kolektor dan Teknisi
 tetap menggunakan ringkasan masing-masing. Pembaruan ini memerlukan backend dan
 frontend terbaru.
 
+Navigasi dari Akses Cepat otomatis membuka dropdown induk tujuan di sidebar,
+termasuk PPPoE, Router, Bot WhatsApp dan menu role. Main Core berada di Teknisi,
+sedangkan Data Area berada di Kolektor. Sinkronisasi juga berlaku saat membuka
+URL langsung atau berpindah halaman melalui riwayat browser.
+
 Halaman publik menampilkan menu hamburger di layar di bawah 768px untuk Beranda,
 Tentang Kami, Layanan, dan Kontak. Menu ditutup setelah memilih tautan, menekan
 tombol lagi, atau menekan Escape. Kartu paket tersusun satu kolom di bawah 640px,

@@ -1,7 +1,8 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, inject, model, OnInit, signal } from '@angular/core';
+import { Component, DestroyRef, inject, model, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import {
   LucideBellRing,
   LucideBot,
@@ -99,6 +100,7 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
 export class SidebarComponent implements OnInit {
   readonly auth = inject(AuthService);
   private router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   // Sidebar state
   mobile = model(false);
@@ -162,11 +164,23 @@ export class SidebarComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    const url = this.router.url;
-    if (url.includes('/router')) this.routerOpen.set(true);
-    if (url.includes('/pppoe')) this.pppoeOpen.set(true);
-    if (url.includes('/monitoring')) this.monitoringOpen.set(true);
-    if (url.includes('/bot-whatsapp')) this.botWaOpen.set(true);
+    this.openActiveMenu(this.router.url);
+    this.router.events.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(event => {
+      if (event instanceof NavigationEnd) this.openActiveMenu(event.urlAfterRedirects);
+    });
+  }
+
+  private openActiveMenu(url: string): void {
+    const path = url.split(/[?#]/)[0];
+    if (path.startsWith('/dashboard/router/')) this.routerOpen.set(true);
+    if (path.startsWith('/dashboard/pppoe/')) this.pppoeOpen.set(true);
+    if (path.startsWith('/dashboard/monitoring/')) this.monitoringOpen.set(true);
+    if (path.startsWith('/dashboard/bot-whatsapp/')) this.botWaOpen.set(true);
+    for (const group of this.roleGroups) {
+      if (group.links.some(link => link[1] === path) || (group.role === 'kolektor' && path === '/dashboard/area')) {
+        this.roleMenuState.update(state => ({ ...state, [group.role]: true }));
+      }
+    }
   }
 
   openProfile(): void {
