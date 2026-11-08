@@ -2,7 +2,7 @@
   <a href="#beranda" class="skip-link">Lewati ke konten utama</a>
   <!-- Navbar -->
   <nav
-    class="fixed top-0 z-50 w-full border-b border-blue-100 bg-white"
+    class="fixed top-0 z-50 w-full border-b border-blue-100 bg-white/95 shadow-sm backdrop-blur-md"
     aria-label="Navigasi utama"
     (keydown.escape)="mobileMenuOpen.set(false)"
   >
@@ -11,7 +11,7 @@
     >
       <a href="#beranda" class="flex items-center gap-3" (click)="mobileMenuOpen.set(false)">
         <img src="logo.png" alt="Logo PT UNZANET" class="h-11 w-auto" />
-        <span class="font-semibold tracking-wide">PT UNZANET</span>
+        <span class="font-extrabold tracking-wide">PT UNZANET</span>
       </a>
       <div class="hidden items-center gap-1 md:flex">
         @for (item of navLinks; track item[1]) {
@@ -52,21 +52,50 @@
 
   <!-- Main -->
   <main class="pt-16">
-    <section id="beranda" class="landing-hero scroll-mt-16">
-      <div class="hero-copy">
-        <p class="section-kicker">PT UNZANET / FIBER OPTIK</p>
-        <h1>Internet yang siap<br class="hidden sm:block" /> mengikuti hari Anda.</h1>
-        <p class="hero-description">Dari rumah hingga tempat usaha, tetap terhubung dengan internet fiber optik yang cepat, stabil, dan terjangkau.</p>
-        <div class="hero-actions">
-          <a href="#layanan" class="landing-primary">Temukan paket Anda <span aria-hidden="true">&#8599;</span></a>
-          <a href="#kontak" class="landing-text-link">Cek jangkauan <span aria-hidden="true">&#8594;</span></a>
+    <!-- Hero -->
+    <section
+      id="beranda"
+      class="relative isolate flex min-h-[620px] items-center overflow-hidden bg-slate-950 text-white scroll-mt-16"
+    >
+      <img
+        src="landing-background.jpeg"
+        alt="Jaringan fiber optik PT UNZANET"
+        class="absolute inset-0 -z-20 h-full w-full object-fill"
+      />
+      <div
+        class="absolute inset-0 -z-10 bg-gradient-to-r from-slate-950/95 via-slate-950/75 to-slate-950/20"
+      ></div>
+      <div class="mx-auto w-full max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+        <div class="max-w-3xl">
+          <p
+            class="mb-5 text-sm font-semibold uppercase tracking-[.24em] text-cyan-300"
+          >
+            Internet Fiber Optik Terpercaya
+          </p>
+          <h1
+            class="mb-6 text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl"
+          >
+            Koneksi Internet Cepat & Stabil untuk Lingkungan Anda
+          </h1>
+          <p class="mb-9 max-w-2xl text-lg leading-relaxed text-slate-200">
+            PT UNZANET menyediakan layanan internet fiber optik berkualitas
+            dengan harga terjangkau untuk kebutuhan rumah, komunitas, dan usaha
+            Anda.
+          </p>
+          <div class="flex flex-wrap gap-4">
+            <a
+              href="#layanan"
+              class="rounded-lg bg-cyan-400 px-7 py-3.5 font-semibold text-slate-950 hover:bg-cyan-300"
+              >Lihat Paket</a
+            >
+            <a
+              href="#kontak"
+              class="rounded-lg border border-white/50 bg-white/10 px-7 py-3.5 font-semibold backdrop-blur-sm hover:bg-white/20"
+              >Hubungi Kami</a
+            >
+          </div>
         </div>
-        <div class="hero-note"><span aria-hidden="true"></span>Untuk rumah, komunitas, dan usaha.</div>
       </div>
-      <figure class="hero-visual">
-        <img src="landing-background.jpeg" alt="Infrastruktur jaringan fiber optik PT UNZANET" fetchpriority="high" width="960" height="1080" />
-        <figcaption><span>TERHUBUNG LEBIH DEKAT</span><strong>Jaringan lokal.<br />Dukungan personal.</strong></figcaption>
-      </figure>
     </section>
 
     <!-- Tentang Kami -->

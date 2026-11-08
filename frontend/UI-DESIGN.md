@@ -15,7 +15,7 @@ Redesain 8 November 2026 menggunakan skill `ui-ux-pro-max` dengan arah antarmuka
 
 ## Cakupan
 
-Landing page memakai hero dua kolom, gambar merek yang sudah ada, daftar manfaat, paket dari API, dan kontak. Login memakai panel merek serta formulir yang mendukung password manager. Dashboard administrator memakai ringkasan operasional, finance, bot, akses cepat, dan jaringan. Halaman seluruh role dan fitur memakai aturan workspace bersama.
+Header dan hero landing page mengikuti tampilan sebelum redesain, dengan gambar latar lebar dan teks di atasnya. Daftar manfaat, paket dari API, dan kontak tetap memakai desain baru. Login memakai panel merek serta formulir yang mendukung password manager. Dashboard administrator memakai ringkasan operasional, finance, bot, akses cepat, dan jaringan. Halaman seluruh role dan fitur memakai aturan workspace bersama.
 
 ## Validasi lokal
 
