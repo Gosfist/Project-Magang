@@ -36,7 +36,7 @@ Frontend production memakai `/api/wa` melalui proxy Apache sehingga port bot 300
 
 ## Build frontend di laptop lalu kirim melalui GitHub
 
-1. Gunakan folder project Windows yang sudah ada. Pasang Node.js 22 dan Git. Simpan perubahan kode frontend ke commit dahulu.
+1. Gunakan folder project Windows yang sudah ada. Pasang Node.js 26 LTS dan Git. Simpan perubahan kode frontend ke commit dahulu.
 2. Jika frontend berubah atau paket belum ada, jalankan di PowerShell:
 
 ```powershell

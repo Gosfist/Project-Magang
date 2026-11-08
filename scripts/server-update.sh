@@ -12,6 +12,11 @@ if [[ "$EUID" -ne 0 ]]; then
   exec sudo bash "$ROOT_DIR/scripts/server-update.sh" "$@"
 fi
 
+if ! command -v node >/dev/null || [[ "$(node -p 'process.versions.node.split(".")[0]')" != 26 ]]; then
+  printf 'ERROR: Server update memerlukan Node.js 26. Jalankan installer NodeSource 26 lalu ulangi.\n' >&2
+  exit 1
+fi
+
 log() {
   printf '\n[%s] %s\n' "$(date '+%H:%M:%S')" "$1"
 }

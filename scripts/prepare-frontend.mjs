@@ -37,7 +37,7 @@ let staging;
 let pending;
 try {
   if (process.argv.length !== 2) throw new Error('Jalankan: npm run preparefe');
-  if (Number(process.versions.node.split('.')[0]) !== 22) throw new Error('Gunakan Node.js 22 pada laptop.');
+  if (Number(process.versions.node.split('.')[0]) !== 26) throw new Error('Gunakan Node.js 26 pada laptop.');
   const tree = sourceTree();
   run('tar', ['--version'], root, true);
   console.log('[UNZANET] Install dependency frontend di laptop');

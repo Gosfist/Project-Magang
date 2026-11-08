@@ -91,6 +91,12 @@ main() {
   if [[ "$EUID" != 0 ]]; then
     exec sudo bash "$ROOT_DIR/scripts/server-install.sh"
   fi
+  if ! command -v node >/dev/null || [[ "$(node -p 'process.versions.node.split(".")[0]')" != 26 ]]; then
+    curl -fsSL https://deb.nodesource.com/setup_26.x -o /tmp/unzanet-nodesource-26.sh
+    bash /tmp/unzanet-nodesource-26.sh
+    apt-get install -y nodejs
+  fi
+  [[ "$(node -p 'process.versions.node.split(".")[0]')" == 26 ]] || die 'Node.js 26 belum tersedia.'
   # shellcheck disable=SC1091
   . /etc/os-release
   [[ "$ID" == ubuntu && "$VERSION_ID" == 24.04 ]] || die 'Gunakan Ubuntu Server 24.04 LTS untuk installer ini.'
@@ -121,12 +127,6 @@ main() {
   apt-get install -y mysql-server apache2 freeradius freeradius-mysql freeradius-utils \
     sstp-client ppp python3 build-essential pkg-config libssl-dev ufw openssl openssh-server netcat-openbsd \
     certbot python3-certbot-apache tzdata
-  if ! command -v node >/dev/null || [[ "$(node -p 'process.versions.node.split(".")[0]')" != 22 ]]; then
-    curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/unzanet-nodesource-22.sh
-    bash /tmp/unzanet-nodesource-22.sh
-    apt-get install -y nodejs
-  fi
-  [[ "$(node -p 'process.versions.node.split(".")[0]')" == 22 ]] || die 'Node.js 22 belum tersedia.'
   configure_server_time
 
   install -d -m 0700 /etc/unzanet

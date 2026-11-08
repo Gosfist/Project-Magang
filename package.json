@@ -14,5 +14,8 @@
     "database:check": "node scripts/generate-database-sql.mjs --check",
     "updatebot": "bash scripts/server-update.sh bot",
     "setupvpnserver": "sudo bash install-sstp-ubuntu24.sh"
+  },
+  "engines": {
+    "node": "26.x"
   }
 }

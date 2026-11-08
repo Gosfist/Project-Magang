@@ -60,7 +60,7 @@ ssh USER_VPS@IP_VPS
 
 ## 2 Siapkan frontend di Windows
 
-1. Gunakan folder project Windows yang sudah ada dan Node.js 22. Simpan perubahan kode frontend ke commit dahulu.
+1. Gunakan folder project Windows yang sudah ada dan Node.js 26 LTS. Simpan perubahan kode frontend ke commit dahulu.
 2. Jika frontend berubah atau paket belum tersedia, jalankan pada PowerShell Windows:
 
 ~~~powershell
@@ -78,8 +78,8 @@ Get-Item .\releases\frontend.tar.gz
 ~~~bash
 sudo apt update
 sudo apt install -y git curl ca-certificates python3
-curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource22.sh
-sudo bash /tmp/nodesource22.sh
+curl -fsSL https://deb.nodesource.com/setup_26.x -o /tmp/nodesource26.sh
+sudo bash /tmp/nodesource26.sh
 sudo apt install -y nodejs
 node --version
 ~~~
