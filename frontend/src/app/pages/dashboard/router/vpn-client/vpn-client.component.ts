@@ -9,6 +9,7 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
 import { VpnClientItem } from '../../../../shared/models/types';
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-vpn-client', standalone: true, imports: [FormsModule, LucidePencil, LucidePlus, LucideTrash2, ModalComponent, ToastComponent],
   template: `
     <div class="space-y-4">

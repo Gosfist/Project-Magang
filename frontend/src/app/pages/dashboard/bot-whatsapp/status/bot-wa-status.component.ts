@@ -15,6 +15,7 @@ type WaStatus = {
 };
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-bot-wa-status',
   standalone: true,
   imports: [FormsModule, ToastComponent, RouterLink],

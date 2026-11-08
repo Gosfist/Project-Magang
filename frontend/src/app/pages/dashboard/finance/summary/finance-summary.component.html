@@ -11,14 +11,14 @@
       </div>
 
       <!-- Month select -->
-      <select [(ngModel)]="selectedMonth" (ngModelChange)="load()" class="input">
+      <select aria-label="Bulan laporan" [(ngModel)]="selectedMonth" (ngModelChange)="load()" class="input">
         @for (m of months; track m.value) {
           <option [value]="m.value">{{ m.label }}</option>
         }
       </select>
 
       <!-- Year select -->
-      <select [(ngModel)]="selectedYear" (ngModelChange)="load()" class="input">
+      <select aria-label="Tahun laporan" [(ngModel)]="selectedYear" (ngModelChange)="load()" class="input">
         @for (y of years; track y) {
           <option [value]="y">{{ y }}</option>
         }

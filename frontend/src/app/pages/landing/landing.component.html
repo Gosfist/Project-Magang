@@ -1,7 +1,8 @@
-<div class="bg-white text-slate-800">
+<div class="landing-page bg-white text-slate-800">
+  <a href="#beranda" class="skip-link">Lewati ke konten utama</a>
   <!-- Navbar -->
   <nav
-    class="fixed top-0 z-50 w-full border-b border-blue-100 bg-white/95 shadow-sm backdrop-blur-md"
+    class="fixed top-0 z-50 w-full border-b border-blue-100 bg-white"
     aria-label="Navigasi utama"
     (keydown.escape)="mobileMenuOpen.set(false)"
   >
@@ -10,7 +11,7 @@
     >
       <a href="#beranda" class="flex items-center gap-3" (click)="mobileMenuOpen.set(false)">
         <img src="logo.png" alt="Logo PT UNZANET" class="h-11 w-auto" />
-        <span class="font-extrabold tracking-wide">PT UNZANET</span>
+        <span class="font-semibold tracking-wide">PT UNZANET</span>
       </a>
       <div class="hidden items-center gap-1 md:flex">
         @for (item of navLinks; track item[1]) {
@@ -51,50 +52,21 @@
 
   <!-- Main -->
   <main class="pt-16">
-    <!-- Hero -->
-    <section
-      id="beranda"
-      class="relative isolate flex min-h-[620px] items-center overflow-hidden bg-slate-950 text-white scroll-mt-16"
-    >
-      <img
-        src="landing-background.jpeg"
-        alt="Jaringan fiber optik PT UNZANET"
-        class="absolute inset-0 -z-20 h-full w-full object-fill"
-      />
-      <div
-        class="absolute inset-0 -z-10 bg-gradient-to-r from-slate-950/95 via-slate-950/75 to-slate-950/20"
-      ></div>
-      <div class="mx-auto w-full max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-        <div class="max-w-3xl">
-          <p
-            class="mb-5 text-sm font-semibold uppercase tracking-[.24em] text-cyan-300"
-          >
-            Internet Fiber Optik Terpercaya
-          </p>
-          <h1
-            class="mb-6 text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl"
-          >
-            Koneksi Internet Cepat & Stabil untuk Lingkungan Anda
-          </h1>
-          <p class="mb-9 max-w-2xl text-lg leading-relaxed text-slate-200">
-            PT UNZANET menyediakan layanan internet fiber optik berkualitas
-            dengan harga terjangkau untuk kebutuhan rumah, komunitas, dan usaha
-            Anda.
-          </p>
-          <div class="flex flex-wrap gap-4">
-            <a
-              href="#layanan"
-              class="rounded-lg bg-cyan-400 px-7 py-3.5 font-semibold text-slate-950 hover:bg-cyan-300"
-              >Lihat Paket</a
-            >
-            <a
-              href="#kontak"
-              class="rounded-lg border border-white/50 bg-white/10 px-7 py-3.5 font-semibold backdrop-blur-sm hover:bg-white/20"
-              >Hubungi Kami</a
-            >
-          </div>
+    <section id="beranda" class="landing-hero scroll-mt-16">
+      <div class="hero-copy">
+        <p class="section-kicker">PT UNZANET / FIBER OPTIK</p>
+        <h1>Internet yang siap<br class="hidden sm:block" /> mengikuti hari Anda.</h1>
+        <p class="hero-description">Dari rumah hingga tempat usaha, tetap terhubung dengan internet fiber optik yang cepat, stabil, dan terjangkau.</p>
+        <div class="hero-actions">
+          <a href="#layanan" class="landing-primary">Temukan paket Anda <span aria-hidden="true">&#8599;</span></a>
+          <a href="#kontak" class="landing-text-link">Cek jangkauan <span aria-hidden="true">&#8594;</span></a>
         </div>
+        <div class="hero-note"><span aria-hidden="true"></span>Untuk rumah, komunitas, dan usaha.</div>
       </div>
+      <figure class="hero-visual">
+        <img src="landing-background.jpeg" alt="Infrastruktur jaringan fiber optik PT UNZANET" fetchpriority="high" width="960" height="1080" />
+        <figcaption><span>TERHUBUNG LEBIH DEKAT</span><strong>Jaringan lokal.<br />Dukungan personal.</strong></figcaption>
+      </figure>
     </section>
 
     <!-- Tentang Kami -->
@@ -109,7 +81,7 @@
             Tentang Kami
           </p>
           <h2 class="mb-5 text-3xl font-bold sm:text-4xl">
-            Internet berkualitas untuk koneksi tanpa batas
+            Lebih dekat dengan kebutuhan koneksi Anda
           </h2>
           <p class="leading-relaxed text-slate-600">
             PT UNZANET menghadirkan jaringan fiber optik yang cepat, stabil, dan
@@ -117,13 +89,13 @@
             kami siap menunjang aktivitas digital sehari-hari.
           </p>
         </div>
-        <div class="grid gap-5 sm:grid-cols-3">
+        <div class="benefit-list grid gap-5 sm:grid-cols-3">
           @for (benefit of benefits; track benefit[0]) {
             <article
-              class="rounded-2xl border border-blue-100 bg-blue-50/70 p-6"
+              class="benefit-item"
             >
               <span
-                class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-700 text-white"
+                class="mb-4 flex h-8 w-8 items-center text-blue-700"
               >
                 <svg lucideCheck [size]="24"></svg>
               </span>
@@ -138,16 +110,16 @@
     </section>
 
     <!-- Layanan -->
-    <section id="layanan" class="scroll-mt-16 bg-blue-50 py-20">
+    <section id="layanan" class="scroll-mt-16 bg-slate-50 py-20">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="mx-auto mb-14 max-w-2xl text-center">
+        <div class="mb-12 max-w-2xl">
           <p
             class="mb-3 text-sm font-semibold uppercase tracking-[.2em] text-blue-600"
           >
             Layanan
           </p>
           <h2 class="mb-4 text-3xl font-bold sm:text-4xl">
-            Paket transparan, tanpa biaya tersembunyi
+            Pilih koneksi yang pas.
           </h2>
           <p class="text-slate-600">
             Pilih paket internet bulanan yang sesuai dengan kebutuhan Anda.
@@ -168,15 +140,15 @@
               @for (pkg of packages(); track pkg.id) {
                 <article
                   [class]="
-                    'package-card relative flex flex-col rounded-2xl border bg-white p-7 shadow-sm ' +
+                    'package-card relative flex flex-col rounded-lg border bg-white p-7 ' +
                     (pkg.isPopular
-                      ? 'border-blue-600 ring-2 ring-blue-600/10'
+                      ? 'border-blue-600'
                       : 'border-slate-200')
                   "
                 >
                   @if (pkg.isPopular) {
                     <span
-                      class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-blue-700 px-4 py-1 text-xs font-bold uppercase tracking-wider text-white"
+                      class="absolute -top-3 left-7 rounded-sm bg-blue-700 px-4 py-1 text-xs font-bold uppercase tracking-wider text-white"
                       >Paling Populer</span
                     >
                   }
@@ -184,7 +156,7 @@
                   <p class="mt-2 min-h-12 whitespace-pre-line break-words text-sm text-slate-500">{{ pkg.description || 'Internet fiber optik untuk kebutuhan harian Anda.' }}</p>
                   <div class="my-7">
                     <span class="font-semibold">Rp </span>
-                    <span class="text-4xl font-extrabold">{{ formatPrice(pkg.price) }}</span>
+                    <span class="package-price text-4xl font-semibold">{{ formatPrice(pkg.price) }}</span>
                     <span class="text-sm text-slate-500"> /bulan</span>
                   </div>
                   <dl class="mb-7 divide-y divide-slate-100 text-sm">
@@ -231,7 +203,7 @@
             Kontak Kami
           </p>
           <h2 class="mb-4 text-3xl font-bold sm:text-4xl">
-            Siap menikmati internet yang lebih stabil?
+            Mari cek koneksi untuk lokasi Anda.
           </h2>
           <p class="max-w-2xl text-slate-300">
             Hubungi tim PT UNZANET untuk mengecek jangkauan, berkonsultasi, atau
@@ -241,12 +213,12 @@
         <div class="flex flex-col gap-3">
           <a
             href="https://wa.me/6281234567890"
-            class="rounded-lg bg-cyan-400 px-7 py-3.5 text-center font-semibold text-slate-950"
+            class="rounded-md bg-cyan-400 px-7 py-3.5 text-center font-semibold text-slate-950"
             >Hubungi lewat WhatsApp</a
           >
           <a
             href="mailto:info@unzanet.com"
-            class="rounded-lg border border-slate-600 px-7 py-3.5 text-center font-semibold"
+            class="rounded-md border border-slate-600 px-7 py-3.5 text-center font-semibold"
             >Kirim Email</a
           >
         </div>

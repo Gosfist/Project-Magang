@@ -24,6 +24,7 @@ type BotStatus = {
 };
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-admin-dashboard',
   standalone: true,
   imports: [RouterLink, NgTemplateOutlet, LucideArrowUpRight, LucideBot, LucideHardHat,

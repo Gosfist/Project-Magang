@@ -14,6 +14,7 @@ import { ApiService } from '../../../../core/services/api.service';
 import { FinanceSummary } from '../../../../shared/models/types';
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-finance-summary',
   standalone: true,
   imports: [

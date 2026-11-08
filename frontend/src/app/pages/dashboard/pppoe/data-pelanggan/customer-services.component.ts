@@ -12,6 +12,7 @@ interface DetailRow {
   status?: string; name?: string; feeType?: string; notes?: string; promisedDate?: string; createdAt?: string;
 }
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-customer-services', standalone: true, imports: [FormsModule, DecimalPipe, LucideBox, LucideX],
   templateUrl: './customer-services.component.html',
   styles: [`:host { display: block; } .detail-list { display: grid; gap: 8px; max-height: min(380px, 45dvh); overflow-y: auto; }

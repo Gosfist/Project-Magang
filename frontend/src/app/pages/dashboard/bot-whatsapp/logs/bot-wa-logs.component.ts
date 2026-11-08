@@ -16,6 +16,7 @@ export interface WaLogItem {
 }
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-bot-wa-logs',
   standalone: true,
   imports: [CommonModule, FormsModule, DatePipe, ToastComponent, ModalComponent],

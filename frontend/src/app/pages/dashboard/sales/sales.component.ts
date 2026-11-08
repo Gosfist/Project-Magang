@@ -22,6 +22,7 @@ type SalesSummaryResponse = {
 };
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-sales',
   standalone: true,
   imports: [LucideCheckCircle2, LucideClock3, LucideTrendingUp, ToastComponent],

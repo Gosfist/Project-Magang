@@ -11,6 +11,7 @@ import { MainCoreNode, NasOption, PageMeta } from '../../../../shared/models/typ
 const emptyServerForm = { namaTitik: '', redamanIn: '', routerNasId: '' };
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-server',
   standalone: true,
   imports: [

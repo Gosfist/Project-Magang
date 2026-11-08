@@ -31,6 +31,7 @@ const emptyRasioForm = {
 };
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-rasio',
   standalone: true,
   imports: [

@@ -2,12 +2,19 @@
 
 :root {
   color-scheme: light;
-  --ui-font: Arial, Helvetica, sans-serif;
+  --ui-font: "Segoe UI", Arial, Helvetica, sans-serif;
   --ui-text: 14px;
   --ui-caption: 12px;
   --ui-control: 14px;
   --ui-table-action: 13px;
   --ui-border: #e2e8f0;
+  --ui-surface: #ffffff;
+  --ui-canvas: #f4f7fb;
+  --ui-ink: #0f172a;
+  --ui-muted: #475569;
+  --ui-brand: #1d4ed8;
+  --ui-navy: #020617;
+  --ui-radius: 8px;
 }
 html { scroll-behavior: smooth; }
 body {
@@ -24,7 +31,7 @@ button, a, input, select, textarea { transition: background-color .15s ease, bor
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
 :is(button, a, input, select, textarea):focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
-.card { @apply rounded-xl border border-slate-200 bg-white shadow-sm; }
+.card { border: 1px solid var(--ui-border); border-radius: var(--ui-radius); background: var(--ui-surface); box-shadow: none; }
 .input { @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-slate-800 focus:ring-2 focus:ring-slate-200; }
 .input {
   min-width: 0;
@@ -33,7 +40,7 @@ button:disabled { cursor: not-allowed; }
   line-height: 20px;
 }
 textarea.input { min-height: 88px; resize: vertical; }
-.input::placeholder { color: #94a3b8; }
+.input::placeholder { color: #64748b; }
 /* Keep browser-autofilled modal fields consistent with empty fields. */
 app-modal .input:is(:autofill, :-webkit-autofill) {
   -webkit-text-fill-color: #0f172a;
@@ -55,10 +62,10 @@ app-modal .input:is(:autofill, :-webkit-autofill) {
 .dashboard-shell main { min-width: 0; }
 .dashboard-shell main > :not(router-outlet) { min-width: 0; }
 .dashboard-shell :is(h2, h3) { line-height: 1.35; font-weight: 600; }
-.dashboard-shell h2 { font-size: 18px; }
-.dashboard-shell h3 { font-size: 14px; }
+.dashboard-shell h2 { font-size: 22px; letter-spacing: -.025em; }
+.dashboard-shell h3 { font-size: 15px; letter-spacing: -.01em; }
 .dashboard-shell :is(h2, h3) + p { line-height: 1.5; }
-.table-wrap { @apply overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm; }
+.table-wrap { @apply overflow-x-auto border border-slate-200 bg-white; border-radius: var(--ui-radius); }
 .table-wrap { max-width: 100%; scrollbar-width: thin; }
 table {
   @apply w-full border-collapse;
@@ -73,7 +80,9 @@ table th {
   font-size: var(--ui-caption);
   font-weight: 600;
   line-height: 18px;
-  letter-spacing: .025em;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ui-muted);
   white-space: nowrap;
 }
 table td { font-size: var(--ui-text); line-height: 20px; vertical-align: middle; }
@@ -131,5 +140,39 @@ table tbody span.rounded-full :is(span, small) { font-size: var(--ui-caption); l
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  *, *::before, *::after { transition: none !important; }
+  *, *::before, *::after { transition: none !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+
+/* One workspace language for every role and feature page. */
+.workspace-content { max-width: 1600px; margin-inline: auto; padding: 28px 32px 48px; }
+.workspace-page { display: block; min-width: 0; }
+.workspace-page > :is(.space-y-4, .space-y-5, .space-y-6) { --tw-space-y-reverse: 0; }
+.workspace-page :is(.space-y-4, .space-y-5, .space-y-6) > :not(:last-child) { margin-block-end: 24px; }
+.workspace-page .card { border-radius: var(--ui-radius); box-shadow: none; }
+.workspace-page .card:has(> table), .workspace-page .card:has(> .overflow-x-auto) { overflow: hidden; }
+.workspace-page :is(.text-2xl, .text-3xl, .summary-amount) { font-variant-numeric: tabular-nums; letter-spacing: -.035em; }
+.workspace-page .text-slate-400:not(svg) { color: #64748b; }
+.workspace-page :is(.btn-primary, .btn-secondary, .btn-danger), app-modal :is(.btn-primary, .btn-secondary, .btn-danger) { border-radius: 6px; }
+.workspace-page .btn-secondary { border-color: #cbd5e1; }
+.workspace-page .input, app-modal .input { border-radius: 6px; border-color: #cbd5e1; }
+.workspace-page .input:focus, app-modal .input:focus { border-color: var(--ui-brand); --tw-ring-color: #dbeafe; }
+.workspace-page table th { padding-block: 14px; background: #f8fafc; }
+.workspace-page table td { padding-block: 16px; }
+.workspace-page table tbody tr:hover { background: #f4f7fb; }
+.workspace-page table td:first-child { color: var(--ui-ink); }
+.workspace-page table tbody span.rounded-full { border-radius: 4px; padding: 3px 8px; font-weight: 500; }
+.workspace-page app-pagination nav { border-top: 1px solid var(--ui-border); padding-top: 16px; }
+.workspace-page app-pagination button { border-radius: 6px; }
+app-modal [role="dialog"] { border: 1px solid var(--ui-border); border-radius: 10px; box-shadow: 0 24px 80px #02061733; }
+app-modal .modal-header { padding: 20px 24px; }
+app-modal .modal-body { padding: 24px; }
+.skip-link { position: fixed; top: 8px; left: 8px; z-index: 100; transform: translateY(-160%); padding: 12px 20px; background: white; color: #0f172a; border: 2px solid var(--ui-brand); border-radius: 6px; }
+.skip-link:focus { transform: translateY(0); }
+@media (max-width: 767px) {
+  .workspace-content { padding: 20px 16px 32px; }
+  .dashboard-shell h2 { font-size: 20px; }
+  .workspace-page :is(.space-y-4, .space-y-5, .space-y-6) > :not(:last-child) { margin-block-end: 16px; }
+  app-modal .modal-header, app-modal .modal-body { padding: 16px; }
+  .workspace-page app-pagination button { min-height: 44px; min-width: 44px; }
+  .workspace-page table td[colspan] { text-align: left; padding-inline: 16px; }
 }

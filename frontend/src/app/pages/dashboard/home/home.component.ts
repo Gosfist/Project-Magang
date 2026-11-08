@@ -18,6 +18,7 @@ type StatCard = {
 };
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-dashboard-home',
   standalone: true,
   imports: [AdminDashboardComponent, SalesComponent, FinanceSummaryComponent, FormsModule, CommonModule, RouterLink, LucideGitBranch, LucideNetwork, LucideServer, LucideUsers],

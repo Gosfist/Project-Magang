@@ -110,6 +110,14 @@
   }
 }
 
+aside > div:first-child { padding-inline: 20px; }
+aside nav { padding: 24px 12px; }
+aside nav :is(a, button) { min-height: 44px; border-radius: 6px; font-size: 13px; }
+aside nav > :is(a, button) { padding-inline: 12px; }
+aside nav a.bg-white\/15 { background: #1e293b; box-shadow: inset 3px 0 #3b82f6; color: white; }
+aside nav > div { margin-left: 20px; padding-left: 12px; padding-right: 0; border-left: 1px solid #334155; }
+aside nav svg { flex-shrink: 0; width: 18px; height: 18px; }
+aside nav :is(a, button):focus-visible { outline-color: #60a5fa; outline-offset: -2px; }
 nav {
   scrollbar-width: thin;
   scrollbar-color: #3b82f6 #1e293b;

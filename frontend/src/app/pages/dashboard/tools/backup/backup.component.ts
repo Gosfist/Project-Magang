@@ -8,7 +8,8 @@ type Settings = { localAddress: string; baseProfile: string };
 type RouterOption = { id: number; name: string; count: number; isActive: boolean; settings: Settings; networkManaged?: boolean };
 type Preview = { total: number; create: number; update: number; token: string | null; errors: { row: number; message: string }[]; rows: { row: number; customerNumber: string; customerName: string; username: string; packageName: string; routerName: string; action: string }[] };
 
-@Component({ selector: 'app-backup', standalone: true, imports: [FormsModule, ToastComponent], templateUrl: './backup.component.html' })
+@Component({
+  host: { class: 'workspace-page' }, selector: 'app-backup', standalone: true, imports: [FormsModule, ToastComponent], templateUrl: './backup.component.html' })
 export class BackupComponent implements OnInit {
   private readonly api = inject(ApiService);
   routers = signal<RouterOption[]>([]); unassigned = signal(0); loading = signal(false); busy = signal(false); error = signal('');

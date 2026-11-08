@@ -17,6 +17,7 @@ interface RadiusLogResponse {
 }
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-radius-monitoring',
   standalone: true,
   imports: [CommonModule],

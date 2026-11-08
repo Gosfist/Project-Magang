@@ -9,6 +9,7 @@ import { LucideEye, LucideEyeOff } from '@lucide/angular';
   standalone: true,
   imports: [FormsModule, RouterLink, LucideEye, LucideEyeOff],
   templateUrl: './login.component.html',
+  styleUrl: './login.component.css',
 })
 export class LoginComponent implements OnInit {
   private auth = inject(AuthService);

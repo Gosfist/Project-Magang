@@ -5,14 +5,14 @@
   "
 >
   <div
-    class="flex h-16 items-center justify-between border-b border-slate-800 px-4"
+    class="flex h-20 items-center justify-between border-b border-slate-800 px-4"
   >
     <a routerLink="/" class="flex items-center gap-3">
-      <img src="logo.png" width="86" height="36" alt="Unzanet" />
-      <span class="text-sm font-bold">PT UNZANET</span>
+      <img src="logo.png" width="64" height="36" alt="Unzanet" />
+      <span class="text-sm font-semibold tracking-wide">PT UNZANET</span>
     </a>
 
-    <button class="lg:hidden" (click)="mobile.set(false)">
+    <button class="flex h-11 w-11 items-center justify-center rounded-md hover:bg-white/10 lg:hidden" aria-label="Tutup sidebar" (click)="mobile.set(false)">
       <svg lucideX [size]="24"></svg>
     </button>
   </div>
@@ -45,6 +45,7 @@
       <button
         class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
         (click)="pppoeOpen.set(!pppoeOpen())"
+        [attr.aria-expanded]="pppoeOpen()"
       >
         <svg lucideNetwork [size]="20"></svg>
         <span class="flex-1 text-left">PPPoE</span>
@@ -72,6 +73,7 @@
       <button
         class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
         (click)="routerOpen.set(!routerOpen())"
+        [attr.aria-expanded]="routerOpen()"
       >
         <svg lucideRouter [size]="20"></svg>
         <span class="flex-1 text-left">Router</span>
@@ -99,6 +101,7 @@
       <button
         class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
         (click)="monitoringOpen.set(!monitoringOpen())"
+        [attr.aria-expanded]="monitoringOpen()"
         [attr.aria-expanded]="monitoringOpen()"
       >
         <svg lucideNetwork [size]="20"></svg>
@@ -136,6 +139,7 @@
       <button
         class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 hover:bg-white/10"
         (click)="botWaOpen.set(!botWaOpen())"
+        [attr.aria-expanded]="botWaOpen()"
       >
         <svg lucideMessageCircle [size]="20"></svg>
         <span class="flex-1 text-left">Bot WhatsApp</span>
@@ -234,6 +238,7 @@
       <button
         (click)="openProfile()"
         title="Pengaturan akun"
+        aria-label="Pengaturan akun"
         class="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
       >
         <svg lucideSettings [size]="20"></svg>
@@ -241,6 +246,7 @@
       <button
         (click)="auth.logout()"
         title="Keluar"
+        aria-label="Keluar"
         class="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
       >
         <svg lucideLogOut [size]="20"></svg>

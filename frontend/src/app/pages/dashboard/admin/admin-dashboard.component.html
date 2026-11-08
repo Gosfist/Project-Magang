@@ -1,9 +1,9 @@
-<div class="admin-dashboard space-y-5" [attr.aria-busy]="loading()">
-  <header class="card flex flex-wrap items-center justify-between gap-4 p-5">
+<div class="admin-dashboard space-y-6" [attr.aria-busy]="loading()">
+  <header class="dashboard-intro flex flex-wrap items-center justify-between gap-4">
     <div>
       <p class="mb-1 text-xs font-medium uppercase tracking-wider text-blue-700">Administrator</p>
-      <h2>Dashboard Administrator</h2>
-      <p class="mt-1 text-sm text-slate-500">Selamat datang, {{ auth.user()?.name }}. Pantau layanan dan operasional Anda di sini.</p>
+      <h2>Ringkasan operasional</h2>
+      <p class="mt-1 text-sm text-slate-500">Selamat datang, {{ auth.user()?.name }}. Berikut kondisi layanan Anda.</p>
     </div>
     <div class="flex flex-wrap items-center gap-3">
       <button type="button" class="btn-secondary" [disabled]="loading()" (click)="refresh()">

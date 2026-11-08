@@ -18,6 +18,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 import { ToastComponent } from '../../../../shared/components/toast/toast.component';
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-finance-deposits',
   standalone: true,
   imports: [

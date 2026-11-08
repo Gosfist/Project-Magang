@@ -18,6 +18,7 @@ type ServerSnapshot = {
 };
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-server-monitoring',
   standalone: true,
   imports: [CommonModule, DatePipe, DecimalPipe, StatsChartComponent],

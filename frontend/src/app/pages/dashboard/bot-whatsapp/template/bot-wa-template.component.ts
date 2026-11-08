@@ -103,6 +103,7 @@ export const TEMPLATE_LIST: TemplateConfig[] = [
 ];
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-bot-wa-template',
   standalone: true,
   imports: [CommonModule, FormsModule, ToastComponent],

@@ -8,6 +8,7 @@ const ratios: Record<string, number[]> = {
 };
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-kalkulator-redaman',
   standalone: true,
   imports: [FormsModule],

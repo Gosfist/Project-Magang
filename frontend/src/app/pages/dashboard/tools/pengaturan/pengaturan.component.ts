@@ -13,6 +13,7 @@ type BillingSettings = {
 };
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-pengaturan',
   standalone: true,
   imports: [FormsModule, ToastComponent, BackupComponent],

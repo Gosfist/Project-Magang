@@ -6,7 +6,8 @@ import { PageMeta } from '../../../../shared/models/types';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 interface PromiseRow { id: string; promisedDate: string; status: string; notes: string | null;
   account: { customerNumber: string; customerName: string; phone: string | null }; }
-@Component({ selector: 'app-collector-promises', standalone: true, imports: [FormsModule, PaginationComponent],
+@Component({
+  host: { class: 'workspace-page' }, selector: 'app-collector-promises', standalone: true, imports: [FormsModule, PaginationComponent],
   templateUrl: './collector-promises.component.html' })
 export class CollectorPromisesComponent implements OnInit {
   private readonly latestLoad = latestRequest();

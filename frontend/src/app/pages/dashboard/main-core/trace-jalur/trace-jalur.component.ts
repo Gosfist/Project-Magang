@@ -8,6 +8,7 @@ import { MainCoreNode } from '../../../../shared/models/types';
 type TraceOption = { id: string; namaTitik: string; tipeTitik: string };
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-trace-jalur',
   standalone: true,
   imports: [FormsModule, LucideArrowRight, LucideGitBranch, LucideSearch, ToastComponent],

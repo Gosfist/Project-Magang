@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../core/services/api.service';
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-finance-salary', standalone: true, imports: [FormsModule],
   templateUrl: './finance-salary.component.html',
 })

@@ -30,6 +30,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 import { ToastComponent } from '../../../shared/components/toast/toast.component';
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-area',
   standalone: true,
   imports: [

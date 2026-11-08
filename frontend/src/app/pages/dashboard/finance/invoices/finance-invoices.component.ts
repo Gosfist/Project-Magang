@@ -19,6 +19,7 @@ type InvoiceRow = {
 };
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-finance-invoices',
   standalone: true,
   imports: [CommonModule, FormsModule, LucideSearch],

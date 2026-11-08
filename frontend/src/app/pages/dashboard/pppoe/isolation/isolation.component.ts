@@ -9,7 +9,8 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
 type Config = { enabled: boolean; poolName: string; subnet: string; localAddress: string };
 type Job = { status: string; processed: number; reconnected: number; message: string };
 type SaveResult = { message: string; script?: string; scriptFingerprint?: string; requiresConfirmation?: boolean; config?: Config; job?: Job };
-@Component({ selector: 'app-pppoe-isolation', standalone: true, imports: [FormsModule, RouterLink, ModalComponent, ToastComponent], templateUrl: './isolation.component.html' })
+@Component({
+  host: { class: 'workspace-page' }, selector: 'app-pppoe-isolation', standalone: true, imports: [FormsModule, RouterLink, ModalComponent, ToastComponent], templateUrl: './isolation.component.html' })
 export class IsolationComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
   private readonly latest = latestRequest();

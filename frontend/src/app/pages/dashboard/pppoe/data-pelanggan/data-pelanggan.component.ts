@@ -13,6 +13,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 type AccountListItem = PppoeAccount & { customerId?: string; customerNumber?: string; createdAt: string | null; online: boolean | null; serviceStatus?: 'Aktif' | 'Isolir'; psbOrder?: { installationPhoto: string | null; completedAt?: string | null } | null };
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-pppoe-data-pelanggan',
   standalone: true,
   imports: [

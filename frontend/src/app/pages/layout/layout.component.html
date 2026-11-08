@@ -4,11 +4,12 @@
   </div>
 } @else {
   <div class="dashboard-shell min-h-screen">
+    <a href="#workspace-main" class="skip-link">Lewati ke konten utama</a>
     <app-sidebar [(mobile)]="mobile" />
     <div class="min-w-0 lg:ml-64">
       <app-header (openSidebar)="mobile.set(true)" />
       <!-- konten -->
-      <main class="p-4 sm:p-6 lg:p-7">
+      <main id="workspace-main" tabindex="-1" class="workspace-content">
         <router-outlet />
       </main>
     </div>

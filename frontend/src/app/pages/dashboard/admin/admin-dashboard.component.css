@@ -1,9 +1,23 @@
 :host { display: block; min-width: 0; }
+.dashboard-intro { padding: 4px 0 8px; }
+.dashboard-intro h2 { font-size: clamp(24px, 2.4vw, 30px); font-weight: 600; letter-spacing: -.035em; }
+.metric-card { position: relative; padding: 24px; }
+.metric-card > div:first-child { margin-bottom: 24px; }
+.metric-card > div:first-child > span { border-radius: 6px; padding: 8px; }
+.metric-card .text-3xl { font-size: 34px; line-height: 1.2; margin-top: 8px; }
+.metric-card:hover { background: #f8fafc; }
+.finance-totals > div { border: 0; border-radius: 0; border-left: 2px solid #e2e8f0; background: white; padding: 0 12px; }
+.finance-totals > div:first-child { border-color: #059669; }
+.finance-totals > div:nth-child(2) { border-color: #dc2626; }
+.finance-totals > div:nth-child(3) { border-color: #2563eb; }
+.shortcut-link { display: flex; align-items: center; gap: 12px; border-radius: 6px; padding: 14px 12px; }
+.shortcut-link > span:first-child { margin: 0; padding: 6px; background: transparent; }
+.shortcut-link svg { width: 18px; height: 18px; }
 .admin-metrics, .admin-summary, .finance-totals, .admin-shortcuts, .network-totals { display: grid; gap: 1rem; }
 .admin-metrics, .admin-shortcuts, .network-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .metric-card, .shortcut-link { min-width: 0; overflow-wrap: anywhere; }
 .summary-amount { font-size: 20px; font-weight: 600; overflow-wrap: anywhere; }
-.network-totals > div { border-radius: 8px; padding: 12px 16px; background: #f8fafc; }
+.network-totals > div { border-left: 1px solid #e2e8f0; border-radius: 0; padding: 12px 16px; background: transparent; }
 .network-totals dt { font-size: 12px; color: #64748b; }
 .network-totals dd { margin-top: 4px; font-size: 20px; font-weight: 600; }
 @media (min-width: 640px) {

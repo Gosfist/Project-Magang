@@ -4,7 +4,7 @@
   <app-finance-summary />
 } @else {
 <div class="space-y-5">
-  <div class="card flex flex-wrap items-center justify-between gap-4 p-5" [class.sales-welcome]="auth.isSales()">
+  <div class="role-dashboard-intro flex flex-wrap items-center justify-between gap-4 pb-2" [class.sales-welcome]="auth.isSales()">
     <h2 class="text-xl font-semibold">Selamat datang, {{ auth.user()?.name }}</h2>
     @if (auth.isSales()) {
       <div class="sales-period ml-auto flex items-center gap-2">

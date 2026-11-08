@@ -29,6 +29,7 @@ const emptyOdpForm = {
 };
 
 @Component({
+  host: { class: 'workspace-page' },
   selector: 'app-odp',
   standalone: true,
   imports: [FormsModule, LucidePencil, LucidePlus, LucideSearch, LucideTrash2, ModalComponent, PaginationComponent, ToastComponent],
