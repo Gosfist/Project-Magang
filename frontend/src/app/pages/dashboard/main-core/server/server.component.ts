@@ -1,3 +1,4 @@
+import { ConfirmationService } from '../../../../core/services/confirmation.service';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
@@ -27,6 +28,7 @@ const emptyServerForm = { namaTitik: '', redamanIn: '', routerNasId: '' };
   templateUrl: './server.component.html',
 })
 export class ServerComponent implements OnInit {
+  private readonly confirmation = inject(ConfirmationService);
   private readonly latestLoad = latestRequest();
   private api = inject(ApiService);
 
@@ -95,8 +97,8 @@ export class ServerComponent implements OnInit {
     });
   }
 
-  remove(node: MainCoreNode): void {
-    if (!confirm(`Hapus ${node.namaTitik}?`)) return;
+  async remove(node: MainCoreNode): Promise<void> {
+    if (!await this.confirmation.ask('Hapus Server', `Hapus ${node.namaTitik}?`)) return;
     this.api.delete<{ message: string }>(`/main-core/server/${node.id}`).subscribe({
       next: (response) => {
         this.toast.set({ message: response.message, type: 'success' });

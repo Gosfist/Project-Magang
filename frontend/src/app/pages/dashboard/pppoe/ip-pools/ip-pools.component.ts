@@ -1,3 +1,4 @@
+import { ConfirmationService } from '../../../../core/services/confirmation.service';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideCheck, LucideCopy, LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
@@ -27,6 +28,7 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
   templateUrl: './ip-pools.component.html',
 })
 export class IpPoolsComponent implements OnInit {
+  private readonly confirmation = inject(ConfirmationService);
   private readonly latestLoad = latestRequest();
   private api = inject(ApiService);
 
@@ -104,8 +106,8 @@ export class IpPoolsComponent implements OnInit {
     });
   }
 
-  remove(item: IpPool): void {
-    if (!confirm(`Hapus pendaftaran IP pool ${item.name}? Konfigurasi pada router dihapus melalui script.`)) return;
+  async remove(item: IpPool): Promise<void> {
+    if (!await this.confirmation.ask('Hapus Pendaftaran IP Pool', `Hapus pendaftaran IP pool ${item.name}? Konfigurasi pada router dihapus melalui script.`)) return;
     this.api.delete<{ message: string; script?: string; warnings?: string[] }>(`/pppoe/ip-pools/${item.id}`).subscribe({
       next: (r) => {
         this.copied.set(false);

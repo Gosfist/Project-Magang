@@ -1,3 +1,4 @@
+import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -58,6 +59,7 @@ export class AreaComponent implements OnInit {
   private readonly latestLoad = latestRequest();
   private readonly latestLoadAreaCustomers = latestRequest();
   private readonly latestLoadCollectorCustomers = latestRequest();
+  private readonly confirmation = inject(ConfirmationService);
   private api = inject(ApiService);
   private route = inject(ActivatedRoute);
   auth = inject(AuthService);
@@ -186,8 +188,8 @@ export class AreaComponent implements OnInit {
     });
   }
 
-  remove(area: Area) {
-    if (!confirm(`Hapus area "${area.name}"? Pelanggan di area ini akan menjadi tanpa area.`)) return;
+  async remove(area: Area) {
+    if (!await this.confirmation.ask('Hapus Area', `Hapus area "${area.name}"? Pelanggan di area ini akan menjadi tanpa area.`)) return;
     this.api.delete(`/areas/${area.id}`).subscribe({
       next: () => {
         this.toast.set({ message: `Area "${area.name}" berhasil dihapus.`, type: 'success' });
@@ -234,8 +236,8 @@ export class AreaComponent implements OnInit {
     });
   }
 
-  removeCollector(area: Area, userId: string) {
-    if (!confirm('Hapus penugasan kolektor ini dari area?')) return;
+  async removeCollector(area: Area, userId: string) {
+    if (!await this.confirmation.ask('Hapus Penugasan Kolektor', 'Hapus penugasan kolektor ini dari area?')) return;
     this.api.delete(`/areas/${area.id}/collectors/${userId}`).subscribe({
       next: () => {
         this.toast.set({ message: 'Kolektor berhasil dilepas dari area.', type: 'success' });

@@ -1,5 +1,8 @@
 # Panduan arsitektur tanpa API MikroTik
 
+Panduan [konfirmasi antarmuka](konfirmasi-antarmuka.md) menjelaskan penggantian
+seluruh konfirmasi hapus bawaan browser dengan modal aplikasi seperti Hapus Klien VPN.
+
 Dashboard administrator merangkum pelanggan, pemasangan dalam proses, akun PSB
 yang menunggu penyelesaian, Router/NAS terdaftar, Finance bulan berjalan (WIB),
 setoran menunggu ACC, tagihan belum lunas seluruh periode, status Bot WhatsApp,

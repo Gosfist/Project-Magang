@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 import { ApiService } from '../core/services/api.service';
 import { OdcComponent } from '../pages/dashboard/main-core/odc/odc.component';
 import { OdpComponent } from '../pages/dashboard/main-core/odp/odp.component';
@@ -51,6 +52,43 @@ describe('Optical power direction and Main Core consistency', () => {
     expect(estimateInputPower({ ...server, type: 'odp', redamanIn: odpPower, outputCount: 4 }, 100, '1')).toBe('-19.20');
   });
   for (const componentType of [OdcComponent, OdpComponent, RasioComponent]) {
+    it(`${componentType.name} clears power after clearing the distance input and does not save empty inputs as zero`, async () => {
+      const api = jasmine.createSpyObj('ApiService', ['get', 'post']);
+      api.get.and.returnValue(of({ data: [], meta: { currentPage: 1, lastPage: 1, perPage: 5, total: 0 } }));
+      api.post.and.returnValue(of({ message: 'Tersimpan' }));
+      TestBed.configureTestingModule({ imports: [componentType], providers: [{ provide: ApiService, useValue: api }] });
+      const fixture = TestBed.createComponent<OdcComponent | OdpComponent | RasioComponent>(componentType);
+      fixture.detectChanges();
+      const component = fixture.componentInstance;
+      component.parents.set([{ ...server, id: '1', name: 'Server', splitterRatio: null, usedPorts: [] }]);
+      component.parentCategory = 'server';
+      component.form.parentId = '1';
+      component.open.set(true);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const distance = fixture.nativeElement.querySelector('input[name="jarakKabel"]') as HTMLInputElement;
+      const power = fixture.nativeElement.querySelector('input[name="redamanIn"]') as HTMLInputElement;
+      const setDistance = async (value: string) => {
+        distance.value = value;
+        distance.dispatchEvent(new Event('input', { bubbles: true }));
+        fixture.detectChanges();
+        await fixture.whenStable();
+        fixture.detectChanges();
+      };
+      await setDistance('100');
+      expect(power.value).toBe('-7.04');
+      await setDistance('');
+      expect(power.value).toBe('');
+      expect(component.autoRedaman()).toBe('');
+      await setDistance('0');
+      expect(power.value).toBe('-7.00');
+      await setDistance('');
+      expect(power.value).toBe('');
+      component.save();
+      expect(api.post).toHaveBeenCalledWith(jasmine.any(String), jasmine.objectContaining({
+        jarakKabel: undefined, redamanIn: undefined,
+      }));
+    });
     it(`${componentType.name} uses the same signed-power calculation and keeps missing power blank`, () => {
       TestBed.configureTestingModule({ providers: [{ provide: ApiService, useValue: {} }] });
       const component = TestBed.runInInjectionContext(() => new componentType());

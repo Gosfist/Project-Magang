@@ -1,3 +1,4 @@
+import { ConfirmationService } from '../../../../core/services/confirmation.service';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
@@ -25,6 +26,7 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
   templateUrl: './paket-layanan.component.html',
 })
 export class PaketLayananComponent implements OnInit {
+  private readonly confirmation = inject(ConfirmationService);
   private readonly latestLoad = latestRequest();
   private api = inject(ApiService);
 
@@ -114,8 +116,8 @@ export class PaketLayananComponent implements OnInit {
     });
   }
 
-  remove(item: PppoePackage): void {
-    if (!confirm(`Hapus paket ${item.name}?`)) return;
+  async remove(item: PppoePackage): Promise<void> {
+    if (!await this.confirmation.ask('Hapus Paket Layanan', `Hapus paket ${item.name}?`)) return;
     this.api.delete<{ message: string; warnings?: string[] }>(`/pppoe/packages/${item.id}`).subscribe({
       next: (r) => {
         this.toast.set({ message: r.message, type: r.warnings?.length ? 'error' : 'success' });

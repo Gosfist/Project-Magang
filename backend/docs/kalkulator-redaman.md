@@ -236,6 +236,11 @@ rumus yang hanya menggunakan satu margin total tanpa menjelaskan perbedaannya.
 Pada form Main Core, memilih port sumber atau mengubah jarak memperbarui
 estimasi memakai sumber yang dipilih. Sumber harus memiliki daya masuk yang
 diketahui; sumber bukan Server juga memerlukan port sumber yang valid.
+Jika jarak dikosongkan setelah pernah diisi, estimasi daya masuk ikut dikosongkan
+pada ODC, ODP, dan Rasio. Input angka yang kosong dari browser dapat bernilai
+`null`; nilai ini tidak dikonversi menjadi 0 saat menghitung atau menyimpan.
+Jarak 0 meter yang diisi secara eksplisit tetap valid: loss kabelnya nol,
+sedangkan splitter sumber, konektor, dan margin tetap dihitung.
 Backend menghitung sebagai cadangan ketika daya masuk tidak dikirim dan data
 sumber/jarak tersedia. Nilai daya masuk yang dikirim eksplisit dipertahankan,
 termasuk jika pengguna mengisinya sebagai hasil ukur.

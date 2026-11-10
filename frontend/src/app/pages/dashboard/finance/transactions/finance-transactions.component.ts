@@ -1,3 +1,4 @@
+import { ConfirmationService } from '../../../../core/services/confirmation.service';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -36,6 +37,7 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
   styleUrl: './finance-transactions.component.css',
 })
 export class FinanceTransactionsComponent implements OnInit {
+  private readonly confirmation = inject(ConfirmationService);
   private readonly latestLoad = latestRequest();
   private api = inject(ApiService);
   auth = inject(AuthService);
@@ -149,8 +151,8 @@ export class FinanceTransactionsComponent implements OnInit {
     });
   }
 
-  remove(t: FinanceTransaction) {
-    if (!confirm(`Hapus catatan transaksi "${t.description}"?`)) return;
+  async remove(t: FinanceTransaction) {
+    if (!await this.confirmation.ask('Hapus Transaksi', `Hapus catatan transaksi "${t.description}"?`)) return;
     this.api.delete(`/finance/transactions/${t.id}`).subscribe({
       next: () => {
         this.toast.set({ message: 'Transaksi berhasil dihapus.', type: 'success' });

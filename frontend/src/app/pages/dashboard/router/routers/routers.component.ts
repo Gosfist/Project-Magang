@@ -1,3 +1,4 @@
+import { ConfirmationService } from '../../../../core/services/confirmation.service';
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { timer } from 'rxjs';
@@ -40,6 +41,7 @@ import { ToastComponent } from '../../../../shared/components/toast/toast.compon
   templateUrl: './routers.component.html',
 })
 export class RoutersComponent implements OnInit {
+  private readonly confirmation = inject(ConfirmationService);
   private readonly latestLoad = latestRequest();
   private api = inject(ApiService);
   private readonly destroyRef = inject(DestroyRef);
@@ -154,8 +156,8 @@ export class RoutersComponent implements OnInit {
     });
   }
 
-  remove(item: RouterItem): void {
-    if (!confirm(`Hapus router ${item.name || item.nasname}?`)) return;
+  async remove(item: RouterItem): Promise<void> {
+    if (!await this.confirmation.ask('Hapus Router', `Hapus router ${item.name || item.nasname}?`)) return;
     this.api.delete<{ message: string }>(`/router/nas/${item.id}`).subscribe({
       next: (r) => {
         this.toast.set({ message: r.message, type: 'success' });

@@ -1,3 +1,4 @@
+import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideCheck, LucidePencil, LucideTrash2, LucideEye, LucideEyeOff } from '@lucide/angular';
@@ -33,6 +34,7 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
   templateUrl: './psb.component.html',
 })
 export class PsbComponent implements OnInit, OnDestroy {
+  private readonly confirmation = inject(ConfirmationService);
   private readonly latestLoad = latestRequest();
   readonly auth = inject(AuthService);
   private readonly api = inject(ApiService);
@@ -177,8 +179,8 @@ export class PsbComponent implements OnInit, OnDestroy {
       },
     });
   }
-  remove(item: PsbOrder) {
-    if (!confirm(`Hapus registrasi ${item.customerName}?`)) return;
+  async remove(item: PsbOrder) {
+    if (!await this.confirmation.ask('Hapus Registrasi', `Hapus registrasi ${item.customerName}?`)) return;
     this.api.delete<any>(`/psb/${item.id}`).subscribe({
       next: (r) => {
         this.toast.set({ message: r.message, type: 'success' });

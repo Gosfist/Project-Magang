@@ -1,3 +1,4 @@
+import { ConfirmationService } from '../../../../core/services/confirmation.service';
 import { estimateInputPower } from '../../../../shared/optical-power';
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -48,6 +49,7 @@ const emptyRasioForm = {
   templateUrl: './rasio.component.html',
 })
 export class RasioComponent implements OnInit, OnDestroy {
+  private readonly confirmation = inject(ConfirmationService);
   private readonly latestLoad = latestRequest();
   private readonly latestFetchParents = latestRequest();
   private api = inject(ApiService);
@@ -171,7 +173,7 @@ export class RasioComponent implements OnInit, OnDestroy {
 
   autoRedaman(): string {
     const parent = this.selectedParent();
-    if (!parent || this.form.jarakKabel === '') return this.form.redamanIn;
+    if (!parent || String(this.form.jarakKabel ?? '').trim() === '') return '';
     return estimateInputPower(parent, Number(this.form.jarakKabel), this.form.parentPortOut);
   }
 
@@ -213,8 +215,8 @@ export class RasioComponent implements OnInit, OnDestroy {
       parentId: this.form.parentId || undefined,
       parentPortOut: this.form.parentPortOut ? Number(this.form.parentPortOut) : undefined,
       namaTitik: this.form.namaTitik,
-      redamanIn: this.form.redamanIn === '' ? undefined : Number(this.form.redamanIn),
-      jarakKabel: this.form.jarakKabel === '' ? undefined : Number(this.form.jarakKabel),
+      redamanIn: String(this.form.redamanIn ?? '').trim() === '' ? undefined : Number(this.form.redamanIn),
+      jarakKabel: String(this.form.jarakKabel ?? '').trim() === '' ? undefined : Number(this.form.jarakKabel),
       alamat: this.form.alamat || undefined,
       spesifikasi: { rasio_redaman_ports: { '1': this.form.ratio1, '2': this.form.ratio2 } },
     };
@@ -231,8 +233,8 @@ export class RasioComponent implements OnInit, OnDestroy {
     });
   }
 
-  remove(node: MainCoreNode): void {
-    if (!confirm(`Hapus ${node.namaTitik}?`)) return;
+  async remove(node: MainCoreNode): Promise<void> {
+    if (!await this.confirmation.ask('Hapus Rasio', `Hapus ${node.namaTitik}?`)) return;
     this.api.delete<{ message: string }>(`/main-core/rasio/${node.id}`).subscribe({
       next: (response) => {
         this.toast.set({ message: response.message, type: 'success' });

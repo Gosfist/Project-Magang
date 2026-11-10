@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { ApiService } from '../../../../core/services/api.service';
+import { ConfirmationService } from '../../../../core/services/confirmation.service';
 import { IpPool } from '../../../../shared/models/types';
 import { IpPoolsComponent } from './ip-pools.component';
 
@@ -25,10 +26,13 @@ describe('Registered IP pool plans', () => {
     expect(component.script()).toBe('/ip pool add name=customers');
     expect(fixture.nativeElement.textContent).toContain('Terminal Winbox router yang dipilih');
   });
-  it('shows the scoped removal script after deleting only the registration', () => {
+  it('shows the scoped removal script after deleting only the registration', async () => {
     const { fixture, component, api } = setup();
-    spyOn(window, 'confirm').and.returnValue(true);
-    component.remove(pool); fixture.detectChanges();
+    const pending = component.remove(pool);
+    expect(api.delete).not.toHaveBeenCalled();
+    TestBed.inject(ConfirmationService).answer(true);
+    await pending;
+    fixture.detectChanges();
     expect(api.delete).toHaveBeenCalledWith('/pppoe/ip-pools/12');
     expect(component.script()).toBe('/ip pool remove [find where name=customers]');
     expect(fixture.nativeElement.textContent).toContain('/ip pool remove [find where name=customers]');

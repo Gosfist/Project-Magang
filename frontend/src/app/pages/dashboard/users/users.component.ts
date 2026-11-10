@@ -1,3 +1,4 @@
+import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { FormsModule } from '@angular/forms';
@@ -29,6 +30,7 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
   styleUrl: './users.component.css',
 })
 export class UsersComponent implements OnInit, OnDestroy {
+  private readonly confirmation = inject(ConfirmationService);
   private readonly latestLoad = latestRequest();
   private api = inject(ApiService);
 
@@ -154,8 +156,8 @@ export class UsersComponent implements OnInit, OnDestroy {
     });
   }
 
-  remove(user: User): void {
-    if (!confirm(`Hapus ${user.name}?`)) return;
+  async remove(user: User): Promise<void> {
+    if (!await this.confirmation.ask('Hapus Petugas', `Hapus ${user.name}?`)) return;
     this.api.delete<{ message: string }>(`/users/${user.id}`).subscribe({
       next: (r) => {
         this.toast.set({ message: r.message, type: 'success' });
