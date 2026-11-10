@@ -12,6 +12,16 @@ export type AccountingSession = Pick<Radacct, 'username' | 'nasipaddress' | 'acc
 export const accountingAckKey = (session: AccountingSession) => `radius_ack_${createHash('sha256').update(`${session.username}\0${session.nasipaddress}\0${session.acctsessionid}`).digest('hex')}`;
 type Pending = { username: string; routerId: number; sessionId?: string; nasAddress?: string; requestedAt?: number };
 export const accountingTime = (value: Date) => radiusLogTime(value, process.env.RADIUS_ACCOUNTING_TIMEZONE || process.env.RADIUS_LOG_TIMEZONE || 'WIB');
+// Acct-Session-Time is a snapshot, not a live clock. Advance it between interim updates.
+function accountingUptimeSeconds(session: Pick<Radacct, 'acctsessiontime' | 'acctupdatetime' | 'acctstarttime'>, now: number): number {
+  const measured = Math.max(0, session.acctsessiontime ?? 0);
+  if (session.acctsessiontime !== null && session.acctupdatetime) {
+    const updatedAt = accountingTime(session.acctupdatetime).getTime();
+    if (Number.isFinite(updatedAt)) return measured + Math.max(0, Math.floor((now - updatedAt) / 1000));
+  }
+  const startedAt = session.acctstarttime ? accountingTime(session.acctstarttime).getTime() : now;
+  return Number.isFinite(startedAt) ? Math.max(measured, Math.floor((now - startedAt) / 1000)) : measured;
+}
 const unresolvedSessionMaxMs = 15 * 60 * 1000;
 export const accountingFreshMs = () => {
   const seconds = Number(process.env.RADIUS_ACCOUNTING_STALE_SECONDS || 900);
@@ -50,7 +60,7 @@ export class PppoeNetworkService implements OnModuleInit, OnModuleDestroy {
         return age >= -1000 && age <= accountingFreshMs();
       });
       states.set(account.username, session ? true : matching.length || !targets.length ? null : false);
-      uptimes.set(account.username, session ? `${session.acctsessiontime ?? Math.max(0, Math.floor((Date.now() - (session.acctstarttime ? accountingTime(session.acctstarttime).getTime() : Date.now())) / 1000))}s` : null);
+      uptimes.set(account.username, session ? `${accountingUptimeSeconds(session, Date.now())}s` : null);
       if (!session && matching.length) stale = true;
     }
     return { states, uptimes, warnings: stale ? ['Sebagian sesi accounting belum diperbarui; status ditampilkan tidak diketahui.'] : [] };

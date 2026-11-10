@@ -40,12 +40,47 @@ describe('PPPoE RADIUS accounting and Disconnect', () => {
     const { service, prisma } = setup();
     prisma.radacct.findMany.mockResolvedValue([session(), session('stale', router.nasname, 901), session('foreign', '10.99.0.4')]);
     const result = await service.accountPresence(['andi', 'and', 'stale', 'foreign'].map(username => ({ username, routerNasId: 3 })));
-    expect(result.states.get('andi')).toBe(true); expect(result.uptimes.get('andi')).toBe('3600s');
+    expect(result.states.get('andi')).toBe(true); expect(result.uptimes.get('andi')).toBe('3660s');
     expect(result.states.get('and')).toBe(false);
     expect(result.states.get('stale')).toBeNull(); expect(result.uptimes.get('stale')).toBeNull();
     expect(result.states.get('foreign')).toBe(false);
     expect(result.warnings).toEqual(['Sebagian sesi accounting belum diperbarui; status ditampilkan tidak diketahui.']);
     expect(prisma.radacct.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { username: { in: ['andi', 'and', 'stale', 'foreign'] }, acctstoptime: null } }));
+  });
+  it('keeps uptime increasing across polls before the first interim accounting update', async () => {
+    const { service, prisma } = setup();
+    prisma.radacct.findMany.mockResolvedValue([{ ...session(), acctstarttime: now, acctupdatetime: now, acctsessiontime: 0 }]);
+    const read = async () => (await service.accountPresence([{ username: 'andi', routerNasId: 3 }])).uptimes.get('andi');
+    expect(await read()).toBe('0s');
+    vi.setSystemTime(new Date(now.getTime() + 5000));
+    expect(await read()).toBe('5s');
+    vi.setSystemTime(new Date(now.getTime() + 10000));
+    expect(await read()).toBe('10s');
+    vi.setSystemTime(new Date(now.getTime() + 299000));
+    expect(await read()).toBe('299s');
+  });
+  it('advances an interim snapshot once and resets only for a new accounting session', async () => {
+    const { service, prisma } = setup();
+    vi.setSystemTime(new Date(now.getTime() + 315000));
+    prisma.radacct.findMany.mockResolvedValue([{ ...session(), acctstarttime: now, acctupdatetime: new Date(now.getTime() + 300000), acctsessiontime: 300 }]);
+    const read = async () => (await service.accountPresence([{ username: 'andi', routerNasId: 3 }])).uptimes.get('andi');
+    expect(await read()).toBe('315s');
+    prisma.radacct.findMany.mockResolvedValue([{ ...session(), acctsessionid: 'new-session', acctstarttime: new Date(Date.now()), acctupdatetime: new Date(Date.now()), acctsessiontime: 0 }]);
+    expect(await read()).toBe('0s');
+    vi.setSystemTime(new Date(now.getTime() + 320000));
+    expect(await read()).toBe('5s');
+  });
+  it('normalizes WIB timestamps when advancing a zero-second accounting snapshot', async () => {
+    const { service, prisma } = setup();
+    vi.stubEnv('RADIUS_ACCOUNTING_TIMEZONE', 'WIB');
+    const wall = new Date(now.getTime() + 7 * 3600000 - 12000);
+    prisma.radacct.findMany.mockResolvedValue([{ ...session(), acctstarttime: wall, acctupdatetime: wall, acctsessiontime: 0 }]);
+    expect((await service.accountPresence([{ username: 'andi', routerNasId: 3 }])).uptimes.get('andi')).toBe('12s');
+  });
+  it('falls back to session start without adding the measured duration twice', async () => {
+    const { service, prisma } = setup();
+    prisma.radacct.findMany.mockResolvedValue([{ ...session(), acctstarttime: new Date(now.getTime() - 120000), acctupdatetime: null, acctsessiontime: 100 }]);
+    expect((await service.accountPresence([{ username: 'andi', routerNasId: 3 }])).uptimes.get('andi')).toBe('120s');
   });
   it('does not borrow a session on another registered NAS for an assigned account', async () => {
     const { service, prisma } = setup();

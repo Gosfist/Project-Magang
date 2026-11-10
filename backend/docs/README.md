@@ -127,3 +127,9 @@ dan periksa setiap halaman Word sebelum commit/push. Perbaikan kode installer
 harus disertai langkah pemulihan untuk konfigurasi lama bila diperlukan.
 
 Panduan [port aktivasi PSB](port-aktivasi-psb.md) memuat pilihan port, penanganan port terpakai, dan pembaruan skema database lama sebelum deployment.
+
+## Uptime pelanggan dari accounting
+
+Uptime web dihitung dari durasi `Acct-Session-Time` pada pembaruan accounting terakhir ditambah waktu yang sudah berlalu sejak `acctupdatetime`. Sebelum interim pertama, nilai durasi 0 tetap bertambah berdasarkan waktu Accounting-Start. Refresh daftar pelanggan setiap 5 detik tidak boleh membuat hitungan kembali ke 0. Sesi accounting baru tetap memulai uptime baru; sesi stale atau tidak diketahui tidak ditampilkan seolah-olah online. Zona waktu mengikuti `RADIUS_ACCOUNTING_TIMEZONE`.
+
+Perbaikan perhitungan uptime hanya memerlukan backend terbaru (`npm run updatebe` di root project VPS); tidak perlu rebuild frontend atau perubahan skema database. Bandingkan uptime dan session-id melalui `/ppp active print detail` untuk membedakan bug tampilan dari PPPoE yang benar-benar dial ulang. Validasi lokal belum membuktikan stabilitas sesi perangkat nyata.
