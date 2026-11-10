@@ -36,6 +36,7 @@ npm() {
 }
 systemctl() { printf 'ERROR_SERVICE_CHANGE\\n' >> "$TEST_TRACE"; return 1; }
 systemd-run() { printf 'ERROR_BUILD_LIMIT\\n' >> "$TEST_TRACE"; return 1; }
+bash() { printf 'bot:build\\n' >> "$TEST_TRACE"; }
 install_applications
 '''
             result = subprocess.run([BASH, '-c', code], cwd=ROOT,
@@ -46,8 +47,8 @@ install_applications
     def test_frontend_is_imported_without_compiler_dependencies_or_service_changes(self):
         result, trace = self.run_install()
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(trace, ['artifact:--check', 'backend:ci', 'bot_whatsapp:ci',
-            'backend:run prisma:generate', 'root:run database:check', 'backend:run build', 'artifact:install'])
+        self.assertEqual(trace, ['artifact:--check', 'backend:ci',
+            'backend:run prisma:generate', 'root:run database:check', 'backend:run build', 'bot:build', 'artifact:install'])
 
     def test_missing_or_invalid_package_stops_before_application_dependencies(self):
         result, trace = self.run_install(FAIL_CHECK='1')

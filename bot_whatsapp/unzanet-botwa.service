@@ -1,15 +1,20 @@
 [Unit]
-Description=Unzanet WhatsApp Bot
-After=network.target mysql.service
+Description=UNZANET WhatsApp Go whatsmeow
+Wants=network-online.target
+After=network-online.target mysql.service
 
 [Service]
 Type=simple
-User=user
+User=unzanet
+Group=unzanet
 WorkingDirectory=/var/www/Project-Magang/bot_whatsapp
-ExecStart=/usr/bin/node /var/www/Project-Magang/bot_whatsapp/src/index.js
+ExecStart=/var/www/Project-Magang/bot_whatsapp/bin/bot-whatsapp
 Restart=always
 RestartSec=5
-Environment=NODE_ENV=production
+Environment=TZ=Asia/Jakarta
+UMask=0077
+NoNewPrivileges=true
+TimeoutStopSec=20
 
 [Install]
 WantedBy=multi-user.target

@@ -4,6 +4,7 @@ Aplikasi PT UNZANET telah dimigrasikan penuh dari Laravel/Blade ke TypeScript de
 
 - `frontend`: Angular 19, TypeScript, Tailwind CSS.
 - `backend`: NestJS 12, TypeScript, Prisma ORM, MySQL.
+- `bot_whatsapp`: Go 1.27.3 + whatsmeow; template/log di MySQL, sesi WA di SQLite lokal.
 
 Fitur yang dipertahankan: web profile, login JWT, dashboard, role admin/petugas, data petugas, Main Core (Server, Rasio, ODC, ODP), Trace Jalur, kalkulator redaman, paket PPPoE, akun PPPoE, dan sinkronisasi FreeRADIUS.
 
@@ -96,13 +97,15 @@ npm run start:dev
 ```powershell
 cd bot_whatsapp
 Copy-Item .env.example .env
-npm install
-npm start
+go mod download
+go run .
 ```
 
 Frontend tersedia di `http://localhost:3000`, REST API di `http://localhost:3001/api`, dan Bot WhatsApp di `http://localhost:3002/api/wa`.
 
 `BOT_API_KEY` pada `backend/.env` dan `bot_whatsapp/.env` harus sama persis. Jika berbeda, backend akan mendapat respons `401 API key tidak valid` saat mengirim notifikasi WhatsApp.
+
+Bot memerlukan Go 1.27.3 untuk build. Installer/updater memasang compiler terverifikasi checksum bila diperlukan, lalu menjalankan `bin/bot-whatsapp` melalui systemd tanpa proses Node.js untuk bot. `npm run updatebot` memperbarui bot saja, menyinkronkan `DATABASE_URL`, `BOT_API_KEY`, dan origin frontend dari backend, lalu memigrasikan service lama ke executable Go. MySQL dan skema aplikasi tetap dipertahankan. Setelah pindah dari Baileys, buka Login Bot Wa dan scan QR sekali lagi; folder sesi lama `auth_info` tidak dihapus. Jangan menjalankan bot Node lama bersamaan dengan bot Go. Lihat [panduan bot](bot_whatsapp/README.md).
 
 ## Database
 

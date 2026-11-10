@@ -98,49 +98,37 @@ if [[ "$MODE" == "all" || "$MODE" == "fe" ]]; then
 fi
 
 if [[ "$MODE" == "all" || "$MODE" == "bot" ]]; then
-  log "Install dependency bot WhatsApp"
-  install_node_modules "$BOTWA_DIR" "Bot WhatsApp"
+  log "Build bot WhatsApp Go + whatsmeow"
+  bash "$ROOT_DIR/scripts/build-bot.sh"
 
-  BOTWA_SERVICE_FILE="$BOTWA_DIR/unzanet-botwa.service"
-  if [[ ! -f /etc/unzanet/install.json && -f "$BOTWA_SERVICE_FILE" ]]; then
-    SERVICE_WORKING_DIR="$(systemctl show -p WorkingDirectory --value "$BOTWA_SERVICE" 2>/dev/null || true)"
-    if [[ "$SERVICE_WORKING_DIR" != "$BOTWA_DIR" ]]; then
-      log "Alihkan service bot dari direktori lama ke direktori project ini"
-      sudo systemctl stop "$BOTWA_SERVICE" || true
-      sudo cp "$BOTWA_SERVICE_FILE" "/etc/systemd/system/$BOTWA_SERVICE.service"
-      sudo systemctl daemon-reload
-    fi
-  fi
-
-  log "Sinkronisasi environment bot WhatsApp"
-  if [[ ! -f "$BOTWA_DIR/.env" ]] && [[ -f "$BOTWA_DIR/.env.example" ]]; then
-    cp "$BOTWA_DIR/.env.example" "$BOTWA_DIR/.env"
-  fi
-
-  if [[ -f "$BACKEND_DIR/.env" ]] && [[ -f "$BOTWA_DIR/.env" ]]; then
-    DB_URL=$(grep -E '^DATABASE_URL=' "$BACKEND_DIR/.env" | head -n 1 | cut -d '=' -f2- | tr -d '"' | tr -d "'" || true)
-    if [[ -n "$DB_URL" ]]; then
-      if grep -q '^DATABASE_URL=' "$BOTWA_DIR/.env"; then
-        sed -i "s|^DATABASE_URL=.*|DATABASE_URL=\"$DB_URL\"|" "$BOTWA_DIR/.env"
-      else
-        echo "DATABASE_URL=\"$DB_URL\"" >> "$BOTWA_DIR/.env"
-      fi
-    fi
-  fi
-
-  log "Setup dan restart bot WhatsApp"
-  if [[ ! -f /etc/unzanet/install.json && -f "$BOTWA_DIR/unzanet-botwa.service" ]]; then
-    sudo cp "$BOTWA_DIR/unzanet-botwa.service" /etc/systemd/system/
-    sudo systemctl daemon-reload
-    sudo systemctl enable "$BOTWA_SERVICE" || true
-  fi
   BOTWA_USER="$(systemctl show -p User --value "$BOTWA_SERVICE" 2>/dev/null || true)"
-  BOTWA_USER="${BOTWA_USER:-$(id -un)}"
-  BOTWA_GROUP="$(id -gn "$BOTWA_USER")"
-  sudo install -d -o "$BOTWA_USER" -g "$BOTWA_GROUP" -m 0750 "$BOTWA_DIR/auth_info"
-  sudo chown -R "$BOTWA_USER:$BOTWA_GROUP" "$BOTWA_DIR/auth_info"
-  sudo systemctl daemon-reload
-  sudo systemctl restart "$BOTWA_SERVICE" || true
+  BOTWA_USER="${BOTWA_USER:-unzanet}"
+  BOTWA_GROUP="$(systemctl show -p Group --value "$BOTWA_SERVICE" 2>/dev/null || true)"
+  BOTWA_GROUP="${BOTWA_GROUP:-$(id -gn "$BOTWA_USER")}"
+  log "Sinkronisasi database/API key dan migrasi service bot ke executable Go"
+  python3 "$ROOT_DIR/scripts/configure-bot.py" --root "$ROOT_DIR" --user "$BOTWA_USER" --group "$BOTWA_GROUP" --service-name "$BOTWA_SERVICE"
+  chown "$BOTWA_USER:$BOTWA_GROUP" "$BOTWA_DIR/.env"
+  chmod 0600 "$BOTWA_DIR/.env"
+  install -d -o "$BOTWA_USER" -g "$BOTWA_GROUP" -m 0700 "$BOTWA_DIR/data"
+  # Existing Baileys auth_info is preserved; whatsmeow requires a new QR scan.
+  systemctl daemon-reload
+  systemctl enable "$BOTWA_SERVICE"
+  systemctl restart "$BOTWA_SERVICE"
+  sleep 2
+  systemctl is-active --quiet "$BOTWA_SERVICE"
+  BOTWA_PORT="$(python3 - "$ROOT_DIR" <<'PY'
+import importlib.util, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+spec = importlib.util.spec_from_file_location('bot_config', root / 'scripts/configure-bot.py')
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+port = module.read_env(root / 'bot_whatsapp/.env').get('PORT', '3002')
+if not port.isdecimal() or not 1 <= int(port) <= 65535:
+    raise SystemExit('PORT bot tidak valid.')
+print(port)
+PY
+)"
+  curl --fail --silent --show-error --max-time 10 "http://127.0.0.1:$BOTWA_PORT/api/wa/health"
 fi
 
 if [[ "$MODE" == "all" || "$MODE" == "be" ]]; then

@@ -106,7 +106,7 @@ class InstallerConfigurationTests(unittest.TestCase):
         bot = files['/var/www/Project-Magang/bot_whatsapp/.env']
         self.assertIn('RADIUS_SERVER_IP="10.88.0.2"', backend)
         self.assertIn('RADIUS_DISCONNECT_SOURCE_IP="10.88.0.2"', backend)
-        for key in ('DATABASE_URL', 'JWT_SECRET', 'BOT_API_KEY'):
+        for key in ('DATABASE_URL', 'BOT_API_KEY'):
             backend_value = next(line for line in backend.splitlines() if line.startswith(key + '='))
             self.assertIn(backend_value, bot)
         apache = files['/etc/apache2/sites-available/unzanet.conf']

@@ -67,6 +67,10 @@ Installer meminta domain, IPv4 publik VPS, serta email aktif untuk sertifikat sa
 kali. Email ini berbeda dari akun administrator. Gunakan DNS only pada Cloudflare
 saat instalasi; aktifkan Proxied dan Full (strict) setelah HTTPS berhasil.
 Website, RADIUS, dan VPN berada satu mesin; tidak perlu VPN client Ubuntu.
+Bot WhatsApp menggunakan Go 1.27.3 + whatsmeow. Template/log tetap MySQL; sesi
+perangkat memakai SQLite lokal tanpa service tambahan. `npm run updatebot`
+mengganti service Node lama dengan executable Go dan menyinkronkan koneksi bot.
+Sesudah migrasi Baileys, scan QR sekali lagi melalui Login Bot Wa.
 Login web, buat Klien VPN, tunggu penerapan sekitar 15 detik, pilih akun pada Router/NAS,
 lalu isi prefix IP Pool Internet dan Isolir pada form Router NAS. Script mengatur
 SSTP, RADIUS/Disconnect, PPP AAA, kedua pool/profil dan firewall isolir. Tambah,

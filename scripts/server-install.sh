@@ -206,7 +206,7 @@ SQL
   fi
   usermod -a -G www-data unzanet
   install -d -o unzanet -g www-data -m 0750 "$ROOT_DIR/uploads" "$ROOT_DIR/uploads/ktp" "$ROOT_DIR/uploads/profile" "$ROOT_DIR/uploads/instalasi"
-  install -d -o unzanet -g unzanet -m 0700 "$ROOT_DIR/bot_whatsapp/auth_info"
+  install -d -o unzanet -g unzanet -m 0700 "$ROOT_DIR/bot_whatsapp/data"
   if [[ ! -d /etc/unzanet/freeradius-backup ]]; then
     cp -a /etc/freeradius/3.0 /etc/unzanet/freeradius-backup
   fi

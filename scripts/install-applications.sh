@@ -5,7 +5,7 @@ set -Eeuo pipefail
 install_applications() {
   local folder
   python3 "$INSTALL_ROOT/scripts/frontend-prebuilt.py" --check
-  for folder in backend bot_whatsapp; do
+  for folder in backend; do
     printf '\n[UNZANET] Dependency %s\n' "$folder"
     (cd "$INSTALL_ROOT/$folder" && umask 022 && npm ci)
   done
@@ -14,6 +14,7 @@ install_applications() {
   (cd "$INSTALL_ROOT" && npm run database:check)
   printf '\n[UNZANET] Build backend\n'
   (cd "$INSTALL_ROOT/backend" && umask 022 && npm run build)
+  bash "$INSTALL_ROOT/scripts/build-bot.sh"
   python3 "$INSTALL_ROOT/scripts/frontend-prebuilt.py"
   [[ -f "$INSTALL_ROOT/frontend/dist/frontend/browser/index.html" ]]
 }

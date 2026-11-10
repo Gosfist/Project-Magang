@@ -189,7 +189,8 @@ def render(config):
     }
     bot = {
         'PORT': '3002', 'BACKEND_URL': 'http://127.0.0.1:3001', 'FRONTEND_URL': origin,
-        'DATABASE_URL': db_url, 'BOT_API_KEY': config['BOT_API_KEY'], 'JWT_SECRET': config['JWT_SECRET'],
+        'DATABASE_URL': db_url, 'BOT_API_KEY': config['BOT_API_KEY'],
+        'HOST': '127.0.0.1', 'WA_SESSION_FILE': 'data/whatsmeow.db',
     }
     files = {
         **refresh_files(config),
@@ -355,7 +356,7 @@ server unzanet {
     }
     for name, folder, entry, group in [
         ('unzanet-backend', 'backend', 'dist/main.js', 'www-data'),
-        ('unzanet-botwa', 'bot_whatsapp', 'src/index.js', 'unzanet'),
+        ('unzanet-botwa', 'bot_whatsapp', 'bin/bot-whatsapp', 'unzanet'),
     ]:
         files[f'/etc/systemd/system/{name}.service'] = f'''[Unit]
 Description={name}
@@ -366,10 +367,10 @@ Type=simple
 User=unzanet
 Group={group}
 WorkingDirectory={root}/{folder}
-ExecStart=/usr/bin/node {root}/{folder}/{entry}
-Environment=NODE_ENV=production
+ExecStart={'/usr/bin/node ' if folder == 'backend' else ''}{root}/{folder}/{entry}
+{'Environment=NODE_ENV=production' if folder == 'backend' else 'NoNewPrivileges=true'}
 Environment=TZ=Asia/Jakarta
-UMask=0027
+UMask={'0027' if folder == 'backend' else '0077'}
 Restart=always
 RestartSec=5
 [Install]
