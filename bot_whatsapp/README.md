@@ -37,6 +37,8 @@ Untuk build manual di Ubuntu, `bash scripts/build-bot.sh` dari root repo. Compil
 
 ## API dan pengujian
 
+Jika Git mengambil revisi baru, updater memuat ulang script sebelum build dan mempertahankan mode update. Setelah bot Go aktif dan health berhasil, updater membersihkan `bot_whatsapp/node_modules` lama dan direktori source kosong. Dependency Node.js backend NestJS tetap diperlukan. Jika updater lama berhenti karena `package.json` bot tidak ditemukan setelah pull, jalankan kembali `npm run updatebot` untuk memakai script terbaru.
+
 - Publik: `GET /health`; mengembalikan 503 bila MySQL tidak tersedia.
 - API key backend (`X-API-Key`): `POST /send`, body `{ "phone": "081234567890", "message": "..." }`.
 - Bearer admin: status, QR, connect, restart, reset, logout, ping, template GET/PATCH dan log GET/DELETE.

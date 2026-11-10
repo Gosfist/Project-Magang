@@ -34,19 +34,32 @@ install_node_modules() {
   npm install
 }
 
-cd "$ROOT_DIR"
-
-log "Ambil update terbaru dari Git"
-REPO_OWNER="$(stat -c '%U' "$ROOT_DIR/.git")"
-runuser -u "$REPO_OWNER" -- git -C "$ROOT_DIR" pull --ff-only
-
-if [[ "$MODE" == all || "$MODE" == fe ]]; then
-  python3 "$ROOT_DIR/scripts/frontend-prebuilt.py" --check
-fi
+reload_updater_if_updated() {
+  local previous_revision="$1" current_revision="$2"
+  if [[ "$previous_revision" != "$current_revision" ]]; then
+    log "Kode berubah ke ${current_revision:0:7}; memuat ulang updater sebelum mengubah aplikasi"
+    # The running Bash process may still read the old inode after git replaces
+    # this file. Re-exec before any build/service change, preserving update mode.
+    exec /bin/bash "$ROOT_DIR/scripts/server-update.sh" "$MODE"
+  fi
+}
 
 if [[ "$MODE" != "all" && "$MODE" != "be" && "$MODE" != "fe" && "$MODE" != "bot" ]]; then
   printf 'Mode tidak dikenal: %s\nGunakan: npm run update, npm run updatebe, npm run updatefe, atau npm run updatebot\n' "$MODE"
   exit 1
+fi
+
+cd "$ROOT_DIR"
+
+log "Ambil update terbaru dari Git"
+REPO_OWNER="$(stat -c '%U' "$ROOT_DIR/.git")"
+PREVIOUS_REVISION="$(runuser -u "$REPO_OWNER" -- git -C "$ROOT_DIR" rev-parse HEAD)"
+runuser -u "$REPO_OWNER" -- git -C "$ROOT_DIR" pull --ff-only
+CURRENT_REVISION="$(runuser -u "$REPO_OWNER" -- git -C "$ROOT_DIR" rev-parse HEAD)"
+reload_updater_if_updated "$PREVIOUS_REVISION" "$CURRENT_REVISION"
+
+if [[ "$MODE" == all || "$MODE" == fe ]]; then
+  python3 "$ROOT_DIR/scripts/frontend-prebuilt.py" --check
 fi
 
 if [[ "$MODE" == "all" || "$MODE" == "be" ]]; then
@@ -129,6 +142,8 @@ print(port)
 PY
 )"
   curl --fail --silent --show-error --max-time 10 "http://127.0.0.1:$BOTWA_PORT/api/wa/health"
+  log "Bersihkan dependency Node.js bot lama setelah health Go berhasil"
+  python3 "$ROOT_DIR/scripts/cleanup-bot-node.py" --root "$ROOT_DIR"
 fi
 
 if [[ "$MODE" == "all" || "$MODE" == "be" ]]; then
