@@ -9,7 +9,7 @@ Redesain 8 November 2026 menggunakan skill `ui-ux-pro-max` dengan arah antarmuka
 - Gunakan border tipis, radius 6–8 px, dan jarak 16–24 px. Bayangan hanya untuk lapisan yang mengambang seperti dialog.
 - Judul memakai bobot 600; nominal dan jumlah memakai angka tabular. Warna status selalu disertai teks.
 - Pertahankan kontrol filter, pengurutan, pencarian, aksi, serta hak akses setiap role.
-- Seluruh header tabel dashboard memakai latar hitam (`#000000`) dan teks putih (`#ffffff`), termasuk tabel dalam dialog dan header sticky.
+- Sidebar, header tabel, dan tombol utama dashboard (termasuk Tambah) memakai token navy yang sama (`--ui-navy`: `#020617`) dengan teks putih. Berlaku juga untuk tabel dalam dialog dan header sticky.
 - Tabel lebar bergulir di dalam wadahnya, bukan membuat seluruh halaman bergeser horizontal.
 - Pesan tabel kosong pada ponsel rata kiri agar tetap terlihat sebelum pengguna menggulir tabel.
 - Fokus keyboard tetap terlihat, kontrol ikon mempunyai nama aksesibel, dan animasi mengikuti preferensi pengurangan gerakan.

@@ -7,7 +7,7 @@
   --ui-caption: 12px;
   --ui-control: 14px;
   --ui-table-action: 13px;
-  --ui-table-header-bg: #000000;
+  --ui-table-header-bg: var(--ui-navy);
   --ui-table-header-text: #ffffff;
   --ui-border: #e2e8f0;
   --ui-surface: #ffffff;
@@ -61,6 +61,8 @@ app-modal .input:is(:autofill, :-webkit-autofill) {
   line-height: 20px;
   font-weight: 500;
 }
+.dashboard-shell .btn-primary { background-color: var(--ui-navy); }
+.dashboard-shell .btn-primary:hover { background-color: #0f172a; }
 .dashboard-shell main { min-width: 0; }
 .dashboard-shell main > :not(router-outlet) { min-width: 0; }
 .dashboard-shell :is(h2, h3) { line-height: 1.35; font-weight: 600; }
