@@ -21,3 +21,9 @@ Hanya hero landing page mengikuti tampilan sebelum redesain, dengan gambar latar
 ## Validasi lokal
 
 Jalankan `npm.cmd run build` dan `npm.cmd test -- --watch=false --browsers=ChromeHeadless` dari folder `frontend`. Pemeriksaan browser dengan data simulasi lokal tidak membuktikan koneksi API produksi atau perangkat jaringan.
+
+## Preview WhatsApp
+
+Log notifikasi menampilkan nomor target dan badge status tanpa ikon titik tambahan. Modal detail memakai dua kolom mulai 768 px: detail pengiriman di kiri, isi pesan di kanan; layar kecil memakai satu kolom. Isi pesan dan preview template memakai wallpaper lokal serta gelembung pesan hijau muda dengan teks gelap. Pesan panjang tetap membungkus dan modal dapat digulir.
+
+Wallpaper: `public/assets/images/whatsapp-chat-wallpaper.jpg`, diunduh dari [pin referensi pengguna](https://id.pinterest.com/pin/1047931407026339311/) melalui gambar asli Pinterest. Wallpaper disajikan dari aset lokal.
