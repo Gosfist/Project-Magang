@@ -27,3 +27,5 @@ Jalankan `npm.cmd run build` dan `npm.cmd test -- --watch=false --browsers=Chrom
 Log notifikasi menampilkan nomor target dan badge status tanpa ikon titik tambahan. Modal detail memakai dua kolom mulai 768 px: detail pengiriman di kiri, isi pesan di kanan; layar kecil memakai satu kolom. Isi pesan dan preview template memakai wallpaper lokal serta gelembung pesan hijau muda dengan teks gelap. Pesan panjang tetap membungkus dan modal dapat digulir.
 
 Wallpaper: `public/assets/images/whatsapp-chat-wallpaper.jpg`, diunduh dari [pin referensi pengguna](https://id.pinterest.com/pin/1047931407026339311/) melalui gambar asli Pinterest. Wallpaper disajikan dari aset lokal.
+
+Preview pesan langsung menampilkan wallpaper dan gelembung tanpa baris judul atau nomor tambahan. Overlay detail log diletakkan di luar wadah jarak `space-y-*` agar menutup seluruh viewport tanpa celah bawah.
