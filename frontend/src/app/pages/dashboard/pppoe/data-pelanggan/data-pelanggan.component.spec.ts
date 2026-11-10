@@ -64,4 +64,22 @@ describe('direct PPPoE customer registration', () => {
     expect(body.expiresAt).toBeUndefined();
     discardPeriodicTasks();
   }));
+  it('renders the port picker beside the location and submits a numeric port', fakeAsync(() => {
+    const { fixture, component, post } = setup();
+    component.odpOptions.set([{ id: '4', namaTitik: 'ODC Uji', tipeTitik: 'odc', alamat: null, routerNasId: 1, routerName: 'Router',
+      ports: [{ number: 1, used: false, accountId: null }, { number: 2, used: true, accountId: '9' }] }]);
+    component.form = { ...component.form, customerName: 'Wisnu', phone: '08123456789', idCardNumber: '1234', idCardPhoto: 'id-cards/test.png',
+      address: 'Alamat', areaId: '1', pppoePackageId: '2', username: 'wisnu', password: 'password123', odp: '4', odpPort: '1' };
+    component.step.set(2);
+    fixture.detectChanges(); tick(); fixture.detectChanges();
+    const select = fixture.nativeElement.querySelector('#customer-odp-port') as HTMLSelectElement;
+    expect(select).not.toBeNull();
+    expect([...select.options].map(option => option.textContent?.trim())).toEqual(['Pilih port', 'Port 1', 'Port 2 (terpakai)']);
+    expect(select.options[2].disabled).toBeTrue();
+    expect(select.parentElement!.parentElement!.querySelector('#odp-picker')).not.toBeNull();
+    component.submit({ reportValidity: () => true } as HTMLFormElement);
+    expect(post).toHaveBeenCalledWith('/pppoe/accounts', jasmine.objectContaining({ odp: '4', odpPort: 1 }));
+    discardPeriodicTasks();
+  }));
+
 });

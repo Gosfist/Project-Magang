@@ -13,10 +13,13 @@ describe('PPPoE billing and account deactivation', () => {
     const current = { id: 2n, pppoePackageId: 1n, username: 'andi', password: 'encrypted', routerNasId: 3, isActive: true };
     const invoice = { create: vi.fn().mockResolvedValue({}) };
     const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      mainCore: { findFirst: vi.fn().mockImplementation(async ({ where }) => where.parentId ? null : { id: 4n, spesifikasi: { jenis_splitter: '1:4' } }) },
       paymentPromise: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
       radacct: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
       invoice,
       pppoeAccount: {
+        findFirst: vi.fn().mockResolvedValue(null),
         aggregate: vi.fn().mockResolvedValue({ _max: { customerNumber: null } }),
         create: vi.fn().mockImplementation(({ data }) => Promise.resolve({ ...data, id: 2n, package: pkg })),
         update: vi.fn().mockImplementation(({ data }) => Promise.resolve({ ...current, ...data, package: pkg })),
@@ -45,6 +48,18 @@ describe('PPPoE billing and account deactivation', () => {
   beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 8, 16, 0, 0, 0)); });
   afterEach(() => vi.useRealTimers());
 
+  it('saves the chosen port when editing a customer', async () => {
+    const { service, dto, tx } = setup();
+    await service.updateAccount('2', { ...dto, odpPort: 2 });
+    expect(tx.pppoeAccount.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ odpPort: 2 }) }));
+    expect(tx.pppoeAccount.findFirst.mock.calls[0][0].where.id).toEqual({ not: 2n });
+  });
+  it('rejects a port occupied by another customer before changing the account', async () => {
+    const { service, dto, tx } = setup();
+    tx.pppoeAccount.findFirst.mockResolvedValue({ id: 9n } as any);
+    await expect(service.updateAccount('2', { ...dto, odpPort: 2 })).rejects.toThrow('terpakai');
+    expect(tx.pppoeAccount.update).not.toHaveBeenCalled();
+  });
   it('uses automatic Sales activation defaults even when an old form sends manual billing fields', async () => {
     const { service, dto, invoice, tx, radius } = setup();
     await service.createAccount({ ...dto, billingDay: 28, expiresAt: '2020-01-01' });

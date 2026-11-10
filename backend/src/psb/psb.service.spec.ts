@@ -64,7 +64,9 @@ describe('manual technician credential changes', () => {
     const current = { username: 'old.username', routerNasId: 3 };
     const account = { ...current, id: 2n, username: 'new.username' };
     const tx = {
-      pppoeAccount: { findUnique: vi.fn().mockResolvedValue(current), update: vi.fn().mockResolvedValue(account) },
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      mainCore: { findFirst: vi.fn().mockImplementation(async ({ where }) => where.parentId ? null : { id: 4n, spesifikasi: { jenis_splitter: '1:4' } }) },
+      pppoeAccount: { findFirst: vi.fn().mockResolvedValue(null), findUnique: vi.fn().mockResolvedValue(current), update: vi.fn().mockResolvedValue(account) },
       radacct: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
       psbOrder: { update: vi.fn().mockResolvedValue({ ...order, username: 'new.username' }) },
     };
@@ -88,9 +90,10 @@ describe('manual technician credential changes', () => {
   }
   it.each(['', 'new-password'])('saves a username change with password %s and disconnects only after commit', async password => {
     const { service, tx, radius, network, account } = setup();
-    await service.activate('1', { username: 'new.username', password: password || undefined, odp: '4' }, '7');
+    await service.activate('1', { username: 'new.username', password: password || undefined, odp: '4', odpPort: 1 }, '7');
     const data = tx.pppoeAccount.update.mock.calls[0][0].data;
     expect(data.username).toBe('new.username');
+    expect(data.odpPort).toBe(1);
     if (password) expect(data.password).toBe('encrypted-new');
     else expect(data).not.toHaveProperty('password');
     expect(radius.sync).toHaveBeenCalledWith(tx, account, 'old.username');
@@ -100,8 +103,16 @@ describe('manual technician credential changes', () => {
   it('does not send Disconnect or manufacture Accounting-Stop if RADIUS synchronization rolls back', async () => {
     const { service, radius, network, tx } = setup();
     radius.sync.mockRejectedValue(new Error('RADIUS update failed'));
-    await expect(service.activate('1', { username: 'new.username', odp: '4' }, '7')).rejects.toThrow('RADIUS update failed');
+    await expect(service.activate('1', { username: 'new.username', odp: '4', odpPort: 1 }, '7')).rejects.toThrow('RADIUS update failed');
     expect(network.disconnect).not.toHaveBeenCalled();
     expect(tx.radacct.updateMany).not.toHaveBeenCalled();
   });
+  it('rejects an occupied port before modifying credentials or RADIUS', async () => {
+    const { service, tx, radius } = setup();
+    tx.pppoeAccount.findFirst.mockResolvedValue({ id: 99n } as any);
+    await expect(service.activate('1', { username: 'new.username', odp: '4', odpPort: 1 }, '7')).rejects.toThrow('terpakai');
+    expect(tx.pppoeAccount.update).not.toHaveBeenCalled();
+    expect(radius.sync).not.toHaveBeenCalled();
+  });
+
 });

@@ -1,3 +1,4 @@
+import { assertOutputPort, lockOutputNodes } from './output-ports.js';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { MainCore, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
@@ -65,6 +66,7 @@ export class MainCoreService {
       orderBy: { namaTitik: 'asc' },
       take: 60,
     });
+    const accountPorts = await this.prisma.pppoeAccount.findMany({ where: { odp: { in: candidates.map(node => String(node.id)) }, odpPort: { not: null } }, select: { odp: true, odpPort: true } });
     const data = candidates
       .filter((parent) => parent.id.toString() === currentParentId || this.hasAvailableOutput(parent))
       .slice(0, 20)
@@ -78,10 +80,10 @@ export class MainCoreService {
           splitterRatio: spec.jenis_splitter ?? null,
           rasioRedamanPorts: spec.rasio_redaman_ports ?? {},
           outputCount: this.outputCount(parent),
-          usedPorts: parent.children
+          usedPorts: [...accountPorts.filter(account => account.odp === String(parent.id)).map(account => account.odpPort), ...parent.children
             .filter((child) => child.id.toString() !== currentNodeId)
             .map((child) => child.parentPortOut)
-            .filter(Boolean),
+            .filter(Boolean)],
         };
       });
     return serialize({ data });
@@ -89,9 +91,12 @@ export class MainCoreService {
 
   async create(type: string, dto: SaveMainCoreDto) {
     this.ensureType(type);
-    const data = await this.validateAndBuild(type, dto);
     try {
-      const node = await this.prisma.mainCore.create({ data, include: { parent: true } });
+      const node = await this.prisma.$transaction(async tx => {
+        if (dto.parentId) await lockOutputNodes(tx, [BigInt(dto.parentId)]);
+        const data = await this.validateAndBuild(type, dto, undefined, tx);
+        return tx.mainCore.create({ data, include: { parent: true } });
+      });
       return serialize({ message: `${LABELS[type]} berhasil ditambahkan.`, node: this.present(node) });
     } catch (error) { this.handleUnique(error, type); }
   }
@@ -99,9 +104,12 @@ export class MainCoreService {
   async update(type: string, id: string, dto: SaveMainCoreDto) {
     this.ensureType(type);
     const current = await this.find(id, type);
-    const data = await this.validateAndBuild(type, dto, current);
     try {
-      const node = await this.prisma.mainCore.update({ where: { id: current.id }, data, include: { parent: true } });
+      const node = await this.prisma.$transaction(async tx => {
+        await lockOutputNodes(tx, [current.id, ...(dto.parentId ? [BigInt(dto.parentId)] : [])]);
+        const data = await this.validateAndBuild(type, dto, current, tx);
+        return tx.mainCore.update({ where: { id: current.id }, data, include: { parent: true } });
+      });
       return serialize({ message: `${LABELS[type]} berhasil diperbarui.`, node: this.present(node) });
     } catch (error) { this.handleUnique(error, type); }
   }
@@ -115,6 +123,7 @@ export class MainCoreService {
     if (children.length) {
       throw new BadRequestException(`${LABELS[type]} tidak dapat dihapus karena masih terhubung dengan ${children.map((item) => item.namaTitik).join(', ')}.`);
     }
+    if (await this.prisma.pppoeAccount.findFirst({ where: { odp: String(node.id) }, select: { id: true } })) throw new BadRequestException('Titik masih digunakan pelanggan. Pindahkan pelanggan lebih dahulu.');
     await this.prisma.mainCore.delete({ where: { id: node.id } });
     return { message: `${LABELS[type]} berhasil dihapus.`, node: { namaTitik: node.namaTitik } };
   }
@@ -155,13 +164,13 @@ export class MainCoreService {
     return next.flatMap((child) => this.pathsToLeaves(child, children, nextSeen).map((path) => [node, ...path]));
   }
 
-  private async validateAndBuild(type: NodeType, dto: SaveMainCoreDto, current?: MainCore) {
+  private async validateAndBuild(type: NodeType, dto: SaveMainCoreDto, current?: MainCore, db: Prisma.TransactionClient = this.prisma) {
     let parent: (MainCore & { children: Pick<MainCore, 'id' | 'parentPortOut'>[] }) | null = null;
     let parentPortOut: number | null = null;
     if (type !== 'server') {
       if (!dto.parentId) throw new BadRequestException('Sumber jalur wajib dipilih.');
       if (current && dto.parentId === current.id.toString()) throw new BadRequestException('Data tidak dapat menjadi sumber untuk dirinya sendiri.');
-      parent = await this.prisma.mainCore.findFirst({
+      parent = await db.mainCore.findFirst({
         where: { id: BigInt(dto.parentId), deletedAt: null },
         include: { children: { where: { deletedAt: null }, select: { id: true, parentPortOut: true } } },
       });
@@ -174,6 +183,7 @@ export class MainCoreService {
         parentPortOut = Number(dto.parentPortOut ?? 0);
         if (parentPortOut < 1) throw new BadRequestException('Port sumber wajib dipilih.');
         if (parentPortOut > outputCount) throw new BadRequestException(`Port sumber hanya tersedia dari port 1 sampai ${outputCount}.`);
+        await assertOutputPort(db, parent, parentPortOut, undefined, current?.id);
         if (otherChildren.some((child) => child.parentPortOut === parentPortOut)) throw new BadRequestException(`Port ${parentPortOut} sudah digunakan.`);
       }
       if (!dto.alamat?.trim()) throw new BadRequestException('Alamat wajib diisi.');
@@ -206,6 +216,11 @@ export class MainCoreService {
         const connectorLoss = 2 * CONNECTOR_LOSS;
         redamanIn = Number((source - splitterLoss - cableLoss - connectorLoss - SAFETY_MARGIN).toFixed(2));
       }
+    }
+    if (current) {
+      const count = Number(String((spesifikasi as Spec | null)?.jenis_splitter ?? '').replace('1:', '')) || 0;
+      const account = await db.pppoeAccount.findFirst({ where: { odp: String(current.id), odpPort: { gt: count } }, select: { id: true } });
+      if (account) throw new BadRequestException('Splitter tidak dapat diperkecil karena port masih dipakai pelanggan.');
     }
     const now = new Date();
     const jakarta = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);

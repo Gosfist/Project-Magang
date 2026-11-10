@@ -61,6 +61,7 @@ export class PsbComponent implements OnInit, OnDestroy {
   selected = signal<PsbOrder | null>(null);
   odpPickerOpen = false;
   odpSearch = '';
+  activationPortsLoading = signal(false);
   activationViewOnly = false;
   private activationPhotoReference = '';
   form = {
@@ -76,6 +77,7 @@ export class PsbComponent implements OnInit, OnDestroy {
     username: '',
     password: '',
     odp: '',
+    odpPort: '',
     installationPhoto: '',
   };
   saving = signal(false);
@@ -200,10 +202,12 @@ export class PsbComponent implements OnInit, OnDestroy {
       username: item.username || item.customerId,
       password: viewOnly ? '' : (item.status === 'PROCESS' ? item.customerId : ''),
       odp: item.odp || '',
+      odpPort: item.odpPort ? String(item.odpPort) : '',
       installationPhoto: item.installationPhoto || '',
     };
     this.activationPhotoReference = item.installationPhoto || '';
     this.activationOpen.set(true);
+    this.refreshActivationPorts();
     if (item.installationPhoto) {
       this.api.getBlob(`/psb/${item.id}/installation-photo`).subscribe({
         next: (blob) => {
@@ -232,9 +236,26 @@ export class PsbComponent implements OnInit, OnDestroy {
     );
   }
   selectOdp(item: OdpOption) {
+    if (this.activation.odp !== item.id) this.activation.odpPort = '';
     this.activation.odp = item.id;
     this.odpSearch = '';
     this.odpPickerOpen = false;
+  }
+  refreshActivationPorts() {
+    this.activationPortsLoading.set(true);
+    this.api.get<{ data: OdpOption[] }>('/pppoe/odp/options').subscribe({
+      next: r => { this.odps.set(r.data); this.activationPortsLoading.set(false); },
+      error: e => { this.odps.set([]); this.activationPortsLoading.set(false); this.error(e); },
+    });
+  }
+  activationPorts() {
+    return this.odps().find(item => item.id === this.activation.odp)?.ports ?? [];
+  }
+  isActivationPortUsed(port: { used: boolean; accountId: string | null }) {
+    return port.used && (!port.accountId || port.accountId !== this.selected()?.pppoeAccountId);
+  }
+  validActivationPort() {
+    return !this.activationPortsLoading() && this.activationPorts().some(port => String(port.number) === this.activation.odpPort && !this.isActivationPortUsed(port));
   }
   selectedRouterName(): string {
     return this.odps().find(item => item.id === this.activation.odp)?.routerName || 'belum disetel';
@@ -252,6 +273,7 @@ export class PsbComponent implements OnInit, OnDestroy {
   }
   activate() {
     if (this.activationViewOnly || this.saving()) return;
+    if (!this.validActivationPort()) return this.toast.set({ message: 'Pilih port yang tersedia.', type: 'error' });
     if (!this.activation.installationPhoto && !this.activationPhotoReference)
       return this.toast.set({
         message: 'Foto instalasi wajib dipilih.',
@@ -260,6 +282,7 @@ export class PsbComponent implements OnInit, OnDestroy {
     this.saving.set(true);
     const payload = {
       ...this.activation,
+      odpPort: Number(this.activation.odpPort),
       password: this.activation.password || undefined,
       installationPhoto: this.activationPhotoReference && this.activation.installationPhoto && !this.activation.installationPhoto.startsWith('data:')
         ? this.activationPhotoReference
@@ -277,6 +300,7 @@ export class PsbComponent implements OnInit, OnDestroy {
         error: (e) => {
           this.saving.set(false);
           this.error(e);
+          if (/port/i.test(e?.error?.message || '')) { this.activationStep.set(1); this.refreshActivationPorts(); }
         },
       });
   }

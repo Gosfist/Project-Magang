@@ -1,3 +1,4 @@
+import { assertOutputPort, lockOutputNodes } from '../main-core/shared/output-ports.js';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -41,7 +42,7 @@ export class PsbService {
         include: {
           package: true,
           area: true,
-          account: { select: { username: true, routerNasId: true } },
+          account: { select: { username: true, routerNasId: true, odp: true, odpPort: true } },
           sales: { select: { id: true, name: true } },
           activatedBy: { select: { id: true, name: true } },
         },
@@ -53,6 +54,8 @@ export class PsbService {
     ]);
     const presence = await this.network.accountPresence(data.flatMap(item => item.account ? [item.account] : []));
     return serialize({ data: data.map(item => ({ ...item, customerId: this.customerId(item.customerNumber),
+      odp: item.account?.odp ?? item.odp,
+      odpPort: item.account?.odpPort ?? null,
       internetOnline: item.account ? presence.states.get(item.account.username) ?? null : false,
       package: { ...item.package, price: Number(item.package.price), costPrice: Number(item.package.costPrice) }, password: undefined })), meta: pageMeta(page, 10, total), warnings: presence.warnings });
   }
@@ -103,12 +106,14 @@ export class PsbService {
         throw new BadRequestException('Pesanan ini tidak dapat diedit.');
       }
       const result = await this.prisma.$transaction(async tx => {
+        await this.validateActivationPort(tx, odp.id, dto.odpPort, order.pppoeAccountId);
         const currentAccount = await tx.pppoeAccount.findUnique({ where: { id: order.pppoeAccountId! }, select: { username: true, routerNasId: true } });
         if (!currentAccount) throw new NotFoundException('Akun PPPoE tidak ditemukan.');
         const account = await tx.pppoeAccount.update({
           where: { id: order.pppoeAccountId! },
           data: {
             odp: dto.odp,
+            odpPort: dto.odpPort,
             routerNasId,
             ...(dto.username.trim() !== currentAccount?.username ? { username: dto.username.trim() } : {}),
             ...(dto.password ? { password: this.secrets.encrypt(dto.password) } : {}),
@@ -129,7 +134,7 @@ export class PsbService {
         });
         return { updated, currentAccount, reconnect: credentialsChanged || currentAccount.routerNasId !== routerNasId };
       }).catch(error => {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') throw new ConflictException('Username PPPoE sudah digunakan.');
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') throw new ConflictException(/odp.*port/i.test(String(error.meta?.target ?? '')) ? 'Port sudah terpakai. Pilih port lain.' : 'Username PPPoE sudah digunakan.');
         throw error;
       });
       const warnings = result.reconnect ? (await this.network.disconnect(result.currentAccount.username, result.currentAccount.routerNasId)).warnings : [];
@@ -137,6 +142,7 @@ export class PsbService {
     }
     try {
       const result = await this.prisma.$transaction(async tx => {
+        await this.validateActivationPort(tx, odp.id, dto.odpPort);
         const account = await tx.pppoeAccount.create({
           data: {
             customerNumber: order.customerNumber,
@@ -152,6 +158,7 @@ export class PsbService {
             billingDay: 1,
             discount: 0n,
             odp: dto.odp,
+            odpPort: dto.odpPort,
             routerNasId,
             areaId: order.areaId,
             isActive: true,
@@ -171,10 +178,17 @@ export class PsbService {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         const target = String(error.meta?.target ?? '');
-        throw new ConflictException(/phone/.test(target) ? 'Nomor telepon sudah digunakan pelanggan lain.' : /id_card_number|idCardNumber/.test(target) ? 'Nomor KTP sudah digunakan pelanggan lain.' : 'Username PPPoE sudah digunakan.');
+        throw new ConflictException(/odp.*port/i.test(target) ? 'Port sudah terpakai. Pilih port lain.' : /phone/.test(target) ? 'Nomor telepon sudah digunakan pelanggan lain.' : /id_card_number|idCardNumber/.test(target) ? 'Nomor KTP sudah digunakan pelanggan lain.' : 'Username PPPoE sudah digunakan.');
       }
       throw error;
     }
+  }
+
+  private async validateActivationPort(tx: Prisma.TransactionClient, nodeId: bigint, port: number, accountId?: bigint) {
+    await lockOutputNodes(tx, [nodeId]);
+    const node = await tx.mainCore.findFirst({ where: { id: nodeId, tipeTitik: { in: ['odc', 'odp'] }, deletedAt: null } });
+    if (!node) throw new BadRequestException('ODC / ODP tidak ditemukan.');
+    await assertOutputPort(tx, node, port, accountId);
   }
 
   async installationPhoto(id: string) {

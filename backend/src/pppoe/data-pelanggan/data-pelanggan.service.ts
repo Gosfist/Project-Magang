@@ -1,3 +1,4 @@
+import { assertOutputPort, lockOutputNodes, outputPortCount } from '../../main-core/shared/output-ports.js';
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
@@ -29,7 +30,8 @@ export class DataPelangganService {
   }
 
   async odpOptions() {
-    const nodes = await this.prisma.mainCore.findMany({ where: { tipeTitik: { in: ['server', 'rasio', 'odc', 'odp'] }, deletedAt: null }, select: { id: true, parentId: true, routerNasId: true, namaTitik: true, alamat: true, tipeTitik: true }, orderBy: { namaTitik: 'asc' } });
+    const nodes = await this.prisma.mainCore.findMany({ where: { tipeTitik: { in: ['server', 'rasio', 'odc', 'odp'] }, deletedAt: null }, select: { id: true, parentId: true, routerNasId: true, namaTitik: true, alamat: true, tipeTitik: true, spesifikasi: true, parentPortOut: true }, orderBy: { namaTitik: 'asc' } });
+    const accounts = await this.prisma.pppoeAccount.findMany({ where: { odpPort: { not: null } }, select: { id: true, odp: true, odpPort: true } });
     const byId = new Map(nodes.map(node => [node.id.toString(), node]));
     const routers = await this.prisma.nas.findMany({ where: { isActive: true }, select: { id: true, nasname: true, shortname: true } });
     const routerById = new Map(routers.map(router => [router.id, router.shortname || router.nasname]));
@@ -45,7 +47,13 @@ export class DataPelangganService {
         }
         current = current.parentId ? byId.get(current.parentId.toString()) : undefined;
       }
-      return { id: node.id, namaTitik: node.namaTitik, alamat: node.alamat, tipeTitik: node.tipeTitik, routerNasId, routerName: routerNasId ? routerById.get(routerNasId) : null };
+      const ports = Array.from({ length: outputPortCount(node.spesifikasi) }, (_, i) => {
+        const number = i + 1;
+        const account = accounts.find(item => item.odp === String(node.id) && item.odpPort === number);
+        const childUsed = nodes.some(child => child.parentId === node.id && child.parentPortOut === number);
+        return { number, used: childUsed || !!account, accountId: !childUsed && account ? account.id : null };
+      });
+      return { id: node.id, namaTitik: node.namaTitik, alamat: node.alamat, tipeTitik: node.tipeTitik, routerNasId, routerName: routerNasId ? routerById.get(routerNasId) : null, ports };
     });
     return serialize({ data });
   }
@@ -93,6 +101,7 @@ export class DataPelangganService {
     await this.findPackage(dto.pppoePackageId);
     try {
       const account = await this.createAccountTransaction(async (tx) => {
+        await this.validateAccountPort(tx, dto);
         const maximum = await tx.pppoeAccount.aggregate({ _max: { customerNumber: true } });
         const customerNumber = (maximum._max.customerNumber ?? 0n) + 1n;
         const item = await tx.pppoeAccount.create({ data: { ...this.accountData(dto, this.secrets.encrypt(dto.password!), true), customerNumber }, include: { package: { include: { ipPool: true } } } });
@@ -126,10 +135,11 @@ export class DataPelangganService {
     await this.findPackage(dto.pppoePackageId);
     try {
       const account = await this.prisma.$transaction(async (tx) => {
+        await this.validateAccountPort(tx, dto, current.id);
         if (dto.isActive === false) await tx.paymentPromise.updateMany({ where: { pppoeAccountId: current.id, status: { in: ['ACTIVE', 'EXPIRED'] } }, data: { status: 'CANCELLED', disconnectPending: false } });
         const item = await tx.pppoeAccount.update({
           where: { id: current.id },
-          data: this.accountData(dto, dto.password ? this.secrets.encrypt(dto.password) : current.password, false),
+          data: { ...this.accountData(dto, dto.password ? this.secrets.encrypt(dto.password) : current.password, false), odpPort: dto.odpPort !== undefined ? dto.odpPort : current.odp === dto.odp?.trim() ? current.odpPort : null },
           include: { package: { include: { ipPool: true } } },
         });
         await this.radius.sync(tx, item, current.username);
@@ -284,6 +294,14 @@ export class DataPelangganService {
     if (!odp) throw new BadRequestException('ODC / ODP tidak ditemukan. Pilih yang tersedia.');
   }
 
+  private async validateAccountPort(tx: Prisma.TransactionClient, dto: SaveAccountDto, accountId?: bigint) {
+    if (dto.odpPort == null) return;
+    await lockOutputNodes(tx, [BigInt(dto.odp)]);
+    const node = await tx.mainCore.findFirst({ where: { id: BigInt(dto.odp), tipeTitik: { in: ['odc', 'odp'] }, deletedAt: null } });
+    if (!node) throw new BadRequestException('ODC / ODP tidak ditemukan.');
+    await assertOutputPort(tx, node, dto.odpPort, accountId);
+  }
+
   private accountData(dto: SaveAccountDto, password: string, creating: boolean) {
     const now = new Date();
     return {
@@ -296,6 +314,7 @@ export class DataPelangganService {
       billingDay: creating ? 1 : dto.billingDay ?? 1,
       discount: creating ? 0n : BigInt(dto.discount || 0),
       odp: dto.odp?.trim() || null,
+      ...(dto.odpPort !== undefined ? { odpPort: dto.odpPort } : {}),
       routerNasId: dto.routerNasId ? Number(dto.routerNasId) : null,
       areaId: dto.areaId ? BigInt(dto.areaId) : null,
       expiresAt: !creating && dto.expiresAt ? new Date(`${dto.expiresAt}T00:00:00.000Z`) : null,
@@ -322,6 +341,7 @@ export class DataPelangganService {
   private unique(error: unknown, message: string): never {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       const target = String(error.meta?.target ?? '');
+      if (/odp.*port/i.test(target)) throw new ConflictException('Port sudah terpakai. Pilih port lain.');
       if (/id_card_number|idCardNumber/.test(target)) throw new ConflictException('Nomor KTP sudah digunakan pelanggan lain.');
       if (/phone/.test(target)) throw new ConflictException('Nomor telepon sudah digunakan pelanggan lain.');
     }

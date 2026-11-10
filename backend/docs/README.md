@@ -125,3 +125,5 @@ pada panduan terkait. Untuk alur instalasi, perbarui [sumber Markdown](instalasi
 `install.doc` bersamaan, pertahankan langkah langsung per perangkat, lalu render
 dan periksa setiap halaman Word sebelum commit/push. Perbaikan kode installer
 harus disertai langkah pemulihan untuk konfigurasi lama bila diperlukan.
+
+Panduan [port aktivasi PSB](port-aktivasi-psb.md) memuat pilihan port, penanganan port terpakai, dan pembaruan skema database lama sebelum deployment.

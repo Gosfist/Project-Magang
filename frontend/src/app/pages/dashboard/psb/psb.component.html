@@ -396,6 +396,19 @@
           }
         </div>
         <div>
+          <label class="label" for="activation-odp-port">Port ODC / ODP *</label>
+          <select id="activation-odp-port" class="input" [(ngModel)]="activation.odpPort" name="activationOdpPort"
+            [disabled]="activationViewOnly || !activation.odp || activationPortsLoading()">
+            <option value="">{{ activationPortsLoading() ? 'Memuat port...' : 'Pilih port' }}</option>
+            @for (port of activationPorts(); track port.number) {
+              <option [value]="port.number" [disabled]="isActivationPortUsed(port)">Port {{ port.number }}{{ isActivationPortUsed(port) ? ' (terpakai)' : '' }}</option>
+            }
+          </select>
+          @if (activation.odp && !activationPortsLoading() && !activationPorts().length) {
+            <p class="mt-1 text-xs text-slate-500">Port belum tersedia. Periksa jenis splitter ODC / ODP.</p>
+          }
+        </div>
+        <div>
           <label class="label" for="activation-username">Username PPPoE</label>
           <input id="activation-username" class="input" [readonly]="activationViewOnly" [(ngModel)]="activation.username" maxlength="64" />
         </div>
@@ -416,6 +429,7 @@
               !activation.username ||
               (selected()?.status === 'PROCESS' && !activation.password) ||
               !activation.odp ||
+              (!activationViewOnly && !validActivationPort()) ||
               selectedRouterName() === 'belum disetel'
             "
             (click)="activationStep.set(2)"

@@ -10,11 +10,12 @@ export type MainCoreNode = {
 };
 export type IpPool = { totalIps: number | null; usedIps: number | null; freeIps: number | null; routerNasId: number | null; routerName: string; ranges: string; id: string; name: string; networkStart: string; networkEnd: string };
 export type NasOption = { id: string; nasname: string; shortname: string | null; description: string };
-export type OdpOption = { id: string; namaTitik: string; alamat: string | null; tipeTitik: 'odc' | 'odp'; routerNasId: number | null; routerName: string | null };
+export type OdpPortOption = { number: number; used: boolean; accountId: string | null };
+export type OdpOption = { ports?: OdpPortOption[]; id: string; namaTitik: string; alamat: string | null; tipeTitik: 'odc' | 'odp'; routerNasId: number | null; routerName: string | null };
 export type Invoice = { id: string; pppoeAccountId: string; invoiceNumber: string; amount: number; baseAmount: number; discount: number; invoiceType: 'PRORATE' | 'MONTHLY'; status: 'PENDING' | 'PAID' | 'CANCELLED'; dueDate: string; paidAt: string | null; notes: string | null };
 
 export type PppoePackage = { id: string; name: string; title?: string | null; description?: string | null; downloadMbps: number; uploadMbps: number; price: number; costPrice: number; addressPool: string | null; ipPool: IpPool | null; validityDays: number; isActive: boolean; accountsCount?: number; rateLimit?: string; isPopular?: boolean };
-export type PppoeAccount = { id: string; pppoePackageId: string; customerName: string; username: string; phone: string | null; address: string | null; expiresAt: string | null; isActive: boolean; notes: string | null; idCardNumber: string | null; idCardPhoto: string | null; subscriptionType: string; billingDay: number; discount: number; odp: string | null; routerNasId: number | null; routerNas: NasOption | null; uptime?: string | null; package: PppoePackage; areaId?: string | null; area?: { id: string; name: string } | null };
+export type PppoeAccount = { odpPort?: number | null; id: string; pppoePackageId: string; customerName: string; username: string; phone: string | null; address: string | null; expiresAt: string | null; isActive: boolean; notes: string | null; idCardNumber: string | null; idCardPhoto: string | null; subscriptionType: string; billingDay: number; discount: number; odp: string | null; routerNasId: number | null; routerNas: NasOption | null; uptime?: string | null; package: PppoePackage; areaId?: string | null; area?: { id: string; name: string } | null };
 
 export type RouterItem = {
   internetCidr?: string;
@@ -157,6 +158,7 @@ export type FinanceSummary = {
 };
 
 export type PsbOrder = {
+  odpPort?: number | null; pppoeAccountId?: string | null;
   id: string; customerNumber: string; customerId: string; customerName: string; phone: string; address: string; idCardNumber?: string | null; idCardPhoto?: string | null;
   pppoePackageId: string; areaId?: string | null; status: 'PROCESS' | 'ACTIVATED' | 'COMPLETED'; username?: string | null; odp?: string | null; routerNasId?: number | null;
   internetOnline?: boolean | null; installationPhoto?: string | null; createdAt: string; completedAt?: string | null;

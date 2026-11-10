@@ -131,6 +131,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   packages = signal<PppoePackage[]>([]);
   nasOptions = signal<NasOption[]>([]);
   odpOptions = signal<OdpOption[]>([]);
+  odpPortsLoading = signal(false);
   areaOptions = signal<{ id: string; name: string; collectors?: { user?: { name: string } }[] }[]>([]);
   odpOpen = signal(false);
   odpSearch = '';
@@ -177,11 +178,25 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   }
 
   selectOdp(item: OdpOption): void {
+    if (String(this.form.odp) !== String(item.id)) this.form.odpPort = '';
     this.form.odp = String(item.id);
     this.odpOpen.set(false);
     document.getElementById('odp-picker')?.focus();
   }
 
+  selectedOdpPorts() {
+    return this.odpOptions().find(item => String(item.id) === String(this.form.odp))?.ports ?? [];
+  }
+  isOdpPortUsed(port: { used: boolean; accountId: string | null }) {
+    return port.used && (!port.accountId || port.accountId !== String(this.editing()?.id));
+  }
+  refreshOdpPorts(): void {
+    this.odpPortsLoading.set(true);
+    this.api.get<{ data: OdpOption[] }>('/pppoe/odp/options').subscribe({
+      next: r => { this.odpOptions.set(r.data); this.odpPortsLoading.set(false); },
+      error: e => { this.odpOptions.set([]); this.odpPortsLoading.set(false); this.formError.set(e.message); },
+    });
+  }
   closeOdpOnBlur(event: FocusEvent): void {
     if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) this.odpOpen.set(false);
   }
@@ -288,7 +303,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   form: any = {
     customerName: '', phone: '', idCardNumber: '', idCardPhoto: '', address: '',
     pppoePackageId: '',
-    username: '', password: '', routerNasId: '', odp: '', areaId: '',
+    username: '', password: '', routerNasId: '', odp: '', odpPort: '', areaId: '',
     expiresAt: '', isActive: true, notes: '',
   };
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -350,6 +365,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     this.clearPreview();
     this.formError.set('');
     this.editing.set(item ?? null);
+    this.refreshOdpPorts();
     this.step.set(1);
     this.editTab.set('customer');
     this.form = item
@@ -367,6 +383,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
           password: '',
           routerNasId: item.routerNasId ?? '',
           odp: item.odp ?? '',
+          odpPort: item.odpPort ? String(item.odpPort) : '',
           areaId: item.areaId ? String(item.areaId) : '',
           expiresAt: item.expiresAt?.slice(0, 10) ?? '',
           isActive: item.isActive,
@@ -375,7 +392,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
       : {
           customerName: '', phone: '', idCardNumber: '', idCardPhoto: '', address: '',
           pppoePackageId: '',
-          username: '', password: '', routerNasId: '', odp: '', areaId: '',
+          username: '', password: '', routerNasId: '', odp: '', odpPort: '', areaId: '',
           expiresAt: '', isActive: true, notes: '',
         };
     if (item && this.auth.isAdmin()) {
@@ -480,10 +497,16 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
       this.formError.set('Lengkapi nama pelanggan, nama pengguna, kata sandi minimal 6 karakter, dan pilih ODC / ODP.');
       return;
     }
+    if (this.form.odpPort && (this.odpPortsLoading() || !this.selectedOdpPorts().some(port => String(port.number) === String(this.form.odpPort) && !this.isOdpPortUsed(port)))) {
+      this.editTab.set('account');
+      this.formError.set('Pilih port yang tersedia.');
+      return;
+    }
     this.formError.set('');
     this.saving.set(true);
     const body = {
       ...this.form,
+      odpPort: this.form.odpPort ? Number(this.form.odpPort) : null,
       password: this.editing() && this.form.password === this.storedPassword ? undefined : this.form.password || undefined,
       expiresAt: this.form.expiresAt || undefined,
       ...(this.editing() ? { billingDay: Number(this.form.billingDay), discount: Number(this.form.discount) } : {}),

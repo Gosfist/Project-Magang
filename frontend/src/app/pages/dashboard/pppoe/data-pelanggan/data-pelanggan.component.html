@@ -661,6 +661,7 @@
                 </div>
               }
             </div>
+            <div class="grid min-w-0 grid-cols-1 items-start gap-4 sm:grid-cols-2">
             <div
               class="relative"
               (focusout)="closeOdpOnBlur($event)"
@@ -716,6 +717,16 @@
                   </div>
                 </div>
               }
+            </div>
+              <div class="min-w-0">
+                <label class="label" for="customer-odp-port">Port</label>
+                <select id="customer-odp-port" class="input" [(ngModel)]="form.odpPort" name="odpPort" [disabled]="!form.odp || odpPortsLoading()">
+                  <option value="">{{ odpPortsLoading() ? 'Memuat port...' : 'Pilih port' }}</option>
+                  @for (port of selectedOdpPorts(); track port.number) {
+                    <option [value]="port.number" [disabled]="isOdpPortUsed(port)">Port {{ port.number }}{{ isOdpPortUsed(port) ? ' (terpakai)' : '' }}</option>
+                  }
+                </select>
+              </div>
             </div>
           </div>
           @if (editing()) {

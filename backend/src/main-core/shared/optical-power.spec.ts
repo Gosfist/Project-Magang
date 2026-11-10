@@ -6,7 +6,9 @@ describe('Main Core optical power estimation', () => {
     const parent = { id: 1n, tipeTitik: parentType, redamanIn: source, children: [],
       spesifikasi: parentType === 'rasio' ? { jenis_splitter: '1:2', rasio_redaman_ports: ratioPorts } : { jenis_splitter: splitter } };
     const create = vi.fn().mockImplementation(async ({ data }) => ({ ...data, id: 2n, parent }));
-    const service = new MainCoreService({ mainCore: { findFirst: vi.fn().mockResolvedValue(parent), create } } as any);
+    const db = { $queryRaw: vi.fn().mockResolvedValue([]), pppoeAccount: { findFirst: vi.fn().mockResolvedValue(null) },
+      mainCore: { findFirst: vi.fn().mockImplementation(async ({ where }) => where.parentId ? null : parent), create } };
+    const service = new MainCoreService({ ...db, $transaction: (fn: (tx: typeof db) => Promise<unknown>) => fn(db) } as any);
     await service.create(type, { namaTitik: 'Fixture', parentId: '1', parentPortOut: port, jarakKabel: distance,
       alamat: 'Fixture', redamanIn: manual, spesifikasi: type === 'rasio' ? {} : { jenis_splitter: '1:2' } });
     return create.mock.calls[0][0].data.redamanIn;

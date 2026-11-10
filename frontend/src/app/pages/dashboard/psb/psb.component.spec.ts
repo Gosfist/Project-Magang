@@ -7,14 +7,17 @@ import { PsbOrder } from '../../../shared/models/types';
 
 describe('technician PPPoE activation', () => {
   function setup(status = 'PROCESS') {
+    const option = { id: '4', namaTitik: 'ODP Uji', tipeTitik: 'odp' as const, alamat: null, routerNasId: 3, routerName: 'Router Uji',
+      ports: [{ number: 1, used: false, accountId: null }, { number: 2, used: true, accountId: '9' }, { number: 3, used: true, accountId: null }] };
     const post = jasmine.createSpy('post').and.returnValue(of({ message: 'Saved' }));
     TestBed.configureTestingModule({ imports: [PsbComponent], providers: [
-      { provide: ApiService, useValue: { get: () => of({ data: [], meta: {} }), post } },
+      { provide: ApiService, useValue: { get: (path: string) => of({ data: path === '/pppoe/odp/options' ? [option] : [], meta: {} }), post } },
       { provide: AuthService, useValue: { hasRole: (...roles: string[]) => roles.includes('teknisi'), isSales: () => false } },
     ] });
     const fixture = TestBed.createComponent(PsbComponent);
     const component = fixture.componentInstance;
     component.openActivation({ id: '1', customerId: '000001', status } as PsbOrder);
+    component.odps.set([option]);
     fixture.detectChanges();
     return { fixture, component, post };
   }
@@ -28,6 +31,7 @@ describe('technician PPPoE activation', () => {
     username.value = 'andi.manual'; username.dispatchEvent(new Event('input'));
     password.value = 'manual123'; password.dispatchEvent(new Event('input'));
     component.activation.odp = '4';
+    component.activation.odpPort = '1';
     component.activation.installationPhoto = 'data:image/png;base64,test';
     component.activate();
     expect(post).toHaveBeenCalledWith('/psb/1/activate', jasmine.objectContaining({ username: 'andi.manual', password: 'manual123' }));
@@ -35,7 +39,7 @@ describe('technician PPPoE activation', () => {
 
   it('saves a username change on an activated account without resetting its password', () => {
     const { component, post } = setup('ACTIVATED');
-    component.activation = { username: 'new.username', password: '', odp: '4', installationPhoto: '/uploads/instalasi/1.png' };
+    component.activation = { username: 'new.username', password: '', odp: '4', odpPort: '1', installationPhoto: '/uploads/instalasi/1.png' };
     component.activate();
     expect(post).toHaveBeenCalledWith('/psb/1/activate', jasmine.objectContaining({ username: 'new.username', password: undefined }));
   });
@@ -51,4 +55,29 @@ describe('technician PPPoE activation', () => {
     expect(badges[2].className).toContain('bg-slate-100');
     expect(badges[2].getAttribute('title')).toContain('accounting RADIUS');
   });
+  it('shows every port and disables occupied outputs while keeping the current account port selectable', () => {
+    const { fixture, component, post } = setup();
+    const buttons = () => [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')];
+    buttons().find(button => button.textContent?.includes('Pilih ODC / ODP'))!.click();
+    fixture.detectChanges();
+    buttons().find(button => button.textContent?.includes('ODP Uji'))!.click();
+    fixture.detectChanges();
+    expect(component.activation.odp).toBe('4');
+    expect(component.activationPorts().length).toBe(3);
+    const select = fixture.nativeElement.querySelector('#activation-odp-port') as HTMLSelectElement;
+    expect([...select.options].map(option => option.textContent?.trim())).toEqual(['Pilih port', 'Port 1', 'Port 2 (terpakai)', 'Port 3 (terpakai)']);
+    expect(select.options[2].disabled).toBeTrue();
+    expect(select.options[3].disabled).toBeTrue();
+    component.activation.odpPort = '2';
+    component.activate();
+    expect(post).not.toHaveBeenCalled();
+    component.selected.set({ ...component.selected()!, pppoeAccountId: '9' });
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    expect(select.options[2].disabled).toBeFalse();
+    expect(select.options[3].disabled).toBeTrue();
+    component.selectOdp({ id: '5' } as any);
+    expect(component.activation.odpPort).toBe('');
+  });
+
 });

@@ -94,6 +94,7 @@ model PppoeAccount {
   billingDay       Int                @default(1) @map("billing_day") @db.UnsignedInt
   discount         BigInt             @default(0) @db.UnsignedBigInt
   odp              String?            @db.VarChar(100)
+  odpPort          Int?               @map("odp_port") @db.UnsignedInt
   routerNasId      Int?               @map("router_nas_id") @db.UnsignedInt
   expiresAt        DateTime?          @map("expires_at") @db.Date
   isActive         Boolean            @default(true) @map("is_active")
@@ -113,6 +114,7 @@ model PppoeAccount {
   @@index([pppoePackageId])
   @@index([routerNasId])
   @@index([areaId])
+  @@unique([odp, odpPort], map: "daftar_pelanggan_odp_port_key")
   @@map("daftar_pelanggan")
 }
 

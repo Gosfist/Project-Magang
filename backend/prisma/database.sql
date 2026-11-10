@@ -87,6 +87,7 @@ CREATE TABLE `daftar_pelanggan` (
     `billing_day` INTEGER UNSIGNED NOT NULL DEFAULT 1,
     `discount` BIGINT UNSIGNED NOT NULL DEFAULT 0,
     `odp` VARCHAR(100) NULL,
+    `odp_port` INTEGER UNSIGNED NULL,
     `router_nas_id` INTEGER UNSIGNED NULL,
     `expires_at` DATE NULL,
     `is_active` BOOLEAN NOT NULL DEFAULT true,
@@ -102,6 +103,7 @@ CREATE TABLE `daftar_pelanggan` (
     INDEX `daftar_pelanggan_pppoe_package_id_idx`(`pppoe_package_id`),
     INDEX `daftar_pelanggan_router_nas_id_idx`(`router_nas_id`),
     INDEX `daftar_pelanggan_area_id_idx`(`area_id`),
+    UNIQUE INDEX `daftar_pelanggan_odp_port_key`(`odp`, `odp_port`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 

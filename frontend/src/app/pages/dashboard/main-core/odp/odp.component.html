@@ -10,7 +10,7 @@
   </tbody></table></div>
   <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
   <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Data ODP'" (closeModal)="open.set(false)"><form (ngSubmit)="save()" class="space-y-4">
-      <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div class="grid grid-cols-1 items-end gap-4 lg:grid-cols-3">
         <div><label class="label">Nama ODP *</label><input class="input" required [(ngModel)]="form.namaTitik" name="namaTitik" /></div>
         <div>
           <label class="label">Kategori Main Core *</label>
@@ -46,11 +46,11 @@
     <div><label class="label">Jarak Kabel (meter)</label><input class="input" type="number" min="0" step="0.01" [(ngModel)]="form.jarakKabel" name="jarakKabel" (ngModelChange)="onDistanceChange()" /></div>
     <div><label class="label">Jenis Splitter *</label><select class="input" [(ngModel)]="form.splitter" name="splitter"><option value="1:2">1:2</option><option value="1:4">1:4</option><option value="1:8">1:8</option></select></div>
     <div class="grid min-w-0 gap-x-3" [class.grid-cols-2]="selectedParent() && selectedParent()!.type !== 'server'">
-      <label class="label" for="odp-input-power">Daya masuk (dBm)</label>
+      <label class="label whitespace-nowrap" for="odp-input-power" title="Daya masuk (dBm)">Daya masuk</label>
       @if (selectedParent() && selectedParent()!.type !== 'server') {
         <label class="label" for="odp-source-port">Port Sumber *</label>
       }
-      <input id="odp-input-power" class="input min-w-0" type="number" step="0.01" [(ngModel)]="form.redamanIn" name="redamanIn" />
+      <input id="odp-input-power" aria-label="Daya masuk (dBm)" class="input min-w-0" type="number" step="0.01" [(ngModel)]="form.redamanIn" name="redamanIn" />
       @if (selectedParent() && selectedParent()!.type !== 'server') {
         <select id="odp-source-port" required class="input min-w-0" [(ngModel)]="form.parentPortOut" name="parentPortOut" (ngModelChange)="onPortSelect()"><option value="">Pilih port</option>@for (port of availablePorts(); track port) { <option [value]="port">Port {{ port }}</option> }</select>
       }

@@ -14,6 +14,7 @@ export class SaveAccountDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(31) billingDay?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) discount?: number;
   @IsString() @Matches(/^[1-9]\d*$/, { message: 'ODC / ODP wajib dipilih.' }) @MaxLength(100) odp: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) odpPort?: number | null;
   @IsOptional() @IsString() routerNasId?: string;
   @IsOptional() @IsIn(['none', 'prorate', 'full']) firstInvoice?: string;
   @IsOptional() @IsDateString() expiresAt?: string;
