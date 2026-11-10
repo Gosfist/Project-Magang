@@ -23,20 +23,17 @@ describe('Package popular checkbox', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     const title = fixture.nativeElement.querySelector('input[name="title"]') as HTMLInputElement;
-    const description = fixture.nativeElement.querySelector('textarea[name="description"]') as HTMLTextAreaElement;
+    expect(fixture.nativeElement.querySelector('[name="description"]')).toBeNull();
     expect(title.value).toBe(item.title!);
-    expect(description.value).toBe(item.description!);
     title.value = 'Fiber Keluarga';
     title.dispatchEvent(new Event('input'));
-    description.value = 'Nyaman untuk menonton video dan bekerja.';
-    description.dispatchEvent(new Event('input'));
     const checkbox = fixture.nativeElement.querySelector('input[name="isPopular"]') as HTMLInputElement;
     expect(checkbox.checked).toBeTrue();
     checkbox.click();
     fixture.detectChanges();
     fixture.componentInstance.save();
     expect(api.patch).toHaveBeenCalledWith('/pppoe/packages/2', jasmine.objectContaining({
-      isPopular: false, name: 'Paket', title: 'Fiber Keluarga', description: 'Nyaman untuk menonton video dan bekerja.',
+      isPopular: false, name: 'Paket', title: 'Fiber Keluarga',
     }));
     fixture.componentInstance.show({ ...item, isPopular: false });
     fixture.detectChanges();
@@ -47,6 +44,5 @@ describe('Package popular checkbox', () => {
     expect(api.patch).toHaveBeenCalledWith('/pppoe/packages/2', jasmine.objectContaining({ isPopular: true }));
     fixture.componentInstance.show();
     expect(fixture.componentInstance.form.title).toBe('');
-    expect(fixture.componentInstance.form.description).toBe('');
   });
 });

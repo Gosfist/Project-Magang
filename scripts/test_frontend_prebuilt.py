@@ -80,6 +80,30 @@ class FrontendPrebuiltTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'perubahan lokal'):
             MODULE.deploy(self.root)
 
+    def test_local_build_tree_matches_later_commit_without_changing_index(self):
+        (self.root / 'frontend/source.txt').write_text('changed before build')
+        (self.root / 'frontend/added.txt').write_text('new source')
+        subprocess.run(['git', 'add', 'frontend/source.txt'], cwd=self.root, check=True, capture_output=True)
+        (self.root / 'frontend/source.txt').write_text('latest unstaged source')
+        index = (self.root / '.git/index').read_bytes()
+        module = (ROOT / 'scripts/frontend-source-tree.mjs').as_uri()
+        script = f"import {{ sourceTree }} from {json.dumps(module)}; console.log(sourceTree(process.argv[1]));"
+        tree = subprocess.check_output(['node', '--input-type=module', '-e', script, str(self.root)], text=True).strip()
+        self.assertEqual((self.root / '.git/index').read_bytes(), index)
+        self.artifact(tree=tree)
+        for args in [('add', 'frontend'), ('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-m', 'source and build')]:
+            subprocess.run(['git', *args], cwd=self.root, check=True, capture_output=True)
+        self.assertEqual(MODULE.source_tree(self.root), tree)
+        MODULE.deploy(self.root, check_only=True)
+        (self.root / 'frontend/added.txt').unlink()
+        renamed = self.root / 'frontend/renamed.txt'
+        (self.root / 'frontend/source.txt').rename(renamed)
+        next_tree = subprocess.check_output(['node', '--input-type=module', '-e', script, str(self.root)], text=True).strip()
+        self.assertNotEqual(next_tree, tree)
+        subprocess.run(['git', 'add', '-A'], cwd=self.root, check=True, capture_output=True)
+        subprocess.run(['git', '-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', 'commit', '-m', 'rename and delete'], cwd=self.root, check=True, capture_output=True)
+        self.assertEqual(MODULE.source_tree(self.root), next_tree)
+
     def test_backend_only_commit_does_not_invalidate_frontend_package(self):
         self.artifact()
         (self.root / 'backend.txt').write_text('backend-only change')

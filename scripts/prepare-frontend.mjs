@@ -1,4 +1,5 @@
 // Build on the developer's machine; commit releases/frontend.tar.gz to Git.
+import { sourceTree } from './frontend-source-tree.mjs';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
@@ -12,12 +13,6 @@ function run(command, args, cwd = root, capture = false) {
   const result = spawnSync(command, args, { cwd, stdio: capture ? 'pipe' : 'inherit', encoding: 'utf8', env: process.env });
   if (result.error || result.status !== 0) throw new Error(result.error?.message || result.stderr?.trim() || `${command} gagal (${result.status}).`);
   return result.stdout?.trim();
-}
-function sourceTree() {
-  if (run('git', ['status', '--porcelain', '--untracked-files=all', '--', 'frontend'], root, true)) {
-    throw new Error('Simpan perubahan frontend ke commit dahulu, lalu ulangi npm run preparefe.');
-  }
-  return run('git', ['rev-parse', 'HEAD:frontend'], root, true);
 }
 function hashes(directory, prefix = '') {
   const files = {};
@@ -38,7 +33,7 @@ let pending;
 try {
   if (process.argv.length !== 2) throw new Error('Jalankan: npm run preparefe');
   if (Number(process.versions.node.split('.')[0]) !== 26) throw new Error('Gunakan Node.js 26 pada laptop.');
-  const tree = sourceTree();
+  const tree = sourceTree(root);
   run('tar', ['--version'], root, true);
   console.log('[UNZANET] Install dependency frontend di laptop');
   if (process.platform === 'win32') run(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', 'npm ci'], frontend);
@@ -46,7 +41,7 @@ try {
   console.log('[UNZANET] Build produksi di laptop');
   run(process.execPath, [join(frontend, 'node_modules/@angular/cli/bin/ng.js'),
     'build', '--configuration=production', '--delete-output-path=true'], frontend);
-  if (sourceTree() !== tree) throw new Error('Kode frontend berubah saat build; ulangi setelah commit.');
+  if (sourceTree(root) !== tree) throw new Error('Kode frontend berubah saat build; ulangi npm run preparefe.');
   const browser = join(frontend, 'dist/frontend/browser');
   if (!existsSync(join(browser, 'index.html'))) throw new Error('Hasil build tidak memiliki index.html.');
   staging = mkdtempSync(join(tmpdir(), 'unzanet-frontend-'));
@@ -57,7 +52,7 @@ try {
   run('tar', ['-czf', pending, '-C', staging, 'manifest.json', 'browser']);
   renameSync(pending, join(root, 'releases/frontend.tar.gz'));
   console.log('[UNZANET] Paket siap di-commit: releases/frontend.tar.gz');
-  console.log('[UNZANET] Commit dan push paket ini ke GitHub. Server mengambilnya melalui git pull saat npm run install atau npm run updatefe.');
+  console.log('[UNZANET] Commit dan push kode beserta paket ini ke GitHub sekaligus. Server mengambilnya melalui git pull saat npm run install atau npm run updatefe.');
 } catch (error) {
   console.error(`[UNZANET] ${error.message}`);
   process.exitCode = 1;

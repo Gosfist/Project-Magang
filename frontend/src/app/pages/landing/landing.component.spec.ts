@@ -24,7 +24,7 @@ describe('Landing pricing cards', () => {
     expect(cards.length).toBe(4);
     cards.forEach((card, index) => {
       expect(card.querySelector('h3')?.textContent).toContain(packages[index].title);
-      expect(card.querySelector('p')?.textContent).toContain(packages[index].description);
+      expect(card.textContent).not.toContain(packages[index].description);
       expect(card.textContent).toContain(packages[index].price.toLocaleString('id-ID'));
       expect([...card.querySelectorAll('dd')].map(dd => dd.textContent?.trim())).toEqual([
         `${packages[index].downloadMbps} Mbps`, 'Tanpa batas', 'Teknis responsif',
@@ -101,10 +101,10 @@ describe('Landing pricing cards', () => {
     });
   }
 
-  it('keeps existing packages readable before a title and description are filled', () => {
+  it('keeps existing packages readable before a title is filled', () => {
     const { element } = setup([{ ...packages[0], title: '', description: '' }]);
     expect(element.querySelector('.package-card h3')?.textContent).toContain('Paket 1');
-    expect(element.querySelector('.package-card p')?.textContent).toContain('Internet fiber optik untuk kebutuhan harian Anda.');
+    expect(element.querySelector('.package-card p')).toBeNull();
   });
 
   it('shows an empty state without example prices', () => {

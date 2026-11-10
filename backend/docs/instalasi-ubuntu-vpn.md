@@ -60,7 +60,7 @@ ssh USER_VPS@IP_VPS
 
 ## 2 Siapkan frontend di Windows
 
-1. Gunakan folder project Windows yang sudah ada dan Node.js 26 LTS. Simpan perubahan kode frontend ke commit dahulu.
+1. Gunakan folder project Windows yang sudah ada dan Node.js 26 LTS. Perubahan lokal dapat langsung dibuild tanpa commit atau push terlebih dahulu.
 2. Jika frontend berubah atau paket belum tersedia, jalankan pada PowerShell Windows:
 
 ~~~powershell
@@ -335,7 +335,7 @@ sudo systemctl restart accel-ppp
 
 ### 9.5 Memasang template MikroTik sederhana tanpa impor CA
 
-1. Untuk script yang selalu add tanpa centang konfirmasi, siapkan backend dan frontend terbaru bersamaan. Commit perubahan frontend di laptop, jalankan npm.cmd run preparefe, lalu commit/push kode dan releases/frontend.tar.gz. Jalankan npm run update pada SSH VPS. Jangan membangun Angular di VPS.
+1. Untuk script yang selalu add tanpa centang konfirmasi, siapkan backend dan frontend terbaru bersamaan. Jalankan npm.cmd run preparefe dari perubahan lokal di laptop, lalu commit/push kode dan releases/frontend.tar.gz sekaligus. Jalankan npm run update pada SSH VPS. Jangan membangun Angular di VPS.
 2. Buka Router > Router / NAS > Script setelah menyimpan prefix. Klik Salin Script lalu paste di Terminal Winbox. Script selalu add meskipun NAS pernah disimpan, diedit, atau konfigurasi perangkat terhapus. Tidak ada langkah konfirmasi tambahan. Periksa rule isolir sebelum accept/FastTrack. Lihat tahap 7.
 3. Script tidak memeriksa atau membersihkan duplikat. Rule/route/RADIUS dapat ditambahkan kembali; nama pool/profil/interface yang sudah ada dapat ditolak RouterOS. Perubahan konfigurasi lama dilakukan melalui Winbox bila diperlukan. Simpan NAS tetap langsung memperbarui pool yang dipakai RADIUS.
 4. Periksa tunnel dan ping sesuai tahap 8. Tidak ada impor CA atau verifikasi identitas server pada mode sederhana; sertifikat TLS di VPS tetap diperlukan. Jangan menyatakan PPPoE berhasil sebelum dial dan accounting benar-benar diuji.
@@ -344,7 +344,7 @@ sudo systemctl restart accel-ppp
 
 1. Kolom Status VPN memakai hasil accel-cmd show sessions. Hanya sesi bertipe sstp dengan state active dan username/IP cocok yang tampil Online. Akun dibuat atau pendaftaran NAS aktif belum membuktikan VPN tersambung.
 2. Jika hasil show sessions hanya judul tabel tanpa baris sesi, status akun VPN terkelola adalah Offline. Tunggu sekitar 25 detik agar pengumpul sesi dan pemuatan ulang web selesai. Status VPN tidak membuktikan PPPoE pelanggan sudah berfungsi.
-3. Setelah kode dan paket frontend terbaru yang cocok di-push ke GitHub, jalankan npm run update pada VPS. Pembaruan backend memasang timer pengumpul sesi otomatis. Paket frontend tetap dibangun di laptop dengan npm.cmd run preparefe setelah perubahan frontend di-commit, kemudian commit/push paketnya.
+3. Setelah kode dan paket frontend terbaru yang cocok di-push ke GitHub, jalankan npm run update pada VPS. Pembaruan backend memasang timer pengumpul sesi otomatis. Paket frontend tetap dibangun di laptop dengan npm.cmd run preparefe langsung dari perubahan lokal, kemudian commit/push kode dan paketnya sekaligus.
 4. Jika tampil Tidak diketahui, jalankan pada SSH VPS:
 
 ~~~bash
