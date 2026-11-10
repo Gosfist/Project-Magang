@@ -140,7 +140,7 @@ export class OdpComponent implements OnInit, OnDestroy {
   autoRedaman(): string {
     const parent = this.selectedParent();
     if (!parent || this.form.jarakKabel === '') return this.form.redamanIn;
-    return estimateInputPower(parent, Number(this.form.jarakKabel), this.form.parentPortOut, 'odp');
+    return estimateInputPower(parent, Number(this.form.jarakKabel), this.form.parentPortOut);
   }
 
   formatDate(date: string): string { return new Date(date).toLocaleDateString('id-ID'); }

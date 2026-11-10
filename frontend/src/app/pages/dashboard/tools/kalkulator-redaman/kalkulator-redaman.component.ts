@@ -1,5 +1,6 @@
 import { Component, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { OPTICAL_DEFAULTS } from '../../../../shared/optical-power';
 
 const ratios: Record<string, number[]> = {
   '70:30': [70, 30],
@@ -19,9 +20,9 @@ export class KalkulatorRedamanComponent {
   distance = signal<number | null>(null);
   splitter = signal('1:2');
   path = signal('70');
-  connectors = signal<number | null>(2);
-  connectorLoss = signal<number | null>(0.5);
-  cablePerKm = signal<number | null>(0.35);
+  connectors = signal<number | null>(OPTICAL_DEFAULTS.connectors);
+  connectorLoss = signal<number | null>(OPTICAL_DEFAULTS.connectorLoss);
+  cablePerKm = signal<number | null>(OPTICAL_DEFAULTS.cablePerKm);
 
   readonly splitterOptions = ['1:2', '1:4', '1:8', '70:30', '80:20', '90:10'];
 
@@ -47,7 +48,7 @@ export class KalkulatorRedamanComponent {
     const source = this.source();
     const totalLoss = splitterLoss + cable + connector;
     const power = source === null || !Number.isFinite(source) ? NaN : source - totalLoss;
-    const redaman = power - 1;
+    const redaman = power - OPTICAL_DEFAULTS.safetyMargin;
 
     return { splitterLoss, cable, connector, totalLoss, power, redaman };
   });

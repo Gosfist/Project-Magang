@@ -23,8 +23,10 @@ dua kolom mulai 640px, dan tiga kolom mulai 768px. Paket berikutnya turun ke bar
 baru tanpa carousel atau gulir horizontal.
 
 Panduan [Kalkulator Redaman](kalkulator-redaman.md) memuat input, rumus dan contoh
-hasil. Perhitungan frontend kini diperbarui setiap input/splitter/jalur berubah;
-hasil kosong tidak lagi tersimpan dari render awal. Daya sumber/masuk memakai dBm (semakin negatif semakin lemah), sedangkan loss memakai dB. Panduan yang sama mencakup Server, Rasio, ODC, ODP, margin per segmen, sumber kosong, dan pembulatan frontend/backend.
+perhitungan ODC → ODP, ODP → ODP, pembagian port Rasio, contoh rantai, batas
+perhitungan otomatis, serta penjelasan untuk presentasi/sidang.
+Perhitungan frontend kini diperbarui setiap input/splitter/jalur berubah;
+hasil kosong tidak lagi tersimpan dari render awal. Daya sumber/masuk memakai dBm (semakin negatif semakin lemah), sedangkan loss memakai dB. Panduan yang sama mencakup Server, Rasio, ODC, ODP, margin per segmen, sumber kosong, dan pembulatan frontend/backend. Semua segmen menuju Rasio/ODC/ODP memakai 2 konektor masing-masing 0,5 dB dan kabel 0,35 dB/km, sama dengan nilai awal kalkulator; daya masuk belum dikurangi splitter tujuan.
 
 Tambah langsung di PPPoE > Data Pelanggan kini dua tahap: Data Pelanggan termasuk
 pilih Layanan, lalu Data Akun PPPoE. Pengaturan pembayaran manual dihapus dari

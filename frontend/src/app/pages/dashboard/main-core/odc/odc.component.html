@@ -1,5 +1,5 @@
 <div class="space-y-4">
-  <p class="text-sm text-slate-500">Daya optik (dBm): nilai yang semakin negatif berarti daya semakin lemah. Estimasi otomatis memakai margin 1 dB per segmen.</p>
+  <p class="text-sm text-slate-500">Daya optik (dBm): nilai yang semakin negatif berarti daya semakin lemah. Estimasi tiap segmen memakai 2 konektor masing-masing 0,5 dB, kabel 0,35 dB/km, dan margin 1 dB. Daya masuk dihitung sebelum splitter titik ini.</p>
   <div class="card flex flex-col gap-3 p-4 sm:flex-row">
     <div class="relative flex-1"><svg lucideSearch [size]="18" class="absolute left-3 top-3 text-slate-400"></svg><input class="input input-with-icon" placeholder="Cari ODC..." [(ngModel)]="search" (ngModelChange)="page.set(1); load()" /></div>
     <button class="btn-primary" (click)="show()"><svg lucidePlus [size]="18"></svg>Tambah ODC</button>

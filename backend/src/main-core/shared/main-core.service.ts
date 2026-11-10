@@ -203,7 +203,7 @@ export class MainCoreService {
       const splitterLoss = this.splitterLoss(parent, parentPortOut);
       if (splitterLoss !== null) {
         const cableLoss = (dto.jarakKabel / 1000) * CABLE_LOSS;
-        const connectorLoss = type === 'odp' && parent.tipeTitik === 'odc' ? 2 * CONNECTOR_LOSS : 0;
+        const connectorLoss = 2 * CONNECTOR_LOSS;
         redamanIn = Number((source - splitterLoss - cableLoss - connectorLoss - SAFETY_MARGIN).toFixed(2));
       }
     }
