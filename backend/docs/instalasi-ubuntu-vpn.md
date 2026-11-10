@@ -304,7 +304,7 @@ sudo systemctl restart accel-ppp
 ~~~
 
 9. Restart SSTP menyambung ulang tunnel router. Jadwalkan perawatan dan periksa sesi/accounting sesudahnya. HTTPS website diperbarui terpisah melalui Certbot.
-10. Backup database, uploads, secret instalasi, dan CA/private key secara privat. npm run update hanya memperbarui kode, tanpa memigrasikan database lama.
+10. Backup database, uploads, secret instalasi, dan CA/private key secara privat. npm run update hanya memperbarui kode, tanpa memigrasikan database lama. Updater memeriksa kolom dan index database sebelum restart backend. Jika skema tidak sesuai atau build gagal, backend lama tetap berjalan. Perbaiki skema sesuai panduan lalu ulangi update.
 
 ### 9.3 Menu tidak berpindah dan file halaman gagal dimuat
 
@@ -406,17 +406,17 @@ sudo systemctl restart unzanet-backend.service
 /ip firewall connection print count-only where fasttrack=yes
 ~~~
 
-2. Periksa queue dinamis pelanggan: max-limit harus sesuai paket dan bytes/packets harus bertambah. Jika queue induk lebih dahulu menangkap subnet tetapi queue pelanggan parent=none, atur Parent Queue profil internet ke induk yang benar. Nama CLIENT di bawah hanya untuk router yang sudah memiliki induk CLIENT dengan target mencakup subnet pelanggan.
-3. Kasus terverifikasi wisnu pada NAS 1: SQL dan queue sudah 20M/20M, tanpa FastTrack, tetapi counter nol. Jalankan pada Terminal Winbox router tersebut; baris kedua memutus hanya wisnu agar modem login ulang:
+2. Periksa queue dinamis pelanggan: max-limit harus sesuai paket dan bytes/packets harus bertambah. Jika queue umum lebih dahulu menangkap subnet pelanggan, tempatkan queue pelanggan di atasnya. Gunakan konfigurasi profil mandiri first/none berikut jika tidak memakai parent agregat.
+3. Contoh berikut untuk profil NAS 1 dan pelanggan 000001; sesuaikan nama profil/akun. Baris kedua memutus pelanggan itu sesaat untuk login ulang:
 
 ~~~routeros
-/ppp profile set [find where name="UNZANET-INTERNET-1"] parent-queue=CLIENT
-/ppp active remove [find where name="wisnu" service=pppoe]
+/ppp profile set [find where name="UNZANET-INTERNET-1"] parent-queue=none insert-queue-before=first
+/ppp active remove [find where name="000001" service=pppoe]
 ~~~
 
-4. Ulangi speedtest dan perintah statistik. Pengguna mengonfirmasi berhasil: queue berubah menjadi parent=CLIENT, counter bertambah, rate download 19.1 Mbps untuk paket 20 Mbps. Penyebabnya susunan queue router, bukan limit dari RADIUS atau API MikroTik.
-5. Pertahankan Parent Queue pada profil tersebut untuk login selanjutnya. Jangan menambahkan CLIENT ke semua script NAS; router lain dapat memakai nama/struktur berbeda. Panduan rinci ada di backend/docs/pppoe-bandwidth.md.
-6. Uji lagi setelah isolir dan aktivasi. Pada output lanjutan wisnu, SQL sudah 20M/20M dan profil Internet parent-queue=CLIENT, tetapi queue sesi masih parent=none dengan counter nol. Putus sesi wisnu untuk login ulang membuat parent=CLIENT dan download 19.9 Mbps. Perbaikan backend kini meminta Disconnect setelah status di Edit Pelanggan berubah nonaktif menjadi aktif; sebelumnya jalur ini belum meminta Disconnect langsung. Deploy backend terbaru sebelum menguji alur otomatis. Jika Disconnect mengembalikan warning, periksa jalur NAS dan coba Putus Sesi kembali.
+4. Ulangi speedtest dan perintah statistik tanpa filter urutan. Queue pelanggan harus berada di atas queue umum, max-limit sesuai paket, dan counter bertambah. Pengguna mengonfirmasi paket 20 Mbps kembali terbatasi setelah urutan diperbaiki; tetap uji ulang setelah perubahan profil.
+5. Jangan menghapus queue yang masih menjadi referensi parent-queue atau insert-queue-before pada profil PPP. Nilai parent-queue=none dan insert-queue-before=first menghindari ketergantungan nama CLIENT. Panduan rinci ada di backend/docs/pppoe-bandwidth.md.
+6. Jika login berhasil lalu sesi langsung terminating dengan unknown next id atau could not add queue, periksa referensi queue pada profil. Pada kasus 11 November, profil masih menunjuk CLIENT yang sudah dihapus. Ubah ke first/none seperti langkah 3, lalu periksa sesi tetap aktif dan uptime bertambah. Ini berbeda dari hitungan uptime web yang bersumber dari pembaruan accounting.
 7. Setelah menghapus/membuat ulang profil, periksa default-profile pada PPPoE Server. Output router tersebut masih *6. Hanya untuk server PPPoE-UNZANET pada ether1 di router tersebut, jalankan pada Terminal Winbox:
 
 ~~~routeros

@@ -1,4 +1,4 @@
-import { assertOutputPort, lockOutputNodes } from './output-ports.js';
+import { assertOutputPort, lockOutputNodes, outputPortCount } from './output-ports.js';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { MainCore, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
@@ -68,7 +68,7 @@ export class MainCoreService {
     });
     const accountPorts = await this.prisma.pppoeAccount.findMany({ where: { odp: { in: candidates.map(node => String(node.id)) }, odpPort: { not: null } }, select: { odp: true, odpPort: true } });
     const data = candidates
-      .filter((parent) => parent.id.toString() === currentParentId || this.hasAvailableOutput(parent))
+      .filter((parent) => parent.id.toString() === currentParentId || (parent.tipeTitik === 'server' ? parent.children.length === 0 : new Set([...parent.children.map(child => child.parentPortOut), ...accountPorts.filter(account => account.odp === String(parent.id)).map(account => account.odpPort)].filter(Boolean)).size < this.outputCount(parent)))
       .slice(0, 20)
       .map((parent) => {
         const spec = this.spec(parent);
@@ -117,14 +117,17 @@ export class MainCoreService {
   async remove(type: string, id: string) {
     this.ensureType(type);
     const node = await this.find(id, type);
-    const children = await this.prisma.mainCore.findMany({
-      where: { parentId: node.id, deletedAt: null }, select: { namaTitik: true }, orderBy: { namaTitik: 'asc' },
+    await this.prisma.$transaction(async tx => {
+      await lockOutputNodes(tx, [node.id]);
+      const children = await tx.mainCore.findMany({
+        where: { parentId: node.id, deletedAt: null }, select: { namaTitik: true }, orderBy: { namaTitik: 'asc' },
+      });
+      if (children.length) {
+        throw new BadRequestException(`${LABELS[type]} tidak dapat dihapus karena masih terhubung dengan ${children.map((item) => item.namaTitik).join(', ')}.`);
+      }
+      if (await tx.pppoeAccount.findFirst({ where: { odp: String(node.id) }, select: { id: true } })) throw new BadRequestException('Titik masih digunakan pelanggan. Pindahkan pelanggan lebih dahulu.');
+      await tx.mainCore.delete({ where: { id: node.id } });
     });
-    if (children.length) {
-      throw new BadRequestException(`${LABELS[type]} tidak dapat dihapus karena masih terhubung dengan ${children.map((item) => item.namaTitik).join(', ')}.`);
-    }
-    if (await this.prisma.pppoeAccount.findFirst({ where: { odp: String(node.id) }, select: { id: true } })) throw new BadRequestException('Titik masih digunakan pelanggan. Pindahkan pelanggan lebih dahulu.');
-    await this.prisma.mainCore.delete({ where: { id: node.id } });
     return { message: `${LABELS[type]} berhasil dihapus.`, node: { namaTitik: node.namaTitik } };
   }
 
@@ -175,6 +178,17 @@ export class MainCoreService {
         include: { children: { where: { deletedAt: null }, select: { id: true, parentPortOut: true } } },
       });
       if (!parent) throw new BadRequestException('Sumber jalur tidak ditemukan.');
+      if (current) {
+        const nodes = await db.mainCore.findMany({ where: { deletedAt: null }, select: { id: true, parentId: true } });
+        const byId = new Map(nodes.map(node => [node.id, node.parentId]));
+        const visited = new Set<bigint>();
+        let ancestor: bigint | null | undefined = parent.id;
+        while (ancestor != null) {
+          if (ancestor === current.id || visited.has(ancestor)) throw new BadRequestException('Sumber jalur tidak boleh menjadi turunan sendiri atau membentuk siklus.');
+          visited.add(ancestor);
+          ancestor = byId.get(ancestor);
+        }
+      }
       const otherChildren = parent.children.filter((child) => child.id !== current?.id);
       if (parent.tipeTitik === 'server') {
         if (otherChildren.length) throw new BadRequestException('Sumber jalur server sudah tersambung ke data lain.');
@@ -218,7 +232,9 @@ export class MainCoreService {
       }
     }
     if (current) {
-      const count = Number(String((spesifikasi as Spec | null)?.jenis_splitter ?? '').replace('1:', '')) || 0;
+      const count = outputPortCount(spesifikasi);
+      const child = await db.mainCore.findFirst({ where: { parentId: current.id, parentPortOut: { gt: count }, deletedAt: null }, select: { id: true } });
+      if (child) throw new BadRequestException('Splitter tidak dapat diperkecil karena port masih dipakai jalur Main Core.');
       const account = await db.pppoeAccount.findFirst({ where: { odp: String(current.id), odpPort: { gt: count } }, select: { id: true } });
       if (account) throw new BadRequestException('Splitter tidak dapat diperkecil karena port masih dipakai pelanggan.');
     }
@@ -263,10 +279,6 @@ export class MainCoreService {
     }
     const count = this.outputCount(parent);
     return count > 0 ? 10 * Math.log10(count) : null;
-  }
-
-  private hasAvailableOutput(parent: MainCore & { children: unknown[] }) {
-    return parent.tipeTitik === 'server' ? parent.children.length === 0 : parent.children.length < this.outputCount(parent);
   }
 
   private outputCount(node: MainCore) {

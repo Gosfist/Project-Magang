@@ -16,7 +16,7 @@ export async function lockOutputNodes(tx: Prisma.TransactionClient, ids: bigint[
 
 export async function assertOutputPort(tx: Prisma.TransactionClient, node: { id: bigint; spesifikasi: unknown }, port: number, excludeAccountId?: bigint, excludeChildId?: bigint) {
   const count = outputPortCount(node.spesifikasi);
-  if (!Number.isInteger(port) || port < 1 || port > count) throw new BadRequestException(`Pilih port yang tersedia (1?${count}).`);
+  if (!Number.isInteger(port) || port < 1 || port > count) throw new BadRequestException(`Pilih port yang tersedia (1 sampai ${count}).`);
   const child = await tx.mainCore.findFirst({ where: { parentId: node.id, parentPortOut: port, deletedAt: null, ...(excludeChildId ? { id: { not: excludeChildId } } : {}) }, select: { id: true } });
   const account = await tx.pppoeAccount.findFirst({ where: { odp: String(node.id), odpPort: port, ...(excludeAccountId ? { id: { not: excludeAccountId } } : {}) }, select: { id: true } });
   if (child || account) throw new ConflictException(`Port ${port} sudah terpakai. Pilih port lain.`);

@@ -64,6 +64,7 @@ export class PsbComponent implements OnInit, OnDestroy {
   activationPortsLoading = signal(false);
   activationViewOnly = false;
   private activationPhotoReference = '';
+  private activationPhotoRequest = 0;
   form = {
     customerName: '',
     phone: '',
@@ -93,6 +94,7 @@ export class PsbComponent implements OnInit, OnDestroy {
     this.refreshTimer = setInterval(() => this.load(true), 5000);
   }
   ngOnDestroy() {
+    this.activationPhotoRequest++;
     if (this.refreshTimer) clearInterval(this.refreshTimer);
   }
   load(silent = false) {
@@ -192,6 +194,7 @@ export class PsbComponent implements OnInit, OnDestroy {
     });
   }
   openActivation(item: PsbOrder, viewOnly = false) {
+    const photoRequest = ++this.activationPhotoRequest;
     this.selected.set(item);
     this.activationViewOnly = viewOnly;
     this.activationStep.set(1);
@@ -211,11 +214,12 @@ export class PsbComponent implements OnInit, OnDestroy {
     if (item.installationPhoto) {
       this.api.getBlob(`/psb/${item.id}/installation-photo`).subscribe({
         next: (blob) => {
+          if (photoRequest !== this.activationPhotoRequest) return;
           const reader = new FileReader();
-          reader.onload = () => (this.activation.installationPhoto = String(reader.result));
+          reader.onload = () => { if (photoRequest === this.activationPhotoRequest) this.activation.installationPhoto = String(reader.result); };
           reader.readAsDataURL(blob);
         },
-        error: () => this.toast.set({ message: 'Foto instalasi tidak dapat dimuat.', type: 'error' }),
+        error: () => { if (photoRequest === this.activationPhotoRequest) this.toast.set({ message: 'Foto instalasi tidak dapat dimuat.', type: 'error' }); },
       });
     }
   }
@@ -265,9 +269,9 @@ export class PsbComponent implements OnInit, OnDestroy {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024)
       return this.toast.set({ message: 'Foto maksimal 5 MB.', type: 'error' });
+    const photoRequest = ++this.activationPhotoRequest;
     const reader = new FileReader();
-    reader.onload = () =>
-      (this.activation.installationPhoto = String(reader.result));
+    reader.onload = () => { if (photoRequest === this.activationPhotoRequest) this.activation.installationPhoto = String(reader.result); };
     this.activationPhotoReference = '';
     reader.readAsDataURL(file);
   }
@@ -284,9 +288,7 @@ export class PsbComponent implements OnInit, OnDestroy {
       ...this.activation,
       odpPort: Number(this.activation.odpPort),
       password: this.activation.password || undefined,
-      installationPhoto: this.activationPhotoReference && this.activation.installationPhoto && !this.activation.installationPhoto.startsWith('data:')
-        ? this.activationPhotoReference
-        : this.activation.installationPhoto,
+      installationPhoto: this.activationPhotoReference || this.activation.installationPhoto,
     };
     this.api
       .post<any>(`/psb/${this.selected()!.id}/activate`, payload)
@@ -300,7 +302,7 @@ export class PsbComponent implements OnInit, OnDestroy {
         error: (e) => {
           this.saving.set(false);
           this.error(e);
-          if (/port/i.test(e?.error?.message || '')) { this.activationStep.set(1); this.refreshActivationPorts(); }
+          if (/port/i.test(e?.message || e?.error?.message || '')) { this.activationStep.set(1); this.refreshActivationPorts(); }
         },
       });
   }

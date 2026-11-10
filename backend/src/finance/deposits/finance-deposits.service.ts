@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { pageMeta, serialize } from '../../common/serialize.js';
@@ -94,39 +94,44 @@ export class FinanceDepositsService {
   }
 
   async create(dto: CreateDepositDto, collectorUserId: string) {
-    // Validate account and invoice exist
-    const account = await this.prisma.pppoeAccount.findUnique({
-      where: { id: BigInt(dto.pppoeAccountId) },
-      include: { area: true },
-    });
-    if (!account) throw new NotFoundException('Pelanggan tidak ditemukan.');
+    const { account, invoice, deposit } = await this.prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT id FROM invoices WHERE id = ${BigInt(dto.invoiceId)} FOR UPDATE`;
+      // Validate current status and reservations after acquiring the invoice lock.
+      const account = await tx.pppoeAccount.findUnique({
+        where: { id: BigInt(dto.pppoeAccountId) },
+        include: { area: true },
+      });
+      if (!account) throw new NotFoundException('Pelanggan tidak ditemukan.');
 
-    const invoice = await this.prisma.invoice.findFirst({
-      where: { id: BigInt(dto.invoiceId), pppoeAccountId: account.id },
-    });
-    if (!invoice) throw new NotFoundException('Tagihan tidak ditemukan.');
-    if (invoice.status === 'PAID') throw new BadRequestException('Tagihan sudah lunas.');
-    if (!['PENDING', 'OVERDUE'].includes(invoice.status)) throw new BadRequestException('Tagihan tidak dapat dibayar.');
+      const invoice = await tx.invoice.findFirst({
+        where: { id: BigInt(dto.invoiceId), pppoeAccountId: account.id },
+      });
+      if (!invoice) throw new NotFoundException('Tagihan tidak ditemukan.');
+      if (invoice.status === 'PAID') throw new BadRequestException('Tagihan sudah lunas.');
+      if (!['PENDING', 'OVERDUE'].includes(invoice.status)) throw new BadRequestException('Tagihan tidak dapat dibayar.');
 
-    // Check duplicate deposit for same invoice
-    const existing = await this.prisma.collectorDeposit.findFirst({
-      where: { invoiceId: invoice.id, status: { in: ['PENDING', 'ACCEPTED'] } },
+      // Check duplicate deposit for same invoice
+      const existing = await tx.collectorDeposit.findFirst({
+        where: { invoiceId: invoice.id, status: { in: ['PENDING', 'ACCEPTED'] } },
+      });
+      if (existing) throw new BadRequestException('Sudah ada setoran untuk tagihan ini yang masih pending atau sudah diterima.');
+
+      const deposit = await tx.collectorDeposit.create({
+        data: {
+          pppoeAccountId: account.id,
+          invoiceId: invoice.id,
+          collectorUserId: BigInt(collectorUserId),
+          amount: invoice.amount,
+          depositDate: new Date(`${dto.depositDate}T00:00:00.000Z`),
+        },
+      });
+
+      return { account, invoice, deposit };
     });
-    if (existing) throw new BadRequestException('Sudah ada setoran untuk tagihan ini yang masih pending atau sudah diterima.');
 
     const collector = await this.prisma.user.findUnique({
       where: { id: BigInt(collectorUserId) },
       select: { id: true, name: true },
-    });
-
-    const deposit = await this.prisma.collectorDeposit.create({
-      data: {
-        pppoeAccountId: account.id,
-        invoiceId: invoice.id,
-        collectorUserId: BigInt(collectorUserId),
-        amount: invoice.amount,
-        depositDate: new Date(`${dto.depositDate}T00:00:00.000Z`),
-      },
     });
 
     // Wait for the bot response so the collector sees whether the customer was notified.
@@ -158,16 +163,20 @@ export class FinanceDepositsService {
     // Transaction: accept deposit + pay invoice + create finance transaction
     const restoration = await this.prisma.$transaction(async (tx) => {
       // Accept the deposit
-      await tx.collectorDeposit.update({
-        where: { id: deposit.id },
+      const claimed = await tx.collectorDeposit.updateMany({
+        where: { id: deposit.id, status: 'PENDING' },
         data: { status: 'ACCEPTED', acceptedByUserId: BigInt(acceptedByUserId), acceptedAt: new Date() },
       });
 
+      if (!claimed.count) throw new ConflictException('Status setoran sudah berubah. Muat ulang daftar setoran.');
+
       // Pay the invoice
-      await tx.invoice.update({
-        where: { id: deposit.invoiceId },
+      const paid = await tx.invoice.updateMany({
+        where: { id: deposit.invoiceId, status: { in: ['PENDING', 'OVERDUE'] } },
         data: { status: 'PAID', paidAt: new Date(), updatedAt: new Date() },
       });
+
+      if (!paid.count) throw new ConflictException('Tagihan sudah dibayar atau tidak dapat dilunasi. Muat ulang daftar.');
 
       // Create income transaction
       await tx.financeTransaction.create({
@@ -225,11 +234,12 @@ export class FinanceDepositsService {
     const deposit = await this.findDeposit(id);
     if (deposit.status !== 'PENDING') throw new BadRequestException('Hanya setoran dengan status pending yang dapat ditolak.');
 
-    await this.prisma.collectorDeposit.update({
-      where: { id: deposit.id },
+    const rejected = await this.prisma.collectorDeposit.updateMany({
+      where: { id: deposit.id, status: 'PENDING' },
       data: { status: 'REJECTED', notes: dto.reason ? `Ditolak: ${dto.reason}` : 'Ditolak oleh bagian finance.' },
     });
 
+    if (!rejected.count) throw new ConflictException('Status setoran sudah berubah. Muat ulang daftar setoran.');
     return { message: 'Setoran ditolak.' };
   }
 
@@ -238,6 +248,16 @@ export class FinanceDepositsService {
     if (deposit.status !== 'ACCEPTED') throw new BadRequestException('Hanya setoran yang sudah di-ACC yang dapat dibatalkan.');
 
     await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.collectorDeposit.updateMany({
+        where: { id: deposit.id, status: 'ACCEPTED' },
+        data: {
+          status: 'PENDING',
+          acceptedByUserId: null,
+          acceptedAt: null,
+          notes: null,
+        },
+      });
+      if (!claimed.count) throw new ConflictException('Status setoran sudah berubah. Muat ulang daftar setoran.');
       await tx.financeTransaction.deleteMany({
         where: { referenceType: 'DEPOSIT', referenceId: deposit.id },
       });
@@ -250,16 +270,6 @@ export class FinanceDepositsService {
           updatedAt: new Date(),
         },
       });
-
-      await tx.collectorDeposit.update({
-        where: { id: deposit.id },
-        data: {
-          status: 'PENDING',
-          acceptedByUserId: null,
-          acceptedAt: null,
-          notes: null,
-        },
-      });
     });
 
     return { message: 'ACC setoran dibatalkan. Status kembali menunggu ACC.' };
@@ -269,6 +279,8 @@ export class FinanceDepositsService {
     const deposit = await this.findDeposit(id);
 
     await this.prisma.$transaction(async (tx) => {
+      const removed = await tx.collectorDeposit.deleteMany({ where: { id: deposit.id, status: deposit.status } });
+      if (!removed.count) throw new ConflictException('Status setoran sudah berubah. Muat ulang daftar setoran.');
       if (deposit.status === 'ACCEPTED') {
         await tx.financeTransaction.deleteMany({
           where: { referenceType: 'DEPOSIT', referenceId: deposit.id },
@@ -283,8 +295,6 @@ export class FinanceDepositsService {
           },
         });
       }
-
-      await tx.collectorDeposit.delete({ where: { id: deposit.id } });
     });
 
     return { message: 'Setoran berhasil dihapus.' };

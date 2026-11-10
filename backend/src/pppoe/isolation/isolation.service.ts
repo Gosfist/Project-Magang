@@ -73,7 +73,7 @@ export class IsolationService implements OnModuleInit, OnModuleDestroy {
       ensurePoolScript(pool),
       `:local profile [/ppp profile find where name=${profile}];`,
       ':if ([:len $profile] > 1) do={ :error "Profil isolir ganda"; };',
-      `:if ([:len $profile] = 0) do={ /ppp profile add name=${profile} local-address=${q(dto.localAddress)} remote-address=${q(dto.poolName)} use-ipv6=no only-one=yes change-tcp-mss=yes session-timeout=0s idle-timeout=0s; } else={ /ppp profile set $profile local-address=${q(dto.localAddress)} remote-address=${q(dto.poolName)} use-ipv6=no only-one=yes change-tcp-mss=yes session-timeout=0s idle-timeout=0s; };`];
+      `:if ([:len $profile] = 0) do={ /ppp profile add name=${profile} local-address=${q(dto.localAddress)} remote-address=${q(dto.poolName)} use-ipv6=no only-one=yes change-tcp-mss=yes parent-queue=none insert-queue-before=first session-timeout=0s idle-timeout=0s; } else={ /ppp profile set $profile local-address=${q(dto.localAddress)} remote-address=${q(dto.poolName)} use-ipv6=no only-one=yes change-tcp-mss=yes parent-queue=none insert-queue-before=first session-timeout=0s idle-timeout=0s; };`];
     for (const spec of [
       { chain: 'forward', field: 'src-address', tag: 'OUT' }, { chain: 'forward', field: 'dst-address', tag: 'IN' }, { chain: 'input', field: 'src-address', tag: 'ROUTER' },
     ]) {

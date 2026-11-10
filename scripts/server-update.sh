@@ -85,11 +85,11 @@ if [[ "$MODE" == "all" || "$MODE" == "be" ]]; then
   cd "$BACKEND_DIR"
   npm run prisma:generate
 
-  log "Stop backend sementara"
-  sudo systemctl stop "$SERVICE_NAME" || true
+  log "Periksa kolom dan index database tanpa mengubah skema"
+  node "$ROOT_DIR/scripts/check-backend-schema.mjs"
 
-  log "Build backend"
-  npm run build
+  log "Build backend ke staging; dist lama dipertahankan jika build gagal"
+  node "$ROOT_DIR/scripts/build-backend.mjs"
 
   if systemctl cat freeradius.service >/dev/null 2>&1; then
     log "Siapkan penerapan client NAS SQL tanpa hak sudo pada web"
@@ -102,7 +102,7 @@ if [[ "$MODE" == "all" || "$MODE" == "be" ]]; then
 
   log "Reload dan start backend"
   sudo systemctl daemon-reload
-  sudo systemctl start "$SERVICE_NAME"
+  sudo systemctl restart "$SERVICE_NAME"
 fi
 
 if [[ "$MODE" == "all" || "$MODE" == "fe" ]]; then

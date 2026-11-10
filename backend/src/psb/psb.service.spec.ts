@@ -1,3 +1,6 @@
+import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { PsbService } from './psb.service.js';
 
@@ -113,6 +116,29 @@ describe('manual technician credential changes', () => {
     await expect(service.activate('1', { username: 'new.username', odp: '4', odpPort: 1 }, '7')).rejects.toThrow('terpakai');
     expect(tx.pppoeAccount.update).not.toHaveBeenCalled();
     expect(radius.sync).not.toHaveBeenCalled();
+  });
+
+  it('keeps the committed installation photo intact when the transaction fails', async () => {
+    const { service, radius } = setup();
+    const directory = await mkdtemp(join(tmpdir(), 'unzanet-photo-audit-'));
+    const previous = process.env.UPLOADS_DIR;
+    process.env.UPLOADS_DIR = directory;
+    try {
+      await mkdir(join(directory, 'instalasi'));
+      await writeFile(join(directory, 'instalasi/1.png'), 'committed-photo');
+      radius.sync.mockRejectedValue(new Error('RADIUS update failed'));
+      await expect(service.activate('1', { username: 'new.username', odp: '4', odpPort: 1, installationPhoto: 'data:image/png;base64,bmV3LXBob3Rv' }, '7')).rejects.toThrow('RADIUS update failed');
+      expect(await readFile(join(directory, 'instalasi/1.png'), 'utf8')).toBe('committed-photo');
+      expect(await readdir(join(directory, 'instalasi'))).toEqual(['1.png']);
+    } finally {
+      if (previous === undefined) delete process.env.UPLOADS_DIR; else process.env.UPLOADS_DIR = previous;
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+  it('rejects a photo reference belonging to another order', async () => {
+    const { service, tx } = setup();
+    await expect(service.activate('1', { username: 'new.username', odp: '4', odpPort: 1, installationPhoto: '/uploads/instalasi/99.png' }, '7')).rejects.toThrow('Referensi foto');
+    expect(tx.pppoeAccount.update).not.toHaveBeenCalled();
   });
 
 });

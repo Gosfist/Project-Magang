@@ -107,7 +107,7 @@ Frontend tersedia di `http://localhost:3000`, REST API di `http://localhost:3001
 
 Bot memerlukan Go 1.27.3 untuk build. Installer/updater memasang compiler terverifikasi checksum bila diperlukan, lalu menjalankan `bin/bot-whatsapp` melalui systemd tanpa proses Node.js untuk bot. `npm run updatebot` memperbarui bot saja, menyinkronkan `DATABASE_URL`, `BOT_API_KEY`, dan origin frontend dari backend, lalu memigrasikan service lama ke executable Go. MySQL dan skema aplikasi tetap dipertahankan. Setelah pindah dari Baileys, buka Login Bot Wa dan scan QR sekali lagi; folder sesi lama `auth_info` tidak dihapus. Jangan menjalankan bot Node lama bersamaan dengan bot Go. Lihat [panduan bot](bot_whatsapp/README.md).
 
-Updater memuat ulang script setelah Git mengambil revisi baru dan mempertahankan mode update. Jika updater lama gagal pada npm karena package.json bot sudah dihapus, jalankan kembali `npm run updatebot`. Setelah health Go berhasil, sisa `bot_whatsapp/node_modules` dibersihkan; Node.js backend NestJS tetap dipakai.
+Updater memuat ulang script setelah Git mengambil revisi baru dan mempertahankan mode update. Sebelum restart backend, updater memeriksa kolom/index unik database tanpa mengubah skema, lalu membangun ke staging. Jika pemeriksaan atau build gagal, backend lama tetap berjalan. Perbaiki skema sesuai panduan sebelum mengulang update. Jika updater lama gagal pada npm karena package.json bot sudah dihapus, jalankan kembali `npm run updatebot`. Setelah health Go berhasil, sisa `bot_whatsapp/node_modules` dibersihkan; Node.js backend NestJS tetap dipakai.
 
 ## Database
 

@@ -128,3 +128,13 @@ profil lama. Arahkan ke profil yang ada; contoh khusus router pada output terseb
 Jangan menghapus profil yang masih dipakai sesi atau sebagai default-profile
 PPPoE Server. Ulangi uji isolir dan aktifkan kembali: queue Internet harus kembali
 ke parent yang benar, counter meningkat dan kecepatan sesuai paket.
+
+## Pemulihan referensi queue 11 November 2026
+
+Kasus pelanggan 000001 menunjukkan queue pelanggan 20M/20M berada di bawah CLIENT 97M/97M. Setelah urutan dibetulkan, limit bekerja. Jika CLIENT kemudian dihapus sementara profil masih menunjuknya, RouterOS dapat memutus sesi dengan `could not add queue: unknown next id`. Untuk profil mandiri tanpa parent agregat, gunakan:
+
+```routeros
+/ppp profile set [find where name="UNZANET-INTERNET-1"] parent-queue=none insert-queue-before=first
+```
+
+Sesuaikan nama profil dengan NAS, lalu sambungkan ulang hanya pelanggan uji. Contoh parent=CLIENT pada catatan historis di atas berlaku untuk router dan struktur queue saat pengujian tersebut, bukan konfigurasi wajib semua router. Script baru menetapkan first/none secara eksplisit. Uji speedtest dan counter; unit test tidak menggantikan uji MikroTik.

@@ -295,11 +295,10 @@ export class DataPelangganService {
   }
 
   private async validateAccountPort(tx: Prisma.TransactionClient, dto: SaveAccountDto, accountId?: bigint) {
-    if (dto.odpPort == null) return;
     await lockOutputNodes(tx, [BigInt(dto.odp)]);
     const node = await tx.mainCore.findFirst({ where: { id: BigInt(dto.odp), tipeTitik: { in: ['odc', 'odp'] }, deletedAt: null } });
     if (!node) throw new BadRequestException('ODC / ODP tidak ditemukan.');
-    await assertOutputPort(tx, node, dto.odpPort, accountId);
+    if (dto.odpPort != null) await assertOutputPort(tx, node, dto.odpPort, accountId);
   }
 
   private accountData(dto: SaveAccountDto, password: string, creating: boolean) {

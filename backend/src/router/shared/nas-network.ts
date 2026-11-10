@@ -61,7 +61,7 @@ export function nasNetworkScript(id: number, network: NasNetwork) {
     ['ISOLIR', network.isolation, isolationPoolName, isolationProfile(id)],
   ] as const) {
     lines.push(`/ip pool add name=${q(name)} ranges=${q(`${pool.start}-${pool.end}`)} next-pool=none comment=${q(`UNZANET-RADIUS:${kind}`)};`);
-    lines.push(`/ppp profile add copy-from=default name=${q(profile)} local-address=${q(pool.gateway)} remote-address=${q(name)}${kind === 'ISOLIR' ? ' use-ipv6=no' : ''} only-one=yes change-tcp-mss=yes;`);
+    lines.push(`/ppp profile add copy-from=default name=${q(profile)} local-address=${q(pool.gateway)} remote-address=${q(name)}${kind === 'ISOLIR' ? ' use-ipv6=no' : ''} only-one=yes change-tcp-mss=yes parent-queue=none insert-queue-before=first;`);
   }
   lines.push('', '# 5. Firewall subnet isolir');
   for (const [chain, field] of [['forward', 'src-address'], ['forward', 'dst-address'], ['input', 'src-address']] as const) {

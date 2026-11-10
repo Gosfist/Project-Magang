@@ -228,6 +228,8 @@ describe('Zero MikroTik API NAS registry', () => {
     expect(result.setup.script).toContain('/ip pool add name="Internet"');
     expect(result.setup.script).not.toContain('set [find');
     expect(result.setup.script).toContain('/ppp profile add copy-from=default name="UNZANET-INTERNET-7"');
+    expect(result.setup.script.match(/insert-queue-before=first/g)).toHaveLength(2);
+    expect(result.setup.script).not.toContain('insert-queue-before=CLIENT');
     expect(pools.filter(pool => pool.name === 'Internet')).toHaveLength(1);
     const reopened = await service.getRouterScript('7');
     expect(reopened.script).toBe(result.setup.script);

@@ -12,8 +12,8 @@ function setup(promiseStatus = 'EXPIRED', isActive = false, poolIsolation = fals
   };
   const tx = {
     appSetting: { findUnique: vi.fn(async ({ where }) => poolIsolation && where.key.startsWith('pppoe_isolation_router_') ? { value: JSON.stringify({ enabled: true, poolName: 'isolir', subnet: '192.168.100.0/24', localAddress: '192.168.100.1', profileName: 'UNZANET-ISOLIR-3' }) } : null) },
-    collectorDeposit: { update: vi.fn(async ({ data }) => { state.depositStatus = data.status; }) },
-    invoice: { update: vi.fn(async ({ data }) => { state.invoiceStatus = data.status; }),
+    collectorDeposit: { updateMany: vi.fn(async ({ where, data }) => { if (state.depositStatus !== where.status) return { count: 0 }; state.depositStatus = data.status; return { count: 1 }; }) },
+    invoice: { updateMany: vi.fn(async ({ where, data }) => { if (!where.status.in.includes(state.invoiceStatus)) return { count: 0 }; state.invoiceStatus = data.status; return { count: 1 }; }),
       count: vi.fn(async () => state.invoiceStatus === 'PAID' ? 0 : 1) },
     financeTransaction: { create: vi.fn(async () => { state.transactions++; }) },
     pppoeAccount: { findUnique: vi.fn(async () => state.account),

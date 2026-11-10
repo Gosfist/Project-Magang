@@ -8,7 +8,8 @@ import { SecretService } from '../pppoe/shared/secret.service.js';
 import { WhatsappNotifyService } from '../bot-whatsapp/shared/whatsapp-notify.service.js';
 import { PengaturanService } from '../tools/pengaturan/pengaturan.service.js';
 import { ActivatePsbOrderDto, CompletePsbOrderDto, CreatePsbOrderDto, UpdatePsbOrderDto } from './psb.dto.js';
-import { storeImage } from '../common/image-storage.js';
+import { randomBytes } from 'node:crypto';
+import { storeImage, removeCustomerImage } from '../common/image-storage.js';
 import { PppoeNetworkService } from '../pppoe/shared/pppoe-network.service.js';
 import { readInstallationPhoto } from '../pppoe/data-pelanggan/installation-photo.js';
 import { customerSearch } from '../common/customer-search.js';
@@ -100,7 +101,20 @@ export class PsbService {
     const odp = await this.prisma.mainCore.findFirst({ where: { id: BigInt(dto.odp), tipeTitik: { in: ['odc', 'odp'] }, deletedAt: null } });
     if (!odp) throw new BadRequestException('ODC / ODP tidak ditemukan.');
     const routerNasId = await this.routerForLocation(odp.id);
-    const installationPhoto = dto.installationPhoto ? await storeImage(dto.installationPhoto, 'instalasi', String(order.id)) : order.installationPhoto;
+    if (dto.installationPhoto && !dto.installationPhoto.startsWith('data:image/') && dto.installationPhoto !== order.installationPhoto) {
+      throw new BadRequestException('Referensi foto instalasi tidak sesuai pelanggan.');
+    }
+    // Use an immutable numeric filename, compatible with the existing private photo reader.
+    let stagedPhoto: string | null = null;
+    const stagePhoto = async () => {
+      if (!dto.installationPhoto?.startsWith('data:image/')) return order.installationPhoto;
+      stagedPhoto = await storeImage(dto.installationPhoto, 'instalasi', `${order.id}${Date.now()}${BigInt('0x' + randomBytes(8).toString('hex'))}`);
+      return stagedPhoto;
+    };
+    const cleanupPhoto = async (error: unknown): Promise<never> => {
+      if (stagedPhoto) await removeCustomerImage(stagedPhoto).catch(() => undefined);
+      throw error;
+    };
     if (order.status !== 'PROCESS') {
       if (!order.pppoeAccountId || !['ACTIVATED', 'COMPLETED'].includes(order.status)) {
         throw new BadRequestException('Pesanan ini tidak dapat diedit.');
@@ -109,6 +123,7 @@ export class PsbService {
         await this.validateActivationPort(tx, odp.id, dto.odpPort, order.pppoeAccountId);
         const currentAccount = await tx.pppoeAccount.findUnique({ where: { id: order.pppoeAccountId! }, select: { username: true, routerNasId: true } });
         if (!currentAccount) throw new NotFoundException('Akun PPPoE tidak ditemukan.');
+        const installationPhoto = await stagePhoto();
         const account = await tx.pppoeAccount.update({
           where: { id: order.pppoeAccountId! },
           data: {
@@ -133,7 +148,7 @@ export class PsbService {
           },
         });
         return { updated, currentAccount, reconnect: credentialsChanged || currentAccount.routerNasId !== routerNasId };
-      }).catch(error => {
+      }).catch(cleanupPhoto).catch(error => {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') throw new ConflictException(/odp.*port/i.test(String(error.meta?.target ?? '')) ? 'Port sudah terpakai. Pilih port lain.' : 'Username PPPoE sudah digunakan.');
         throw error;
       });
@@ -143,6 +158,7 @@ export class PsbService {
     try {
       const result = await this.prisma.$transaction(async tx => {
         await this.validateActivationPort(tx, odp.id, dto.odpPort);
+        const installationPhoto = await stagePhoto();
         const account = await tx.pppoeAccount.create({
           data: {
             customerNumber: order.customerNumber,
@@ -176,6 +192,7 @@ export class PsbService {
       });
       return serialize({ message: 'Akun PPPoE dan bukti instalasi berhasil disimpan.', order: result.updated, credentials: { username: dto.username, password: dto.password } });
     } catch (error) {
+      if (stagedPhoto) await removeCustomerImage(stagedPhoto).catch(() => undefined);
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         const target = String(error.meta?.target ?? '');
         throw new ConflictException(/odp.*port/i.test(target) ? 'Port sudah terpakai. Pilih port lain.' : /phone/.test(target) ? 'Nomor telepon sudah digunakan pelanggan lain.' : /id_card_number|idCardNumber/.test(target) ? 'Nomor KTP sudah digunakan pelanggan lain.' : 'Username PPPoE sudah digunakan.');

@@ -139,16 +139,16 @@ export class PaketLayananService {
 
   async togglePackage(id: string) {
     const current = await this.findPackage(id);
-    const updated = await this.prisma.$transaction(async (tx) => {
+    const { updated, accounts } = await this.prisma.$transaction(async (tx) => {
       const item = await tx.pppoePackage.update({ where: { id: current.id }, data: { isActive: !current.isActive } });
       const accounts = await tx.pppoeAccount.findMany({ where: { pppoePackageId: item.id }, include: { package: { include: { ipPool: true } } } });
       for (const account of accounts) await this.radius.sync(tx, account);
-      return item;
+      return { updated: item, accounts };
     });
     const warnings: string[] = [];
-    if (!updated.isActive) {
-      const accounts = await this.prisma.pppoeAccount.findMany({ where: { pppoePackageId: updated.id } });
-      for (const account of accounts) warnings.push(...(await this.network.disconnect(account.username, account.routerNasId)).warnings);
+    for (const account of accounts) {
+      try { warnings.push(...(await this.network.disconnect(account.username, account.routerNasId)).warnings); }
+      catch { warnings.push(`Sesi ${account.username} belum dapat disambungkan ulang. Status paket berlaku saat login berikutnya.`); }
     }
     const message = `Harga paket berhasil ${updated.isActive ? 'diaktifkan' : 'dinonaktifkan'}.`;
     return { message: warnings.length ? `${message} Perhatian: ${warnings.join(' ')}` : message, warnings, isActive: updated.isActive };

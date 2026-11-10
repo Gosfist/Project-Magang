@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { PaketLayananService } from './paket-layanan.service.js';
 import { RadiusService } from '../shared/radius.service.js';
 
-function setup() {
+function setup(active = true) {
   let committed = false;
   const current = { id: 1n, name: 'Paket', uploadMbps: 5, downloadMbps: 5, addressPool: 'pool', ipPool: null,
-    price: 110000n, costPrice: 100000n, validityDays: 30, isActive: true };
+    price: 110000n, costPrice: 100000n, validityDays: 30, isActive: active };
   const accounts = [{ id: 2n, username: '000002', routerNasId: 3, isActive: true, password: 'encrypted', expiresAt: null }];
   let updatedPackage = current;
   const tx = {
@@ -65,4 +65,11 @@ describe('PPPoE package network updates', () => {
     await expect(service.updatePackage('1', dto)).rejects.toThrow('RADIUS unavailable');
     expect(network.disconnect).not.toHaveBeenCalled();
   });
+  it('reauthenticates customers after an isolated package is enabled again', async () => {
+    const { service, network } = setup(false);
+    const result = await service.togglePackage('1');
+    expect(result.isActive).toBe(true);
+    expect(network.disconnect).toHaveBeenCalledWith('000002', 3);
+  });
+
 });

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { PsbComponent } from './psb.component';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -9,9 +9,11 @@ describe('technician PPPoE activation', () => {
   function setup(status = 'PROCESS') {
     const option = { id: '4', namaTitik: 'ODP Uji', tipeTitik: 'odp' as const, alamat: null, routerNasId: 3, routerName: 'Router Uji',
       ports: [{ number: 1, used: false, accountId: null }, { number: 2, used: true, accountId: '9' }, { number: 3, used: true, accountId: null }] };
+    const photoRequests: Record<string, Subject<Blob>> = {};
+    const getBlob = (path: string) => { const request = new Subject<Blob>(); photoRequests[path] = request; return request; };
     const post = jasmine.createSpy('post').and.returnValue(of({ message: 'Saved' }));
     TestBed.configureTestingModule({ imports: [PsbComponent], providers: [
-      { provide: ApiService, useValue: { get: (path: string) => of({ data: path === '/pppoe/odp/options' ? [option] : [], meta: {} }), post } },
+      { provide: ApiService, useValue: { get: (path: string) => of({ data: path === '/pppoe/odp/options' ? [option] : [], meta: {} }), getBlob, post } },
       { provide: AuthService, useValue: { hasRole: (...roles: string[]) => roles.includes('teknisi'), isSales: () => false } },
     ] });
     const fixture = TestBed.createComponent(PsbComponent);
@@ -19,7 +21,7 @@ describe('technician PPPoE activation', () => {
     component.openActivation({ id: '1', customerId: '000001', status } as PsbOrder);
     component.odps.set([option]);
     fixture.detectChanges();
-    return { fixture, component, post };
+    return { fixture, component, post, photoRequests };
   }
 
   it('binds manually typed credentials and sends them on save', () => {
@@ -78,6 +80,31 @@ describe('technician PPPoE activation', () => {
     expect(select.options[3].disabled).toBeTrue();
     component.selectOdp({ id: '5' } as any);
     expect(component.activation.odpPort).toBe('');
+  });
+
+  it('ignores an old photo response after another customer activation is opened', () => {
+    const { component, photoRequests } = setup();
+    const read = spyOn(FileReader.prototype, 'readAsDataURL').and.callFake(function(this: FileReader) {
+      Object.defineProperty(this, 'result', { value: 'data:image/png;base64,Yg==' });
+      this.onload?.call(this, new ProgressEvent('load') as ProgressEvent<FileReader>);
+    });
+    component.openActivation({ id: '1', customerId: '000001', status: 'ACTIVATED', installationPhoto: '/uploads/instalasi/1.png' } as PsbOrder);
+    component.openActivation({ id: '2', customerId: '000002', status: 'ACTIVATED', installationPhoto: '/uploads/instalasi/2.png' } as PsbOrder);
+    photoRequests['/psb/1/installation-photo'].next(new Blob(['old']));
+    expect(read).not.toHaveBeenCalled();
+    expect(component.activation.installationPhoto).toBe('/uploads/instalasi/2.png');
+    photoRequests['/psb/2/installation-photo'].next(new Blob(['current']));
+    expect(component.activation.installationPhoto).toBe('data:image/png;base64,Yg==');
+  });
+  it('returns to port selection after a normalized API port conflict', () => {
+    const { component } = setup();
+    component.activationStep.set(2);
+    component.activation.odp = '4'; component.activation.odpPort = '1';
+    component.activation.installationPhoto = 'data:image/png;base64,Yg==';
+    const api = TestBed.inject(ApiService);
+    (api.post as jasmine.Spy).and.returnValue(throwError(() => new Error('Port sudah terpakai.')));
+    component.activate();
+    expect(component.activationStep()).toBe(1);
   });
 
 });

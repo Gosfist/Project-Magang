@@ -133,3 +133,15 @@ Panduan [port aktivasi PSB](port-aktivasi-psb.md) memuat pilihan port, penangana
 Uptime web dihitung dari durasi `Acct-Session-Time` pada pembaruan accounting terakhir ditambah waktu yang sudah berlalu sejak `acctupdatetime`. Sebelum interim pertama, nilai durasi 0 tetap bertambah berdasarkan waktu Accounting-Start. Refresh daftar pelanggan setiap 5 detik tidak boleh membuat hitungan kembali ke 0. Sesi accounting baru tetap memulai uptime baru; sesi stale atau tidak diketahui tidak ditampilkan seolah-olah online. Zona waktu mengikuti `RADIUS_ACCOUNTING_TIMEZONE`.
 
 Perbaikan perhitungan uptime hanya memerlukan backend terbaru (`npm run updatebe` di root project VPS); tidak perlu rebuild frontend atau perubahan skema database. Bandingkan uptime dan session-id melalui `/ppp active print detail` untuk membedakan bug tampilan dari PPPoE yang benar-benar dial ulang. Validasi lokal belum membuktikan stabilitas sesi perangkat nyata.
+
+## Audit logika 11 November 2026
+
+Lihat [laporan audit logika](AUDIT_LOGIKA_2026-11-11.md) untuk temuan, perbaikan, bukti tes dan batas validasi. Pembuatan tagihan bulanan memakai batch berurutan sampai semua pelanggan selesai. ACC/Tolak/Batal ACC/Hapus setoran memeriksa status secara atomik agar permintaan bersamaan tidak mencatat pemasukan ganda atau menimpa status terbaru. Pencatatan setoran baru mengunci invoice sebelum memeriksa duplikasi.
+
+Scheduler isolir memeriksa kembali kelayakan secara atomik sebelum menonaktifkan akun: tagihan PENDING/OVERDUE masih jatuh tempo dan belum dilindungi janji bayar aktif. Kandidat yang berubah setelah daftar batch diambil tidak boleh diputus berdasarkan daftar lama.
+
+Main Core menolak siklus jalur dan penyusutan splitter yang masih memakai port di luar kapasitas baru. Penghapusan titik memakai lock yang sama dengan penempatan pelanggan. Foto aktivasi baru menggunakan file terpisah; kegagalan transaksi tidak menimpa foto tersimpan. Preview foto mengabaikan respons lama setelah pindah pelanggan. Pengaktifan ulang paket meminta sesi pelanggan tersambung ulang setelah commit agar atribut internet menggantikan profil isolir.
+
+Profil PPP hasil script baru memakai `parent-queue=none insert-queue-before=first`. Untuk profil yang sudah terpasang, jalankan `/ppp profile set [find where name="UNZANET-INTERNET-1"] parent-queue=none insert-queue-before=first` sesuai nama profil Router/NAS sebenarnya; lalu sambungkan ulang hanya pelanggan yang diuji. Jangan menghapus queue yang masih menjadi referensi profil. Perubahan script tidak otomatis mengubah MikroTik yang sudah terpasang.
+
+`npm run database:verify` memeriksa kolom dan index unik menggunakan koneksi database aplikasi secara read-only. Updater menjalankannya sebelum restart backend. Skema database lama tetap diperbarui manual sesuai panduan fitur; jangan impor ulang database.sql. Updater membangun backend ke staging dan hanya mengganti dist setelah compiler berhasil, sehingga kegagalan build tidak menghapus runtime sebelumnya.

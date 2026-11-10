@@ -61,52 +61,58 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
     const dueDate = this.utcDate(year, month, dueDay);
     const monthStart = this.utcDate(year, month, 1);
     const nextMonthStart = month === 12 ? this.utcDate(year + 1, 1, 1) : this.utcDate(year, month + 1, 1);
-    const accounts = await this.prisma.pppoeAccount.findMany({
-      where: {
-        ...(onlyAccountId ? { id: onlyAccountId } : {}),
-        subscriptionType: 'POSTPAID',
-        package: { isActive: true },
-        createdAt: { lt: new Date(monthStart.getTime() - billingOffsets[settings.billingTimezone] * 3600000) },
-      },
-      select: {
-        id: true,
-        customerNumber: true,
-        createdAt: true,
-        package: { select: { price: true } },
-        discount: true,
-        invoices: {
-          where: { status: { not: 'CANCELLED' }, invoiceType: { in: ['PRORATE', 'MONTHLY'] }, dueDate: { gte: monthStart, lt: nextMonthStart } },
-          select: { id: true },
-          take: 1,
+    let cursor: bigint | undefined;
+    while (true) {
+      const accounts = await this.prisma.pppoeAccount.findMany({
+        where: {
+          ...(onlyAccountId ? { id: onlyAccountId } : cursor ? { id: { gt: cursor } } : {}),
+          subscriptionType: 'POSTPAID',
+          package: { isActive: true },
+          createdAt: { lt: new Date(monthStart.getTime() - billingOffsets[settings.billingTimezone] * 3600000) },
         },
-      },
-      take: 500,
-    });
-
-    for (const account of accounts) {
-      if (account.invoices.length) continue;
-      const price = Math.max(0, Number(account.package.price) - Number(account.discount));
-      const first = account.createdAt ? firstBillingCycle(account.createdAt, price, settings.billingEndDay, settings.billingTimezone) : null;
-      if (first && first.dueDate > dueDate) continue;
-      const prorate = first?.dueDate.getTime() === dueDate.getTime();
-      const amount = prorate ? first!.amount : price;
-      await this.prisma.invoice.create({
-        data: {
-          pppoeAccountId: account.id,
-          invoiceNumber: serviceInvoiceNumber(year, month - 1, account.customerNumber),
-          amount: BigInt(amount),
-          baseAmount: BigInt(Number(account.package.price)),
-          discount: account.discount,
-          invoiceType: prorate ? first!.invoiceType : 'MONTHLY',
-          status: 'PENDING',
-          dueDate,
-          notes: `Tagihan bulanan ${String(month).padStart(2, '0')}/${year}`,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+        select: {
+          id: true,
+          customerNumber: true,
+          createdAt: true,
+          package: { select: { price: true } },
+          discount: true,
+          invoices: {
+            where: { status: { not: 'CANCELLED' }, invoiceType: { in: ['PRORATE', 'MONTHLY'] }, dueDate: { gte: monthStart, lt: nextMonthStart } },
+            select: { id: true },
+            take: 1,
+          },
         },
-      }).catch((error) => {
-        this.logger.warn(`Invoice bulanan pelanggan ${account.customerNumber} tidak dibuat: ${error instanceof Error ? error.message : error}`);
+        orderBy: { id: 'asc' },
+        take: 500,
       });
+
+      for (const account of accounts) {
+        if (account.invoices.length) continue;
+        const price = Math.max(0, Number(account.package.price) - Number(account.discount));
+        const first = account.createdAt ? firstBillingCycle(account.createdAt, price, settings.billingEndDay, settings.billingTimezone) : null;
+        if (first && first.dueDate > dueDate) continue;
+        const prorate = first?.dueDate.getTime() === dueDate.getTime();
+        const amount = prorate ? first!.amount : price;
+        await this.prisma.invoice.create({
+          data: {
+            pppoeAccountId: account.id,
+            invoiceNumber: serviceInvoiceNumber(year, month - 1, account.customerNumber),
+            amount: BigInt(amount),
+            baseAmount: BigInt(Number(account.package.price)),
+            discount: account.discount,
+            invoiceType: prorate ? first!.invoiceType : 'MONTHLY',
+            status: 'PENDING',
+            dueDate,
+            notes: `Tagihan bulanan ${String(month).padStart(2, '0')}/${year}`,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        }).catch((error) => {
+          this.logger.warn(`Invoice bulanan pelanggan ${account.customerNumber} tidak dibuat: ${error instanceof Error ? error.message : error}`);
+        });
+      }
+      if (accounts.length < 500) break;
+      cursor = accounts[accounts.length - 1].id;
     }
   }
 
@@ -117,25 +123,38 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
         isActive: true,
         createdAt: { lt: new Date(Date.UTC(cutoffDate.getUTCFullYear(), cutoffDate.getUTCMonth(), 1) - billingOffsets[settings.billingTimezone] * 3600000) },
         package: { isActive: true },
-        invoices: { some: { status: 'PENDING', dueDate: { lte: cutoffDate } } },
+        invoices: { some: { status: { in: ['PENDING', 'OVERDUE'] }, dueDate: { lte: cutoffDate } } },
         paymentPromises: { none: { status: 'ACTIVE', deadline: { gt: now } } },
       },
-      include: { package: { include: { ipPool: true } }, invoices: { where: { status: 'PENDING', dueDate: { lte: cutoffDate } }, select: { id: true, amount: true, dueDate: true }, take: 10 } },
+      include: { package: { include: { ipPool: true } }, invoices: { where: { status: { in: ['PENDING', 'OVERDUE'] }, dueDate: { lte: cutoffDate } }, select: { id: true, amount: true, dueDate: true }, take: 10 } },
       take: 100,
     });
     if (!accounts.length) return;
 
     for (const account of accounts) {
       try {
-        await this.prisma.$transaction(async (tx) => {
-          const current = await tx.pppoeAccount.update({
-            where: { id: account.id },
+        const isolated = await this.prisma.$transaction(async (tx) => {
+          // A payment or promise can be committed after the scheduler selects its batch.
+          const claimed = await tx.pppoeAccount.updateMany({
+            where: {
+              id: account.id,
+              isActive: true,
+              package: { isActive: true },
+              invoices: { some: { status: { in: ['PENDING', 'OVERDUE'] }, dueDate: { lte: cutoffDate } } },
+              paymentPromises: { none: { status: 'ACTIVE', deadline: { gt: now } } },
+            },
             data: { isActive: false, updatedAt: new Date() },
+          });
+          if (!claimed.count) return false;
+          const current = await tx.pppoeAccount.findUniqueOrThrow({
+            where: { id: account.id },
             include: { package: { include: { ipPool: true } } },
           });
           await tx.paymentPromise.updateMany({ where: { pppoeAccountId: account.id, status: { in: ['ACTIVE', 'EXPIRED'] } }, data: { status: 'CANCELLED', disconnectPending: false } });
           await this.radius.sync(tx as Prisma.TransactionClient, current);
-        });
+          return true;
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        if (!isolated) continue;
         const result = await this.network.disconnect(account.username, account.routerNasId);
         if (result.warnings.length) this.logger.warn(`Auto isolir ${account.username}: ${result.warnings.join(' ')}`);
         else this.logger.log(`Auto isolir ${account.username} karena tagihan melewati tanggal ${settings.billingEndDay} ${settings.billingTimezone}.`);
