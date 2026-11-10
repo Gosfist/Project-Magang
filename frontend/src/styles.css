@@ -7,6 +7,8 @@
   --ui-caption: 12px;
   --ui-control: 14px;
   --ui-table-action: 13px;
+  --ui-table-header-bg: #000000;
+  --ui-table-header-text: #ffffff;
   --ui-border: #e2e8f0;
   --ui-surface: #ffffff;
   --ui-canvas: #f4f7fb;
@@ -157,6 +159,13 @@ table tbody span.rounded-full :is(span, small) { font-size: var(--ui-caption); l
 .workspace-page .input, app-modal .input { border-radius: 6px; border-color: #cbd5e1; }
 .workspace-page .input:focus, app-modal .input:focus { border-color: var(--ui-brand); --tw-ring-color: #dbeafe; }
 .workspace-page table th { padding-block: 14px; background: #f8fafc; }
+/* All dashboard tables, including nested dialogs and sticky headers. */
+.dashboard-shell table thead,
+.dashboard-shell table thead th {
+  background: var(--ui-table-header-bg);
+  color: var(--ui-table-header-text);
+  border-bottom-color: #262626;
+}
 .workspace-page table td { padding-block: 16px; }
 .workspace-page table tbody tr:hover { background: #f4f7fb; }
 .workspace-page table td:first-child { color: var(--ui-ink); }
