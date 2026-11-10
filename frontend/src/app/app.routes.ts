@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { adminGuard } from './core/guards/admin.guard';
 import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
+import { dashboardGuard } from './core/guards/dashboard.guard';
 
 export const routes: Routes = [
   { path: '', loadComponent: () => import('./pages/landing/landing.component').then(m => m.LandingComponent) },
@@ -12,9 +13,9 @@ export const routes: Routes = [
     canActivate: [authGuard],
     canActivateChild: [authGuard],
     children: [
-      { path: '', loadComponent: () => import('./pages/dashboard/home/home.component').then(m => m.HomeComponent) },
+      { path: '', loadComponent: () => import('./pages/dashboard/home/home.component').then(m => m.HomeComponent), canActivate: [dashboardGuard] },
       ...['finance', 'sales', 'kolektor', 'teknisi'].map(role => ({
-        path: `${role}/dashboard`, loadComponent: () => import('./pages/dashboard/home/home.component').then(m => m.HomeComponent), canActivate: [roleGuard(role)],
+        path: `${role}/dashboard`, redirectTo: '/dashboard', pathMatch: 'full' as const,
       })),
       {
         path: 'monitoring/server',
@@ -34,7 +35,7 @@ export const routes: Routes = [
       },
       { path: 'users', loadComponent: () => import('./pages/dashboard/users/users.component').then(m => m.UsersComponent), canActivate: [adminGuard] },
       {
-        path: 'sales', redirectTo: 'sales/dashboard', pathMatch: 'full',
+        path: 'sales', redirectTo: '/dashboard', pathMatch: 'full',
       },
       {
         path: 'mainCore',

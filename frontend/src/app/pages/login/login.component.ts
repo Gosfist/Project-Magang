@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
@@ -17,8 +17,8 @@ export class LoginComponent implements OnInit {
 
   email = '';
   password = '';
-  error = '';
-  busy = false;
+  error = signal('');
+  busy = signal(false);
   showPassword = false;
 
   ngOnInit(): void {
@@ -28,14 +28,15 @@ export class LoginComponent implements OnInit {
   }
 
   async submit(): Promise<void> {
-    this.busy = true;
-    this.error = '';
+    if (this.busy()) return;
+    this.busy.set(true);
+    this.error.set('');
     try {
-      await this.auth.login(this.email, this.password);
+      await this.auth.login(this.email.trim(), this.password);
     } catch (e) {
-      this.error = e instanceof Error ? e.message : 'Gagal masuk.';
+      this.error.set(e instanceof Error ? e.message : 'Gagal masuk.');
     } finally {
-      this.busy = false;
+      this.busy.set(false);
     }
   }
 }

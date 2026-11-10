@@ -15,5 +15,5 @@
   .login-layout { grid-template-columns: minmax(0, 1fr); }
   .login-brand { display: none; }
   .login-form-panel { padding: 32px 24px; }
-  .login-mobile-logo { display: flex; }
+  .login-mobile-logo { display: flex; justify-content: center; }
 }

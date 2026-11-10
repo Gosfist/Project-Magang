@@ -59,3 +59,7 @@ migrasi terpisah; updater tidak mengubah skema database lama.
 Jalankan `npm run build` dan `npm test` dari folder `backend` untuk verifikasi.
 Lihat [hasil audit lokal tanpa API MikroTik](../docs/audit-tanpa-api-mikrotik.md)
 untuk cakupan pemeriksaan, jalur tiap fitur, hasil tes, dan batas validasinya.
+
+Login menggunakan satu `user.findUnique` berdasarkan email (`users_email_key` unik), lalu verifikasi bcrypt dan tanda tangan JWT bila berhasil. Tidak ada join, pemanggilan bot, atau retry pada jalur kredensial salah. Frontend Angular 22 memakai signal untuk error/loading agar hasil async langsung dirender, membatasi request login 15 detik, dan tidak mengirim Bearer lama ke endpoint login. Kegagalan 401 login tetap ditampilkan pada form; 401 API terproteksi tetap menangani sesi kedaluwarsa.
+
+Penolakan konteks X-Access-Role memakai HTTP 403, terpisah dari token hilang/tidak valid atau akun nonaktif (401). Error database tidak disamarkan menjadi token kedaluwarsa. Frontend mengarahkan 403 dan URL terlarang ke /dashboard tanpa menghapus sesi. Dashboard semua role memakai URL /dashboard; isi mengikuti role utama, dan URL dashboard per role yang lama hanya menjadi redirect. Endpoint auth/me dan profil tidak memakai konteks role URL; pemulihan sesi pada direct URL tetap berjalan. Token, cache pengguna, dan foto hanya dibersihkan bersama saat sesi benar-benar berakhir.

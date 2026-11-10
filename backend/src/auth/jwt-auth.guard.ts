@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -14,20 +14,23 @@ export class JwtAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthRequest>();
     const token = request.headers.authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
     if (!token) throw new UnauthorizedException('Token autentikasi tidak tersedia.');
+    let payload: { sub: string; role: string };
+    let id: bigint;
     try {
-      const payload = await this.jwt.verifyAsync<{ sub: string; role: string }>(token);
-      const user = await this.prisma.user.findUnique({ where: { id: BigInt(payload.sub) }, select: { role: true, additionalRoles: true, status: true } });
-      if (!user || user.status !== 'active') throw new UnauthorizedException();
-      const contextRole = request.headers['x-access-role'];
-      if (contextRole !== undefined && (typeof contextRole !== 'string' || !accessRoles(user).includes(contextRole))) {
-        throw new UnauthorizedException('Hak akses tidak tersedia.');
-      }
-      request.user = { id: payload.sub, primaryRole: user.role, additionalRoles: user.additionalRoles,
-        role: typeof contextRole === 'string' ? contextRole : user.role,
-        accessRole: typeof contextRole === 'string' ? contextRole : undefined };
-      return true;
+      payload = await this.jwt.verifyAsync<{ sub: string; role: string }>(token);
+      id = BigInt(payload.sub);
     } catch {
       throw new UnauthorizedException('Token autentikasi tidak valid atau sudah kedaluwarsa.');
     }
+    const user = await this.prisma.user.findUnique({ where: { id }, select: { role: true, additionalRoles: true, status: true } });
+    if (!user || user.status !== 'active') throw new UnauthorizedException();
+    const contextRole = request.headers['x-access-role'];
+    if (contextRole !== undefined && (typeof contextRole !== 'string' || !accessRoles(user).includes(contextRole))) {
+      throw new ForbiddenException('Hak akses tidak tersedia.');
+    }
+    request.user = { id: payload.sub, primaryRole: user.role, additionalRoles: user.additionalRoles,
+      role: typeof contextRole === 'string' ? contextRole : user.role,
+      accessRole: typeof contextRole === 'string' ? contextRole : undefined };
+    return true;
   }
 }

@@ -26,6 +26,7 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
     ToastComponent,
   ],
   templateUrl: './users.component.html',
+  styleUrl: './users.component.css',
 })
 export class UsersComponent implements OnInit, OnDestroy {
   private readonly latestLoad = latestRequest();

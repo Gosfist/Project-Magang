@@ -157,8 +157,8 @@ sudo freeradius -XC
 | Email | admin@unzanet.com |
 | Password | 123 |
 
-2. Klik Login. Jika password pernah Anda ubah melalui profil, gunakan password terbaru; mengulang installer tidak mereset password akun yang sudah ada.
-3. Buka Router > Klien VPN > Tambah VPN.
+2. Klik Login. Jika password pernah Anda ubah melalui profil, gunakan password terbaru; mengulang installer tidak mereset password akun yang sudah ada. Jika kata sandi salah, pesan error dan tombol Masuk harus langsung diperbarui tanpa klik tambahan. Permintaan login dibatasi 15 detik; jika muncul pesan koneksi terlalu lama, periksa jaringan dan backend. Untuk frontend versi lama yang macet di Memproses, pasang paket frontend terbaru lalu muat ulang browser.
+3. Dashboard semua role memakai /dashboard dengan isi sesuai role utama. URL di luar hak akses kembali ke /dashboard tanpa logout. Respons 403 berarti tidak memiliki akses; login ulang hanya diperlukan bila token benar-benar tidak valid atau kedaluwarsa (401). Terapkan backend dan frontend terbaru bersama. Untuk admin, buka Router > Klien VPN > Tambah VPN.
 
 | Isian | Contoh |
 | --- | --- |

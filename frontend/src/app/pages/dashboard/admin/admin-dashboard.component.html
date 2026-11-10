@@ -38,7 +38,7 @@
           <h3 id="finance-heading">Ringkasan Finance</h3>
           <p class="mt-1 text-xs text-slate-500">{{ period() }} · Transaksi tercatat</p>
         </div>
-        <a routerLink="/dashboard/finance/dashboard" class="inline-flex min-h-10 items-center gap-1 text-sm font-medium text-blue-700 hover:underline">Lihat Finance <svg lucideArrowUpRight [size]="16" aria-hidden="true"></svg></a>
+        <a routerLink="/dashboard/finance/ringkasan" class="inline-flex min-h-10 items-center gap-1 text-sm font-medium text-blue-700 hover:underline">Lihat Finance <svg lucideArrowUpRight [size]="16" aria-hidden="true"></svg></a>
       </div>
       @if (finance(); as summary) {
         <div class="finance-totals">

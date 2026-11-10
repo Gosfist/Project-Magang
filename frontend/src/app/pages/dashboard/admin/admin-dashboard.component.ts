@@ -56,7 +56,7 @@ export class AdminDashboardComponent implements OnInit {
     { label: 'Main Core', icon: 'network', path: '/dashboard/mainCore/traceJalur' },
     { label: 'Harga Paket', icon: 'tags', path: '/dashboard/pppoe/harga-paket' },
     { label: 'Pasang Baru', icon: 'hardhat', path: '/dashboard/pasang-baru' },
-    { label: 'Finance', icon: 'wallet', path: '/dashboard/finance/dashboard' },
+    { label: 'Finance', icon: 'wallet', path: '/dashboard/finance/ringkasan' },
     { label: 'Data Area', icon: 'map', path: '/dashboard/area' },
     { label: 'Bot WhatsApp', icon: 'bot', path: '/dashboard/bot-whatsapp/status' },
     { label: 'Akun & Role', icon: 'users', path: '/dashboard/users' },

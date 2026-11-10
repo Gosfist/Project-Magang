@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
-import { roleForUrl, userRoles } from '../access-roles';
-import { firstValueFrom } from 'rxjs';
+import { DASHBOARD_URL, roleForUrl, userRoles } from '../access-roles';
+import { firstValueFrom, timeout, TimeoutError } from 'rxjs';
 import { ApiService } from './api.service';
 import { User } from '../../shared/models/types';
 
@@ -55,13 +55,20 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<void> {
-    const result = await firstValueFrom(
-      this.api.post<{ user: User; accessToken: string }>('/auth/login', { email, password })
-    );
+    let result: { user: User; accessToken: string };
+    try {
+      result = await firstValueFrom(
+        this.api.post<{ user: User; accessToken: string }>('/auth/login', { email, password })
+          .pipe(timeout({ first: 15000 }))
+      );
+    } catch (error) {
+      if (error instanceof TimeoutError) throw new Error('Koneksi login terlalu lama. Periksa koneksi Anda lalu coba lagi.');
+      throw error;
+    }
     localStorage.setItem('unzanet_token', result.accessToken);
     this.user.set(result.user);
     void this.loadProfilePhoto();
-    this.router.navigate(['/dashboard']);
+    this.router.navigate([DASHBOARD_URL]);
   }
 
   async updateProfile(form: { name: string; phone?: string | null; photo?: string | null; password?: string }): Promise<string> {
@@ -102,11 +109,17 @@ export class AuthService {
 
   async logout(): Promise<void> {
     try { await firstValueFrom(this.api.post('/auth/logout', {})); } catch { /* Pengguna tetap dapat keluar secara lokal saat koneksi terputus. */ }
+    this.clearSession();
+    this.router.navigate(['/login']);
+  }
+
+  clearSession(): void {
     localStorage.removeItem('unzanet_token');
     ++this.photoRequest;
     this.clearProfilePhoto();
     this.profilePhotoError.set(false);
     this.user.set(null);
-    this.router.navigate(['/login']);
+    this.accessContext.set(null);
+    this.loading.set(false);
   }
 }

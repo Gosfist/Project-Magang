@@ -25,10 +25,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   private readonly titles: Record<string, string> = {
     '/dashboard': 'Dashboard',
-    '/dashboard/finance/dashboard': 'Dashboard Finance',
-    '/dashboard/sales/dashboard': 'Dashboard Sales',
-    '/dashboard/kolektor/dashboard': 'Dashboard Kolektor',
-    '/dashboard/teknisi/dashboard': 'Dashboard Teknisi',
     '/dashboard/monitoring/server': 'Monitoring Server',
     '/dashboard/monitoring/radius': 'Monitoring FreeRADIUS',
     '/dashboard/users': 'Data Petugas',
@@ -54,7 +50,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     '/dashboard/tools/kalkulator-redaman': 'Kalkulator Redaman',
     '/dashboard/pengaturan': 'Pengaturan',
     '/dashboard/finance/gaji': 'Gaji',
-    '/dashboard/finance/ringkasan': 'Dashboard',
+    '/dashboard/finance/ringkasan': 'Ringkasan Finance',
     '/dashboard/finance/transaksi': 'Transaksi Finance',
     '/dashboard/finance/setoran': 'Setoran Kolektor',
     '/dashboard/finance/tagihan': 'Tagihan',

@@ -28,6 +28,14 @@ describe('Dashboard URL access', () => {
     expect(dashboard.children!.some(route => route.path === 'router/vpn-client')).toBeTrue();
     expect(dashboard.children!.some(route => route.path === 'router/routers')).toBeTrue();
   });
+  it('uses the shared Dashboard URL for every primary role and removes role dashboard submenu duplicates', () => {
+    const sidebar = TestBed.runInInjectionContext(() => new SidebarComponent());
+    for (const currentRole of ['finance', 'kolektor', 'sales', 'teknisi']) {
+      role = currentRole;
+      expect(sidebar.primaryLinks()[0]).toEqual(['Dashboard', '/dashboard']);
+    }
+    expect(sidebar.roleGroups.every(group => group.links.every(link => link[0] !== 'Dashboard'))).toBeTrue();
+  });
   it('moves pool/isolation URLs to NAS and removes their standalone submenu entries', () => {
     for (const path of ['pppoe/ip-pools', 'pppoe/isolation']) {
       expect(dashboard.children!.find(route => route.path === path)?.redirectTo).toBe('router/routers');
