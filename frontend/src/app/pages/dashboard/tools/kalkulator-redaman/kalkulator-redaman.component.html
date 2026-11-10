@@ -3,11 +3,12 @@
     <h2 class="text-lg font-semibold">Kalkulator Redaman</h2>
     <p class="mb-5 mt-1 text-sm text-slate-500">
       Perhitungan dilakukan langsung di halaman ini dan tidak disimpan ke database.
+      Daya optik memakai dBm; semakin negatif nilainya, semakin lemah dayanya. Redaman/loss memakai dB.
     </p>
 
     <div class="grid gap-4 md:grid-cols-3">
       <div>
-        <label class="label">Redaman Sumber (dBm)</label>
+        <label class="label">Daya Sumber (dBm)</label>
         <input
           class="input"
           type="number"
@@ -104,8 +105,10 @@
     </div>
 
     <div class="mt-4 rounded-xl bg-slate-950 p-5 text-white">
-      <p class="text-sm text-slate-300">Hasil Redaman</p>
+      <p class="text-sm text-slate-300">Estimasi Daya Keluaran setelah Margin</p>
       <p class="mt-1 text-3xl font-bold">{{ show(result().redaman) }} dBm</p>
+      <p class="mt-2 text-sm text-slate-300" data-testid="physical-power">Daya sebelum margin: {{ show(result().power) }} dBm</p>
+      <p class="mt-1 text-sm text-slate-300" data-testid="total-loss">Total redaman: {{ show(result().totalLoss) }} dB; margin perencanaan: 1 dB.</p>
     </div>
   </div>
 </div>

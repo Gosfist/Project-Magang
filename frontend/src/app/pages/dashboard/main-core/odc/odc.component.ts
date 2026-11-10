@@ -1,3 +1,4 @@
+import { estimateInputPower } from '../../../../shared/optical-power';
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucidePencil, LucidePlus, LucideSearch, LucideTrash2 } from '@lucide/angular';
@@ -139,15 +140,7 @@ export class OdcComponent implements OnInit, OnDestroy {
   autoRedaman(): string {
     const parent = this.selectedParent();
     if (!parent || this.form.jarakKabel === '') return this.form.redamanIn;
-    const distance = Number(this.form.jarakKabel);
-    let splitterLoss = 0;
-    if (parent.type === 'rasio' && this.form.parentPortOut) {
-      const percentage = Number((parent.rasioRedamanPorts[this.form.parentPortOut] ?? '').replace('%', '').replace(',', '.'));
-      if (percentage > 0) splitterLoss = -10 * Math.log10(percentage / 100);
-    } else if (parent.type !== 'server' && parent.outputCount) {
-      splitterLoss = 10 * Math.log10(parent.outputCount);
-    }
-    return ((parent.redamanIn ?? 0) - splitterLoss - (distance / 1000) * 0.35 - 1).toFixed(2);
+    return estimateInputPower(parent, Number(this.form.jarakKabel), this.form.parentPortOut, 'odc');
   }
 
   formatDate(date: string): string { return new Date(date).toLocaleDateString('id-ID'); }

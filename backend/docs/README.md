@@ -24,7 +24,7 @@ baru tanpa carousel atau gulir horizontal.
 
 Panduan [Kalkulator Redaman](kalkulator-redaman.md) memuat input, rumus dan contoh
 hasil. Perhitungan frontend kini diperbarui setiap input/splitter/jalur berubah;
-hasil kosong tidak lagi tersimpan dari render awal.
+hasil kosong tidak lagi tersimpan dari render awal. Daya sumber/masuk memakai dBm (semakin negatif semakin lemah), sedangkan loss memakai dB. Panduan yang sama mencakup Server, Rasio, ODC, ODP, margin per segmen, sumber kosong, dan pembulatan frontend/backend.
 
 Tambah langsung di PPPoE > Data Pelanggan kini dua tahap: Data Pelanggan termasuk
 pilih Layanan, lalu Data Akun PPPoE. Pengaturan pembayaran manual dihapus dari

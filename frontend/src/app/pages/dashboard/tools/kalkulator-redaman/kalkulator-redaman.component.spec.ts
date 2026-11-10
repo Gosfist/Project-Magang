@@ -2,6 +2,18 @@ import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { KalkulatorRedamanComponent } from './kalkulator-redaman.component';
 
 describe('optical attenuation calculator', () => {
+  it('distinguishes positive loss from decreasing negative optical power and the planning margin', () => {
+    const component = new KalkulatorRedamanComponent();
+    component.source.set(-5); component.distance.set(100); component.connectors.set(0);
+    const result = component.result();
+    expect(result.totalLoss).toBeCloseTo(3.0453, 4);
+    expect(result.power).toBeCloseTo(-8.0453, 4);
+    expect(result.redaman).toBeCloseTo(-9.0453, 4);
+    component.distance.set(1000);
+    expect(component.result().redaman).toBeLessThan(result.redaman);
+    component.source.set(null);
+    expect(Number.isNaN(component.result().power)).toBeTrue();
+  });
   function setup() {
     TestBed.configureTestingModule({ imports: [KalkulatorRedamanComponent] });
     const fixture = TestBed.createComponent(KalkulatorRedamanComponent);
@@ -22,6 +34,16 @@ describe('optical attenuation calculator', () => {
     const output = () => host.querySelector('.text-3xl')?.textContent?.trim();
     return { fixture, host, input, select, losses, output };
   }
+
+  it('renders a negative source as weaker output while showing loss and margin in dB separately', fakeAsync(() => {
+    const { host, input, output } = setup();
+    input(0, '-5'); input(1, '100'); input(2, '0');
+    expect(output()).toBe('-9,05 dBm');
+    expect(host.querySelector('[data-testid="physical-power"]')?.textContent).toContain('-8,05 dBm');
+    expect(host.querySelector('[data-testid="total-loss"]')?.textContent).toContain('3,05 dB');
+    expect(host.querySelector('[data-testid="total-loss"]')?.textContent).toContain('1 dB');
+    expect(host.textContent).toContain('Daya Sumber (dBm)');
+  }));
 
   it('calculates the screenshot values after the initial blank render and recalculates later input changes', fakeAsync(() => {
     const { input, losses, output } = setup();

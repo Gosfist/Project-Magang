@@ -45,10 +45,11 @@ export class KalkulatorRedamanComponent {
     const cable = (this.nonNegative(this.distance()) / 1000) * this.nonNegative(this.cablePerKm());
     const connector = this.nonNegative(this.connectors()) * this.nonNegative(this.connectorLoss());
     const source = this.source();
-    const redaman = source === null || !Number.isFinite(source)
-      ? NaN : source - splitterLoss - cable - connector - 1;
+    const totalLoss = splitterLoss + cable + connector;
+    const power = source === null || !Number.isFinite(source) ? NaN : source - totalLoss;
+    const redaman = power - 1;
 
-    return { splitterLoss, cable, connector, redaman };
+    return { splitterLoss, cable, connector, totalLoss, power, redaman };
   });
 
   private nonNegative(value: number | null): number {

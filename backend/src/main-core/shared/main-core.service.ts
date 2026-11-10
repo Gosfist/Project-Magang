@@ -198,12 +198,14 @@ export class MainCoreService {
     }
 
     let redamanIn = dto.redamanIn ?? null;
-    if (type !== 'server' && redamanIn === null && dto.jarakKabel !== undefined && parent) {
-      const source = Number(parent.redamanIn ?? 0);
+    if (type !== 'server' && redamanIn === null && dto.jarakKabel !== undefined && parent && parent.redamanIn !== null) {
+      const source = Number(parent.redamanIn);
       const splitterLoss = this.splitterLoss(parent, parentPortOut);
-      const cableLoss = (dto.jarakKabel / 1000) * CABLE_LOSS;
-      const connectorLoss = type === 'odp' && parent.tipeTitik === 'odc' ? 2 * CONNECTOR_LOSS : 0;
-      redamanIn = Math.round((source - splitterLoss - cableLoss - connectorLoss - SAFETY_MARGIN) * 100) / 100;
+      if (splitterLoss !== null) {
+        const cableLoss = (dto.jarakKabel / 1000) * CABLE_LOSS;
+        const connectorLoss = type === 'odp' && parent.tipeTitik === 'odc' ? 2 * CONNECTOR_LOSS : 0;
+        redamanIn = Number((source - splitterLoss - cableLoss - connectorLoss - SAFETY_MARGIN).toFixed(2));
+      }
     }
     const now = new Date();
     const jakarta = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
@@ -240,12 +242,12 @@ export class MainCoreService {
   private splitterLoss(parent: MainCore, port: number | null) {
     if (parent.tipeTitik === 'server') return 0;
     const spec = this.spec(parent);
-    if (parent.tipeTitik === 'rasio' && port) {
+    if (parent.tipeTitik === 'rasio') {
       const percentage = this.parsePercentage(spec.rasio_redaman_ports?.[String(port)]);
-      if (percentage) return -10 * Math.log10(percentage / 100);
+      return percentage === null ? null : -10 * Math.log10(percentage / 100);
     }
     const count = this.outputCount(parent);
-    return count ? 10 * Math.log10(count) : 0;
+    return count > 0 ? 10 * Math.log10(count) : null;
   }
 
   private hasAvailableOutput(parent: MainCore & { children: unknown[] }) {
