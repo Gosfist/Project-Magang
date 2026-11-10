@@ -42,7 +42,7 @@ bot-whatsapp/shared/       pengirim notifikasi dari backend
 
 Module induk menggabungkan controller/service tiap fitur. `auth`, `common`,
 dan `prisma` tetap merupakan infrastruktur bersama, bukan halaman frontend.
-Login, template, dan log bot WhatsApp dilayani service terpisah `bot_whatsapp/`.
+Login, template, dan log bot WhatsApp dilayani service terpisah `bot_whatsapp/`. Service tersebut memakai Go + whatsmeow; folder ini hanya klien HTTP notifikasi NestJS dan tetap membutuhkan Node.js. Tidak ada runtime Baileys di backend.
 CRUD Main Core memakai service bersama agar validasi relasi jaringan tidak
 disalin ke empat fitur. Folder per halaman memiliki controller masing-masing.
 

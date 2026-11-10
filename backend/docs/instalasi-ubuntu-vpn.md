@@ -226,7 +226,7 @@ sudo systemctl status unzanet-radius-nas-refresh.timer --no-pager
 ~~~
 
 7. Periksa Monitoring RADIUS dan accounting Start/Interim. Aktif adalah status layanan, bukan bukti sesi Online. Pasang Baru dan Data Pelanggan membaca radacct tanpa API MikroTik: sesi segar tampil Online, sesi usang/tidak pasti tampil Belum diketahui. Instalasi baru memakai UTC untuk accounting SQL dan pembaca sesi backend; tampilan tetap WIB. Jika pelanggan bisa internet tetapi sesi belum diketahui, ikuti bagian 9.7. Uji Putus Sesi, isolir, serta pemulihan pada sesi nyata.
-8. Bot WhatsApp memakai Go + whatsmeow; template/log tetap MySQL dan sesi tersimpan lokal. Untuk migrasi bot lama, jalankan npm run updatebot dari root repo VPS. Buka Login Bot Wa, pindai QR baru sekali, lalu uji Ping ke nomor sendiri. Periksa service unzanet-botwa dan endpoint /api/wa/health.
+8. Bot WhatsApp memakai Go + whatsmeow; template/log tetap MySQL. Jalankan npm run updatebot dari root repo VPS, lalu pindai QR baru dan uji Ping. Jika updater lama gagal karena package.json bot tidak ditemukan setelah pull, jalankan ulang npm run updatebot. Updater terbaru memuat ulang script setelah pull dan membersihkan node_modules bot setelah health berhasil; dependency Node.js backend tetap diperlukan.
 
 ## 9 Pemulihan dan perawatan
 
