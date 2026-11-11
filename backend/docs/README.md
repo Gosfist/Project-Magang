@@ -136,6 +136,8 @@ Perbaikan perhitungan uptime hanya memerlukan backend terbaru (`npm run updatebe
 
 ## Audit logika 11 November 2026
 
+Koreksi deployment setelah audit: folder hasil `mkdtemp` berizin 0700 di Linux. Jika updater root memindahkannya menjadi `backend/dist`, user service tidak dapat membaca main.js dan Node dapat melaporkan MODULE_NOT_FOUND. Builder kini menormalkan direktori menjadi 0755 dan file menjadi 0644 sebelum promosi. Pemulihan VPS: `sudo chmod -R u=rwX,go=rX /var/www/Project-Magang/backend/dist`, lalu `sudo systemctl restart unzanet-backend`. Updater memeriksa status aktif setelah restart dan berhenti bila service gagal; pemeriksaan ini bukan pengujian penuh endpoint login. Tes permission POSIX dilewati pada Windows dan tetap perlu dijalankan di Linux.
+
 Lihat [laporan audit logika](AUDIT_LOGIKA_2026-11-11.md) untuk temuan, perbaikan, bukti tes dan batas validasi. Pembuatan tagihan bulanan memakai batch berurutan sampai semua pelanggan selesai. ACC/Tolak/Batal ACC/Hapus setoran memeriksa status secara atomik agar permintaan bersamaan tidak mencatat pemasukan ganda atau menimpa status terbaru. Pencatatan setoran baru mengunci invoice sebelum memeriksa duplikasi.
 
 Scheduler isolir memeriksa kembali kelayakan secara atomik sebelum menonaktifkan akun: tagihan PENDING/OVERDUE masih jatuh tempo dan belum dilindungi janji bayar aktif. Kandidat yang berubah setelah daftar batch diambil tidak boleh diputus berdasarkan daftar lama.

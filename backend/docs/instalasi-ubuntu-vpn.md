@@ -304,7 +304,7 @@ sudo systemctl restart accel-ppp
 ~~~
 
 9. Restart SSTP menyambung ulang tunnel router. Jadwalkan perawatan dan periksa sesi/accounting sesudahnya. HTTPS website diperbarui terpisah melalui Certbot.
-10. Backup database, uploads, secret instalasi, dan CA/private key secara privat. npm run update hanya memperbarui kode, tanpa memigrasikan database lama. Updater memeriksa kolom dan index database sebelum restart backend. Jika skema tidak sesuai atau build gagal, backend lama tetap berjalan. Perbaiki skema sesuai panduan lalu ulangi update.
+10. Backup database, uploads, secret instalasi, dan CA/private key secara privat. npm run update hanya memperbarui kode, tanpa memigrasikan database lama. Updater memeriksa kolom dan index database sebelum restart backend. Jika skema tidak sesuai atau build gagal, backend lama tetap berjalan. Perbaiki skema sesuai panduan lalu ulangi update. Jika backend gagal dengan main.js tidak ditemukan setelah build staging, jalankan sudo chmod -R u=rwX,go=rX /var/www/Project-Magang/backend/dist lalu sudo systemctl restart unzanet-backend. Builder terbaru mengatur izin direktori 755 dan file 644 untuk user service.
 
 ### 9.3 Menu tidak berpindah dan file halaman gagal dimuat
 

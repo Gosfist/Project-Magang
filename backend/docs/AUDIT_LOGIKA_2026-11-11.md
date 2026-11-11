@@ -58,6 +58,8 @@ Setelah install ulang dependency backend, `prisma:generate` wajib dijalankan seb
 
 ## Batas yang masih perlu diverifikasi
 
+**Koreksi berdasarkan deployment VPS setelah audit:** service gagal karena `backend/dist/main.js` tidak dapat ditemukan oleh user service. Builder memakai `mkdtemp` (0700 pada Linux), kemudian memindahkannya menjadi dist tanpa mengubah izin; build lokal Windows tidak mendeteksi masalah izin POSIX ini. Builder diperbaiki untuk menetapkan direktori 0755 dan file 0644 sebelum promosi. Ditambahkan tes permission khusus POSIX (dilewati pada Windows). Updater kini berhenti jika service gagal aktif setelah restart. Pemulihan izin dan keberhasilan login di VPS masih harus dikonfirmasi pengguna. Hasil tes lama di atas tidak membuktikan deployment Linux berhasil.
+
 1. Uji transaksi MySQL nyata untuk dua ACC bersamaan, dua kolektor pada invoice sama, serta pembayaran bersamaan dengan scheduler isolir. Konflik/deadlock harus rollback tanpa pemasukan ganda atau akun lunas tetap terisolir.
 2. Uji PSB nyata: dua teknisi berebut port sama, rollback foto, pindah pelanggan saat preview memuat, dan download foto privat dengan role berbeda.
 3. Uji alur perangkat: autentikasi PPPoE, Accounting-Start/Interim/Stop, Disconnect ACK/NAK, pembayaran memulihkan akses, serta paket dinonaktifkan/diaktifkan kembali. Sesi dan counter queue harus diperiksa langsung.

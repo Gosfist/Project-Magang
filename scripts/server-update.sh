@@ -103,6 +103,11 @@ if [[ "$MODE" == "all" || "$MODE" == "be" ]]; then
   log "Reload dan start backend"
   sudo systemctl daemon-reload
   sudo systemctl restart "$SERVICE_NAME"
+  sleep 2
+  if ! sudo systemctl is-active --quiet "$SERVICE_NAME"; then
+    log "Backend gagal menyala. Periksa: sudo journalctl -u $SERVICE_NAME -n 80 --no-pager -o cat"
+    exit 1
+  fi
 fi
 
 if [[ "$MODE" == "all" || "$MODE" == "fe" ]]; then
