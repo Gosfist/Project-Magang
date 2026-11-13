@@ -11,3 +11,7 @@ export class CompleteTerminationDto {
     @Max(Number.MAX_SAFE_INTEGER)
     amount: number;
 }
+
+export class CancelTerminationDto {
+    @IsString() @Matches(/\S/) @MaxLength(1000) reason: string;
+}

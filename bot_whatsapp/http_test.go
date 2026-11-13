@@ -201,3 +201,19 @@ func TestQRAndCORS(t *testing.T) {
 		}
 	}
 }
+
+func TestTerminationTemplatesCanBeReadAndSaved(t *testing.T) {
+	a, db, _ := testAPI(t, "admin", 200)
+	r := request(a, "GET", "/api/wa/templates", "", "Bearer test-token")
+	if r.Code != 200 || !strings.Contains(r.Body.String(), `"termination_approved"`) || !strings.Contains(r.Body.String(), `"termination_completed"`) || !strings.Contains(r.Body.String(), "{prorata}") {
+		t.Fatal("missing termination templates", r.Body.String())
+	}
+	r = request(a, "PATCH", "/api/wa/templates", `{"termination_approved":"Halo {nama}, total {total_tagihan}","termination_completed":"Diambil {nama_petugas}"}`, "Bearer test-token")
+	if r.Code != 200 || db.settings["wa_template_termination_approved"] != "Halo {nama}, total {total_tagihan}" || db.settings["wa_template_termination_completed"] != "Diambil {nama_petugas}" {
+		t.Fatal("termination templates not saved", r.Code, r.Body.String())
+	}
+	r = request(a, "GET", "/api/wa/templates", "", "Bearer test-token")
+	if !strings.Contains(r.Body.String(), "Diambil {nama_petugas}") {
+		t.Fatal("saved collection template not returned", r.Body.String())
+	}
+}

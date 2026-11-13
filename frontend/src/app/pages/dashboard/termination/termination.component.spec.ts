@@ -63,6 +63,8 @@ describe('Berhenti Langganan', () => {
     );
     expect(buttons).toContain('Selesai');
     expect(buttons).not.toContain('Tambah');
+    expect(buttons).not.toContain('Kirim WA');
+    expect(buttons).not.toContain('Batal');
     expect(host.textContent).not.toContain('Hapus');
   });
   it('closes the dialog with Escape and restores trigger focus', () => {
@@ -109,6 +111,33 @@ describe('Berhenti Langganan', () => {
   it('does not submit an unselected typed customer', () => {
     const { component, api } = setup(true);
     component.customerSearch = 'Paijo'; component.reason = 'Pindah'; component.create();
+    expect(api.post).not.toHaveBeenCalled();
+  });
+  it('lets admin send approval WA for an existing pending pickup without adding a new termination', () => {
+    const { component, api, host } = setup(true);
+    const button = Array.from(host.querySelectorAll('button')).find(el => el.textContent?.trim() === 'Kirim WA');
+    expect(button).toBeDefined(); button!.click();
+    expect(api.post).toHaveBeenCalledWith('/pppoe/terminations/1/notify-approval', {});
+    expect(component.saving()).toBeFalse();
+  });
+  it('requires an admin confirmation and cancellation reason before calling the cancellation API', () => {
+    const { component, fixture, host, api } = setup(true);
+    const button = Array.from(host.querySelectorAll('button')).find(el => el.textContent?.trim() === 'Batal')!;
+    expect(button).toBeDefined(); button.click(); fixture.detectChanges();
+    expect(component.cancelCandidate()?.id).toBe('1'); expect(api.post).not.toHaveBeenCalled();
+    component.cancel(); expect(api.post).not.toHaveBeenCalled();
+    component.cancelReason = 'Salah memilih pelanggan'; component.cancel();
+    expect(api.post).toHaveBeenCalledWith('/pppoe/terminations/1/cancel', { reason: 'Salah memilih pelanggan' });
+    expect(component.cancelCandidate()).toBeNull();
+  });
+  it('does not cancel when the admin closes the confirmation', () => {
+    const { component, api } = setup(true);
+    component.openCancellation(item); component.cancelReason = 'Salah input'; component.closeCancellation(); component.cancel();
+    expect(api.post).not.toHaveBeenCalled();
+  });
+  it('blocks technicians from opening or submitting the cancellation action', () => {
+    const { component, api } = setup(false); component.openCancellation(item);
+    expect(component.cancelCandidate()).toBeNull(); component.cancelCandidate.set(item); component.cancelReason = 'Lanjut'; component.cancel();
     expect(api.post).not.toHaveBeenCalled();
   });
   it('only shows Add for admin', () => {

@@ -16,6 +16,7 @@ import { TerminationService } from './termination.service.js';
 import {
     CreateTerminationDto,
     CompleteTerminationDto,
+    CancelTerminationDto,
 } from './termination.dto.js';
 @Controller('pppoe/terminations')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -47,6 +48,18 @@ export class TerminationController {
         @Req() req: AuthRequest,
     ) {
         return this.service.complete(id, dto, req.user.id);
+    }
+    @Post(':id/cancel') @Roles('admin') cancel(
+        @Param('id') id: string,
+        @Body() dto: CancelTerminationDto,
+        @Req() req: AuthRequest,
+    ) {
+        return this.service.cancel(id, dto, req.user.id);
+    }
+    @Post(':id/notify-approval') @Roles('admin') notifyApproval(
+        @Param('id') id: string,
+    ) {
+        return this.service.notifyApproval(id);
     }
     @Post(':id/notify') resend(@Param('id') id: string) {
         return this.service.resend(id);

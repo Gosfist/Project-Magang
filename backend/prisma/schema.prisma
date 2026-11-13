@@ -113,7 +113,7 @@ model PppoeAccount {
   deposits         CollectorDeposit[]
   manualIsolated   Boolean @default(false) @map("manual_isolated")
   terminatedAt     DateTime? @map("terminated_at")
-  termination      SubscriptionTermination?
+  terminations     SubscriptionTermination[]
   psbOrder         PsbOrder?
 
   @@index([pppoePackageId])
@@ -580,7 +580,7 @@ model FinanceTransaction {
 
 model SubscriptionTermination {
   id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  pppoeAccountId BigInt @unique @map("pppoe_account_id") @db.UnsignedBigInt
+  pppoeAccountId BigInt @map("pppoe_account_id") @db.UnsignedBigInt
   requestedByUserId BigInt @map("requested_by_user_id") @db.UnsignedBigInt
   collectedByUserId BigInt? @map("collected_by_user_id") @db.UnsignedBigInt
   requestedByName String @map("requested_by_name") @db.VarChar(255)
@@ -594,6 +594,7 @@ model SubscriptionTermination {
   account PppoeAccount @relation(fields: [pppoeAccountId], references: [id], onDelete: Restrict)
   requestedBy User @relation("TerminationRequestedBy", fields: [requestedByUserId], references: [id], onDelete: Restrict)
   collectedBy User? @relation("TerminationCollectedBy", fields: [collectedByUserId], references: [id], onDelete: Restrict)
+  @@index([pppoeAccountId])
   @@index([status, requestedAt])
   @@map("subscription_terminations")
 }

@@ -1,3 +1,4 @@
+import { LucideUserRoundX, LucidePackageCheck } from '@lucide/angular';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,6 +17,27 @@ export interface TemplateConfig {
 }
 
 export const TEMPLATE_LIST: TemplateConfig[] = [
+  {
+    id: 'termination_approved', name: 'Berhenti Langganan', title: 'Template Persetujuan Berhenti Langganan', label: 'Pesan Persetujuan Berhenti Langganan',
+    description: 'Dikirim setelah admin menambahkan penghentian. Berisi rencana pengambilan perangkat dan pembayaran akhir sampai tanggal berhenti.',
+    placeholders: [
+      { key: '{nama}', desc: 'Nama pelanggan' }, { key: '{nomor_pelanggan}', desc: 'Nomor pelanggan' },
+      { key: '{paket}', desc: 'Nama paket internet' }, { key: '{tanggal_berhenti}', desc: 'Tanggal penghentian oleh admin' },
+      { key: '{prorata}', desc: 'Tagihan bulan berjalan yang masih perlu dibayar' }, { key: '{tunggakan}', desc: 'Sisa tunggakan dan biaya lainnya' },
+      { key: '{total_tagihan}', desc: 'Total yang perlu dibayar setelah dikurangi setoran tercatat' },
+    ],
+    sampleData: { '{nama}': 'Ahmad Fauzi', '{nomor_pelanggan}': '000123', '{paket}': 'Paket 20 Mbps', '{tanggal_berhenti}': '13 November 2026', '{prorata}': 'Rp30.000', '{tunggakan}': 'Rp100.000', '{total_tagihan}': 'Rp130.000' },
+  },
+  {
+    id: 'termination_completed', name: 'Perangkat Diambil', title: 'Template Perangkat Sudah Diambil', label: 'Pesan Pengambilan Perangkat Selesai',
+    description: 'Dikirim saat petugas menyelesaikan pengambilan perangkat dan mencatat pembayaran akhir.',
+    placeholders: [
+      { key: '{nama}', desc: 'Nama pelanggan' }, { key: '{nomor_pelanggan}', desc: 'Nomor pelanggan' },
+      { key: '{nama_petugas}', desc: 'Nama petugas pengambil perangkat' }, { key: '{tanggal_berhenti}', desc: 'Tanggal berhenti langganan' }, { key: '{jumlah}', desc: 'Pembayaran yang diterima petugas' },
+    ],
+    sampleData: { '{nama}': 'Ahmad Fauzi', '{nomor_pelanggan}': '000123', '{nama_petugas}': 'Budi Santoso', '{tanggal_berhenti}': '13 November 2026', '{jumlah}': 'Rp130.000' },
+  },
+
   {
     id: 'sales', name: 'Sales', title: 'Template Registrasi Sales', label: 'Pesan Registrasi Sales',
     description: 'Dikirim setelah Sales mendaftarkan calon pelanggan.',
@@ -106,7 +128,7 @@ export const TEMPLATE_LIST: TemplateConfig[] = [
   host: { class: 'workspace-page' },
   selector: 'app-bot-wa-template',
   standalone: true,
-  imports: [CommonModule, FormsModule, ToastComponent],
+  imports: [CommonModule, FormsModule, ToastComponent, LucideUserRoundX, LucidePackageCheck],
   templateUrl: './bot-wa-template.component.html',
 })
 export class BotWaTemplateComponent implements OnInit {
@@ -121,6 +143,8 @@ export class BotWaTemplateComponent implements OnInit {
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
   templatesData: Record<string, string> = {
+    termination_approved: '',
+    termination_completed: '',
     sales: '',
     psb: '',
     isolation: '',

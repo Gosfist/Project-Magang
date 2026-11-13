@@ -65,9 +65,9 @@ export class DataPelangganService {
       { paymentPromises: { some: { status: 'ACTIVE', deadline: { gt: new Date() } } } },
       { paymentPromises: { none: { status: 'ACTIVE' } }, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date(Date.now() - 86400000) } }] },
     ] };
-    if (status) where.AND = [status === 'terminated' ? { termination: { isNot: null } } : status === 'active' ? { AND: [active, { termination: { is: null } }] } : { AND: [{ NOT: active }, { termination: { is: null } }] }];
+    if (status) where.AND = [status === 'terminated' ? { terminations: { some: { status: { in: ['PENDING', 'COMPLETED'] } } } } : status === 'active' ? { AND: [active, { terminations: { none: { status: { in: ['PENDING', 'COMPLETED'] } } } }] } : { AND: [{ NOT: active }, { terminations: { none: { status: { in: ['PENDING', 'COMPLETED'] } } } }] }];
     const [items, count] = await this.prisma.$transaction([
-      this.prisma.pppoeAccount.findMany({ where, include: { termination: { select: { status: true } }, paymentPromises: { where: { status: 'ACTIVE' }, select: { deadline: true }, take: 1 }, psbOrder: { select: { installationPhoto: true, completedAt: true } }, package: { include: { ipPool: true } }, routerNas: { select: { id: true, nasname: true, shortname: true, description: true } }, area: { select: { id: true, name: true } } }, omit: { password: true }, orderBy: { customerNumber: 'asc' }, ...(session ? {} : { skip: (page - 1) * 5, take: 5 }) }),
+      this.prisma.pppoeAccount.findMany({ where, include: { terminations: { where: { status: { in: ['PENDING', 'COMPLETED'] } }, select: { status: true }, take: 1 }, paymentPromises: { where: { status: 'ACTIVE' }, select: { deadline: true }, take: 1 }, psbOrder: { select: { installationPhoto: true, completedAt: true } }, package: { include: { ipPool: true } }, routerNas: { select: { id: true, nasname: true, shortname: true, description: true } }, area: { select: { id: true, name: true } } }, omit: { password: true }, orderBy: { customerNumber: 'asc' }, ...(session ? {} : { skip: (page - 1) * 5, take: 5 }) }),
       this.prisma.pppoeAccount.count({ where }),
     ]);
     const presence = await this.network.accountPresence(items);
@@ -76,7 +76,7 @@ export class DataPelangganService {
     const visible = session ? filtered.slice((page - 1) * 5, page * 5) : filtered;
     return serialize({ data: visible.map((item) => ({ ...item, customerId: item.customerNumber.toString().padStart(6, '0'), online: presence.states.get(item.username) ?? null,
       uptime: presence.uptimes?.get(item.username) ?? null,
-      serviceStatus: item.termination ? 'Berhenti Langganan' : !item.manualIsolated && item.isActive && item.package.isActive && (item.paymentPromises.length ? item.paymentPromises[0].deadline.getTime() > Date.now() : !item.expiresAt || item.expiresAt.getTime() + 86400000 > Date.now()) ? 'Aktif' : 'Isolir',
+      serviceStatus: item.terminations?.length ? 'Berhenti Langganan' : !item.manualIsolated && item.isActive && item.package.isActive && (item.paymentPromises.length ? item.paymentPromises[0].deadline.getTime() > Date.now() : !item.expiresAt || item.expiresAt.getTime() + 86400000 > Date.now()) ? 'Aktif' : 'Isolir',
       discount: Number(item.discount), package: { ...item.package, price: Number(item.package.price), costPrice: Number(item.package.costPrice) } })), meta: pageMeta(page, 5, total), warnings: presence.warnings });
   }
 

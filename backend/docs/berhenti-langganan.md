@@ -9,8 +9,9 @@ nama petugas dan waktu pengambilan, tanpa pembatasan berdasarkan teknisi pengaju
 3. **Isolir manual** tetap tersedia di Edit Data Pelanggan -> Akun PPPoE untuk pelanggan yang belum dihentikan. Penghentian dari menu ini langsung menutup layanan dan tidak memerlukan centang isolir manual. Pembayaran dan janji bayar tidak melepas isolir ini. Menghapus centang membuka isolir manual serta menghapus tanggal kedaluwarsa lama; auto isolir karena tunggakan tetap dapat berlaku pada pemeriksaan berikutnya.
 4. Administrator atau teknisi mengambil perangkat, lalu memilih **Selesai**. Dialog menampilkan tagihan yang harus diterima. Centang konfirmasi setelah perangkat dan pembayaran benar-benar diterima.
 5. Penyelesaian menyimpan nama akun petugas yang login, tanggal pengambilan, nominal pembayaran, melepaskan port pelanggan, tanpa mengubah tanggal berhenti atau menambah biaya selama menunggu perangkat diambil. Lokasi lama, KTP, foto, registrasi, invoice, setoran dan log tetap disimpan.
-6. Pembayaran akhir dibuat sebagai setoran **PENDING** atas nama petugas dan masuk **Finance -> Setoran Kolektor** untuk ACC. Nol rupiah tidak membuat setoran kosong. ACC, janji bayar, edit PSB dan impor tidak dapat mengaktifkan kembali pelanggan yang telah berhenti.
-7. WhatsApp memberi tahu bahwa perangkat diambil, nama petugas, langganan dihentikan dan pembayaran akhir diterima. Kegagalan bot tidak membatalkan penyelesaian. Pada daftar Selesai, gunakan **Kirim ulang WA** jika belum terkirim. Jangan mengulangi pencatatan pembayaran.
+6. Pembayaran akhir dibuat sebagai setoran **PENDING** atas nama petugas dan masuk **Finance -> Setoran Kolektor** untuk ACC. Nol rupiah tidak membuat setoran kosong. ACC, janji bayar, edit PSB dan impor tidak mengaktifkan kembali pelanggan yang telah berhenti. Pembatalan hanya dapat dilakukan melalui aksi Batal khusus admin sebelum pengambilan perangkat selesai.
+7. Sesudah Tambah berhasil disimpan, sistem mengirim WA persetujuan penghentian: teknisi akan berkunjung untuk mengambil perangkat, tanggal berhenti, tagihan prorata bulan berjalan yang masih harus dibayar, tunggakan/biaya lain, dan total sisa pembayaran. Jumlah dikurangi pembayaran/setoran yang sudah tercatat. Kegagalan WA tidak membatalkan penghentian; respons menampilkan peringatan. Administrator dapat memilih **Kirim WA** di daftar Belum diambil untuk mencoba lagi atau mengirim persetujuan bagi data lama yang belum menerima WA, tanpa menambah permintaan atau tagihan baru.
+8. Setelah Selesai, WhatsApp memberi tahu bahwa perangkat diambil, nama petugas, langganan dihentikan dan pembayaran akhir diterima. Kegagalan bot tidak membatalkan penyelesaian. Pada daftar Selesai, gunakan **Kirim ulang WA** jika belum terkirim. Jangan mengulangi pencatatan pembayaran.
 
 ## Perhitungan pembayaran
 
@@ -74,7 +75,7 @@ CREATE TABLE `subscription_terminations` (
     `completed_at` DATETIME(3) NULL,
     `wa_sent_at` DATETIME(3) NULL,
 
-    UNIQUE INDEX `subscription_terminations_pppoe_account_id_key`(`pppoe_account_id`),
+    INDEX `subscription_terminations_pppoe_account_id_idx`(`pppoe_account_id`),
     INDEX `subscription_terminations_status_requested_at_idx`(`status`, `requested_at`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -88,3 +89,67 @@ Setelah skema siap, generate Prisma Client dan build backend/frontend seperti
 alur update proyek. Tidak ada akses atau perubahan database produksi pada
 implementasi lokal fitur ini. Validasi lokal tidak membuktikan pengiriman WA,
 Disconnect RADIUS atau pengambilan perangkat sungguhan.
+
+## Template pesan WhatsApp
+
+Bot WhatsApp > Template Pesan menyediakan **Berhenti Langganan** (`termination_approved`)
+dan **Perangkat Diambil** (`termination_completed`). Keduanya bisa diedit, disimpan,
+dan dipratinjau dengan contoh data. Template tersimpan di `website_settings` menggunakan
+key `wa_template_termination_approved` / `wa_template_termination_completed`;
+tidak memerlukan perubahan skema database baru.
+
+Persetujuan mendukung `{nama}`, `{nomor_pelanggan}`, `{paket}`, `{tanggal_berhenti}`,
+`{prorata}`, `{tunggakan}`, `{total_tagihan}`. Prorata adalah sisa tagihan layanan
+bulan berjalan sampai tanggal berhenti; tunggakan/biaya lainnya adalah sisa invoice
+lain. Nominal ini tetap memakai invoice yang dibentuk saat admin menambahkan penghentian,
+bukan bertambah selama menunggu pengambilan. Pengiriman ulang menyesuaikan sisa
+pembayaran yang masih perlu diterima, tanpa mengubah nominal invoice.
+
+Pengambilan selesai mendukung `{nama}`, `{nomor_pelanggan}`, `{nama_petugas}`,
+`{tanggal_berhenti}`, `{jumlah}`. Bila template belum disimpan, backend dan bot
+menyediakan template bawaan yang sesuai. Penerapan perubahan ini memerlukan update
+backend, frontend dan bot Go agar editor dan API template sama-sama mengenali key baru.
+
+## Pembatalan khusus admin
+
+Pada filter **Belum diambil**, administrator dapat memilih **Batal**, membaca
+konfirmasi, mengisi alasan dan menekan **Batalkan penghentian**. Teknisi tidak
+memiliki tombol atau akses API pembatalan. Permintaan yang sudah Selesai atau
+sudah dibatalkan tidak dapat dibatalkan lagi.
+
+Pembatalan memperlakukan penghentian sebagai koreksi: langganan dan tagihan normal
+kembali berlaku termasuk periode selama menunggu perangkat diambil. Invoice akhir
+prorata yang belum memiliki pembayaran/setoran disesuaikan menjadi tagihan normal
+sampai akhir bulan. Periode terlewat dibentuk tanpa menggandakan nomor invoice.
+Invoice yang sudah dibayar atau mempunyai setoran tetap dipertahankan; kekurangan
+nominal menjadi invoice tambahan. Tidak ada penghapusan atau penimpaan uang yang
+sudah diterima. Status nonaktif, tanggal kedaluwarsa, dan isolir manual sebelumnya
+tetap berlaku; pembatalan tidak otomatis melunasi tunggakan. Janji bayar sebelumnya dipulihkan dengan tenggat yang sama; jika sudah lewat, akses tetap diisolir.
+
+Riwayat permintaan tetap ada dengan status `CANCELLED`, alasan dan nama admin
+pembatal tercatat di log aktivitas serta `website_settings` dengan key
+`termination_cancel_{id}`. Snapshot sebelum penghentian disimpan pada
+`termination_original_{id}`. Untuk permintaan lama tanpa snapshot, pembatalan
+mempertahankan isolir manual/tanggal kedaluwarsa saat ini. Akun, nomor pelanggan,
+KTP, foto dan riwayat pembayaran tetap disimpan. Pelanggan yang sudah dibatalkan
+kembali tersedia pada pencarian Tambah dan bisa mempunyai permintaan baru dengan
+ID berbeda; permintaan lama tidak ditimpa atau dihapus.
+
+### Tambahan satu kali untuk database VPS lama
+
+Relasi permintaan berubah menjadi satu pelanggan dengan banyak riwayat. Pada
+database lama yang sudah memiliki tabel `subscription_terminations`, jalankan
+SQL berikut **sekali**, sebelum update backend terbaru. Tambah index biasa dulu
+agar foreign key tetap memiliki index saat index unik lama dilepas.
+
+```sql
+ALTER TABLE `subscription_terminations`
+ ADD INDEX `subscription_terminations_pppoe_account_id_idx` (`pppoe_account_id`);
+ALTER TABLE `subscription_terminations`
+ DROP INDEX `subscription_terminations_pppoe_account_id_key`;
+```
+
+Perubahan ini tidak menghapus baris dan tidak menghapus foreign key. Jangan impor
+ulang `database.sql`. Instalasi kosong sudah memakai index biasa dari schema
+terbaru. `database:verify` menolak index unik lama agar pengajuan ulang tidak
+baru gagal saat pelanggan mencoba berhenti lagi.

@@ -24,10 +24,30 @@ export class WhatsappNotifyService {
     return this.send(account.phone, template.replace(/\{nama\}/g, account.customerName).replace(/\{nomor_pelanggan\}/g, account.customerNumber.toString().padStart(6, '0')).replace(/\{layanan\}/g, account.packageName).replace(/\{biaya_psb\}/g, fee).replace(/\{tanggal_mulai\}/g, String(account.billingStartDay)).replace(/\{tanggal_akhir\}/g, String(account.billingEndDay)));
   }
 
-  async notifyTermination(account: { customerName: string; customerNumber: bigint; phone: string | null; collectedByName: string; amount: number }): Promise<boolean> {
+  async notifyTerminationApproved(account: {
+    customerName: string; customerNumber: bigint; phone: string | null; packageName: string;
+    terminationDate: string; prorateAmount: number; otherAmount: number; totalAmount: number;
+  }): Promise<boolean> {
     if (!account.phone) return false;
-    const amount = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(account.amount);
-    return this.send(account.phone, `Halo Bapak/Ibu ${account.customerName},\n\nPerangkat internet No. Pelanggan ${account.customerNumber.toString().padStart(6, '0')} telah diambil oleh ${account.collectedByName}. Langganan Anda telah dihentikan dan penagihan langganan telah berhenti sejak permintaan penghentian disimpan oleh admin.\nPembayaran akhir diterima petugas: ${amount} (menunggu verifikasi finance).\n\nTerima kasih telah menggunakan layanan PT Unzanet.`);
+    const template = await this.template('termination_approved', "Halo Bapak/Ibu {nama},\n\nPermohonan berhenti langganan Anda telah disetujui. Teknisi kami akan segera mengunjungi alamat Anda untuk mengambil perangkat.\n\nNo. Pelanggan: {nomor_pelanggan}\nPaket: {paket}\nTanggal berhenti: {tanggal_berhenti}\nTagihan bulan berjalan (prorata): {prorata}\nTunggakan / biaya lainnya: {tunggakan}\nTotal yang harus dibayar: {total_tagihan}\n\nPembayaran diserahkan kepada petugas saat pengambilan perangkat. Tidak ada tambahan tagihan langganan setelah tanggal berhenti.\n\n- PT Unzanet");
+    const currency = (amount: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
+    const values: Record<string, string> = {
+      nama: account.customerName, nomor_pelanggan: account.customerNumber.toString().padStart(6, '0'),
+      paket: account.packageName, tanggal_berhenti: account.terminationDate,
+      prorata: currency(account.prorateAmount), tunggakan: currency(account.otherAmount), total_tagihan: currency(account.totalAmount),
+    };
+    return this.send(account.phone, template.replace(/\{([a-z_]+)\}/g, (token, key) => values[key] ?? token));
+  }
+
+  async notifyTermination(account: { customerName: string; customerNumber: bigint; phone: string | null; collectedByName: string; amount: number; terminatedAt?: Date | null }): Promise<boolean> {
+    if (!account.phone) return false;
+    const template = await this.template('termination_completed', "Halo Bapak/Ibu {nama},\n\nPerangkat internet No. Pelanggan {nomor_pelanggan} telah diambil oleh {nama_petugas}. Langganan telah dihentikan sejak {tanggal_berhenti}.\nPembayaran akhir diterima petugas: {jumlah} (menunggu verifikasi finance).\n\nTerima kasih telah menggunakan layanan PT Unzanet.\n\n- PT Unzanet");
+    const values: Record<string, string> = {
+      nama: account.customerName, nomor_pelanggan: account.customerNumber.toString().padStart(6, '0'), nama_petugas: account.collectedByName,
+      jumlah: new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(account.amount),
+      tanggal_berhenti: account.terminatedAt ? new Intl.DateTimeFormat('id-ID', { dateStyle: 'long', timeZone: 'Asia/Jakarta' }).format(account.terminatedAt) : '-',
+    };
+    return this.send(account.phone, template.replace(/\{([a-z_]+)\}/g, (token, key) => values[key] ?? token));
   }
 
   private async template(name: string, fallback: string) {

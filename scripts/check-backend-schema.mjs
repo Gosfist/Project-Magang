@@ -30,6 +30,14 @@ export function missingSchema(models, columns, indexes) {
       if (!found) missing.push(`index unik ${table}(${names.join(', ')})`);
     }
   }
+  // Cancellations retain every request; a customer must be able to have multiple historical attempts.
+  if (models.some(model => model.name === 'SubscriptionTermination')) {
+    for (const [key, rows] of unique) {
+      if (key.startsWith('subscription_terminations:') && rows.length === 1 && rows[0].column === 'pppoe_account_id') {
+        missing.push('index subscription_terminations(pppoe_account_id) masih unik; ubah menjadi index biasa sesuai panduan pembatalan');
+      }
+    }
+  }
   return missing;
 }
 

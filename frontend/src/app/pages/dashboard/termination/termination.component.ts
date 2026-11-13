@@ -70,6 +70,7 @@ export class TerminationComponent implements OnInit {
     afterRenderEffect(() => {
       this.adding();
       this.selected();
+      this.cancelCandidate();
       const dialog =
         this.element.nativeElement.querySelector<HTMLElement>(
           '[role="dialog"]',
@@ -95,6 +96,7 @@ export class TerminationComponent implements OnInit {
       if (!this.saving()) {
         this.adding.set(false);
         this.closeCompletion();
+        this.closeCancellation();
       }
     }
     if (event.key !== 'Tab') return;
@@ -145,6 +147,8 @@ export class TerminationComponent implements OnInit {
   saving = signal(false);
   adding = signal(false);
   selected = signal<Termination | null>(null);
+  cancelCandidate = signal<Termination | null>(null);
+  cancelReason = "";
   summary = signal<Summary | null>(null);
   summaryLoading = signal(false);
   error = signal('');
@@ -315,6 +319,31 @@ export class TerminationComponent implements OnInit {
           this.confirmed = false;
         },
       });
+  }
+  openCancellation(item: Termination) {
+    if (!this.auth.isAdmin() || this.saving()) return;
+    this.returnFocus = document.activeElement as HTMLElement;
+    this.cancelReason = '';
+    this.error.set('');
+    this.cancelCandidate.set(item);
+  }
+  closeCancellation() { if (!this.saving()) this.cancelCandidate.set(null); }
+  cancel() {
+    const item = this.cancelCandidate();
+    if (!this.auth.isAdmin() || !item || this.saving() || !this.cancelReason.trim()) return;
+    this.saving.set(true); this.error.set('');
+    this.api.post<{ message: string; warnings: string[] }>(`/pppoe/terminations/${item.id}/cancel`, { reason: this.cancelReason.trim() }).subscribe({
+      next: r => { this.saving.set(false); this.cancelCandidate.set(null); this.toast.set({ message: r.message, type: r.warnings?.length ? 'error' : 'success' }); this.load(); },
+      error: e => { this.saving.set(false); this.error.set(e.message); },
+    });
+  }
+  notifyApproval(item: Termination) {
+    if (this.saving()) return;
+    this.saving.set(true);
+    this.api.post<{ message: string }>(`/pppoe/terminations/${item.id}/notify-approval`, {}).subscribe({
+      next: r => { this.saving.set(false); this.toast.set({ message: r.message, type: 'success' }); },
+      error: e => { this.saving.set(false); this.toast.set({ message: e.message, type: 'error' }); },
+    });
   }
   resend(item: Termination) {
     if (this.saving()) return;

@@ -578,7 +578,7 @@ CREATE TABLE `subscription_terminations` (
     `completed_at` DATETIME(3) NULL,
     `wa_sent_at` DATETIME(3) NULL,
 
-    UNIQUE INDEX `subscription_terminations_pppoe_account_id_key`(`pppoe_account_id`),
+    INDEX `subscription_terminations_pppoe_account_id_idx`(`pppoe_account_id`),
     INDEX `subscription_terminations_status_requested_at_idx`(`status`, `requested_at`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

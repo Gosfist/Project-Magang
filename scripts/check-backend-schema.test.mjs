@@ -17,3 +17,8 @@ test('rejects a normal index that does not enforce port uniqueness', () => {
   const incomplete = indexes.map(row => row.tableName === 'daftar_pelanggan' && indexes.some(other => other.tableName === row.tableName && other.indexName === row.indexName && other.columnName === 'odp_port') ? { ...row, nonUnique: 1 } : row);
   assert.ok(missingSchema(models, columns, incomplete).includes('index unik daftar_pelanggan(odp, odp_port)'));
 });
+
+test('rejects the obsolete single-request-per-customer index that blocks retries after cancellation', () => {
+  const legacy = [...indexes, { tableName: 'subscription_terminations', indexName: 'legacy_unique', columnName: 'pppoe_account_id', position: 1, nonUnique: 0 }];
+  assert.ok(missingSchema(models, columns, legacy).some(message => message.includes('masih unik')));
+});
