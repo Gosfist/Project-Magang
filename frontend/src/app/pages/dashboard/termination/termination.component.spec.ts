@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { fakeAsync, tick, TestBed } from '@angular/core/testing';
 import { of, Subject } from 'rxjs';
 import { TerminationComponent } from './termination.component';
 import { ApiService } from '../../../core/services/api.service';
@@ -74,6 +74,42 @@ describe('Berhenti Langganan', () => {
     expect(component.adding()).toBeFalse();
     expect(host.querySelector('[role="dialog"]')).toBeNull();
     expect(document.activeElement).toBe(trigger);
+  });
+  it('shows matching customers directly under the search and selects with the keyboard', fakeAsync(() => {
+    const { fixture, component, host, api } = setup(true);
+    api.get.and.returnValue(of({ data: [item.account] }));
+    component.add(); fixture.detectChanges(); tick(); fixture.detectChanges();
+    expect(host.querySelector('select[name="accountId"]')).toBeNull();
+    expect(host.textContent).not.toContain('Permintaan ini tersimpan permanen');
+    const input = host.querySelector<HTMLInputElement>('#stop-customer-search')!;
+    input.value = '000007'; input.dispatchEvent(new Event('input'));
+    fixture.detectChanges(); tick(250); fixture.detectChanges();
+    expect(api.get.calls.mostRecent().args[0]).toContain('options?search=000007');
+    expect(host.querySelector('[role="option"]')?.textContent).toContain('Paijo');
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    fixture.detectChanges(); tick();
+    expect(component.accountId).toBe('7'); expect(component.customerSearch).toBe('000007 - Paijo');
+    expect(host.querySelector('[role="listbox"]')).toBeNull();
+    input.value = 'Budi'; input.dispatchEvent(new Event('input')); fixture.detectChanges();
+    expect(component.accountId).toBe('');
+    tick(250); fixture.detectChanges();
+  }));
+  it('cancels stale lookup responses immediately when the search changes', fakeAsync(() => {
+    const { component, api } = setup(true);
+    const oldResponse = new Subject<{ data: typeof item.account[] }>();
+    api.get.and.returnValue(oldResponse);
+    component.add(); component.customerSearch = 'Paijo'; component.lookupChanged(); tick(250);
+    component.customerSearch = 'Budi'; component.lookupChanged();
+    oldResponse.next({ data: [item.account] });
+    expect(component.options()).toEqual([]);
+    api.get.and.returnValue(of({ data: [] })); tick(250);
+    expect(component.options()).toEqual([]); expect(component.lookupLoading()).toBeFalse();
+  }));
+  it('does not submit an unselected typed customer', () => {
+    const { component, api } = setup(true);
+    component.customerSearch = 'Paijo'; component.reason = 'Pindah'; component.create();
+    expect(api.post).not.toHaveBeenCalled();
   });
   it('only shows Add for admin', () => {
     const { host } = setup(true);

@@ -176,6 +176,18 @@ describe('permanent termination workflow', () => {
         vi.useFakeTimers();
         vi.setSystemTime(new Date('2026-11-13T02:00:00Z'));
     }
+    it('only offers subscribed customers by name or customer number, including leading zeroes', async () => {
+        const findMany = vi.fn().mockResolvedValue([]);
+        const service = new TerminationService({ pppoeAccount: { findMany } } as any, {} as any, {} as any, {} as any, {} as any);
+        await service.options('000007');
+        expect(findMany).toHaveBeenLastCalledWith(expect.objectContaining({ where: {
+            terminatedAt: null, termination: { is: null }, OR: [{ customerName: { contains: '000007' } }, { customerNumber: 7n }],
+        } }));
+        await service.options('Paijo');
+        expect(findMany).toHaveBeenLastCalledWith(expect.objectContaining({ where: {
+            terminatedAt: null, termination: { is: null }, OR: [{ customerName: { contains: 'Paijo' } }],
+        } }));
+    });
     it('requires admin for adding while all technicians may list and finish', () => {
         expect(Reflect.getMetadata('roles', TerminationController)).toEqual([
             'admin',

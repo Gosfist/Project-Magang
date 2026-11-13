@@ -4,7 +4,7 @@ Menu **Teknisi -> Berhenti Langganan** dapat dibuka administrator dan seluruh te
 Default filter **Belum diambil**. Filter **Selesai / Sudah diambil** memperlihatkan
 nama petugas dan waktu pengambilan, tanpa pembatasan berdasarkan teknisi pengaju/pengambil.
 
-1. Administrator memilih Tambah, mencari nomor/nama pelanggan, memilih pelanggan dan mengisi alasan.
+1. Administrator memilih Tambah, mengetik nama/nomor pelanggan, lalu memilih hasil dropdown yang muncul langsung di bawah input dan mengisi alasan. Pelanggan yang sudah berhenti atau sudah masuk daftar penghentian tidak ditawarkan, termasuk yang perangkatnya belum diambil.
 2. Pelanggan tampil berkategori **Berhenti Langganan** di Data Pelanggan. Langganan dan penagihan langsung dihentikan pada tanggal permintaan disimpan, akses RADIUS dinonaktifkan, dan tagihan akhir dibentuk sampai tanggal tersebut.
 3. **Isolir manual** tetap tersedia di Edit Data Pelanggan -> Akun PPPoE untuk pelanggan yang belum dihentikan. Penghentian dari menu ini langsung menutup layanan dan tidak memerlukan centang isolir manual. Pembayaran dan janji bayar tidak melepas isolir ini. Menghapus centang membuka isolir manual serta menghapus tanggal kedaluwarsa lama; auto isolir karena tunggakan tetap dapat berlaku pada pemeriksaan berikutnya.
 4. Administrator atau teknisi mengambil perangkat, lalu memilih **Selesai**. Dialog menampilkan tagihan yang harus diterima. Centang konfirmasi setelah perangkat dan pembayaran benar-benar diterima.

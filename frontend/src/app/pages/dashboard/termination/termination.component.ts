@@ -6,7 +6,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   Subject,
   debounceTime,
-  distinctUntilChanged,
+  timer,
   switchMap,
   catchError,
   of,
@@ -129,6 +129,9 @@ export class TerminationComponent implements OnInit {
   private summaryVersion = 0;
   items = signal<Termination[]>([]);
   options = signal<Customer[]>([]);
+  lookupOpen = signal(false);
+  lookupLoading = signal(false);
+  lookupIndex = signal(-1);
   meta = signal<PageMeta>({
     currentPage: 1,
     lastPage: 1,
@@ -151,25 +154,13 @@ export class TerminationComponent implements OnInit {
   reason = '';
   confirmed = false;
   ngOnInit() {
-    this.lookup
-      .pipe(
-        debounceTime(250),
-        distinctUntilChanged(),
-        switchMap((search) =>
-          this.api
-            .get<{ data: Customer[] }>(
-              `/pppoe/terminations/options?search=${encodeURIComponent(search)}`,
-            )
-            .pipe(
-              catchError((e) => {
-                this.error.set(e.message);
-                return of({ data: [] });
-              }),
-            ),
-        ),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((r) => this.options.set(r.data));
+    this.lookup.pipe(
+      switchMap(search => search.trim() ? timer(250).pipe(
+        switchMap(() => this.api.get<{ data: Customer[] }>(`/pppoe/terminations/options?search=${encodeURIComponent(search.trim())}`)),
+        catchError(e => { this.error.set(e.message); return of({ data: [] as Customer[] }); }),
+      ) : of({ data: [] as Customer[] })),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(r => { this.options.set(r.data); this.lookupLoading.set(false); });
     this.searches
       .pipe(debounceTime(250), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.load());
@@ -181,8 +172,37 @@ export class TerminationComponent implements OnInit {
   }
   lookupChanged() {
     this.accountId = '';
+    this.error.set('');
     this.options.set([]);
+    this.lookupIndex.set(-1);
+    this.lookupOpen.set(!!this.customerSearch.trim());
+    this.lookupLoading.set(!!this.customerSearch.trim());
     this.lookup.next(this.customerSearch);
+  }
+  chooseCustomer(customer: Customer) {
+    this.accountId = customer.id;
+    this.customerSearch = `${customer.customerNumber.padStart(6, '0')} - ${customer.customerName}`;
+    this.lookupOpen.set(false);
+    this.lookup.next('');
+    this.element.nativeElement.querySelector<HTMLInputElement>('#stop-customer-search')?.focus();
+  }
+  lookupBlur(event: FocusEvent) {
+    if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) this.lookupOpen.set(false);
+  }
+  lookupKeys(event: KeyboardEvent) {
+    if (event.key === 'Escape' && this.lookupOpen()) {
+      event.preventDefault(); event.stopPropagation(); this.lookupOpen.set(false); return;
+    }
+    if (!this.lookupOpen()) return;
+    const options = this.options();
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (options.length) this.lookupIndex.set(this.lookupIndex() < 0 ? (event.key === 'ArrowDown' ? 0 : options.length - 1) : (this.lookupIndex() + (event.key === 'ArrowDown' ? 1 : options.length - 1)) % options.length);
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      const selected = options[this.lookupIndex()];
+      if (selected) this.chooseCustomer(selected);
+    }
   }
   load() {
     const version = ++this.listVersion;
@@ -210,13 +230,15 @@ export class TerminationComponent implements OnInit {
     this.returnFocus = document.activeElement as HTMLElement;
     this.error.set('');
     this.customerSearch = '';
+    this.lookupOpen.set(false);
+    this.lookup.next('');
     this.accountId = '';
     this.reason = '';
     this.options.set([]);
     this.adding.set(true);
   }
   create() {
-    if (this.saving()) return;
+    if (this.saving() || !this.accountId || !this.reason.trim()) return;
     this.saving.set(true);
     this.error.set('');
     this.api

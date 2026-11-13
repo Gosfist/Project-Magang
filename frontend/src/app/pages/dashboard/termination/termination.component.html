@@ -2,7 +2,6 @@
   <div class="card p-4">
     <div class="flex flex-wrap items-end gap-3">
       <div class="min-w-0 flex-1 basis-full sm:basis-0">
-        <label for="termination-search" class="label">Cari pelanggan</label>
         <div class="relative">
           <svg
             lucideSearch
@@ -13,18 +12,18 @@
           ><input
             id="termination-search"
             class="input input-with-icon"
-            placeholder="Nomor atau nama pelanggan"
+            placeholder="Cari nama / nomor pelanggan"
+            aria-label="Cari nama atau nomor pelanggan"
             [(ngModel)]="search"
             (ngModelChange)="searchChanged()"
           />
         </div>
       </div>
       <div>
-        <label for="termination-status" class="label"
-          >Pengambilan perangkat</label
-        ><select
+        <select
           id="termination-status"
           class="input"
+          aria-label="Status pengambilan perangkat"
           [(ngModel)]="status"
           (ngModelChange)="page = 1; load()"
         >
@@ -38,15 +37,6 @@
         </button>
       }
     </div>
-  </div>
-  <div role="status" class="text-sm text-slate-500" aria-live="polite">
-    {{
-      loading()
-        ? "Memuat daftar pengambilan..."
-        : meta().total +
-          " pelanggan " +
-          (status === "PENDING" ? "belum diambil" : "sudah diambil")
-    }}
   </div>
   <div class="table-wrap" [attr.aria-busy]="loading()">
     <table>
@@ -157,38 +147,33 @@
     (closeModal)="!saving() && adding.set(false)"
   >
     <form class="space-y-4" (ngSubmit)="create()">
-      <div>
-        <label class="label" for="stop-customer-search"
-          >Cari nomor / nama pelanggan</label
-        ><input
-          id="stop-customer-search"
-          class="input"
-          name="customerSearch"
-          [(ngModel)]="customerSearch"
-          (ngModelChange)="lookupChanged()"
-          autocomplete="off"
-        />
-      </div>
-      <div>
-        <label class="label" for="stop-customer">Pelanggan</label
-        ><select
-          class="input"
-          id="stop-customer"
-          name="accountId"
-          required
-          [(ngModel)]="accountId"
-        >
-          <option value="">Pilih hasil pencarian</option>
-          @for (customer of options(); track customer.id) {
-            <option [value]="customer.id">
-              {{ customer.customerNumber.padStart(6, "0") }} -
-              {{ customer.customerName }} - {{ customer.address }}
-            </option>
-          }
-        </select>
-        <p class="mt-1 text-xs text-slate-500">
-          Maksimal 20 hasil. Persempit pencarian bila pelanggan belum ditemukan.
-        </p>
+      <div class="relative" (focusout)="lookupBlur($event)">
+        <label class="label" for="stop-customer-search">Cari nama / nomor pelanggan</label>
+        <input id="stop-customer-search" class="input" name="customerSearch"
+          placeholder="Ketik nama atau nomor pelanggan" autocomplete="off"
+          role="combobox" aria-autocomplete="list" aria-controls="stop-customer-results"
+          [attr.aria-expanded]="lookupOpen()"
+          [attr.aria-activedescendant]="lookupOpen() && lookupIndex() >= 0 ? 'stop-customer-result-' + lookupIndex() : null"
+          [disabled]="saving()" [(ngModel)]="customerSearch" (ngModelChange)="lookupChanged()"
+          (focus)="!accountId && customerSearch.trim() && lookupOpen.set(true)"
+          (keydown)="lookupKeys($event)" />
+        @if (lookupOpen()) {
+          <div id="stop-customer-results" role="listbox" aria-label="Hasil pencarian pelanggan"
+            [attr.aria-busy]="lookupLoading()" class="absolute left-0 right-0 top-full z-30 mt-1 max-h-60 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
+            @if (lookupLoading()) { <p role="status" class="px-3 py-3 text-sm text-slate-500">Mencari pelanggan...</p> }
+            @else {
+              @for (customer of options(); track customer.id; let index = $index) {
+                <button type="button" role="option" tabindex="-1" [id]="'stop-customer-result-' + index"
+                  [attr.aria-selected]="lookupIndex() === index" [class.bg-blue-50]="lookupIndex() === index"
+                  class="block w-full rounded-md px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-100 focus-visible:bg-blue-50"
+                  (click)="chooseCustomer(customer)">
+                  <span class="block">{{ customer.customerNumber.padStart(6, '0') }} - {{ customer.customerName }}</span>
+                  @if (customer.address) { <span class="mt-1 block text-xs text-slate-500">{{ customer.address }}</span> }
+                </button>
+              } @empty { <p role="status" class="px-3 py-3 text-sm text-slate-500">Pelanggan yang masih berlangganan tidak ditemukan.</p> }
+            }
+          </div>
+        }
       </div>
       <div>
         <label class="label" for="stop-reason">Alasan berhenti</label
@@ -201,10 +186,6 @@
           [(ngModel)]="reason"
         ></textarea>
       </div>
-      <p class="rounded-lg bg-blue-50 p-3 text-sm text-blue-900">
-        Langganan dan penagihan dihentikan saat permintaan ini disimpan.
-        Permintaan ini tersimpan permanen dan tidak dapat dihapus.
-      </p>
       @if (error()) {
         <p role="alert" class="text-sm text-red-600">{{ error() }}</p>
       }
