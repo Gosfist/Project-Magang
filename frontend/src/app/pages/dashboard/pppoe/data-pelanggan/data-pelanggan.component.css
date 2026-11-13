@@ -48,6 +48,8 @@
   height: 42px; min-height: 42px; padding-top: 10px; padding-bottom: 10px; line-height: 20px;
 }
 .filter-button { width: 104px; min-width: 104px; padding-inline: 10px; white-space: nowrap; }
+.customer-filters .filter-button-multiline { padding-block: 3px; }
+.status-filter-label { display: block; line-height: 18px; text-align: center; white-space: normal; }
 @media (min-width: 640px) { .account-form .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 639px) { .account-form .input { font-size: 16px; } .step-line { width: 12px; } }
 @media (min-width: 640px) { .edit-tabs { grid-template-columns: repeat(6, minmax(0, 1fr)); } }

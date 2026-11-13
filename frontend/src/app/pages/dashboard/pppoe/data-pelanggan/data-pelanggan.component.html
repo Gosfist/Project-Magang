@@ -18,6 +18,7 @@
       <button
         type="button"
         class="btn-secondary filter-button"
+        [class.filter-button-multiline]="statusFilter === 'terminated'"
         (click)="
           statusFilterOpen.set(!statusFilterOpen());
           sessionFilterOpen.set(false)
@@ -25,7 +26,11 @@
         [attr.aria-expanded]="statusFilterOpen()"
         aria-controls="customer-status-filter"
       >
-        <span>{{ statusFilter ? filterStatusLabel() : 'Status' }}</span>
+        @if (statusFilter === 'terminated') {
+          <span class="status-filter-label">Berhenti<br />Langganan</span>
+        } @else {
+          <span>{{ statusFilter ? filterStatusLabel() : 'Status' }}</span>
+        }
       </button>
       @if (statusFilterOpen()) {
         <div

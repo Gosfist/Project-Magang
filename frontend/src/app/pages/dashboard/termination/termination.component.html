@@ -1,12 +1,5 @@
 <div class="space-y-4">
-  <div class="card space-y-4 p-4">
-    <div>
-      <h2 class="text-lg font-semibold text-slate-900">Berhenti Langganan</h2>
-      <p class="mt-1 text-sm text-slate-500">
-        Pengambilan perangkat dan pembayaran akhir pelanggan. Data pelanggan
-        serta KTP tetap tersimpan.
-      </p>
-    </div>
+  <div class="card p-4">
     <div class="flex flex-wrap items-end gap-3">
       <div class="min-w-0 flex-1 basis-full sm:basis-0">
         <label for="termination-search" class="label">Cari pelanggan</label>
@@ -36,7 +29,7 @@
           (ngModelChange)="page = 1; load()"
         >
           <option value="PENDING">Belum diambil</option>
-          <option value="COMPLETED">Selesai / Sudah diambil</option>
+          <option value="COMPLETED">Sudah diambil</option>
         </select>
       </div>
       @if (auth.isAdmin()) {
