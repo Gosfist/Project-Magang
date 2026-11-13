@@ -19,6 +19,8 @@ model User {
   status   String  @default("active")
   createdAt DateTime? @default(now()) @map("created_at")
 
+  terminationRequests SubscriptionTermination[] @relation("TerminationRequestedBy")
+  terminationCollections SubscriptionTermination[] @relation("TerminationCollectedBy")
   areaCollectors      AreaCollector[]
   collectorDeposits   CollectorDeposit[]   @relation("CollectorDeposits")
   acceptedDeposits    CollectorDeposit[]   @relation("AcceptedDeposits")
@@ -109,6 +111,9 @@ model PppoeAccount {
   addons           CustomerAddon[]
   paymentPromises  PaymentPromise[]
   deposits         CollectorDeposit[]
+  manualIsolated   Boolean @default(false) @map("manual_isolated")
+  terminatedAt     DateTime? @map("terminated_at")
+  termination      SubscriptionTermination?
   psbOrder         PsbOrder?
 
   @@index([pppoePackageId])
@@ -571,4 +576,24 @@ model FinanceTransaction {
   @@index([transactionDate])
   @@index([createdByUserId])
   @@map("finance_transactions")
+}
+
+model SubscriptionTermination {
+  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  pppoeAccountId BigInt @unique @map("pppoe_account_id") @db.UnsignedBigInt
+  requestedByUserId BigInt @map("requested_by_user_id") @db.UnsignedBigInt
+  collectedByUserId BigInt? @map("collected_by_user_id") @db.UnsignedBigInt
+  requestedByName String @map("requested_by_name") @db.VarChar(255)
+  collectedByName String? @map("collected_by_name") @db.VarChar(255)
+  reason String @db.VarChar(1000)
+  status String @default("PENDING") @db.VarChar(20)
+  collectedAmount BigInt @default(0) @map("collected_amount") @db.UnsignedBigInt
+  requestedAt DateTime @default(now()) @map("requested_at")
+  completedAt DateTime? @map("completed_at")
+  waSentAt DateTime? @map("wa_sent_at")
+  account PppoeAccount @relation(fields: [pppoeAccountId], references: [id], onDelete: Restrict)
+  requestedBy User @relation("TerminationRequestedBy", fields: [requestedByUserId], references: [id], onDelete: Restrict)
+  collectedBy User? @relation("TerminationCollectedBy", fields: [collectedByUserId], references: [id], onDelete: Restrict)
+  @@index([status, requestedAt])
+  @@map("subscription_terminations")
 }

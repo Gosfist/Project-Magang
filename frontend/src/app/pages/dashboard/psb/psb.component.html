@@ -79,14 +79,6 @@
                   >
                     <svg lucidePencil [size]="15"></svg>
                   </button>
-                  <button
-                    class="btn-danger table-action table-action-icon"
-                    title="Hapus registrasi"
-                    aria-label="Hapus registrasi"
-                    (click)="remove(item)"
-                  >
-                    <svg lucideTrash2 [size]="15"></svg>
-                  </button>
                 }
                 @if (
                   auth.hasRole("admin", "teknisi") && item.status === "PROCESS"
@@ -178,7 +170,7 @@
             ><input
               class="input"
               required
-              [(ngModel)]="form.idCardNumber"
+              [readonly]="!!editing()" [(ngModel)]="form.idCardNumber"
               name="idCardNumber"
             />
           </div>

@@ -11,7 +11,7 @@ describe('postpaid scheduler activation grace period', () => {
       package: { price: 110000n }, discount: 0n, invoices: [] };
     const create = vi.fn().mockResolvedValue({});
     const findMany = vi.fn().mockResolvedValue([account]);
-    const service = new BillingIsolationService({ pppoeAccount: { findMany }, invoice: { create, findMany: vi.fn().mockResolvedValue([]) } } as any,
+    const service = new BillingIsolationService({ $transaction: async (work: any) => work({ pppoeAccount: { findUnique: async () => ({ terminatedAt: null }) }, invoice: { create } }), pppoeAccount: { findMany }, invoice: { create, findMany: vi.fn().mockResolvedValue([]) } } as any,
       { billing: async () => ({ billingStartDay: 5, billingEndDay: 10, billingTimezone: 'WIB', isolationCheckHour: 0 }) } as any,
       {} as any, {} as any, {} as any);
     await service.tick(new Date('2026-10-06T03:00:00Z'), 1n);
@@ -46,7 +46,7 @@ describe('postpaid scheduler activation grace period', () => {
     vi.setSystemTime(new Date('2026-10-10T03:00:00Z'));
     const create = vi.fn();
     const findMany = vi.fn().mockResolvedValue([{ invoices: [{ id: 1n }] }]);
-    const service = new BillingIsolationService({ pppoeAccount: { findMany }, invoice: { create, findMany: vi.fn().mockResolvedValue([]) } } as any,
+    const service = new BillingIsolationService({ $transaction: async (work: any) => work({ pppoeAccount: { findUnique: async () => ({ terminatedAt: null }) }, invoice: { create } }), pppoeAccount: { findMany }, invoice: { create, findMany: vi.fn().mockResolvedValue([]) } } as any,
       { billing: async () => ({ billingStartDay: 5, billingEndDay: 10, billingTimezone: 'WIB', isolationCheckHour: 0 }) } as any,
       {} as any, {} as any, {} as any);
     await service.tick();
@@ -58,7 +58,7 @@ describe('postpaid scheduler activation grace period', () => {
     const last = { ...firstPage[0], id: 501n, customerNumber: 501n };
     const findMany = vi.fn().mockResolvedValueOnce(firstPage).mockResolvedValueOnce([last]);
     const create = vi.fn().mockResolvedValue({});
-    const service = new BillingIsolationService({ pppoeAccount: { findMany }, invoice: { create, findMany: vi.fn().mockResolvedValue([]) } } as any,
+    const service = new BillingIsolationService({ $transaction: async (work: any) => work({ pppoeAccount: { findUnique: async () => ({ terminatedAt: null }) }, invoice: { create } }), pppoeAccount: { findMany }, invoice: { create, findMany: vi.fn().mockResolvedValue([]) } } as any,
       { billing: async () => ({ billingStartDay: 5, billingEndDay: 10, billingTimezone: 'WIB', isolationCheckHour: 0 }) } as any, {} as any, {} as any, {} as any);
     await service.tick(new Date('2026-11-06T03:00:00Z'));
     expect(create).toHaveBeenCalledTimes(501);

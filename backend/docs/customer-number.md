@@ -1,6 +1,6 @@
 # Nomor pelanggan PPPoE
 
-Nomor tampilan berasal dari `customer_number`, diformat minimal enam digit. Saat menambah pelanggan, aplikasi mengambil `MAX(customer_number) + 1` dari pelanggan yang masih ada, mulai 1 untuk tabel kosong. Menghapus nomor di tengah tidak mengisi celah tersebut; menghapus nomor terbesar memungkinkan nomornya digunakan kembali. ID primary key tetap auto-increment dan tidak direset, sehingga relasi invoice/API tetap memakai identitas akun asli.
+Nomor tampilan berasal dari `customer_number`, diformat minimal enam digit. Saat menambah pelanggan, aplikasi mengambil `MAX(customer_number) + 1` dari pelanggan yang masih ada, mulai 1 untuk tabel kosong. Data pelanggan/registrasi yang telah tersimpan tidak dapat dihapus melalui aplikasi. Pelanggan berhenti langganan tetap mempertahankan nomor dan KTP; nomor tersebut tidak digunakan ulang. ID primary key tetap auto-increment dan tidak direset, sehingga relasi invoice/API tetap memakai identitas akun asli.
 
 Pembuatan akun, nomor, invoice, dan data RADIUS memakai satu transaksi Serializable. Konflik transaksi/nomor dicoba ulang maksimal lima kali, dengan unique index sebagai pengaman.
 

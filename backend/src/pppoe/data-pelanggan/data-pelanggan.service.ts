@@ -11,7 +11,6 @@ import { PppoeNetworkService } from '../shared/pppoe-network.service.js';
 import { validateIdCardPhoto } from './id-card-photo.js';
 import { readInstallationPhoto } from './installation-photo.js';
 import { WhatsappNotifyService } from '../../bot-whatsapp/shared/whatsapp-notify.service.js';
-import { removeCustomerImage } from '../../common/image-storage.js';
 import { customerSearch } from '../../common/customer-search.js';
 
 @Injectable()
@@ -59,16 +58,16 @@ export class DataPelangganService {
   }
 
   async accounts(search = '', page = 1, status = '', session = '', numberOnly = false) {
-    if (!['', 'active', 'isolated'].includes(status) || !['', 'online', 'offline'].includes(session)) throw new BadRequestException('Filter status atau sesi tidak valid.');
+    if (!['', 'active', 'isolated', 'terminated'].includes(status) || !['', 'online', 'offline'].includes(session)) throw new BadRequestException('Filter status atau sesi tidak valid.');
     const where: Prisma.PppoeAccountWhereInput = search ? { OR: [{ customerName: { contains: search } }, { username: { contains: search } }, { phone: { contains: search } }, ...(search.startsWith('62') ? [{ phone: { contains: `0${search.slice(2)}` } }] : []), ...(/^\d{1,18}$/.test(search) ? [{ customerNumber: BigInt(search) }] : [])] } : {};
     if (numberOnly && search) Object.assign(where, customerSearch(search));
-    const active: Prisma.PppoeAccountWhereInput = { isActive: true, package: { isActive: true }, OR: [
+    const active: Prisma.PppoeAccountWhereInput = { terminatedAt: null, manualIsolated: false, isActive: true, package: { isActive: true }, OR: [
       { paymentPromises: { some: { status: 'ACTIVE', deadline: { gt: new Date() } } } },
       { paymentPromises: { none: { status: 'ACTIVE' } }, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date(Date.now() - 86400000) } }] },
     ] };
-    if (status) where.AND = [status === 'active' ? active : { NOT: active }];
+    if (status) where.AND = [status === 'terminated' ? { termination: { isNot: null } } : status === 'active' ? { AND: [active, { termination: { is: null } }] } : { AND: [{ NOT: active }, { termination: { is: null } }] }];
     const [items, count] = await this.prisma.$transaction([
-      this.prisma.pppoeAccount.findMany({ where, include: { paymentPromises: { where: { status: 'ACTIVE' }, select: { deadline: true }, take: 1 }, psbOrder: { select: { installationPhoto: true, completedAt: true } }, package: { include: { ipPool: true } }, routerNas: { select: { id: true, nasname: true, shortname: true, description: true } }, area: { select: { id: true, name: true } } }, omit: { password: true }, orderBy: { customerNumber: 'asc' }, ...(session ? {} : { skip: (page - 1) * 5, take: 5 }) }),
+      this.prisma.pppoeAccount.findMany({ where, include: { termination: { select: { status: true } }, paymentPromises: { where: { status: 'ACTIVE' }, select: { deadline: true }, take: 1 }, psbOrder: { select: { installationPhoto: true, completedAt: true } }, package: { include: { ipPool: true } }, routerNas: { select: { id: true, nasname: true, shortname: true, description: true } }, area: { select: { id: true, name: true } } }, omit: { password: true }, orderBy: { customerNumber: 'asc' }, ...(session ? {} : { skip: (page - 1) * 5, take: 5 }) }),
       this.prisma.pppoeAccount.count({ where }),
     ]);
     const presence = await this.network.accountPresence(items);
@@ -77,7 +76,7 @@ export class DataPelangganService {
     const visible = session ? filtered.slice((page - 1) * 5, page * 5) : filtered;
     return serialize({ data: visible.map((item) => ({ ...item, customerId: item.customerNumber.toString().padStart(6, '0'), online: presence.states.get(item.username) ?? null,
       uptime: presence.uptimes?.get(item.username) ?? null,
-      serviceStatus: item.isActive && item.package.isActive && (item.paymentPromises.length ? item.paymentPromises[0].deadline.getTime() > Date.now() : !item.expiresAt || item.expiresAt.getTime() + 86400000 > Date.now()) ? 'Aktif' : 'Isolir',
+      serviceStatus: item.termination ? 'Berhenti Langganan' : !item.manualIsolated && item.isActive && item.package.isActive && (item.paymentPromises.length ? item.paymentPromises[0].deadline.getTime() > Date.now() : !item.expiresAt || item.expiresAt.getTime() + 86400000 > Date.now()) ? 'Aktif' : 'Isolir',
       discount: Number(item.discount), package: { ...item.package, price: Number(item.package.price), costPrice: Number(item.package.costPrice) } })), meta: pageMeta(page, 5, total), warnings: presence.warnings });
   }
 
@@ -129,12 +128,20 @@ export class DataPelangganService {
 
   async updateAccount(id: string, dto: SaveAccountDto) {
     const current = await this.findAccount(id);
+    if (current.terminatedAt) throw new BadRequestException('Pelanggan sudah berhenti langganan dan tidak dapat diaktifkan atau diubah kembali.');
+    if ((dto.idCardNumber?.trim() || null) !== (current.idCardNumber || null)) throw new BadRequestException('Nomor KTP pelanggan terdaftar tidak dapat diganti.');
     const passwordChanged = dto.password ? dto.password !== this.secrets.decrypt(current.password) : false;
+    if (current.manualIsolated && dto.manualIsolated === false) {
+      dto.isActive = true;
+      dto.expiresAt = undefined;
+    }
     await this.validateAccountForm(dto, false, current.id);
     if (dto.idCardPhoto && dto.idCardPhoto !== current.idCardPhoto) await validateIdCardPhoto(dto.idCardPhoto);
     await this.findPackage(dto.pppoePackageId);
     try {
       const account = await this.prisma.$transaction(async (tx) => {
+        const locked = await tx.$queryRaw<{ terminated_at: Date | null }[]>`SELECT terminated_at FROM daftar_pelanggan WHERE id = ${current.id} FOR UPDATE`;
+        if (locked[0]?.terminated_at) throw new BadRequestException('Pelanggan sudah berhenti langganan.');
         await this.validateAccountPort(tx, dto, current.id);
         if (dto.isActive === false) await tx.paymentPromise.updateMany({ where: { pppoeAccountId: current.id, status: { in: ['ACTIVE', 'EXPIRED'] } }, data: { status: 'CANCELLED', disconnectPending: false } });
         const item = await tx.pppoeAccount.update({
@@ -148,7 +155,7 @@ export class DataPelangganService {
       const { password: _password, ...safe } = account;
       const warnings: string[] = [];
       // Reactivation must also reload RADIUS pool/profile/rate on the active session.
-      if (!account.isActive || current.isActive !== account.isActive || !account.package.isActive || current.username !== account.username || passwordChanged
+      if (!account.isActive || current.isActive !== account.isActive || current.manualIsolated !== account.manualIsolated || !account.package.isActive || current.username !== account.username || passwordChanged
         || current.pppoePackageId !== account.pppoePackageId || current.routerNasId !== account.routerNasId) {
         warnings.push(...(await this.network.disconnect(current.username, current.routerNasId)).warnings);
       }
@@ -183,87 +190,6 @@ export class DataPelangganService {
       }
     }
     throw new ConflictException('Nomor pelanggan belum dapat dibuat.');
-  }
-
-  async removeAccount(id: string) {
-    const current = await this.findAccount(id);
-    // Keep NAS/session identifiers before deleting the customer's accounting history.
-    const sessions = await this.network.openSessions(current.username);
-    const photos = new Set<string>();
-    if (current.idCardPhoto) photos.add(current.idCardPhoto);
-    await this.prisma.$transaction(async (tx) => {
-      const orders = await tx.psbOrder.findMany({ where: { pppoeAccountId: current.id } });
-      const snapshot = {
-        id: current.id.toString(), customerNumber: current.customerNumber.toString(),
-        customerName: current.customerName, username: current.username, deleted: true,
-      };
-      for (const order of orders) {
-        if (order.idCardPhoto) photos.add(order.idCardPhoto);
-        if (order.installationPhoto) photos.add(order.installationPhoto);
-        for (const extension of ['jpg', 'png', 'webp']) photos.add(`/uploads/instalasi/${order.id}.${extension}`);
-        if (order.installationFeePaid !== null && order.completedAt) {
-          await tx.invoice.create({ data: {
-            pppoeAccountId: current.id, invoiceNumber: `ARCHIVE-PSB-${order.id}`,
-            amount: order.installationFeePaid, baseAmount: order.installationFeePaid,
-            invoiceType: 'PSB', status: 'PAID', paidAt: order.completedAt, dueDate: order.completedAt,
-            notes: `PSB diterima teknisi ID ${order.completedByUserId ?? '-'}`,
-            createdAt: order.completedAt, updatedAt: new Date(),
-          } });
-        }
-      }
-      // Retain money already paid and every deposit (including pending review).
-      await tx.invoice.deleteMany({ where: {
-        pppoeAccountId: current.id, status: { not: 'PAID' }, paidAt: null, deposits: { none: {} },
-      } });
-      await tx.invoice.updateMany({ where: { pppoeAccountId: current.id }, data: { customerSnapshot: snapshot, pppoeAccountId: null } });
-      await tx.collectorDeposit.updateMany({ where: { pppoeAccountId: current.id }, data: { customerSnapshot: snapshot, pppoeAccountId: null } });
-      await tx.customerAddon.deleteMany({ where: { pppoeAccountId: current.id } });
-      await tx.paymentPromise.deleteMany({ where: { pppoeAccountId: current.id } });
-      await tx.activityLog.deleteMany({ where: { OR: [
-        { entityType: 'PPPOE_ACCOUNT', entityId: current.id.toString() },
-        { entityType: 'PSB_ORDER', entityId: { in: orders.map(order => order.id.toString()) } },
-      ] } });
-      const routes = [`/api/pppoe/accounts/${current.id}`, ...orders.map(order => `/api/psb/${order.id}`)];
-      await tx.monitoringError.deleteMany({ where: { OR: routes.flatMap(route => [
-        { route }, { route: { startsWith: `${route}/` } }, { route: { startsWith: `${route}?` } },
-      ]) } });
-      const phone = current.phone?.replace(/\D/g, '');
-      if (phone) {
-        const normalized = phone.startsWith('0') ? `62${phone.slice(1)}` : phone;
-        const targets = [...new Set([current.phone!, phone, normalized, `+${normalized}`, ...(normalized.startsWith('62') ? [`0${normalized.slice(2)}`] : [])])];
-        const sharedContacts = await tx.pppoeAccount.count({ where: { id: { not: current.id }, phone: { in: targets } } })
-          + await tx.psbOrder.count({ where: { phone: { in: targets }, OR: [{ pppoeAccountId: null }, { pppoeAccountId: { not: current.id } }] } });
-        if (!sharedContacts) {
-          const tables = await tx.$queryRaw<{ count: bigint }[]>`SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'bot_wa_logs'`;
-          if (Number(tables[0]?.count)) await tx.$executeRaw(Prisma.sql`DELETE FROM bot_wa_logs WHERE target IN (${Prisma.join(targets)})`);
-        }
-      }
-      await tx.psbOrder.deleteMany({ where: { pppoeAccountId: current.id } });
-      await tx.radcheck.deleteMany({ where: { username: current.username } });
-      await tx.radreply.deleteMany({ where: { username: current.username } });
-      await tx.radusergroup.deleteMany({ where: { username: current.username } });
-      await tx.radpostauth.deleteMany({ where: { username: current.username } });
-      await tx.radacct.deleteMany({ where: { username: current.username } });
-      await tx.pppoeAccount.delete({ where: { id: current.id } });
-    });
-    const warnings: string[] = [];
-    try {
-      const result = await this.network.disconnect(current.username, current.routerNasId, sessions);
-      warnings.push(...result.warnings);
-    } catch (error) {
-      warnings.push(`Sesi router belum diputus: ${error instanceof Error ? error.message : String(error)}`);
-    }
-    for (const photo of photos) {
-      if (photo.startsWith('data:')) continue;
-      try {
-        const references = await this.prisma.pppoeAccount.count({ where: { idCardPhoto: photo } })
-          + await this.prisma.psbOrder.count({ where: { OR: [{ idCardPhoto: photo }, { installationPhoto: photo }] } });
-        if (!references) await removeCustomerImage(photo);
-      } catch (error) {
-        warnings.push(`Foto ${photo} belum dihapus: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    }
-    return { message: this.networkMessage('Data pelanggan, PSB, log RADIUS, dan foto terkait dihapus. Riwayat pembayaran dipertahankan.', warnings), warnings };
   }
 
   async disconnectAccount(id: string) {
@@ -317,6 +243,7 @@ export class DataPelangganService {
       routerNasId: dto.routerNasId ? Number(dto.routerNasId) : null,
       areaId: dto.areaId ? BigInt(dto.areaId) : null,
       expiresAt: !creating && dto.expiresAt ? new Date(`${dto.expiresAt}T00:00:00.000Z`) : null,
+      manualIsolated: creating ? false : dto.manualIsolated ?? false,
       isActive: creating ? true : dto.isActive ?? false, notes: dto.notes?.trim() || null,
       updatedAt: now, ...(creating ? { createdAt: now } : {}),
     };

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard, type AuthRequest } from '../auth/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { RolesGuard } from '../auth/roles.guard.js';
@@ -16,7 +16,6 @@ export class PsbController {
   }
   @Post() @Roles('admin', 'sales') create(@Body() dto: CreatePsbOrderDto, @Req() req: AuthRequest) { return this.psb.create(dto, req.user.id); }
   @Patch(':id') @Roles('admin', 'sales') update(@Param('id') id: string, @Body() dto: UpdatePsbOrderDto, @Req() req: AuthRequest) { return this.psb.update(id, dto, req.user); }
-  @Delete(':id') @Roles('admin', 'sales') remove(@Param('id') id: string, @Req() req: AuthRequest) { return this.psb.remove(id, req.user); }
   @Post(':id/activate') @Roles('admin', 'teknisi') activate(@Param('id') id: string, @Body() dto: ActivatePsbOrderDto, @Req() req: AuthRequest) { return this.psb.activate(id, dto, req.user.id); }
   @Get(':id/installation-photo') @Roles('admin', 'teknisi') installationPhoto(@Param('id') id: string) { return this.psb.installationPhoto(id); }
   @Get(':id/completion-summary') @Roles('admin', 'teknisi') completionSummary(@Param('id') id: string) { return this.psb.completionSummary(id); }

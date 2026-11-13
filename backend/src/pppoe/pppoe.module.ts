@@ -1,3 +1,5 @@
+import { TerminationService } from './data-pelanggan/termination.service.js';
+import { TerminationController } from './data-pelanggan/termination.controller.js';
 import { Module } from '@nestjs/common';
 import { IpPoolsController } from './ip-pools/ip-pools.controller.js';
 import { IpPoolsService } from './ip-pools/ip-pools.service.js';
@@ -19,5 +21,5 @@ import { IsolationController } from './isolation/isolation.controller.js';
 import { IsolationService } from './isolation/isolation.service.js';
 import { RadiusDisconnectService } from './shared/radius-disconnect.service.js';
 
-@Module({ imports: [AuthModule, RouterModule, PengaturanModule], controllers: [DataPelangganController, IpPoolsController, PaketLayananController, PublicPackagesController, IsolationController], providers: [DataPelangganService, IpPoolsService, PaketLayananService, RadiusService, SecretService, PppoeNetworkService, RadiusDisconnectService, CustomerServicesService, BillingIsolationService, WhatsappNotifyService, IsolationService], exports: [WhatsappNotifyService, RadiusService, SecretService, PppoeNetworkService] })
+@Module({ imports: [AuthModule, RouterModule, PengaturanModule], controllers: [TerminationController, DataPelangganController, IpPoolsController, PaketLayananController, PublicPackagesController, IsolationController], providers: [TerminationService, DataPelangganService, IpPoolsService, PaketLayananService, RadiusService, SecretService, PppoeNetworkService, RadiusDisconnectService, CustomerServicesService, BillingIsolationService, WhatsappNotifyService, IsolationService], exports: [WhatsappNotifyService, RadiusService, SecretService, PppoeNetworkService] })
 export class PppoeModule { }

@@ -84,6 +84,7 @@ export class CustomerServicesService implements OnModuleInit, OnModuleDestroy {
     if (deadline.getTime() / 1000 > 4294967295) throw new BadRequestException('Tanggal janji bayar di luar batas RADIUS.');
     const restoration = await this.transaction(async tx => {
       const account = await this.account(id, tx);
+      if (account.terminatedAt || account.manualIsolated) throw new BadRequestException('Janji bayar tidak dapat membuka pelanggan berhenti langganan atau isolir manual.');
       if (!account.package.isActive) throw new BadRequestException('Paket pelanggan tidak aktif. Aktifkan paket lebih dahulu.');
       if (await tx.paymentPromise.findFirst({ where: { pppoeAccountId: account.id, status: 'ACTIVE' } }))
         throw new BadRequestException('Masih ada janji bayar aktif.');
@@ -122,6 +123,10 @@ export class CustomerServicesService implements OnModuleInit, OnModuleDestroy {
       const promise = await tx.paymentPromise.findFirst({ where: { pppoeAccountId: accountId, status: { in: ['ACTIVE', 'EXPIRED'] } }, orderBy: { id: 'desc' } });
       if (!promise) return;
       const account = await this.account(String(accountId), tx);
+      if (account.terminatedAt) {
+        await tx.paymentPromise.update({ where: { id: promise.id }, data: { status: 'CANCELLED', disconnectPending: false } });
+        return;
+      }
       const ids = (promise.invoiceIds as string[]).map(BigInt);
       const invoices = await tx.invoice.findMany({ where: { id: { in: ids }, pppoeAccountId: accountId }, select: { status: true } });
       const paid = invoices.length === ids.length && invoices.every(i => i.status === 'PAID');

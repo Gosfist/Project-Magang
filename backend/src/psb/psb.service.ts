@@ -80,18 +80,11 @@ export class PsbService {
   async update(id: string, dto: UpdatePsbOrderDto, user: { id: string; role: string; primaryRole?: string }) {
     const current = await this.find(id);
     this.assertSalesOwner(current, user);
+    if ((dto.idCardNumber?.trim() || null) !== (current.idCardNumber || null)) throw new BadRequestException('Nomor KTP pelanggan terdaftar tidak dapat diganti.');
     if (current.status !== 'PROCESS') throw new BadRequestException('Data yang sudah diaktivasi tidak dapat diedit oleh sales.');
     await this.validateCustomer(dto, current.id);
     const order = await this.prisma.psbOrder.update({ where: { id: current.id }, data: await this.customerData(dto) });
     return serialize({ message: 'Registrasi pelanggan berhasil diperbarui.', order });
-  }
-
-  async remove(id: string, user: { id: string; role: string; primaryRole?: string }) {
-    const current = await this.find(id);
-    this.assertSalesOwner(current, user);
-    if (current.status !== 'PROCESS') throw new BadRequestException('Data yang sudah diaktivasi tidak dapat dihapus.');
-    await this.prisma.psbOrder.delete({ where: { id: current.id } });
-    return { message: 'Registrasi pelanggan berhasil dihapus.' };
   }
 
   async activate(id: string, dto: ActivatePsbOrderDto, technicianId: string) {
@@ -121,8 +114,9 @@ export class PsbService {
       }
       const result = await this.prisma.$transaction(async tx => {
         await this.validateActivationPort(tx, odp.id, dto.odpPort, order.pppoeAccountId);
-        const currentAccount = await tx.pppoeAccount.findUnique({ where: { id: order.pppoeAccountId! }, select: { username: true, routerNasId: true } });
+        const currentAccount = await tx.pppoeAccount.findUnique({ where: { id: order.pppoeAccountId! }, select: { username: true, routerNasId: true, terminatedAt: true } });
         if (!currentAccount) throw new NotFoundException('Akun PPPoE tidak ditemukan.');
+        if (currentAccount.terminatedAt) throw new BadRequestException('Pelanggan sudah berhenti langganan.');
         const installationPhoto = await stagePhoto();
         const account = await tx.pppoeAccount.update({
           where: { id: order.pppoeAccountId! },

@@ -1,7 +1,6 @@
-import { ConfirmationService } from '../../../core/services/confirmation.service';
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { LucideCheck, LucidePencil, LucideTrash2, LucideEye, LucideEyeOff } from '@lucide/angular';
+import { LucideCheck, LucidePencil, LucideEye, LucideEyeOff } from '@lucide/angular';
 import { ApiService } from '../../../core/services/api.service';
 import { latestRequest } from '../../../core/services/latest-request';
 import { AuthService } from '../../../core/services/auth.service';
@@ -26,7 +25,6 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
     LucideEyeOff,
     LucideCheck,
     LucidePencil,
-    LucideTrash2,
     ModalComponent,
     PaginationComponent,
     ToastComponent,
@@ -34,7 +32,6 @@ import { ToastComponent } from '../../../shared/components/toast/toast.component
   templateUrl: './psb.component.html',
 })
 export class PsbComponent implements OnInit, OnDestroy {
-  private readonly confirmation = inject(ConfirmationService);
   private readonly latestLoad = latestRequest();
   readonly auth = inject(AuthService);
   private readonly api = inject(ApiService);
@@ -181,16 +178,6 @@ export class PsbComponent implements OnInit, OnDestroy {
         this.saving.set(false);
         this.error(e);
       },
-    });
-  }
-  async remove(item: PsbOrder) {
-    if (!await this.confirmation.ask('Hapus Registrasi', `Hapus registrasi ${item.customerName}?`)) return;
-    this.api.delete<any>(`/psb/${item.id}`).subscribe({
-      next: (r) => {
-        this.toast.set({ message: r.message, type: 'success' });
-        this.load();
-      },
-      error: (e) => this.error(e),
     });
   }
   openActivation(item: PsbOrder, viewOnly = false) {

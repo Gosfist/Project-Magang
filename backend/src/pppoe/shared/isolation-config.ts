@@ -42,8 +42,8 @@ export function rangeIntervals(ranges: string): [number, number][] {
   });
 }
 
-export function isolatedService(account: { isActive: boolean; expiresAt: Date | null; package: { isActive: boolean } }, promise: { deadline: Date } | null, now = Date.now()) {
-  return !account.isActive || !account.package.isActive || (promise ? promise.deadline.getTime() <= now : !!account.expiresAt && account.expiresAt.getTime() + 86400000 <= now);
+export function isolatedService(account: { manualIsolated?: boolean; terminatedAt?: Date | null; isActive: boolean; expiresAt: Date | null; package: { isActive: boolean } }, promise: { deadline: Date } | null, now = Date.now()) {
+  return !!account.terminatedAt || !!account.manualIsolated || !account.isActive || !account.package.isActive || (promise ? promise.deadline.getTime() <= now : !!account.expiresAt && account.expiresAt.getTime() + 86400000 <= now);
 }
 
 export async function isolationPoolInUse(tx: Pick<Prisma.TransactionClient, 'appSetting'>, name: string, routerId?: number) {

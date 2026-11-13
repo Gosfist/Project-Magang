@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, Component, computed, HostListener, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { LucideCamera, LucideEye, LucideEyeOff, LucidePencil, LucidePlus, LucideSearch, LucideTrash2, LucideUnplug, LucideX } from '@lucide/angular';
+import { LucideCamera, LucideEye, LucideEyeOff, LucidePencil, LucidePlus, LucideSearch, LucideUnplug, LucideX } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
 import { PppoeAccount, PppoePackage, PageMeta, NasOption, OdpOption } from '../../../../shared/models/types';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
@@ -10,7 +10,7 @@ import type { Subscription } from 'rxjs';
 import { CustomerServicesComponent } from './customer-services.component';
 import { AuthService } from '../../../../core/services/auth.service';
 
-type AccountListItem = PppoeAccount & { customerId?: string; customerNumber?: string; createdAt: string | null; online: boolean | null; serviceStatus?: 'Aktif' | 'Isolir'; psbOrder?: { installationPhoto: string | null; completedAt?: string | null } | null };
+type AccountListItem = PppoeAccount & { customerId?: string; customerNumber?: string; createdAt: string | null; online: boolean | null; serviceStatus?: 'Aktif' | 'Isolir' | 'Berhenti Langganan'; psbOrder?: { installationPhoto: string | null; completedAt?: string | null } | null };
 
 @Component({
   host: { class: 'workspace-page' },
@@ -27,7 +27,6 @@ type AccountListItem = PppoeAccount & { customerId?: string; customerNumber?: st
     LucidePencil,
     LucidePlus,
     LucideSearch,
-    LucideTrash2,
     ModalComponent,
     PaginationComponent,
     ToastComponent,
@@ -122,7 +121,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
   }
 
   filterStatusLabel(): string {
-    return this.statusFilter === 'active' ? 'Aktif' : this.statusFilter === 'isolated' ? 'Isolir' : 'Semua';
+    return this.statusFilter === 'terminated' ? 'Berhenti Langganan' : this.statusFilter === 'active' ? 'Aktif' : this.statusFilter === 'isolated' ? 'Isolir' : 'Semua';
   }
 
   filterSessionLabel(): string {
@@ -304,7 +303,7 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     customerName: '', phone: '', idCardNumber: '', idCardPhoto: '', address: '',
     pppoePackageId: '',
     username: '', password: '', routerNasId: '', odp: '', odpPort: '', areaId: '',
-    expiresAt: '', isActive: true, notes: '',
+    expiresAt: '', isActive: true, manualIsolated: false, notes: '',
   };
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -387,13 +386,14 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
           areaId: item.areaId ? String(item.areaId) : '',
           expiresAt: item.expiresAt?.slice(0, 10) ?? '',
           isActive: item.isActive,
+          manualIsolated: item.manualIsolated ?? false,
           notes: item.notes ?? '',
         }
       : {
           customerName: '', phone: '', idCardNumber: '', idCardPhoto: '', address: '',
           pppoePackageId: '',
           username: '', password: '', routerNasId: '', odp: '', odpPort: '', areaId: '',
-          expiresAt: '', isActive: true, notes: '',
+          expiresAt: '', isActive: true, manualIsolated: false, notes: '',
         };
     if (item && this.auth.isAdmin()) {
       this.passwordLoading.set(true);
@@ -542,7 +542,6 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
 
   disconnecting = signal<string | null>(null);
   disconnectConfirm = signal<PppoeAccount | null>(null);
-  deleteConfirm = signal<PppoeAccount | null>(null);
 
   disconnect(item: PppoeAccount): void {
     if (this.disconnecting()) return;
@@ -564,20 +563,4 @@ export class DataPelangganComponent implements OnInit, OnDestroy {
     });
   }
 
-  remove(item: PppoeAccount): void {
-    this.deleteConfirm.set(item);
-  }
-
-  confirmRemove(): void {
-    const item = this.deleteConfirm();
-    if (!item) return;
-    this.deleteConfirm.set(null);
-    this.api.delete<{ message: string; warnings?: string[] }>(`/pppoe/accounts/${item.id}`).subscribe({
-      next: (r) => {
-        this.toast.set({ message: r.message, type: r.warnings?.length ? 'error' : 'success' });
-        this.load();
-      },
-      error: (e) => this.toast.set({ message: e.message, type: 'error' }),
-    });
-  }
 }

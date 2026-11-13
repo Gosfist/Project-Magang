@@ -10,7 +10,7 @@ vi.mock('./id-card-photo.js', () => ({ validateIdCardPhoto: vi.fn().mockResolved
 describe('PPPoE billing and account deactivation', () => {
   function setup() {
     const pkg = { id: 1n, price: 300000n, costPrice: 0n, validityDays: 30, isActive: true };
-    const current = { id: 2n, pppoePackageId: 1n, username: 'andi', password: 'encrypted', routerNasId: 3, isActive: true };
+    const current = { idCardNumber: '1234567890123456', manualIsolated: false, terminatedAt: null as Date | null, id: 2n, pppoePackageId: 1n, username: 'andi', password: 'encrypted', routerNasId: 3, isActive: true };
     const invoice = { create: vi.fn().mockResolvedValue({}) };
     const tx = {
       $queryRaw: vi.fn().mockResolvedValue([]),
@@ -48,6 +48,25 @@ describe('PPPoE billing and account deactivation', () => {
   beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 8, 16, 0, 0, 0)); });
   afterEach(() => vi.useRealTimers());
 
+  it('keeps the KTP reserved and refuses identity replacement', async () => {
+    const { service, dto, tx } = setup();
+    await expect(service.updateAccount('2', { ...dto, idCardNumber: '9999999999999999' })).rejects.toThrow('KTP');
+    expect(tx.pppoeAccount.update).not.toHaveBeenCalled();
+  });
+  it('refuses reactivation after permanent termination', async () => {
+    const { service, dto, tx, current } = setup();
+    current.terminatedAt = new Date();
+    await expect(service.updateAccount('2', dto)).rejects.toThrow('berhenti langganan');
+    expect(tx.pppoeAccount.update).not.toHaveBeenCalled();
+  });
+  it('opens manual isolation and clears expiry when unchecked', async () => {
+    const { service, dto, tx, current, network } = setup();
+    current.manualIsolated = true;
+    current.isActive = false;
+    await service.updateAccount('2', { ...dto, isActive: false, manualIsolated: false, expiresAt: '2020-01-01' });
+    expect(tx.pppoeAccount.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ isActive: true, manualIsolated: false, expiresAt: null }) }));
+    expect(network.disconnect).toHaveBeenCalled();
+  });
   it('saves the chosen port when editing a customer', async () => {
     const { service, dto, tx } = setup();
     await service.updateAccount('2', { ...dto, odpPort: 2 });

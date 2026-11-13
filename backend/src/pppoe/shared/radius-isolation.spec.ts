@@ -15,6 +15,20 @@ describe('RADIUS pool isolation', () => {
     const service = new RadiusService({ decrypt: () => 'test-password' } as any);
     return { tx, account, service, config };
   }
+  it('never recreates credentials for a permanently stopped customer even with a promise', async () => {
+    const { tx, account, service } = setup();
+    const client = { ...tx, radusergroup: { deleteMany: vi.fn() } };
+    await service.sync(client as any, { ...account, isActive: true, terminatedAt: new Date() } as any);
+    expect(tx.radcheck.deleteMany).toHaveBeenCalled();
+    expect(tx.radcheck.createMany).not.toHaveBeenCalled();
+    expect(tx.radreply.createMany).not.toHaveBeenCalled();
+  });
+  it('keeps manual isolation despite a live payment promise', async () => {
+    const { tx, account, service } = setup();
+    tx.paymentPromise.findFirst.mockResolvedValue({ deadline: new Date(Date.now() + 3600000) });
+    await service.sync(tx as any, { ...account, isActive: true, manualIsolated: true } as any);
+    expect(tx.radreply.createMany.mock.calls[0][0].data).toContainEqual(expect.objectContaining({ attribute: 'Framed-Pool', value: 'pool-isolir' }));
+  });
   it('keeps valid credentials without Expiration and chooses the isolated pool/profile', async () => {
     const { tx, account, service } = setup();
     await service.sync(tx as any, account as any);

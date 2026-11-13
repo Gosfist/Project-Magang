@@ -67,6 +67,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
         where: {
           ...(onlyAccountId ? { id: onlyAccountId } : cursor ? { id: { gt: cursor } } : {}),
           subscriptionType: 'POSTPAID',
+          terminatedAt: null,
           package: { isActive: true },
           createdAt: { lt: new Date(monthStart.getTime() - billingOffsets[settings.billingTimezone] * 3600000) },
         },
@@ -93,7 +94,10 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
         if (first && first.dueDate > dueDate) continue;
         const prorate = first?.dueDate.getTime() === dueDate.getTime();
         const amount = prorate ? first!.amount : price;
-        await this.prisma.invoice.create({
+        await this.prisma.$transaction(async tx => {
+          const current = await tx.pppoeAccount.findUnique({ where: { id: account.id }, select: { terminatedAt: true } });
+          if (!current || current.terminatedAt) return;
+          await tx.invoice.create({
           data: {
             pppoeAccountId: account.id,
             invoiceNumber: serviceInvoiceNumber(year, month - 1, account.customerNumber),
@@ -107,7 +111,8 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
             createdAt: new Date(),
             updatedAt: new Date(),
           },
-        }).catch((error) => {
+          });
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }).catch((error) => {
           this.logger.warn(`Invoice bulanan pelanggan ${account.customerNumber} tidak dibuat: ${error instanceof Error ? error.message : error}`);
         });
       }
@@ -120,6 +125,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
     const accounts = await this.prisma.pppoeAccount.findMany({
       where: {
         ...(onlyAccountId ? { id: onlyAccountId } : {}),
+        terminatedAt: null,
         isActive: true,
         createdAt: { lt: new Date(Date.UTC(cutoffDate.getUTCFullYear(), cutoffDate.getUTCMonth(), 1) - billingOffsets[settings.billingTimezone] * 3600000) },
         package: { isActive: true },
@@ -138,7 +144,8 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
           const claimed = await tx.pppoeAccount.updateMany({
             where: {
               id: account.id,
-              isActive: true,
+              terminatedAt: null,
+        isActive: true,
               package: { isActive: true },
               invoices: { some: { status: { in: ['PENDING', 'OVERDUE'] }, dueDate: { lte: cutoffDate } } },
               paymentPromises: { none: { status: 'ACTIVE', deadline: { gt: now } } },
@@ -180,7 +187,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
         ...(onlyAccountId ? { pppoeAccountId: onlyAccountId } : {}),
         status: 'PENDING',
         reminderSentAt: null,
-        account: { isNot: null },
+        account: { is: { terminatedAt: null } },
         dueDate: { gte: monthStart, lt: nextMonthStart },
       },
       include: {

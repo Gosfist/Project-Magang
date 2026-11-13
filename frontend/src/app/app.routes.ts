@@ -91,6 +91,7 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/dashboard/pppoe/data-pelanggan/data-pelanggan.component').then(m => m.DataPelangganComponent),
         canActivate: [roleGuard('admin')],
       },
+      { path: 'teknisi/berhenti-langganan', loadComponent: () => import('./pages/dashboard/termination/termination.component').then(m => m.TerminationComponent), canActivate: [roleGuard('admin', 'teknisi')] },
       {
         path: 'teknisi/data-pelanggan',
         loadComponent: () => import('./pages/dashboard/pppoe/data-pelanggan/data-pelanggan.component').then(m => m.DataPelangganComponent),

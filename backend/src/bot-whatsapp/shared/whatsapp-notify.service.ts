@@ -24,6 +24,12 @@ export class WhatsappNotifyService {
     return this.send(account.phone, template.replace(/\{nama\}/g, account.customerName).replace(/\{nomor_pelanggan\}/g, account.customerNumber.toString().padStart(6, '0')).replace(/\{layanan\}/g, account.packageName).replace(/\{biaya_psb\}/g, fee).replace(/\{tanggal_mulai\}/g, String(account.billingStartDay)).replace(/\{tanggal_akhir\}/g, String(account.billingEndDay)));
   }
 
+  async notifyTermination(account: { customerName: string; customerNumber: bigint; phone: string | null; collectedByName: string; amount: number }): Promise<boolean> {
+    if (!account.phone) return false;
+    const amount = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(account.amount);
+    return this.send(account.phone, `Halo Bapak/Ibu ${account.customerName},\n\nPerangkat internet No. Pelanggan ${account.customerNumber.toString().padStart(6, '0')} telah diambil oleh ${account.collectedByName}. Langganan Anda telah dihentikan dan penagihan langganan telah berhenti sejak permintaan penghentian disimpan oleh admin.\nPembayaran akhir diterima petugas: ${amount} (menunggu verifikasi finance).\n\nTerima kasih telah menggunakan layanan PT Unzanet.`);
+  }
+
   private async template(name: string, fallback: string) {
     const row = await this.prisma.appSetting.findUnique({ where: { key: `wa_template_${name}` } });
     return row?.value || fallback;
@@ -208,6 +214,7 @@ export class WhatsappNotifyService {
     customerNumber: bigint;
     phone: string;
     amount: number;
+    serviceStopped?: boolean;
     acceptedDate: string;
     billingMonth: string;
   }): Promise<void> {
@@ -216,7 +223,9 @@ export class WhatsappNotifyService {
       if (enabled?.value === 'false') return;
 
       const templateRow = await this.prisma.appSetting.findUnique({ where: { key: 'wa_template_deposit_accepted' } });
-      const template = templateRow?.value || this.defaultDepositAcceptedTemplate();
+      const template = account.serviceStopped
+        ? 'Halo {nama}, pembayaran {jumlah} untuk No. Pelanggan {nomor_pelanggan} telah diverifikasi pada {tanggal_diterima}. Pembayaran ini tidak mengaktifkan kembali layanan yang dihentikan atau diisolir manual. Terima kasih. - PT Unzanet'
+        : templateRow?.value || this.defaultDepositAcceptedTemplate();
 
       const customerId = account.customerNumber.toString().padStart(6, '0');
       const amountStr = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(account.amount);

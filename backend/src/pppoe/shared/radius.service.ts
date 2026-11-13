@@ -12,11 +12,15 @@ export class RadiusService {
     const usernames = [...new Set([oldUsername, account.username].filter(Boolean))];
     await tx.radcheck.deleteMany({ where: { username: { in: usernames } } });
     await tx.radreply.deleteMany({ where: { username: { in: usernames } } });
+    if (account.terminatedAt) {
+      await tx.radusergroup.deleteMany({ where: { username: { in: usernames } } });
+      return { isolationEnabled: false, isolated: true };
+    }
     const config = await readIsolation(tx, account.routerNasId);
     const network = await readNasNetwork(tx, account.routerNasId);
     const promise = await tx.paymentPromise.findFirst({ where: { pppoeAccountId: account.id, status: 'ACTIVE' }, orderBy: { id: 'desc' } });
     const isolated = isolatedService(account, promise);
-    if ((!account.isActive || !account.package.isActive) && !config.enabled) return { isolationEnabled: false, isolated: true };
+    if ((account.manualIsolated || !account.isActive || !account.package.isActive) && !config.enabled) return { isolationEnabled: false, isolated: true };
 
     const checks = [
       { username: account.username, attribute: 'Cleartext-Password', op: ':=', value: this.secrets.decrypt(account.password) },

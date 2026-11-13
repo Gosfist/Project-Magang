@@ -63,7 +63,7 @@ export class BackupService {
       let settings: LocalSettings;
       try { settings = network ? { localAddress: network.internet.gateway, baseProfile: internetProfile(routerId) } : JSON.parse(row!.value); } catch { throw new BadRequestException('Simpan ulang pengaturan backup router.'); }
       if (!isIPv4(settings.localAddress) || !settings.baseProfile?.trim()) throw new BadRequestException('Simpan ulang gateway dan profil dasar backup router.');
-      const accounts = await this.prisma.pppoeAccount.findMany({ where: { routerNasId: routerId }, include: { package: { include: { ipPool: true } }, paymentPromises: { where: { status: 'ACTIVE' }, orderBy: { id: 'desc' }, take: 1 } }, orderBy: { customerNumber: 'asc' } });
+      const accounts = await this.prisma.pppoeAccount.findMany({ where: { routerNasId: routerId, terminatedAt: null }, include: { package: { include: { ipPool: true } }, paymentPromises: { where: { status: 'ACTIVE' }, orderBy: { id: 'desc' }, take: 1 } }, orderBy: { customerNumber: 'asc' } });
       const isolation = await readIsolation(this.prisma, routerId);
       const now = Date.now();
       script = localScript(routerId, accounts.map(account => ({ customerNumber: String(account.customerNumber), username: account.username, password: this.secrets.decrypt(account.password), pool: network ? internetPoolName : account.package.ipPool?.name || account.package.addressPool || '', rate: `${account.package.uploadMbps}M/${account.package.downloadMbps}M`, packageId: String(account.pppoePackageId), isolated: isolatedService(account, account.paymentPromises[0] || null, now) })), settings, isolation, reconnect);
@@ -118,7 +118,7 @@ export class BackupService {
     const [packages, routers, areas, points, existing, orders] = await Promise.all([
       tx.pppoePackage.findMany({ include: { ipPool: true } }), tx.nas.findMany({ select: { id: true, name: true, nasname: true } }),
       tx.area.findMany({ select: { id: true } }), tx.mainCore.findMany({ where: { tipeTitik: { in: ['odc', 'odp'] }, deletedAt: null }, select: { id: true } }),
-      tx.pppoeAccount.findMany({ select: { id: true, username: true, customerNumber: true, phone: true, idCardNumber: true, updatedAt: true, password: true } }),
+      tx.pppoeAccount.findMany({ select: { id: true, username: true, customerNumber: true, phone: true, idCardNumber: true, updatedAt: true, password: true, terminatedAt: true } }),
       tx.psbOrder.findMany({ select: { phone: true, idCardNumber: true, customerNumber: true, pppoeAccountId: true } }),
     ]);
     const errors: { row: number; message: string }[] = [];
@@ -141,6 +141,8 @@ export class BackupService {
         const customerNumber = uint(d.no_pelanggan.trim(), 'Nomor pelanggan');
         for (const [kind, value] of [['Username', username], ['Nomor pelanggan', String(customerNumber)], ['No WA', d.no_wa.trim()], ['No KTP', d.no_ktp.trim()]]) unique(kind, value, item.row);
         const current = existing.find(account => account.username.toLowerCase() === username.toLowerCase());
+        if (current?.terminatedAt) throw new Error('Pelanggan berhenti langganan tidak dapat diperbarui melalui impor.');
+        if (current && current.idCardNumber !== (d.no_ktp.trim() || null)) throw new Error('KTP pelanggan terdaftar tidak dapat diganti melalui impor.');
         if (current && (mode === 'create' || current.username !== username)) throw new Error('Username sudah ada. Gunakan mode Tambah/perbarui dan ejaan username yang sama.');
         if (current && current.customerNumber !== customerNumber) throw new Error('Nomor pelanggan tidak sama dengan akun username tersebut.');
         if (existing.some(account => account.customerNumber === customerNumber && account.id !== current?.id)) throw new Error('Nomor pelanggan sudah digunakan akun lain.');

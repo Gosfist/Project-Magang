@@ -1,5 +1,9 @@
 # Panduan arsitektur tanpa API MikroTik
 
+Panduan [Berhenti Langganan dan isolir manual](berhenti-langganan.md) memuat alur
+pengambilan, prorata akhir, petugas, setoran, WhatsApp, retensi KTP permanen dan
+perubahan skema tambahan untuk database lama.
+
 Panduan [konfirmasi antarmuka](konfirmasi-antarmuka.md) menjelaskan penggantian
 seluruh konfirmasi hapus bawaan browser dengan modal aplikasi seperti Hapus Klien VPN.
 

@@ -205,7 +205,7 @@ export class FinanceDepositsService {
     // Send WA notification: deposit accepted by company
     const account = deposit.pppoeAccountId === null ? null : await this.prisma.pppoeAccount.findUnique({
       where: { id: deposit.pppoeAccountId },
-      select: { customerName: true, customerNumber: true, phone: true },
+      select: { customerName: true, customerNumber: true, phone: true, terminatedAt: true, manualIsolated: true },
     });
 
     if (this.waNotify && account?.phone) {
@@ -218,6 +218,7 @@ export class FinanceDepositsService {
         customerNumber: account.customerNumber,
         phone: account.phone,
         amount: Number(deposit.amount),
+        serviceStopped: !!account.terminatedAt || !!account.manualIsolated,
         acceptedDate: new Date().toISOString().slice(0, 10),
         billingMonth: invoice?.dueDate
           ? new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' }).format(invoice.dueDate)
@@ -311,7 +312,7 @@ export class FinanceDepositsService {
         where: { id: accountId },
         include: { package: { include: { ipPool: true } } },
       });
-      if (account) {
+      if (account && !account.terminatedAt && !account.manualIsolated) {
         await tx.paymentPromise.updateMany({
           where: { pppoeAccountId: accountId, status: { in: ['ACTIVE', 'EXPIRED'] } },
           data: { status: 'FULFILLED', disconnectPending: false },

@@ -18,6 +18,7 @@ describe('Dashboard URL access', () => {
   const expected: Record<string, string[]> = {
     '': ['admin', 'finance', 'kolektor', 'sales', 'teknisi'],
     users: ['admin'], sales: ['admin'], mainCore: ['admin', 'teknisi'],
+    'teknisi/berhenti-langganan': ['admin', 'teknisi'],
     'teknisi/data-pelanggan': ['teknisi'], 'registrasi-pelanggan': ['sales'],
     'pasang-baru': ['teknisi'], 'kolektor/tagihan': ['kolektor'],
     'kolektor/janji-bayar': ['kolektor'], 'kolektor/titipan': ['kolektor'], area: ['admin'],

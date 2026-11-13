@@ -6,7 +6,7 @@ Jangan memakai dialog bawaan browser `window.confirm`, `window.alert`, atau
 `window.prompt` untuk alur antarmuka aplikasi.
 
 Konfirmasi bersama diterapkan pada Server, Rasio, ODC, ODP, Data Area,
-penugasan kolektor, Data Petugas, Router, Registrasi Pelanggan, Paket Layanan,
+penugasan kolektor, Data Petugas, Router, Paket Layanan,
 pendaftaran IP Pool, dan catatan Transaksi Finance. Modal VPN yang sudah sesuai
 tetap menggunakan tampilannya yang ada. Notifikasi sukses/gagal memakai toast.
 
@@ -23,3 +23,6 @@ dengan halaman VPN. Teks pesan diinterpolasi sebagai teks, bukan HTML.
 
 Lokasi implementasi: `frontend/src/app/core/services/confirmation.service.ts`
 dan `frontend/src/app/shared/components/confirmation/confirmation.component.ts`.
+
+Data pelanggan dan registrasi PSB tidak memiliki aksi hapus. Gunakan
+[Teknisi > Berhenti Langganan](berhenti-langganan.md) untuk penghentian permanen.

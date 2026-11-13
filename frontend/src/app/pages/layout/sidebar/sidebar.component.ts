@@ -148,7 +148,7 @@ export class SidebarComponent implements OnInit {
     { role: 'finance', label: 'Finance', links: [...this.financeLinks] },
     { role: 'sales', label: 'Sales', links: [['Registrasi', '/dashboard/registrasi-pelanggan']] },
     { role: 'kolektor', label: 'Kolektor', links: [['Tagihan', '/dashboard/kolektor/tagihan'], ['Titipan', '/dashboard/kolektor/titipan']] },
-    { role: 'teknisi', label: 'Teknisi', links: [['Pasang Baru', '/dashboard/pasang-baru'], ['Data Pelanggan', '/dashboard/teknisi/data-pelanggan'], ...this.coreLinks, ['Kalkulator Redaman', '/dashboard/tools/kalkulator-redaman']] },
+    { role: 'teknisi', label: 'Teknisi', links: [['Pasang Baru', '/dashboard/pasang-baru'], ['Berhenti Langganan', '/dashboard/teknisi/berhenti-langganan'], ['Data Pelanggan', '/dashboard/teknisi/data-pelanggan'], ...this.coreLinks, ['Kalkulator Redaman', '/dashboard/tools/kalkulator-redaman']] },
   ];
   primaryLinks(): string[][] {
     return [['Dashboard', '/dashboard'], ...(this.roleGroups.find(group => group.role === this.auth.user()?.role)?.links ?? [])];

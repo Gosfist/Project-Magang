@@ -18,6 +18,7 @@ export class SaveAccountDto {
   @IsOptional() @IsString() routerNasId?: string;
   @IsOptional() @IsIn(['none', 'prorate', 'full']) firstInvoice?: string;
   @IsOptional() @IsDateString() expiresAt?: string;
+  @IsOptional() @IsBoolean() manualIsolated?: boolean;
   @IsOptional() @IsBoolean() isActive?: boolean;
   @IsOptional() @IsString() @MaxLength(1000) notes?: string;
   @IsString() @Matches(/^[1-9]\d*$/, { message: 'Area wajib dipilih.' }) areaId: string;

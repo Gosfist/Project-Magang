@@ -95,6 +95,8 @@ CREATE TABLE `daftar_pelanggan` (
     `created_at` DATETIME(3) NULL,
     `updated_at` DATETIME(3) NULL,
     `area_id` BIGINT UNSIGNED NULL,
+    `manual_isolated` BOOLEAN NOT NULL DEFAULT false,
+    `terminated_at` DATETIME(3) NULL,
 
     UNIQUE INDEX `daftar_pelanggan_customer_number_key`(`customer_number`),
     UNIQUE INDEX `daftar_pelanggan_id_card_number_key`(`id_card_number`),
@@ -561,6 +563,26 @@ CREATE TABLE `finance_transactions` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `subscription_terminations` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `pppoe_account_id` BIGINT UNSIGNED NOT NULL,
+    `requested_by_user_id` BIGINT UNSIGNED NOT NULL,
+    `collected_by_user_id` BIGINT UNSIGNED NULL,
+    `requested_by_name` VARCHAR(255) NOT NULL,
+    `collected_by_name` VARCHAR(255) NULL,
+    `reason` VARCHAR(1000) NOT NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    `collected_amount` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    `requested_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `completed_at` DATETIME(3) NULL,
+    `wa_sent_at` DATETIME(3) NULL,
+
+    UNIQUE INDEX `subscription_terminations_pppoe_account_id_key`(`pppoe_account_id`),
+    INDEX `subscription_terminations_status_requested_at_idx`(`status`, `requested_at`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `main_core` ADD CONSTRAINT `main_core_parent_id_fkey` FOREIGN KEY (`parent_id`) REFERENCES `main_core`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -638,6 +660,15 @@ ALTER TABLE `collector_deposits` ADD CONSTRAINT `collector_deposits_accepted_by_
 
 -- AddForeignKey
 ALTER TABLE `finance_transactions` ADD CONSTRAINT `finance_transactions_created_by_user_id_fkey` FOREIGN KEY (`created_by_user_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `subscription_terminations` ADD CONSTRAINT `subscription_terminations_pppoe_account_id_fkey` FOREIGN KEY (`pppoe_account_id`) REFERENCES `daftar_pelanggan`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `subscription_terminations` ADD CONSTRAINT `subscription_terminations_requested_by_user_id_fkey` FOREIGN KEY (`requested_by_user_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `subscription_terminations` ADD CONSTRAINT `subscription_terminations_collected_by_user_id_fkey` FOREIGN KEY (`collected_by_user_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- Pengaturan awal sesuai nilai bawaan aplikasi.
 INSERT INTO website_settings (`key`, `value`, updated_at) VALUES

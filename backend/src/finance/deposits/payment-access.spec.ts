@@ -48,6 +48,13 @@ function setup(promiseStatus = 'EXPIRED', isActive = false, poolIsolation = fals
 }
 
 describe('Finance ACC restores RADIUS access', () => {
+  it.each(['terminatedAt', 'manualIsolated'])('accepts money without restoring %s accounts', async field => {
+    const { state, service, tx, network } = setup();
+    Object.assign(state.account, { [field]: field === 'terminatedAt' ? new Date() : true });
+    await service.accept('1', '3');
+    expect(state.depositStatus).toBe('ACCEPTED'); expect(state.invoiceStatus).toBe('PAID');
+    expect(state.account.isActive).toBe(false); expect(tx.pppoeAccount.update).not.toHaveBeenCalled(); expect(network.disconnect).not.toHaveBeenCalled();
+  });
   it('reconnects once after ACC commits to replace an isolated IP with the package pool', async () => {
     const { service, network } = setup('EXPIRED', false, true);
     await service.accept('1', '3');

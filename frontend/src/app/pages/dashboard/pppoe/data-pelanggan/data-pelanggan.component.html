@@ -66,6 +66,7 @@
           >
             Isolir
           </button>
+          <button type="button" class="filter-option" [class.active]="statusFilter === 'terminated'" (click)="statusFilter = 'terminated'; statusFilterOpen.set(false); applyFilters()">Berhenti Langganan</button>
         </div>
       }
     </div>
@@ -232,17 +233,10 @@
                     class="btn-secondary table-action table-action-icon"
                     title="Edit"
                     aria-label="Edit pelanggan"
+                    [disabled]="!!item.terminatedAt"
                     (click)="show(item)"
                   >
                     <svg lucidePencil [size]="15"></svg>
-                  </button>
-                  <button
-                    class="btn-danger table-action table-action-icon"
-                    title="Hapus"
-                    aria-label="Hapus pelanggan"
-                    (click)="remove(item)"
-                  >
-                    <svg lucideTrash2 [size]="15"></svg>
                   </button>
                 </div>
               </td>
@@ -391,7 +385,7 @@
                 class="input"
                 maxlength="50"
                 [required]="!editing()"
-                [(ngModel)]="form.idCardNumber"
+                [readonly]="!!editing()" [(ngModel)]="form.idCardNumber"
                 name="idCardNumber"
               />
             </div>
@@ -743,6 +737,13 @@
                 >
               </span>
             </label>
+            @if (editing() && !editing()?.terminatedAt) {
+              <label class="mt-3 flex items-start gap-3 rounded-xl border border-slate-200 p-4">
+                <input type="checkbox" name="manualIsolated" [(ngModel)]="form.manualIsolated" class="mt-1" />
+                <span>Isolir manual<small class="mt-1 block text-slate-500">Centang untuk mengisolir. Hapus centang untuk membuka isolir manual.</small></span>
+              </label>
+            }
+
           }
         </div>
       }
@@ -869,35 +870,6 @@
           (click)="confirmDisconnect()"
         >
           {{ disconnecting() ? "Memutuskan..." : "Putuskan Sesi" }}
-        </button>
-      </div>
-    }
-  </app-modal>
-
-  <app-modal
-    [open]="!!deleteConfirm()"
-    title="Konfirmasi Hapus Akun"
-    (closeModal)="deleteConfirm.set(null)"
-  >
-    @if (deleteConfirm(); as item) {
-      <p class="text-slate-700">
-        Hapus akun pelanggan {{ item.customerName }} ({{ item.username }})?
-      </p>
-      <p class="mt-2 text-sm text-slate-500">
-        Data pelanggan, pemasangan, foto KTP/instalasi, log RADIUS, dan tagihan
-        tanpa pembayaran akan dihapus. Riwayat pembayaran, setoran, dan bukti
-        pembayarannya tetap disimpan.
-      </p>
-      <div class="mt-6 flex justify-end gap-3">
-        <button
-          type="button"
-          class="btn-secondary"
-          (click)="deleteConfirm.set(null)"
-        >
-          Batal
-        </button>
-        <button type="button" class="btn-danger" (click)="confirmRemove()">
-          Hapus
         </button>
       </div>
     }

@@ -1,0 +1,328 @@
+<div class="space-y-4">
+  <div class="card space-y-4 p-4">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-900">Berhenti Langganan</h2>
+      <p class="mt-1 text-sm text-slate-500">
+        Pengambilan perangkat dan pembayaran akhir pelanggan. Data pelanggan
+        serta KTP tetap tersimpan.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-end gap-3">
+      <div class="min-w-0 flex-1 basis-full sm:basis-0">
+        <label for="termination-search" class="label">Cari pelanggan</label>
+        <div class="relative">
+          <svg
+            lucideSearch
+            [size]="18"
+            class="absolute left-3 top-3 text-slate-400"
+            aria-hidden="true"
+          ></svg
+          ><input
+            id="termination-search"
+            class="input input-with-icon"
+            placeholder="Nomor atau nama pelanggan"
+            [(ngModel)]="search"
+            (ngModelChange)="searchChanged()"
+          />
+        </div>
+      </div>
+      <div>
+        <label for="termination-status" class="label"
+          >Pengambilan perangkat</label
+        ><select
+          id="termination-status"
+          class="input"
+          [(ngModel)]="status"
+          (ngModelChange)="page = 1; load()"
+        >
+          <option value="PENDING">Belum diambil</option>
+          <option value="COMPLETED">Selesai / Sudah diambil</option>
+        </select>
+      </div>
+      @if (auth.isAdmin()) {
+        <button class="btn-primary" (click)="add()">
+          <svg lucidePlus [size]="18" aria-hidden="true"></svg>Tambah
+        </button>
+      }
+    </div>
+  </div>
+  <div role="status" class="text-sm text-slate-500" aria-live="polite">
+    {{
+      loading()
+        ? "Memuat daftar pengambilan..."
+        : meta().total +
+          " pelanggan " +
+          (status === "PENDING" ? "belum diambil" : "sudah diambil")
+    }}
+  </div>
+  <div class="table-wrap" [attr.aria-busy]="loading()">
+    <table>
+      <thead>
+        <tr>
+          <th>Pelanggan</th>
+          <th>Alamat / Paket</th>
+          <th>Tanggal Berhenti</th>
+          <th>Alasan</th>
+          <th>Status</th>
+          <th>Diambil oleh</th>
+          <th>Pembayaran ke petugas</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of items(); track item.id) {
+          <tr>
+            <td>
+              {{ item.account.customerName }}
+              <div class="table-meta">
+                {{ item.account.customerNumber.padStart(6, "0") }} -
+                {{ item.account.phone || "-" }}
+              </div>
+            </td>
+            <td>
+              {{ item.account.address || "-" }}
+              <div class="table-meta">{{ item.account.package.name }}</div>
+            </td>
+            <td>
+              {{ item.requestedAt | date: "dd/MM/yyyy HH:mm" : "+0700" }}
+              <div class="table-meta">{{ item.requestedByName }}</div>
+            </td>
+            <td class="max-w-xs whitespace-normal">{{ item.reason }}</td>
+            <td>
+              <span
+                class="rounded-full px-2.5 py-1"
+                [class]="
+                  status === 'PENDING'
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'bg-green-100 text-green-800'
+                "
+                >{{ status === "PENDING" ? "Belum diambil" : "Selesai" }}</span
+              >
+            </td>
+            <td>
+              {{ item.collectedByName || "-" }}
+              @if (item.completedAt) {
+                <div class="table-meta">
+                  {{ item.completedAt | date: "dd/MM/yyyy HH:mm" : "+0700" }}
+                </div>
+              }
+            </td>
+            <td>
+              {{
+                item.completedAt
+                  ? (item.collectedAmount
+                    | currency: "IDR" : "symbol" : "1.0-0")
+                  : "Tagihan akhir sejak berhenti"
+              }}
+              @if (item.completedAt) {
+                <div class="table-meta">Verifikasi di Setoran Kolektor</div>
+              }
+            </td>
+            <td>
+              @if (status === "PENDING") {
+                <button
+                  class="btn-primary table-action"
+                  [disabled]="saving() || loading()"
+                  (click)="openCompletion(item)"
+                >
+                  Selesai
+                </button>
+              } @else {
+                <span class="table-meta">{{
+                  item.waSentAt ? "WA terkirim" : "WA belum terkirim"
+                }}</span>
+                @if (!item.waSentAt) {
+                  <button
+                    class="btn-secondary table-action"
+                    [disabled]="saving()"
+                    (click)="resend(item)"
+                  >
+                    Kirim ulang WA
+                  </button>
+                }
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8" class="py-10 text-center text-slate-500">
+              {{
+                loading()
+                  ? "Memuat data..."
+                  : "Tidak ada pelanggan pada filter ini."
+              }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <app-pagination [meta]="meta()" (pageChange)="page = $event; load()" />
+  <app-modal
+    [open]="adding()"
+    title="Tambah Berhenti Langganan"
+    (closeModal)="!saving() && adding.set(false)"
+  >
+    <form class="space-y-4" (ngSubmit)="create()">
+      <div>
+        <label class="label" for="stop-customer-search"
+          >Cari nomor / nama pelanggan</label
+        ><input
+          id="stop-customer-search"
+          class="input"
+          name="customerSearch"
+          [(ngModel)]="customerSearch"
+          (ngModelChange)="lookupChanged()"
+          autocomplete="off"
+        />
+      </div>
+      <div>
+        <label class="label" for="stop-customer">Pelanggan</label
+        ><select
+          class="input"
+          id="stop-customer"
+          name="accountId"
+          required
+          [(ngModel)]="accountId"
+        >
+          <option value="">Pilih hasil pencarian</option>
+          @for (customer of options(); track customer.id) {
+            <option [value]="customer.id">
+              {{ customer.customerNumber.padStart(6, "0") }} -
+              {{ customer.customerName }} - {{ customer.address }}
+            </option>
+          }
+        </select>
+        <p class="mt-1 text-xs text-slate-500">
+          Maksimal 20 hasil. Persempit pencarian bila pelanggan belum ditemukan.
+        </p>
+      </div>
+      <div>
+        <label class="label" for="stop-reason">Alasan berhenti</label
+        ><textarea
+          class="input"
+          id="stop-reason"
+          name="reason"
+          required
+          maxlength="1000"
+          [(ngModel)]="reason"
+        ></textarea>
+      </div>
+      <p class="rounded-lg bg-blue-50 p-3 text-sm text-blue-900">
+        Langganan dan penagihan dihentikan saat permintaan ini disimpan.
+        Permintaan ini tersimpan permanen dan tidak dapat dihapus.
+      </p>
+      @if (error()) {
+        <p role="alert" class="text-sm text-red-600">{{ error() }}</p>
+      }
+      <div class="flex justify-end gap-3">
+        <button
+          type="button"
+          class="btn-secondary"
+          [disabled]="saving()"
+          (click)="adding.set(false)"
+        >
+          Batal</button
+        ><button
+          class="btn-primary"
+          [disabled]="saving() || !accountId || !reason.trim()"
+        >
+          {{ saving() ? "Menyimpan..." : "Simpan" }}
+        </button>
+      </div>
+    </form>
+  </app-modal>
+  <app-modal
+    [open]="!!selected()"
+    title="Selesaikan Pengambilan Perangkat"
+    (closeModal)="closeCompletion()"
+  >
+    @if (summaryLoading()) {
+      <p role="status">Menghitung pembayaran akhir...</p>
+    }
+    @if (summary(); as bill) {
+      <div class="space-y-4">
+        <p>
+          Perangkat pelanggan <strong>{{ bill.customerName }}</strong> sudah
+          diambil. Langganan sudah dihentikan sejak {{ selected()?.requestedAt | date:'dd/MM/yyyy HH:mm':'+0700' }} saat admin menyimpan permintaan.
+        </p>
+        <p class="text-sm text-slate-500">
+          Tagihan mencakup tunggakan yang tercatat dan periode layanan yang
+          belum ditagih, termasuk prorata sampai tanggal admin menyimpan
+          permintaan sesuai zona penagihan. Setoran yang sudah dicatat tidak
+          ditagih ulang.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Tagihan</th>
+                <th>Perlu diterima</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (invoice of bill.invoices; track invoice.invoiceNumber) {
+                <tr>
+                  <td>
+                    {{ invoice.invoiceNumber }}
+                    @if (invoice.from) {
+                      <div class="table-meta">
+                        {{ invoice.from }} s.d. {{ invoice.through }}
+                      </div>
+                    }
+                  </td>
+                  <td>
+                    {{ invoice.amount | currency: "IDR" : "symbol" : "1.0-0" }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="rounded-lg bg-blue-50 p-4 text-blue-900">
+          Total diterima petugas:
+          <strong>{{
+            bill.total | currency: "IDR" : "symbol" : "1.0-0"
+          }}</strong>
+        </div>
+        <label class="flex items-start gap-3"
+          ><input
+            type="checkbox"
+            class="mt-1"
+            [(ngModel)]="confirmed"
+            [disabled]="saving()"
+          /><span
+            >Saya sudah mengambil perangkat dan menerima pembayaran
+            {{ bill.total | currency: "IDR" : "symbol" : "1.0-0" }}. Setoran
+            akan diperiksa finance.</span
+          ></label
+        >
+      </div>
+    }
+    @if (error()) {
+      <p role="alert" class="mt-3 text-sm text-red-600">{{ error() }}</p>
+    }
+    <div class="mt-6 flex justify-end gap-3">
+      <button
+        class="btn-secondary"
+        [disabled]="saving()"
+        (click)="closeCompletion()"
+      >
+        Batal</button
+      ><button
+        class="btn-primary"
+        [disabled]="saving() || !summary() || !confirmed"
+        (click)="complete()"
+      >
+        {{ saving() ? "Menyelesaikan..." : "Selesai" }}
+      </button>
+    </div>
+  </app-modal>
+  @if (toast(); as message) {
+    <app-toast
+      [message]="message.message"
+      [type]="message.type"
+      (close)="toast.set(null)"
+    />
+  }
+</div>

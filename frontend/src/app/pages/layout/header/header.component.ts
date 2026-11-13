@@ -80,7 +80,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   }
 
   private updateTitle(url: string): void {
-    this.title.set(this.titles[url] ?? 'Dashboard');
+    this.title.set(url.split(/[?#]/)[0] === '/dashboard/teknisi/berhenti-langganan' ? 'Berhenti Langganan' : this.titles[url] ?? 'Dashboard');
   }
 
   private updateDateTime(): void {
