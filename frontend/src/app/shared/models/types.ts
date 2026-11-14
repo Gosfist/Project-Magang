@@ -39,7 +39,7 @@ export type RouterItem = {
   accountsCount?: number;
 };
 
-export type VpnClientItem = { id: string; name: string; username: string; password?: string; vpnIp: string; isActive: boolean; provisionedAt: string | null; routers: { id: number; name: string | null }[] };
+export type VpnClientItem = { vpnStatus?: 'online' | 'offline' | 'unknown'; vpnCheckedAt?: string | null; id: string; name: string; username: string; password?: string; vpnIp: string; isActive: boolean; provisionedAt: string | null; routers: { id: number; name: string | null }[] };
 
 export type RouterScriptData = {
   script: string;

@@ -6,10 +6,11 @@ import { SecretService } from '../../pppoe/shared/secret.service.js';
 import { serialize } from '../../common/serialize.js';
 import { randomBytes, X509Certificate } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { VpnStatusService } from './vpn-status.service.js';
 
 @Injectable()
 export class VpnService {
-  constructor(private readonly prisma: PrismaService, private readonly config: ConfigService, private readonly secrets: SecretService) {}
+  constructor(private readonly prisma: PrismaService, private readonly config: ConfigService, private readonly secrets: SecretService, private readonly vpnStatus: VpnStatusService = new VpnStatusService()) {}
 
   private server() {
     const host = this.config.get<string>('VPN_SSTP_HOST') || '';
@@ -20,7 +21,8 @@ export class VpnService {
   async list(includeCredentials = false) {
     const server = this.server();
     const clients = await this.prisma.vpnClient.findMany({ where: { vpnType: 'sstp' }, include: { routers: { select: { id: true, name: true } } }, orderBy: { id: 'desc' } });
-    return serialize({ server, data: clients.map(c => ({ id: c.id, name: c.name, username: c.username, vpnIp: c.vpnIp, isActive: c.isActive, provisionedAt: c.provisionedAt, routers: c.routers ? [c.routers] : [], ...(includeCredentials ? { password: this.secrets.decrypt(c.passwordEncrypted!) } : {}) })) });
+    const snapshot = await this.vpnStatus.snapshot();
+    return serialize({ server, data: clients.map(c => ({ ...this.vpnStatus.forRouter({ vpnClientId: c.id, vpnHost: server.host, vpnUsername: c.username, nasname: c.vpnIp }, snapshot), id: c.id, name: c.name, username: c.username, vpnIp: c.vpnIp, isActive: c.isActive, provisionedAt: c.provisionedAt, routers: c.routers ? [c.routers] : [], ...(includeCredentials ? { password: this.secrets.decrypt(c.passwordEncrypted!) } : {}) })) });
   }
 
   async credentials(id: string) {

@@ -21,13 +21,13 @@ import { VpnClientItem } from '../../../../shared/models/types';
           <button type="button" class="btn-primary" (click)="show()"><svg lucidePlus [size]="18"></svg> Tambah VPN</button>
         </div>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>No</th><th>Nama</th><th>Username</th><th>Password</th><th>IP VPN</th><th>Router / NAS</th><th>CA</th><th>Aksi</th></tr></thead><tbody>
+      <div class="table-wrap"><table><thead><tr><th>No</th><th>Nama</th><th>Username</th><th>Password</th><th>IP VPN</th><th>Router / NAS</th><th>CA</th><th>Status VPN</th><th>Aksi</th></tr></thead><tbody>
         @for (item of items(); track item.id; let i = $index) {
-          <tr><td>{{ i + 1 }}</td><td>{{ item.name }}</td><td>{{ item.username }}</td><td class="break-all">{{ item.password || '-' }}</td><td>{{ item.vpnIp }}</td><td>{{ item.routers.at(0)?.name || '-' }}</td><td><button type="button" class="text-blue-700 underline underline-offset-4 hover:text-blue-900 disabled:opacity-50 disabled:cursor-wait" (click)="downloadCa(item.id)" [disabled]="!!downloadingCa()" [attr.aria-label]="'Download CA untuk ' + item.name" title="Opsional, untuk klien yang membutuhkan CA">{{ downloadingCa() === item.id ? 'Mengunduh...' : 'Download' }}</button></td><td><div class="flex gap-2">
+          <tr><td>{{ i + 1 }}</td><td>{{ item.name }}</td><td>{{ item.username }}</td><td class="break-all">{{ item.password || '-' }}</td><td>{{ item.vpnIp }}</td><td>{{ item.routers.at(0)?.name || '-' }}</td><td><button type="button" class="text-blue-700 underline underline-offset-4 hover:text-blue-900 disabled:opacity-50 disabled:cursor-wait" (click)="downloadCa(item.id)" [disabled]="!!downloadingCa()" [attr.aria-label]="'Download CA untuk ' + item.name" title="Opsional, untuk klien yang membutuhkan CA">{{ downloadingCa() === item.id ? 'Mengunduh...' : 'Download' }}</button></td><td><span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap" [class]="item.vpnStatus === 'online' ? 'bg-emerald-100 text-emerald-800' : item.vpnStatus === 'offline' ? 'bg-slate-100 text-slate-700' : 'bg-amber-100 text-amber-800'">{{ item.vpnStatus === 'online' ? 'Online' : item.vpnStatus === 'offline' ? 'Offline' : 'Tidak diketahui' }}</span></td><td><div class="flex gap-2">
             <button type="button" class="btn-secondary table-action table-action-icon" (click)="show(item)" title="Edit" [attr.aria-label]="'Edit ' + item.name"><svg lucidePencil [size]="14"></svg></button>
             <button type="button" class="btn-danger table-action table-action-icon" (click)="remove(item)" title="Hapus" [attr.aria-label]="'Hapus ' + item.name"><svg lucideTrash2 [size]="14"></svg></button>
           </div></td></tr>
-        } @empty { <tr><td colspan="8" class="py-8 text-center text-slate-500">Klien VPN belum tersedia.</td></tr> }
+        } @empty { <tr><td colspan="9" class="py-8 text-center text-slate-500">Klien VPN belum tersedia.</td></tr> }
       </tbody></table></div>
     </div>
     <app-modal [open]="open()" [title]="editing() ? 'Edit Klien VPN' : 'Tambah Klien VPN'" (closeModal)="close()"><form class="space-y-4" (ngSubmit)="save()">
@@ -56,7 +56,7 @@ export class VpnClientComponent implements OnInit, OnDestroy {
   server = signal(''); open = signal(false); saving = signal(false);
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
   form = { name: '', username: '', password: '' };
-  ngOnInit() { this.load(); this.timer = setInterval(() => { if (this.items().some(c => !c.provisionedAt)) this.load(); }, 15000); }
+  ngOnInit() { this.load(); this.timer = setInterval(() => { this.load(); }, 15000); }
   ngOnDestroy() { clearInterval(this.timer); this.items.set([]); this.form.password = ''; this.editing.set(null); this.deleting.set(null); }
   show(item?: VpnClientItem) {
     this.editing.set(item ?? null);

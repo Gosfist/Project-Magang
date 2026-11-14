@@ -25,8 +25,8 @@ describe('Klien VPN VPS', () => {
     const { api, fixture } = setup();
     const element = fixture.nativeElement as HTMLElement;
     expect(api.get.calls.mostRecent().args[0]).toBe('/router/vpn-clients?credentials=1');
-    expect(Array.from(element.querySelectorAll('th'), h => h.textContent?.trim())).toEqual(['No', 'Nama', 'Username', 'Password', 'IP VPN', 'Router / NAS', 'CA', 'Aksi']);
-    expect(Array.from(element.querySelector('tbody tr')!.querySelectorAll('td'), td => td.textContent?.trim())).toEqual(['1', 'Cabang', 'vpn_cabang', 'test-only-password', '10.88.0.2', 'MikroTik Cabang', 'Download', '']);
+    expect(Array.from(element.querySelectorAll('th'), h => h.textContent?.trim())).toEqual(['No', 'Nama', 'Username', 'Password', 'IP VPN', 'Router / NAS', 'CA', 'Status VPN', 'Aksi']);
+    expect(Array.from(element.querySelector('tbody tr')!.querySelectorAll('td'), td => td.textContent?.trim())).toEqual(['1', 'Cabang', 'vpn_cabang', 'test-only-password', '10.88.0.2', 'MikroTik Cabang', 'Download', 'Tidak diketahui', '']);
     expect(element.querySelectorAll('tbody button svg').length).toBe(4);
     expect(element.textContent).not.toContain('Menunggu server');
     expect(element.textContent).not.toContain('Tampilkan');
