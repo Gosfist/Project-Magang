@@ -5,7 +5,7 @@ import { VpnClientComponent } from './vpn-client.component';
 
 describe('Klien VPN VPS', () => {
   function setup() {
-    const api = jasmine.createSpyObj('ApiService', ['get', 'post', 'patch', 'delete']);
+    const api = jasmine.createSpyObj('ApiService', ['get', 'getBlob', 'post', 'patch', 'delete']);
     const response = {
       server: { host: '192.0.2.10', port: 4443 }, data: [
         { id: '3', name: 'Cabang', username: 'vpn_cabang', password: 'test-only-password', vpnIp: '10.88.0.2', isActive: true, provisionedAt: '2026-10-20', routers: [{ id: 7, name: 'MikroTik Cabang' }] },
@@ -25,12 +25,43 @@ describe('Klien VPN VPS', () => {
     const { api, fixture } = setup();
     const element = fixture.nativeElement as HTMLElement;
     expect(api.get.calls.mostRecent().args[0]).toBe('/router/vpn-clients?credentials=1');
-    expect(Array.from(element.querySelectorAll('th'), h => h.textContent?.trim())).toEqual(['No', 'Nama', 'Username', 'Password', 'IP VPN', 'Router / NAS', 'Aksi']);
-    expect(Array.from(element.querySelector('tbody tr')!.querySelectorAll('td'), td => td.textContent?.trim())).toEqual(['1', 'Cabang', 'vpn_cabang', 'test-only-password', '10.88.0.2', 'MikroTik Cabang', '']);
+    expect(Array.from(element.querySelectorAll('th'), h => h.textContent?.trim())).toEqual(['No', 'Nama', 'Username', 'Password', 'IP VPN', 'Router / NAS', 'CA', 'Aksi']);
+    expect(Array.from(element.querySelector('tbody tr')!.querySelectorAll('td'), td => td.textContent?.trim())).toEqual(['1', 'Cabang', 'vpn_cabang', 'test-only-password', '10.88.0.2', 'MikroTik Cabang', 'Download', '']);
     expect(element.querySelectorAll('tbody button svg').length).toBe(4);
     expect(element.textContent).not.toContain('Menunggu server');
     expect(element.textContent).not.toContain('Tampilkan');
     expect(element.textContent).not.toContain('Sembunyikan');
+    fixture.destroy();
+  });
+
+  it('downloads the shared optional CA and prevents duplicate requests while loading', () => {
+    const { api, fixture, component } = setup();
+    const pending = new Subject<Blob>();
+    api.getBlob.and.returnValue(pending);
+    const blob = new Blob(['public-certificate']);
+    spyOn(URL, 'createObjectURL').and.returnValue('blob:test-ca');
+    const click = spyOn(HTMLAnchorElement.prototype, 'click');
+    const button = fixture.nativeElement.querySelector('button[aria-label="Download CA untuk Cabang"]') as HTMLButtonElement;
+    button.click(); fixture.detectChanges();
+    expect(button.disabled).toBeTrue();
+    expect(button.textContent).toContain('Mengunduh');
+    component.downloadCa('4');
+    expect(api.getBlob.calls.allArgs()).toEqual([['/router/vpn-clients/ca']]);
+    pending.next(blob); pending.complete();
+    expect(URL.createObjectURL).toHaveBeenCalledWith(blob);
+    expect((click.calls.mostRecent().object as HTMLAnchorElement).download).toBe('sstp-ca.crt');
+    expect(component.downloadingCa()).toBeNull();
+    fixture.destroy();
+  });
+
+  it('shows unavailable CA errors without affecting VPN accounts', () => {
+    const { api, fixture, component } = setup();
+    api.getBlob.and.returnValue(throwError(() => new Error('CA VPN belum tersedia.')));
+    component.downloadCa('3');
+    expect(component.toast()?.message).toBe('CA VPN belum tersedia.');
+    expect(component.downloadingCa()).toBeNull();
+    expect(component.items().length).toBe(2);
+    expect(api.patch).not.toHaveBeenCalled();
     fixture.destroy();
   });
 

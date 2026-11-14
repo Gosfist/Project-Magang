@@ -4,7 +4,8 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { SecretService } from '../../pppoe/shared/secret.service.js';
 import { serialize } from '../../common/serialize.js';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, X509Certificate } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 
 @Injectable()
 export class VpnService {
@@ -25,6 +26,17 @@ export class VpnService {
   async credentials(id: string) {
     const client = await this.find(id);
     return { password: this.secrets.decrypt(client.passwordEncrypted!) };
+  }
+
+  async certificate() {
+    try {
+      const certificate = new X509Certificate(await readFile('/etc/unzanet-public/sstp-ca.crt'));
+      if (!certificate.ca) throw new Error('Not a CA certificate');
+      // Export only the public certificate, never any other PEM material.
+      return Buffer.from(certificate.toString());
+    } catch {
+      throw new ServiceUnavailableException('CA VPN belum tersedia. Jalankan npm run setupvpnserver pada VPS untuk menyiapkan sertifikat CA.');
+    }
   }
 
   async create(name: string, username: string, password?: string) {

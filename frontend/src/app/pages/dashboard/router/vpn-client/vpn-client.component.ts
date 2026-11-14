@@ -1,6 +1,7 @@
 import { Component, DestroyRef, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs';
 import { LucidePencil, LucidePlus, LucideTrash2 } from '@lucide/angular';
 import { ApiService } from '../../../../core/services/api.service';
 import { latestRequest } from '../../../../core/services/latest-request';
@@ -20,13 +21,13 @@ import { VpnClientItem } from '../../../../shared/models/types';
           <button type="button" class="btn-primary" (click)="show()"><svg lucidePlus [size]="18"></svg> Tambah VPN</button>
         </div>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>No</th><th>Nama</th><th>Username</th><th>Password</th><th>IP VPN</th><th>Router / NAS</th><th>Aksi</th></tr></thead><tbody>
+      <div class="table-wrap"><table><thead><tr><th>No</th><th>Nama</th><th>Username</th><th>Password</th><th>IP VPN</th><th>Router / NAS</th><th>CA</th><th>Aksi</th></tr></thead><tbody>
         @for (item of items(); track item.id; let i = $index) {
-          <tr><td>{{ i + 1 }}</td><td>{{ item.name }}</td><td>{{ item.username }}</td><td class="break-all">{{ item.password || '-' }}</td><td>{{ item.vpnIp }}</td><td>{{ item.routers.at(0)?.name || '-' }}</td><td><div class="flex gap-2">
+          <tr><td>{{ i + 1 }}</td><td>{{ item.name }}</td><td>{{ item.username }}</td><td class="break-all">{{ item.password || '-' }}</td><td>{{ item.vpnIp }}</td><td>{{ item.routers.at(0)?.name || '-' }}</td><td><button type="button" class="text-blue-700 underline underline-offset-4 hover:text-blue-900 disabled:opacity-50 disabled:cursor-wait" (click)="downloadCa(item.id)" [disabled]="!!downloadingCa()" [attr.aria-label]="'Download CA untuk ' + item.name" title="Opsional, untuk klien yang membutuhkan CA">{{ downloadingCa() === item.id ? 'Mengunduh...' : 'Download' }}</button></td><td><div class="flex gap-2">
             <button type="button" class="btn-secondary table-action table-action-icon" (click)="show(item)" title="Edit" [attr.aria-label]="'Edit ' + item.name"><svg lucidePencil [size]="14"></svg></button>
             <button type="button" class="btn-danger table-action table-action-icon" (click)="remove(item)" title="Hapus" [attr.aria-label]="'Hapus ' + item.name"><svg lucideTrash2 [size]="14"></svg></button>
           </div></td></tr>
-        } @empty { <tr><td colspan="7" class="py-8 text-center text-slate-500">Klien VPN belum tersedia.</td></tr> }
+        } @empty { <tr><td colspan="8" class="py-8 text-center text-slate-500">Klien VPN belum tersedia.</td></tr> }
       </tbody></table></div>
     </div>
     <app-modal [open]="open()" [title]="editing() ? 'Edit Klien VPN' : 'Tambah Klien VPN'" (closeModal)="close()"><form class="space-y-4" (ngSubmit)="save()">
@@ -51,6 +52,7 @@ export class VpnClientComponent implements OnInit, OnDestroy {
   editing = signal<VpnClientItem | null>(null);
   deleting = signal<VpnClientItem | null>(null);
   removing = signal(false);
+  downloadingCa = signal<string | null>(null);
   server = signal(''); open = signal(false); saving = signal(false);
   toast = signal<{ message: string; type: 'success' | 'error' } | null>(null);
   form = { name: '', username: '', password: '' };
@@ -64,6 +66,22 @@ export class VpnClientComponent implements OnInit, OnDestroy {
   close() { if (this.saving()) return; this.form.password = ''; this.editing.set(null); this.open.set(false); }
   load() { this.api.get<{ data: VpnClientItem[]; server: { host: string; port: number } }>('/router/vpn-clients?credentials=1').pipe(this.latestLoad).subscribe({ next: r => { this.items.set(r.data); this.server.set(r.server.host + ':' + r.server.port); }, error: e => this.toast.set({ message: e.message, type: 'error' }) }); }
   remove(item: VpnClientItem) { this.deleting.set(item); }
+  downloadCa(id: string) {
+    if (this.downloadingCa()) return;
+    this.downloadingCa.set(id);
+    this.api.getBlob('/router/vpn-clients/ca').pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.downloadingCa.set(null)),
+    ).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob), link = document.createElement('a');
+        link.href = url; link.download = 'sstp-ca.crt';
+        document.body.appendChild(link); link.click(); link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      },
+      error: e => this.toast.set({ message: e.message, type: 'error' }),
+    });
+  }
   cancelRemove() { if (!this.removing()) this.deleting.set(null); }
   confirmRemove() {
     const item = this.deleting();

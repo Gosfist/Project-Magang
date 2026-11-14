@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Query, StreamableFile, UseGuards } from '@nestjs/common';
 import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard.js';
 import { AdminGuard } from '../../auth/roles.guard.js';
@@ -17,6 +17,9 @@ export class UpdateVpnDto extends CreateVpnDto {}
 export class VpnController {
   constructor(private readonly vpn: VpnService) {}
   @Get() @Header('Cache-Control', 'private, no-store') list(@Query('credentials') credentials?: string) { return this.vpn.list(credentials === '1'); }
+  @Get('ca') @Header('Cache-Control', 'private, no-store') async certificate() {
+    return new StreamableFile(await this.vpn.certificate(), { type: 'application/x-pem-file', disposition: 'attachment; filename="sstp-ca.crt"' });
+  }
   @Post() @Header('Cache-Control', 'private, no-store') create(@Body() dto: CreateVpnDto) { return this.vpn.create(dto.name, dto.username, dto.password); }
   @Get(':id/credentials') @Header('Cache-Control', 'private, no-store') credentials(@Param('id') id: string) { return this.vpn.credentials(id); }
   @Patch(':id') @Header('Cache-Control', 'private, no-store') update(@Param('id') id: string, @Body() dto: UpdateVpnDto) { return this.vpn.update(id, dto.name, dto.username, dto.password); }
