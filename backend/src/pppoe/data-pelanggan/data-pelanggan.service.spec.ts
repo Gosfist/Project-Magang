@@ -13,6 +13,7 @@ describe('PPPoE billing and account deactivation', () => {
     const current = { idCardNumber: '1234567890123456', manualIsolated: false, terminatedAt: null as Date | null, id: 2n, pppoePackageId: 1n, username: 'andi', password: 'encrypted', routerNasId: 3, isActive: true };
     const invoice = { create: vi.fn().mockResolvedValue({}) };
     const tx = {
+      psbOrder: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
       $queryRaw: vi.fn().mockResolvedValue([]),
       mainCore: { findFirst: vi.fn().mockImplementation(async ({ where }) => where.parentId ? null : { id: 4n, spesifikasi: { jenis_splitter: '1:4' } }) },
       paymentPromise: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
@@ -53,11 +54,27 @@ describe('PPPoE billing and account deactivation', () => {
     await expect(service.updateAccount('2', { ...dto, idCardNumber: '9999999999999999' })).rejects.toThrow('KTP');
     expect(tx.pppoeAccount.update).not.toHaveBeenCalled();
   });
-  it('refuses reactivation after permanent termination', async () => {
-    const { service, dto, tx, current } = setup();
+  it('edits a terminated customer without reactivating the subscription and releases the old registration phone', async () => {
+    const { service, dto, tx, current, radius } = setup();
     current.terminatedAt = new Date();
-    await expect(service.updateAccount('2', dto)).rejects.toThrow('berhenti langganan');
+    const result = await service.updateAccount('2', { ...dto, phone: '08987654321', isActive: true });
+    expect(result?.account).toMatchObject({ phone: '08987654321', isActive: false, terminatedAt: current.terminatedAt.toISOString() });
+    expect(tx.psbOrder.updateMany).toHaveBeenCalledWith({ where: { pppoeAccountId: 2n }, data: { phone: '08987654321' } });
+    expect(radius.sync).toHaveBeenCalledWith(tx, expect.objectContaining({ terminatedAt: current.terminatedAt, isActive: false }), 'andi');
+  });
+  it('preserves termination when it starts after the edit form was loaded', async () => {
+    const { service, dto, tx } = setup();
+    tx.$queryRaw.mockResolvedValue([{ terminated_at: new Date() }] as never);
+    await service.updateAccount('2', dto);
+    expect(tx.pppoeAccount.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ isActive: false }) }));
+  });
+  it('still rejects a phone reserved by another registration when editing a terminated customer', async () => {
+    const { service, dto, tx, current, prisma } = setup();
+    current.terminatedAt = new Date();
+    prisma.psbOrder.findFirst.mockResolvedValueOnce({ id: 9n } as never);
+    await expect(service.updateAccount('2', dto)).rejects.toThrow('Nomor telepon');
     expect(tx.pppoeAccount.update).not.toHaveBeenCalled();
+    expect(tx.psbOrder.updateMany).not.toHaveBeenCalled();
   });
   it('opens manual isolation and clears expiry when unchecked', async () => {
     const { service, dto, tx, current, network } = setup();

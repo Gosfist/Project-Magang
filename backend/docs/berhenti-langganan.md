@@ -37,6 +37,13 @@ kemudian dikoreksi/ditolak finance tetap tercatat, tetapi tidak membuka layanan.
 
 ## Identitas permanen
 
+Data pelanggan yang sudah berhenti tetap dapat diedit melalui **Data Pelanggan -> Edit**,
+termasuk mengganti nomor HP. Penyimpanan tidak mengaktifkan langganan atau penagihan
+kembali; status dan tanggal berhenti tetap tersimpan. Pilihan Akun aktif dikunci
+untuk pelanggan ini. Jika nomor HP diganti, registrasi PSB yang terhubung ikut
+diperbarui dalam transaksi yang sama, sehingga nomor lama dapat dipakai untuk
+registrasi lain selama tidak digunakan data lain. Nomor baru tetap harus unik.
+
 Tombol, API DELETE, dan service penghapusan pelanggan/registrasi PSB sudah dicabut.
 Nomor KTP yang telah didaftarkan tidak dapat diganti, dikosongkan, atau didaftarkan
 ulang lewat akun lain, termasuk setelah berhenti. Impor backup tidak mengganti KTP

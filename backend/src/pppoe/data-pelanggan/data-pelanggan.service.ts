@@ -128,7 +128,6 @@ export class DataPelangganService {
 
   async updateAccount(id: string, dto: SaveAccountDto) {
     const current = await this.findAccount(id);
-    if (current.terminatedAt) throw new BadRequestException('Pelanggan sudah berhenti langganan dan tidak dapat diaktifkan atau diubah kembali.');
     if ((dto.idCardNumber?.trim() || null) !== (current.idCardNumber || null)) throw new BadRequestException('Nomor KTP pelanggan terdaftar tidak dapat diganti.');
     const passwordChanged = dto.password ? dto.password !== this.secrets.decrypt(current.password) : false;
     if (current.manualIsolated && dto.manualIsolated === false) {
@@ -141,14 +140,18 @@ export class DataPelangganService {
     try {
       const account = await this.prisma.$transaction(async (tx) => {
         const locked = await tx.$queryRaw<{ terminated_at: Date | null }[]>`SELECT terminated_at FROM daftar_pelanggan WHERE id = ${current.id} FOR UPDATE`;
-        if (locked[0]?.terminated_at) throw new BadRequestException('Pelanggan sudah berhenti langganan.');
+        const terminated = !!(locked[0]?.terminated_at || current.terminatedAt);
         await this.validateAccountPort(tx, dto, current.id);
         if (dto.isActive === false) await tx.paymentPromise.updateMany({ where: { pppoeAccountId: current.id, status: { in: ['ACTIVE', 'EXPIRED'] } }, data: { status: 'CANCELLED', disconnectPending: false } });
         const item = await tx.pppoeAccount.update({
           where: { id: current.id },
-          data: { ...this.accountData(dto, dto.password ? this.secrets.encrypt(dto.password) : current.password, false), odpPort: dto.odpPort !== undefined ? dto.odpPort : current.odp === dto.odp?.trim() ? current.odpPort : null },
+          data: { ...this.accountData(dto, dto.password ? this.secrets.encrypt(dto.password) : current.password, false), ...(terminated ? { isActive: false, manualIsolated: current.manualIsolated } : {}), odpPort: dto.odpPort !== undefined ? dto.odpPort : current.odp === dto.odp?.trim() ? current.odpPort : null },
           include: { package: { include: { ipPool: true } } },
         });
+        // Keep the linked registration from reserving the previous phone number.
+        if (item.phone && item.phone !== current.phone) {
+          await tx.psbOrder.updateMany({ where: { pppoeAccountId: current.id }, data: { phone: item.phone } });
+        }
         await this.radius.sync(tx, item, current.username);
         return item;
       });

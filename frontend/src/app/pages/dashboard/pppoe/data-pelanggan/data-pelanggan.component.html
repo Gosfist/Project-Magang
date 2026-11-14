@@ -238,7 +238,6 @@
                     class="btn-secondary table-action table-action-icon"
                     title="Edit"
                     aria-label="Edit pelanggan"
-                    [disabled]="!!item.terminatedAt"
                     (click)="show(item)"
                   >
                     <svg lucidePencil [size]="15"></svg>
@@ -734,11 +733,12 @@
                 type="checkbox"
                 [(ngModel)]="form.isActive"
                 name="isActive"
+                [disabled]="!!editing()?.terminatedAt"
               />
               <span>
                 <b class="block text-sm">Akun aktif</b>
                 <small class="text-slate-500"
-                  >Akun aktif disinkronkan ke FreeRADIUS.</small
+                  >{{ editing()?.terminatedAt ? 'Langganan sudah berhenti. Perubahan data tidak mengaktifkan layanan kembali.' : 'Akun aktif disinkronkan ke FreeRADIUS.' }}</small
                 >
               </span>
             </label>
