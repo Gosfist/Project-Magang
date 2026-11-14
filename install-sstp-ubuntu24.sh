@@ -189,6 +189,19 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
+# Managed subnet access to Winbox, applied after the SSTP forwarding DROP.
+install -d /etc/systemd/system/accel-ppp.service.d
+cat > /etc/systemd/system/accel-ppp.service.d/30-vpn-remote.conf <<EOF
+[Service]
+ExecStartPre=/usr/sbin/sysctl -w net.ipv4.ip_forward=1
+ExecStartPost=$IPTABLES -w -I FORWARD 1 -i sstp+ -o sstp+ -s 10.88.0.0/24 -d 10.88.0.0/24 -p tcp -m multiport --dports 1122,8291 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+ExecStartPost=$IPTABLES -w -I FORWARD 1 -i sstp+ -o sstp+ -s 10.88.0.0/24 -d 10.88.0.0/24 -p tcp -m multiport --sports 1122,8291 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+ExecStopPost=-$IPTABLES -w -D FORWARD -i sstp+ -o sstp+ -s 10.88.0.0/24 -d 10.88.0.0/24 -p tcp -m multiport --dports 1122,8291 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+ExecStopPost=-$IPTABLES -w -D FORWARD -i sstp+ -o sstp+ -s 10.88.0.0/24 -d 10.88.0.0/24 -p tcp -m multiport --sports 1122,8291 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+EOF
+
+
+
 if command -v ufw >/dev/null 2>&1; then
     ufw allow 4443/tcp
     ufw insert 1 allow in on sstp+ from 10.88.0.0/24 to 10.88.0.1 port 1812 proto udp

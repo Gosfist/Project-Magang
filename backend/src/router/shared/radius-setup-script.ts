@@ -25,6 +25,9 @@ export function radiusSetupScript(router: Nas, serverIp: string, sourceIp: strin
       lines.push('# Gunakan tunnel yang sudah ada; isi password VPN hanya untuk pemasangan awal tunnel.');
     }
     lines.push(`/ip route add dst-address=${q(`${serverIp}/32`)} gateway=${q(tunnelName)} comment=${q(tag)};`);
+    if (router.vpnClientId) {
+      lines.push(`/ip route add dst-address="10.88.0.0/24" gateway=${q(tunnelName)} comment="UNZANET-VPN:REMOTE";`);
+    }
   }
   if (lines.length) lines.push('');
   lines.push('# 2. Atur FreeRADIUS dan Disconnect UDP 3799');
@@ -38,5 +41,9 @@ export function radiusSetupScript(router: Nas, serverIp: string, sourceIp: strin
     '/system clock set time-zone-autodetect=no time-zone-name=Asia/Jakarta;',
     '/ppp aaa set use-radius=yes accounting=yes interim-update=5m;',
   );
+  if (router.vpnHost && router.vpnClientId) {
+    lines.push('', '# 4. Izinkan Winbox dari subnet VPN melalui tunnel',
+      `/ip firewall filter add chain=input action=accept in-interface=${q(tunnelName)} src-address="10.88.0.0/24" protocol=tcp dst-port=[/ip service get [find name="winbox"] port] place-before=0 comment="UNZANET-VPN:WINBOX";`);
+  }
   return lines.join('\n');
 }

@@ -118,6 +118,19 @@ describe('Zero MikroTik API NAS registry', () => {
     expect(dto).not.toHaveProperty('vpnCaCertificate');
   });
 
+  it('adds a return route and uses the current Winbox port for every managed VPN address', () => {
+    for (const ip of ['10.88.0.2', '10.88.0.19', '10.88.0.254']) {
+      const script = radiusSetupScript({ ...router, vpnClientId: 9n, vpnHost: '192.0.2.8', nasname: ip } as any, '10.88.0.1', ip, true);
+      expect(script).toContain('dst-address="10.88.0.0/24" gateway="UNZANET-RADIUS:VPN"');
+      expect(script).toContain('in-interface="UNZANET-RADIUS:VPN" src-address="10.88.0.0/24" protocol=tcp dst-port=[/ip service get [find name="winbox"] port] place-before=0');
+      expect(script).not.toContain('UNZANET-VPN:PING');
+      expect(script).not.toContain('/ip service set');
+      expect(script).not.toContain('dst-address="0.0.0.0/0"');
+    }
+    expect(radiusSetupScript(router as any, '192.0.2.8', router.nasname, true)).not.toContain('UNZANET-VPN:REMOTE');
+    expect(radiusSetupScript({ ...router, vpnHost: 'external.test' } as any, '192.0.2.8', router.nasname, true)).not.toContain('UNZANET-VPN:REMOTE');
+  });
+
   it('preserves existing secret on blank edit and allows clearing VPN metadata', async () => {
     const { nas, service } = setup();
     const result = await service.updateRouter('7', { name: router.name, nasname: router.nasname, secret: '', vpnHost: '', vpnUsername: '' });

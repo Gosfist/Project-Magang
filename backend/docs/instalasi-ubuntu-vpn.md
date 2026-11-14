@@ -167,9 +167,153 @@ sudo freeradius -XC
 | Password | Kosongkan untuk password acak atau isi minimal 12 karakter |
 
 4. Klik Buat Akun VPN. Tunggu penerapan ke server sekitar 15 detik. Gunakan Muat Ulang bila perlu.
-5. Daftar menampilkan No, Nama, Username, Password langsung, IP VPN, Router / NAS, dan Aksi. Tidak ada kolom Status atau tombol Tampilkan/Sembunyikan.
+5. Daftar menampilkan No, Nama, Username, Password langsung, IP VPN, Router / NAS, CA, Status VPN, dan Aksi. Download CA bersifat opsional untuk klien yang memerlukannya. Status VPN berdasarkan sesi SSTP server, diperbarui setiap 15 detik; data tidak tersedia/usang tampil Tidak diketahui.
 6. Klik ikon pensil untuk Edit. Ganti nama, username atau password lalu klik Simpan Perubahan. Password kosong saat edit mempertahankan password lama; IP VPN tetap. Jika username/password berubah, tunggu sekitar 15 detik lalu buka Winbox > Interfaces > pilih UNZANET-RADIUS:VPN > tab Dial Out, ubah User/Password, lalu Apply. Jangan paste ulang script add untuk mengganti kredensial tunnel yang sudah ada.
 7. Klik ikon tempat sampah untuk Hapus, lalu konfirmasi. Akun yang masih dipakai NAS harus dilepas/diganti pada NAS dahulu. Penghapusan diterapkan ke file akun server sekitar 15 detik; sesi tunnel yang sudah tersambung tidak diputus otomatis.
+
+### 6.1 Pasang CA dan hubungkan laptop Windows
+
+1. Buat akun Klien VPN tersendiri untuk setiap laptop. Jangan memakai akun yang sedang digunakan MikroTik. Catat username, password, IP VPN, dan Server SSTP dari daftar.
+2. Klik Download pada kolom CA. Simpan sstp-ca.crt dari server aplikasi yang digunakan. CA yang diunduh sama untuk semua akun pada server tersebut; private key tetap pada VPS.
+3. Klik dua kali sstp-ca.crt > Install Certificate > Local Machine > Next. Izinkan akses administrator.
+4. Pilih Place all certificates in the following store > Browse > Trusted Root Certification Authorities > OK > Next > Finish. Pastikan muncul The import was successful. Jangan hanya memilih Current User atau membiarkan pemilihan store otomatis.
+5. Di PowerShell laptop, periksa CA:
+
+~~~powershell
+Get-ChildItem Cert:\LocalMachine\Root |
+  Where-Object Subject -Like '*UNZANET-SSTP-CA*' |
+  Format-List Subject, Thumbprint, NotBefore, NotAfter
+~~~
+
+6. Hasil harus memuat CN=UNZANET-SSTP-CA dengan masa berlaku aktif. Untuk melihat lewat GUI, tekan Win+R > certlm.msc > Trusted Root Certification Authorities > Certificates > F5, lalu cari huruf U. Jika CA sudah ada tetapi muncul root certificate is not trusted, bandingkan Thumbprint file CA unduhan dengan sertifikat yang terpasang; jangan mengganti CA atau private key VPS sembarangan.
+7. Buka Settings > Network & internet > VPN > Add VPN. Pilih Windows (built-in), Connection name vpn, Server name or address IP_VPS:4443, VPN type SSTP, Type of sign-in info Username and password. Isi akun laptop dari Klien VPN, lalu Save dan Connect. Gunakan IP publik VPS yang cocok dengan sertifikat server, tanpa https://.
+8. Periksa Status VPN di aplikasi. Online berarti username dan IP cocok dengan sesi aktif. Offline berarti snapshot sesi terbaru tidak memuat akun tersebut; Tidak diketahui berarti data tidak tersedia atau usang. Status diperbarui sekitar 15 detik.
+
+### 6.2 Internet semua klien melalui VPN
+
+1. Bagian ini opsional untuk full tunnel IPv4. Semua klien pada 10.88.0.0/24 dapat memakai internet VPS jika klien mengarahkan trafik internet ke VPN. Trafik memakai bandwidth dan IP publik VPS. Script MikroTik tetap add-default-route=no; pemasangan bagian ini tidak memindahkan internet pelanggan MikroTik ke VPS.
+2. Pada SSH VPS Ubuntu, periksa interface internet:
+
+~~~bash
+ip -4 route show default
+~~~
+
+3. Jalankan blok berikut pada VPS. Interface diambil dari default route saat konfigurasi. Drop-in mengaktifkan forwarding dan memasang aturan sebelum DROP SSTP setiap layanan dimulai. Aturan balasan hanya mengizinkan koneksi established/related. Restart memutus sementara sesi VPN, lalu klien perlu tersambung kembali.
+
+~~~bash
+WAN_IF=$(ip -4 route show default | awk '/default/ {print $5; exit}')
+IPTABLES=$(command -v iptables)
+SYSCTL=$(command -v sysctl)
+if [ -z "$WAN_IF" ] || [ -z "$IPTABLES" ] || [ -z "$SYSCTL" ]; then
+  echo 'Interface internet atau perintah firewall belum tersedia.'
+else
+  sudo install -d /etc/systemd/system/accel-ppp.service.d
+  sudo tee /etc/systemd/system/accel-ppp.service.d/20-internet.conf >/dev/null <<EOF
+[Service]
+ExecStartPre=$SYSCTL -w net.ipv4.ip_forward=1
+ExecStartPost=$IPTABLES -w -I FORWARD 1 -i sstp+ -o $WAN_IF -s 10.88.0.0/24 -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+ExecStartPost=$IPTABLES -w -I FORWARD 1 -i $WAN_IF -o sstp+ -d 10.88.0.0/24 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+ExecStartPost=$IPTABLES -w -I POSTROUTING 1 -t nat -s 10.88.0.0/24 -o $WAN_IF -j MASQUERADE
+ExecStopPost=-$IPTABLES -w -D FORWARD -i sstp+ -o $WAN_IF -s 10.88.0.0/24 -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+ExecStopPost=-$IPTABLES -w -D FORWARD -i $WAN_IF -o sstp+ -d 10.88.0.0/24 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+ExecStopPost=-$IPTABLES -w -D POSTROUTING -t nat -s 10.88.0.0/24 -o $WAN_IF -j MASQUERADE
+EOF
+  sudo systemctl daemon-reload
+  sudo systemctl restart accel-ppp
+fi
+~~~
+
+4. Aturan berlaku untuk seluruh subnet, bukan hanya IP laptop .3. Konfigurasi dipasang kembali setelah restart VPS/layanan. Tidak perlu iptables-save seluruh firewall UFW. Jika interface internet berubah, jalankan kembali langkah 3. Setelah ufw reload, restart accel-ppp dan sambungkan ulang klien untuk menerapkan aturan kembali. Aturan sementara dari sesi troubleshooting belum tentu hilang; periksa daftar aturan bila ada duplikat.
+5. Putuskan VPN laptop. Pada PowerShell Windows, jalankan untuk profil bernama vpn, lalu sambungkan kembali:
+
+~~~powershell
+Set-VpnConnection -Name "vpn" -SplitTunneling $false
+~~~
+
+6. Jika profil dibuat untuk semua pengguna Windows, jalankan PowerShell sebagai administrator dan tambahkan -AllUserConnection pada Set-VpnConnection. Profil Windows lain memakai nama koneksi masing-masing.
+7. Pada PowerShell laptop saat VPN tersambung, uji:
+
+~~~powershell
+Test-NetConnection 1.1.1.1 -Port 443
+Resolve-DnsName example.com
+~~~
+
+8. Pastikan TcpTestSucceeded True dan resolusi DNS berhasil, lalu coba browsing. Jika TCP berhasil tetapi DNS gagal, buka Win+R > ncpa.cpl > klik kanan vpn > Properties > Networking > Internet Protocol Version 4 > Properties. Isi DNS 1.1.1.1 dan alternatif 8.8.8.8, lalu sambungkan ulang VPN.
+9. Jika TCP gagal, periksa di VPS. Pastikan IP laptop berada pada subnet VPN, sesi aktif, NAT terpasang, dan ACCEPT berada sebelum DROP. Keberhasilan koneksi VPN saja belum membuktikan internet atau remote Winbox. IPv6 tidak diatur oleh langkah full tunnel IPv4 ini. Untuk remote Winbox antar klien, lanjutkan bagian 6.3.
+
+~~~bash
+sudo systemctl status accel-ppp --no-pager
+sudo accel-cmd show sessions
+sysctl net.ipv4.ip_forward
+sudo iptables -nvL FORWARD --line-numbers
+sudo iptables -t nat -nvL POSTROUTING
+~~~
+
+10. Jika internet sempat berjalan lalu gagal setelah restart accel-ppp, periksa urutan FORWARD: DROP sstp+ sebelum ACCEPT sstp+ ke interface internet akan memblokir koneksi meskipun NAT masih ada. Jika folder drop-in hanya berisi 30-vpn-remote.conf, pasang 20-internet.conf dengan langkah 3 bagian ini, jalankan daemon-reload sebelum restart, lalu sambungkan ulang laptop. Jangan menghapus DROP atau aturan remote. Setelah restart, ACCEPT internet harus berada sebelum DROP; periksa counter paket dan uji TCP/DNS kembali.
+
+### 6.3 Remote semua MikroTik melalui VPN
+
+1. Gunakan IP VPN masing-masing router pada daftar Klien VPN, bukan IP publik VPS. Aturan berlaku untuk seluruh sumber dan tujuan 10.88.0.0/24. Port Winbox yang diizinkan adalah 1122 dan 8291; jika router memakai port lain, tambahkan port itu pada --dports dan --sports di drop-in VPS. Semua akun VPN yang memiliki kredensial Winbox router tujuan dapat mencoba koneksi tersebut; subnet VPN ini digunakan untuk perangkat/pengelola tepercaya.
+2. Installer terbaru memasang drop-in 30-vpn-remote.conf otomatis. Untuk VPS yang sudah terpasang versi lama, jalankan blok berikut sekali di SSH VPS. Langkah ini tidak membuka port Winbox pada IP publik VPS dan tidak mengubah NAT internet bagian 6.2. Restart memutus sementara VPN; sambungkan ulang laptop setelah selesai.
+
+~~~bash
+IPTABLES=$(command -v iptables)
+sudo install -d /etc/systemd/system/accel-ppp.service.d
+sudo tee /etc/systemd/system/accel-ppp.service.d/30-vpn-remote.conf >/dev/null <<EOF
+[Service]
+ExecStartPre=/usr/sbin/sysctl -w net.ipv4.ip_forward=1
+ExecStartPost=$IPTABLES -w -I FORWARD 1 -i sstp+ -o sstp+ -s 10.88.0.0/24 -d 10.88.0.0/24 -p tcp -m multiport --dports 1122,8291 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+ExecStartPost=$IPTABLES -w -I FORWARD 1 -i sstp+ -o sstp+ -s 10.88.0.0/24 -d 10.88.0.0/24 -p tcp -m multiport --sports 1122,8291 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+ExecStopPost=-$IPTABLES -w -D FORWARD -i sstp+ -o sstp+ -s 10.88.0.0/24 -d 10.88.0.0/24 -p tcp -m multiport --dports 1122,8291 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+ExecStopPost=-$IPTABLES -w -D FORWARD -i sstp+ -o sstp+ -s 10.88.0.0/24 -d 10.88.0.0/24 -p tcp -m multiport --sports 1122,8291 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart accel-ppp
+~~~
+
+3. Pada setiap MikroTik lama yang belum menerima rute/aturan remote, jalankan sekali melalui Terminal Winbox lokal. Nama interface mengikuti script aplikasi, yaitu UNZANET-RADIUS:VPN. Jangan mengulang add jika entri sudah ada. Script pemasangan awal NAS dengan klien VPN terkelola kini sudah menyertakan kedua baris ini, tanpa mengubah port Winbox router.
+
+~~~routeros
+/ip route add dst-address=10.88.0.0/24 gateway="UNZANET-RADIUS:VPN" comment="UNZANET-VPN:REMOTE"
+/ip firewall filter add chain=input action=accept in-interface="UNZANET-RADIUS:VPN" src-address=10.88.0.0/24 protocol=tcp dst-port=[/ip service get [find name="winbox"] port] place-before=0 comment="UNZANET-VPN:WINBOX"
+~~~
+
+4. Rute /24 membawa balasan ke laptop VPN melalui SSTP, berapa pun IP laptop/router yang dialokasikan dalam subnet tersebut. Aturan input diletakkan sebelum DROP; pada router lama, place-before=0 memerlukan setidaknya satu rule firewall, seperti rule RADIUS dari script aplikasi. Jika tabel firewall masih kosong, hilangkan place-before=0. Aturan ini tidak mengubah akses LAN atau daftar address pada layanan Winbox. Jika Available From Winbox sudah dibatasi, tambahkan 10.88.0.0/24 sambil mempertahankan subnet LAN yang dipakai.
+5. Untuk router contoh port 1122, setelah laptop tersambung VPN, jalankan di PowerShell:
+
+~~~powershell
+Test-NetConnection 10.88.0.2 -Port 1122
+~~~
+
+6. Pastikan TcpTestSucceeded True, lalu isi Winbox Connect To 10.88.0.2:1122 dan login dengan akun MikroTik, bukan akun VPN. Ganti IP dan port sesuai router tujuan. Uji akses lokal dengan IP LAN tetap berjalan. Jangan membuka/forward port Winbox pada router internet atau firewall publik VPS. Penutupan akses Winbox yang sudah terbuka dari WAN perlu aturan khusus sesuai interface/subnet LAN router; bagian ini tidak otomatis menutup akses WAN yang sebelumnya sudah ada.
+7. Jika gagal, periksa sesi laptop dan MikroTik sama-sama Online, rute /24 MikroTik aktif, port Winbox sesuai, daftar Available From mengizinkan laptop, serta ACCEPT antar interface sstp+ berada sebelum DROP. Aturan ini memakai paket asli antar klien, tanpa SNAT ke 10.88.0.1. Keberhasilan perlu dibuktikan dengan Test-NetConnection dan login Winbox, bukan hanya tunnel RUNNING.
+
+### 6.4 Pertahankan ping hanya ke server VPN
+
+1. Konfigurasi akhir mengizinkan ping klien ke server 10.88.0.1, sedangkan ping antar klien VPN tetap diblokir oleh DROP pada FORWARD VPS. Remote Winbox tetap berjalan melalui TCP 1122/8291 sesuai bagian 6.3. Ping gagal ke router bukan bukti VPN terputus; gunakan Test-NetConnection pada port Winbox.
+2. Jangan pasang izin ICMP antar klien. Jika sebelumnya sempat menjalankan percobaan 40-vpn-icmp.conf, hapus hanya drop-in percobaan itu pada SSH VPS. Jangan hapus 30-vpn-remote.conf, 20-internet.conf, atau layanan unzanet-vpn-ping. Restart memutus VPN sementara; sambungkan ulang laptop setelah selesai.
+
+~~~bash
+sudo systemctl stop accel-ppp
+sudo rm -f /etc/systemd/system/accel-ppp.service.d/40-vpn-icmp.conf
+sudo systemctl daemon-reload
+sudo systemctl start accel-ppp
+~~~
+
+3. Jika rule percobaan PING sudah dipasang pada MikroTik, hapus melalui Terminal MikroTik. Rule WINBOX dan rute /24 tetap dipertahankan:
+
+~~~routeros
+/ip firewall filter remove [find where comment="UNZANET-VPN:PING"]
+~~~
+
+4. Pada PowerShell laptop saat VPN tersambung, uji ping server dan port Winbox router. Ganti IP/port sesuai daftar klien dan konfigurasi router:
+
+~~~powershell
+ping 10.88.0.1
+Test-NetConnection 10.88.0.2 -Port 1122
+~~~
+
+5. Target pengujian: server membalas ping dan TcpTestSucceeded True. Ping antar klien tetap tidak membalas. Aturan gateway ping dari installer tetap ada; firewall perangkat tujuan juga dapat menolak ping. Tidak perlu membuka ICMP antar klien untuk memakai Winbox.
 
 ## 7 Tambah Router NAS dari klien VPN
 
