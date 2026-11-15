@@ -6,9 +6,9 @@ export type AttendanceRule = { checkInStart: string; lateAfter: string; checkOut
 export const defaultAttendanceRule: AttendanceRule = { checkInStart: '08:00', lateAfter: '08:15', checkOutTime: '17:00', autoCheckoutTime: '17:15' };
 export type WageProfile = { salaryType: string; amount: bigint; maxLeave: number; excessLeaveCut: boolean; excessLeaveAmount: bigint; lateCut: boolean; lateAmount: bigint; earlyCut: boolean; earlyAmount: bigint };
 export type WageAttendance = { workDate: Date; checkIn: Date; checkOut: Date | null; scheduledStart: Date; scheduledEnd: Date; autoCheckoutAt: Date; isLate: boolean };
-export function attendanceWage(profile: WageProfile, records: WageAttendance[], leaveDays: number, eligibleDays: number, monthDays: number, now: Date) {
+export function attendanceWage(profile: WageProfile, records: WageAttendance[], leaveDays: number, eligibleDays: number, _monthDays: number, now: Date) {
   const daily = profile.salaryType === 'DAILY';
-  const base = daily ? profile.amount * BigInt(records.length) : profile.amount * BigInt(eligibleDays) / BigInt(monthDays);
+  const base = daily ? profile.amount * BigInt(records.length) : (eligibleDays > 0 ? profile.amount : 0n);
   const lateDays = records.filter(row => row.isLate).length;
   let earlyDays = 0, earlyCut = 0n;
   for (const row of records) {

@@ -221,7 +221,7 @@
                         >
                       </p>
                       <p class="text-xs text-slate-400">
-                        No: {{ inv.invoiceNumber }} · Area:
+                        No: {{ inv.invoiceNumber }} / Area:
                         {{ inv.account?.area?.name || "Tanpa Area" }}
                       </p>
                     </div>
@@ -246,7 +246,7 @@
                 <span class="font-mono">{{
                   selectedInvoice.invoiceNumber
                 }}</span>
-                · Area:
+                / Area:
                 {{ selectedInvoice.account?.area?.name || "Tanpa Area" }}
               </p>
             </div>

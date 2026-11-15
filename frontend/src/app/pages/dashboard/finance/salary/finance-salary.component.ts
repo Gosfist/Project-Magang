@@ -18,8 +18,9 @@ export class FinanceSalaryComponent implements OnInit {
   loading = signal(true); loaded = signal(false); saving = signal(false); error = signal(''); message = signal('');
   rates = { psb: 0, sales: 0 };
   tab = signal('employees');
-  month = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta' }).format(new Date()).slice(0, 7);
-  attendanceDate = '';
+  private todayWib() { return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta' }).format(new Date()); }
+  month = this.todayWib().slice(0, 7);
+  attendanceDate = this.todayWib();
   attendanceUser = '';
   report = signal<PayrollReport | null>(null);
   attendance = signal<AttendanceReport | null>(null);
@@ -27,7 +28,7 @@ export class FinanceSalaryComponent implements OnInit {
   profileOpen = signal(false);
   selectedName = '';
   profile: PayrollProfile = this.blankProfile('');
-  leave = { userId: '', date: '', note: '' };
+  leave = { userId: '', date: this.todayWib(), note: '' };
   ngOnInit() { this.load(); }
   blankProfile(userId: string): PayrollProfile { return { userId, effectiveFrom: this.month + '-01', absenceTrackingFrom: new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta' }).format(new Date()), salaryType: 'MONTHLY', amount: 0, maxLeave: 4, excessLeaveCut: false, excessLeaveAmount: 0, lateCut: false, lateAmount: 0, earlyCut: false, earlyAmount: 0 }; }
   load() {
@@ -39,7 +40,7 @@ export class FinanceSalaryComponent implements OnInit {
       error: e => { if (request !== this.request) return; this.loading.set(false); this.error.set(e.message); },
     });
   }
-  changeMonth() { this.attendanceDate = ''; this.load(); }
+  changeMonth() { const today = this.todayWib(); this.attendanceDate = this.month === today.slice(0, 7) ? today : ''; this.load(); }
   money(value: number) { return 'Rp ' + value.toLocaleString('id-ID'); }
   time(value: string | null) { return value ? new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(value)) : '-'; }
   day(value: string) { return value.slice(0, 10); }

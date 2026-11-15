@@ -12,9 +12,23 @@ describe('Finance salary and attendance', () => {
     TestBed.configureTestingModule({imports:[FinanceSalaryComponent],providers:[{provide:ApiService,useValue:{get,post,patch}}]});
     const fixture=TestBed.createComponent(FinanceSalaryComponent);fixture.detectChanges();return {fixture,component:fixture.componentInstance,row,post,patch,get};
   }
+  it('defaults the attendance input and API filter to today in WIB across the UTC date boundary', async () => {
+    jasmine.clock().install();
+    try {
+      jasmine.clock().mockDate(new Date('2026-11-14T17:30:00Z'));
+      const {fixture,component,get}=setup();component.tab.set('attendance');fixture.detectChanges();await fixture.whenStable();
+      expect(component.leave.date).toBe('2026-11-15');
+      expect(fixture.nativeElement.querySelector('#leave-date').value).toBe('2026-11-15');
+      expect(component.attendanceDate).toBe('2026-11-15');
+      expect(fixture.nativeElement.querySelector('#attendance-date').value).toBe('2026-11-15');
+      expect(get).toHaveBeenCalledWith('/finance/payroll/attendance?month=2026-11&date=2026-11-15&userId=');
+      component.month='2026-10';component.changeMonth();expect(component.attendanceDate).toBe('');
+      component.month='2026-11';component.changeMonth();expect(component.attendanceDate).toBe('2026-11-15');fixture.destroy();
+    } finally { jasmine.clock().uninstall(); }
+  });
   it('shows the total wage including each PSB share and itemizes deductions', () => {
     const {fixture}=setup();const text=fixture.nativeElement.textContent;
-    expect(text).toContain('Rp 973.334');expect(text).toContain('Rp 33.334');expect(text).toContain('Pulang awal Rp 50.000');fixture.destroy();
+    expect(text).toContain('Rp 973.334');expect(text).toContain('Rp 33.334');expect(text).toContain('Pulang awal Rp 50.000');expect(text).not.toContain(' ? ');expect(text).toContain('teknisi / active');fixture.destroy();
   });
   it('clears the old payroll total when a different period cannot be loaded', () => {
     const {fixture,component,get}=setup();get.and.returnValue(throwError(()=>new Error('offline')));component.month='2026-10';component.load();fixture.detectChanges();expect(component.report()).toBeNull();expect(fixture.nativeElement.textContent).not.toContain('Rp 973.334');fixture.destroy();

@@ -28,7 +28,8 @@ describe('Payroll amounts and bonus allocation', () => {
     const daily = { ...profile, salaryType: 'DAILY', amount: 100000n };
     expect(attendanceWage(daily, [{ ...row(), checkOut: null }], 0, 30, 30, clockOn('2026-11-01','12:00')).earlyCut).toBe(0n);
     expect(attendanceWage(daily, [{ ...row(), checkOut: null }], 0, 30, 30, now).earlyCut).toBe(0n);
-    expect(attendanceWage(profile, [], 0, 15, 30, now).base).toBe(1500000n);
+    expect(attendanceWage(profile, [], 0, 15, 30, now).base).toBe(3000000n);
+    expect(attendanceWage(profile, [], 0, 0, 30, now).base).toBe(0n);
   });
   it('divides a PSB fee across three distinct members with no lost or duplicated rupiah', () => {
     const shares = divideBonus(100000n, [9n, 7n, 8n, 7n]);
@@ -86,6 +87,41 @@ describe('Attendance server enforcement and payroll report', () => {
     db.psbOrder.findMany.mockResolvedValue([{salesUserId:7n,salesCommission:50000n,completedByUserId:8n,installationFeePaid:100000n,team:[{userId:7n,bonusAmount:33334n}]},{salesUserId:8n,salesCommission:50000n,completedByUserId:7n,installationFeePaid:100000n,team:[]}]);
     const result=await service.summary('2026-11','7');expect(result.data[0]).toMatchObject({leaveDays:12,excessDays:8,psbBonus:133334,salesSalary:50000,total:2383334});
     expect(db.user.findMany.mock.calls[0][0].where).toEqual({id:7n});
+  });
+  it('keeps each employee leave allowance and deductions separate in the Finance total', async () => {
+    vi.useFakeTimers();vi.setSystemTime(now);const {service,db}=fixture();
+    const users=[{id:7n,name:'Teknisi A',role:'teknisi',additionalRoles:null,status:'active',createdAt:dateOnly('2026-01-01')},{id:8n,name:'Teknisi B',role:'teknisi',additionalRoles:null,status:'active',createdAt:dateOnly('2026-01-01')}];
+    db.user.findMany.mockResolvedValue(users);
+    const profiles=[{...profile,userId:7n,effectiveFrom:dateOnly('2026-11-01'),absenceTrackingFrom:dateOnly('2026-11-01'),maxLeave:4},{...profile,userId:8n,effectiveFrom:dateOnly('2026-11-01'),absenceTrackingFrom:dateOnly('2026-11-01'),maxLeave:2,amount:2000000n}];
+    db.employeePayrollProfile.findMany.mockResolvedValue(profiles);
+    db.employeeAttendance.findMany.mockResolvedValue([
+      ...Array.from({length:10},(_,i)=>row('2026-11-'+String(i+1).padStart(2,'0'))),
+      ...Array.from({length:13},(_,i)=>({...row('2026-11-'+String(i+1).padStart(2,'0')),userId:8n})),
+    ]);
+    db.employeeLeave.findMany.mockResolvedValue([{userId:7n,workDate:dateOnly('2026-11-11')},{userId:8n,workDate:dateOnly('2026-11-14')}]);
+    const result=await service.summary('2026-11');
+    expect(result.data.find(u=>String(u.user.id)==='7')).toMatchObject({profile:{maxLeave:4},presentDays:10,leaveDays:5,excessDays:1,leaveCut:100000,total:2900000});
+    expect(result.data.find(u=>String(u.user.id)==='8')).toMatchObject({profile:{maxLeave:2},presentDays:13,leaveDays:2,excessDays:0,leaveCut:0,total:2000000});
+    expect(result.total).toBe(4900000);
+    profiles[0].maxLeave=6;
+    const revised=await service.summary('2026-11');
+    expect(revised.data.find(u=>String(u.user.id)==='7')).toMatchObject({leaveDays:5,excessDays:0,leaveCut:0,total:3000000});
+    expect(revised.data.find(u=>String(u.user.id)==='8')).toEqual(result.data.find(u=>String(u.user.id)==='8'));
+    expect(revised.total).toBe(5000000);
+  });
+  it('pays the configured monthly amount per employee without prorating by account creation date', async () => {
+    vi.useFakeTimers();vi.setSystemTime(now);const {service,db}=fixture();
+    db.user.findMany.mockResolvedValue([{id:7n,name:'Teknisi A',role:'teknisi',additionalRoles:null,status:'active',createdAt:dateOnly('2026-11-10')},{id:8n,name:'Teknisi B',role:'teknisi',additionalRoles:null,status:'active',createdAt:dateOnly('2026-11-15')}]);
+    const profiles=[7n,8n].map(userId=>({...profile,userId,amount:2500000n,effectiveFrom:dateOnly('2026-11-01'),absenceTrackingFrom:dateOnly('2026-11-15')}));
+    db.employeePayrollProfile.findMany.mockResolvedValue(profiles);
+    const report=await service.summary('2026-11');
+    expect(report.data.map(r=>r.base)).toEqual([2500000,2500000]);
+    expect(report.data.map(r=>r.netWage)).toEqual([2500000,2500000]);
+    expect(report.total).toBe(5000000);
+    db.employeePayrollProfile.findMany.mockResolvedValue([profiles[0]]);
+    const unconfigured=await service.summary('2026-11');
+    expect(unconfigured.data.find(r=>String(r.user.id)==='8')).toMatchObject({profile:null,base:0,total:0});
+    expect(unconfigured.total).toBe(2500000);
   });
   it('counts Sunday absence after auto checkout, including when an old policy excluded weekends', async () => {
     vi.useFakeTimers();vi.setSystemTime(clockOn('2026-11-01','12:00'));const {service,db}=fixture();

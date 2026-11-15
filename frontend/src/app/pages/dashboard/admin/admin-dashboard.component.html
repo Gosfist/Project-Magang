@@ -36,7 +36,7 @@
       <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 id="finance-heading">Ringkasan Finance</h3>
-          <p class="mt-1 text-xs text-slate-500">{{ period() }} · Transaksi tercatat</p>
+          <p class="mt-1 text-xs text-slate-500">{{ period() }} / Transaksi tercatat</p>
         </div>
         <a routerLink="/dashboard/finance/ringkasan" class="inline-flex min-h-10 items-center gap-1 text-sm font-medium text-blue-700 hover:underline">Lihat Finance <svg lucideArrowUpRight [size]="16" aria-hidden="true"></svg></a>
       </div>
@@ -67,7 +67,7 @@
           <span class="text-lg font-semibold">{{ count(finance()?.pendingDeposits) }}</span>
         </a>
         <a routerLink="/dashboard/finance/tagihan" class="flex min-h-14 flex-wrap items-center justify-between gap-2 py-3 hover:text-blue-700">
-          <span><span class="block text-sm">Tagihan Belum Lunas</span><span class="text-xs text-slate-500">{{ count(stats()?.unpaidInvoices) }} invoice · Seluruh periode</span></span>
+          <span><span class="block text-sm">Tagihan Belum Lunas</span><span class="text-xs text-slate-500">{{ count(stats()?.unpaidInvoices) }} invoice / Seluruh periode</span></span>
           <span class="font-semibold">{{ stats() ? currency(stats()!.unpaidInvoiceAmount) : '—' }}</span>
         </a>
       </div>

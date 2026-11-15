@@ -51,7 +51,7 @@
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 p-4 text-sm text-slate-600">
-      <span>Halaman {{ meta().currentPage }} dari {{ meta().lastPage }} · {{ meta().total }} log</span>
+      <span>Halaman {{ meta().currentPage }} dari {{ meta().lastPage }} / {{ meta().total }} log</span>
       <div class="flex items-center gap-2">
         <button type="button" class="btn-secondary px-3 py-1.5 text-xs" [disabled]="loading() || page <= 1" (click)="pageTo(-1)">Sebelumnya</button>
         <button type="button" class="btn-secondary px-3 py-1.5 text-xs" [disabled]="loading() || page >= meta().lastPage" (click)="pageTo(1)">Berikutnya</button>

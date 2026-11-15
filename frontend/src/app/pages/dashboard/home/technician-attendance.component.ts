@@ -8,17 +8,17 @@ type TodayAttendance = { today: string; serverNow: string; policy: AttendancePol
   selector: 'app-technician-attendance', standalone: true,
   template: `
     <section class="card p-5 space-y-4">
-      <div class="flex flex-wrap items-start justify-between gap-3"><div><h2 class="text-lg font-semibold">Absensi Hari Ini</h2><p class="text-sm text-slate-500">{{ today()?.today || 'Memuat...' }} ? Waktu Indonesia Barat</p></div><button class="btn-secondary" type="button" (click)="load()" [disabled]="busy()">Muat Ulang</button></div>
+      <div class="flex flex-wrap items-start justify-between gap-3"><div><h2 class="text-lg font-semibold">Absensi Hari Ini</h2><p class="text-sm text-slate-500">{{ today()?.today || 'Memuat...' }} / Waktu Indonesia Barat</p></div><button class="btn-secondary" type="button" (click)="load()" [disabled]="busy()">Muat Ulang</button></div>
       @if (error()) {<p role="alert" class="text-sm text-red-600">{{ error() }}</p>}
       @if (message()) {<p role="status" class="text-sm text-emerald-700">{{ message() }}</p>}
       @if (today(); as data) {
-        <p class="text-sm text-slate-500">Masuk mulai {{ data.policy.checkInStart }} ? Batas tepat waktu {{ data.policy.lateAfter }} ? Pulang {{ data.policy.checkOutTime }} ? Checkout otomatis {{ data.policy.autoCheckoutTime }}</p>
+        <p class="text-sm text-slate-500">Masuk mulai {{ data.policy.checkInStart }} / Batas tepat waktu {{ data.policy.lateAfter }} / Pulang {{ data.policy.checkOutTime }} / Checkout otomatis {{ data.policy.autoCheckoutTime }}</p>
         <div class="grid gap-4 sm:grid-cols-2"><div class="rounded-lg bg-slate-50 p-4"><p class="text-sm text-slate-500">Absen masuk</p><p class="text-xl font-semibold">{{ time(data.attendance?.checkIn) }}</p>@if (data.attendance?.isLate) {<p class="text-sm text-amber-700">Terlambat</p>}</div><div class="rounded-lg bg-slate-50 p-4"><p class="text-sm text-slate-500">Absen pulang</p><p class="text-xl font-semibold">{{ time(data.attendance?.checkOut) }}</p>@if (data.attendance?.checkoutSource === 'AUTO') {<p class="text-sm text-slate-500">Dicatat otomatis oleh server</p>}</div></div>
         @if (data.leave) {<p class="text-sm text-slate-600">Hari ini dicatat libur oleh Finance. {{ data.leave.note }}</p>}
         <div class="flex flex-wrap gap-3"><button class="btn-primary" type="button" [disabled]="busy() || !data.canCheckIn" (click)="submit('check-in')">Absen Masuk</button><button class="btn-secondary" type="button" [disabled]="busy() || !data.canCheckOut" (click)="submit('check-out')">Absen Pulang</button></div>
         <p class="text-xs text-slate-500">Tidak bisa absen sebelum jam masuk. Absen pulang boleh lebih awal; potongan mengikuti pengaturan gaji Finance.</p>
       }
-      @if (salary(); as row) {<div class="border-t border-slate-200 pt-4 space-y-1"><h3 class="font-semibold">Rincian Gaji dan Bonus Bulan Ini</h3><p class="text-sm">Gaji pokok {{ money(row.base) }} ? Potongan {{ money(row.deduction) }} ? Bonus PSB {{ money(row.psbBonus) }}</p><p class="text-sm text-slate-500">{{ row.presentDays }} hari masuk ? {{ row.leaveDays }} hari libur/tidak hadir ? Jatah libur {{ row.profile?.maxLeave ?? 0 }} hari</p><p class="font-semibold">Total {{ money(row.total) }}</p></div>}
+      @if (salary(); as row) {<div class="border-t border-slate-200 pt-4 space-y-1"><h3 class="font-semibold">Rincian Gaji dan Bonus Bulan Ini</h3><p class="text-sm">Gaji pokok {{ money(row.base) }} / Potongan {{ money(row.deduction) }} / Bonus PSB {{ money(row.psbBonus) }}</p><p class="text-sm text-slate-500">{{ row.presentDays }} hari masuk / {{ row.leaveDays }} hari libur/tidak hadir / Jatah libur {{ row.profile?.maxLeave ?? 0 }} hari</p><p class="font-semibold">Total {{ money(row.total) }}</p></div>}
     </section>
   `,
 })
