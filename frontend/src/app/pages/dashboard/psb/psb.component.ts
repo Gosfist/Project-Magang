@@ -204,9 +204,10 @@ export class PsbComponent implements OnInit, OnDestroy {
     this.showActivationPassword.set(false);
     this.odpPickerOpen = false;
     this.odpSearch = '';
+    const username = item.username || item.customerName.trim().toLowerCase().replace(/\s+/g, '_');
     this.activation = {
-      username: item.username || item.customerName.trim().toLowerCase().replace(/\s+/g, '_'),
-      password: viewOnly ? '' : (item.status === 'PROCESS' ? item.customerId : ''),
+      username,
+      password: viewOnly ? '' : (item.status === 'PROCESS' ? username : ''),
       odp: item.odp || '',
       odpPort: item.odpPort ? String(item.odpPort) : '',
       installationPhoto: item.installationPhoto || '',
