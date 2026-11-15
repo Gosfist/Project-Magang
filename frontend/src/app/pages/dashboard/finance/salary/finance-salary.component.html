@@ -31,7 +31,7 @@
         <div><label class="label" for="late-after">Batas masuk tepat waktu</label><input id="late-after" type="time" name="lateAfter" class="input" required [(ngModel)]="policy.lateAfter" /></div>
         <div><label class="label" for="checkout-time">Jam pulang</label><input id="checkout-time" type="time" name="checkOutTime" class="input" required [(ngModel)]="policy.checkOutTime" /></div>
         <div><label class="label" for="auto-checkout">Checkout otomatis pukul</label><input id="auto-checkout" type="time" name="autoCheckoutTime" class="input" required [(ngModel)]="policy.autoCheckoutTime" /></div>
-        <div class="sm:col-span-2"><label class="label" for="workdays">Hari kerja</label><select id="workdays" name="workDays" class="input" [(ngModel)]="policy.workDays"><option value="0,1,2,3,4,5,6">Setiap hari, libur memakai jatah bulanan</option><option value="1,2,3,4,5,6">Senin?Sabtu</option><option value="1,2,3,4,5">Senin?Jumat</option></select></div><p class="sm:col-span-2 text-sm text-slate-500">Check-in sebelum waktunya ditolak. Checkout manual dapat dilakukan lebih awal; jika lupa, server mencatat jam checkout otomatis meskipun halaman ditutup.</p><div><button class="btn-primary" [disabled]="saving()">Simpan Jadwal</button></div>
+<p class="sm:col-span-2 text-sm text-slate-500">Setiap hari adalah hari kerja; libur memakai jatah bulanan karyawan. Check-in sebelum waktunya ditolak. Checkout manual dapat dilakukan lebih awal; jika lupa, server mencatat jam checkout otomatis meskipun halaman ditutup.</p><div><button class="btn-primary" [disabled]="saving()">Simpan Jadwal</button></div>
       </form></section>
     }
     @if (tab() === 'attendance') {

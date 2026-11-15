@@ -19,7 +19,6 @@ export class AttendancePolicyDto {
   @IsString() @Matches(/^([01]\d|2[0-3]):[0-5]\d$/) lateAfter: string;
   @IsString() @Matches(/^([01]\d|2[0-3]):[0-5]\d$/) checkOutTime: string;
   @IsString() @Matches(/^([01]\d|2[0-3]):[0-5]\d$/) autoCheckoutTime: string;
-  @IsString() @Matches(/^[0-6](,[0-6])*$/) workDays: string;
 }
 export class EmployeeLeaveDto {
   @IsString() @Matches(/^[1-9]\d{0,19}$/) userId: string;

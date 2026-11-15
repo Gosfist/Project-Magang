@@ -23,7 +23,7 @@ export class FinanceSalaryComponent implements OnInit {
   attendanceUser = '';
   report = signal<PayrollReport | null>(null);
   attendance = signal<AttendanceReport | null>(null);
-  policy: AttendancePolicy = { checkInStart: '08:00', lateAfter: '08:15', checkOutTime: '17:00', autoCheckoutTime: '17:15', workDays: '0,1,2,3,4,5,6' };
+  policy: AttendancePolicy = { checkInStart: '08:00', lateAfter: '08:15', checkOutTime: '17:00', autoCheckoutTime: '17:15' };
   profileOpen = signal(false);
   selectedName = '';
   profile: PayrollProfile = this.blankProfile('');

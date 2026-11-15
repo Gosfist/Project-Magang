@@ -57,11 +57,11 @@ function fixture() {
   return { db, service: new PayrollService(db) };
 }
 describe('Attendance server enforcement and payroll report', () => {
-  it('rejects early attendance and non-work days before writing records', async () => {
+  it('rejects early attendance and allows Sunday check-in at opening time', async () => {
     vi.useFakeTimers();vi.setSystemTime(clockOn('2026-11-15','07:59'));
     const {service,db}=fixture();await expect(service.checkIn('7')).rejects.toThrow('Belum waktunya');expect(db.employeeAttendance.create).not.toHaveBeenCalled();
-    vi.setSystemTime(clockOn('2026-11-15','08:00'));vi.spyOn(service,'policy').mockResolvedValue({...defaultAttendanceRule,workDays:'1,2,3,4,5'});
-    await expect(service.checkIn('7')).rejects.toThrow('bukan hari kerja');
+    vi.setSystemTime(clockOn('2026-11-15','08:00'));await service.checkIn('7');
+    expect(db.employeeAttendance.create).toHaveBeenCalledTimes(1);
   });
   it('records real server time, snapshots shift settings, and blocks check-in on recorded leave', async () => {
     vi.useFakeTimers();vi.setSystemTime(clockOn('2026-11-15','08:16'));
@@ -87,9 +87,12 @@ describe('Attendance server enforcement and payroll report', () => {
     const result=await service.summary('2026-11','7');expect(result.data[0]).toMatchObject({leaveDays:12,excessDays:8,psbBonus:133334,salesSalary:50000,total:2383334});
     expect(db.user.findMany.mock.calls[0][0].where).toEqual({id:7n});
   });
-  it('does not count today missing before automatic checkout, future days, or configured weekends', async () => {
-    vi.useFakeTimers();vi.setSystemTime(clockOn('2026-11-01','12:00'));const {service}=fixture();expect((await service.summary('2026-11')).data[0]['leaveDays']).toBe(0);
-    vi.setSystemTime(clockOn('2026-11-01','18:00'));vi.spyOn(service,'policy').mockResolvedValue({...defaultAttendanceRule,workDays:'1,2,3,4,5'});expect((await service.summary('2026-11')).data[0]['leaveDays']).toBe(0);
+  it('counts Sunday absence after auto checkout, including when an old policy excluded weekends', async () => {
+    vi.useFakeTimers();vi.setSystemTime(clockOn('2026-11-01','12:00'));const {service,db}=fixture();
+    db.appSetting.findMany.mockImplementation(async ({where}:any) => where.key.startsWith ? [{key:'attendance_policy_2026-11',value:JSON.stringify({...defaultAttendanceRule,workDays:'1,2,3,4,5'})}] : []);
+    expect(await service.policy('2026-11')).not.toHaveProperty('workDays');
+    expect((await service.summary('2026-11')).data[0]['leaveDays']).toBe(0);
+    vi.setSystemTime(clockOn('2026-11-01','18:00'));expect((await service.summary('2026-11')).data[0]['leaveDays']).toBe(1);
   });
   it('does not create retroactive absence deductions before the configured monitoring date', async () => {
     vi.useFakeTimers();vi.setSystemTime(now);const {service,db}=fixture();db.employeePayrollProfile.findMany.mockResolvedValue([{...profile,userId:7n,effectiveFrom:dateOnly('2026-11-01'),absenceTrackingFrom:dateOnly('2026-11-15')}]);

@@ -6,7 +6,7 @@ import { PayrollRow } from '../../../../shared/models/payroll';
 describe('Finance salary and attendance', () => {
   function setup() {
     const row: PayrollRow = { user: {id:'7',name:'Teknisi A',role:'teknisi',status:'active'},profile:null,base:1000000,presentDays:3,leaveDays:2,excessDays:0,lateDays:1,earlyDays:1,leaveCut:0,lateCut:10000,earlyCut:50000,deduction:60000,netWage:940000,psbBonus:33334,salesSalary:0,total:973334 };
-    const get = jasmine.createSpy('get').and.callFake((path: string) => of(path.startsWith('/finance/payroll/policy') ? {checkInStart:'08:00',lateAfter:'08:15',checkOutTime:'17:00',autoCheckoutTime:'17:15',workDays:'0,1,2,3,4,5,6'} : path.startsWith('/finance/payroll/attendance') ? {data:[],total:0,leaves:[]} : path.startsWith('/finance/payroll?') ? {data:[row],total:973334,month:'2026-11'} : {psb:100000,sales:50000}));
+    const get = jasmine.createSpy('get').and.callFake((path: string) => of(path.startsWith('/finance/payroll/policy') ? {checkInStart:'08:00',lateAfter:'08:15',checkOutTime:'17:00',autoCheckoutTime:'17:15'} : path.startsWith('/finance/payroll/attendance') ? {data:[],total:0,leaves:[]} : path.startsWith('/finance/payroll?') ? {data:[row],total:973334,month:'2026-11'} : {psb:100000,sales:50000}));
     const post = jasmine.createSpy('post').and.returnValue(of({message:'Disimpan'}));
     const patch = jasmine.createSpy('patch').and.returnValue(of({message:'Disimpan'}));
     TestBed.configureTestingModule({imports:[FinanceSalaryComponent],providers:[{provide:ApiService,useValue:{get,post,patch}}]});
@@ -24,7 +24,7 @@ describe('Finance salary and attendance', () => {
     expect(post).toHaveBeenCalledWith('/finance/payroll/profiles',jasmine.objectContaining({userId:'7',effectiveFrom:'2026-11-01',salaryType:'DAILY',amount:100000,lateCut:false}));fixture.destroy();
   });
   it('keeps attendance policy and leave recording in the same salary page', () => {
-    const {fixture,component}=setup();component.tab.set('policy');fixture.detectChanges();expect(fixture.nativeElement.querySelector('#auto-checkout')).toBeTruthy();
+    const {fixture,component}=setup();component.tab.set('policy');fixture.detectChanges();expect(fixture.nativeElement.querySelector('#auto-checkout')).toBeTruthy();expect(fixture.nativeElement.querySelector('#workdays')).toBeNull();
     component.tab.set('attendance');fixture.detectChanges();expect(fixture.nativeElement.querySelector('#leave-user')).toBeTruthy();expect(fixture.nativeElement.textContent).toContain('Belum ada absensi.');fixture.destroy();
   });
 });

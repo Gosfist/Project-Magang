@@ -44,12 +44,15 @@ export class PayrollService implements OnModuleInit, OnModuleDestroy {
   async policy(monthInput?: string): Promise<AttendanceRule> {
     const { month } = payrollMonth(monthInput);
     const rows = await this.prisma.appSetting.findMany({ where: { key: { startsWith: 'attendance_policy_', lte: `attendance_policy_${month}` } }, orderBy: { key: 'desc' }, take: 1 });
-    return rows[0] ? { ...defaultAttendanceRule, ...JSON.parse(rows[0].value || '{}') } : { ...defaultAttendanceRule };
+    const stored = rows[0] ? JSON.parse(rows[0].value || '{}') : {};
+    // Older policies may contain workDays; attendance now applies every day.
+    return Object.fromEntries(Object.entries(defaultAttendanceRule).map(([key, fallback]) => [key, stored[key] ?? fallback])) as AttendanceRule;
   }
   async savePolicy(monthInput: string, dto: AttendancePolicyDto) {
     const { month } = payrollMonth(monthInput);
     if (!(dto.checkInStart <= dto.lateAfter && dto.lateAfter < dto.checkOutTime && dto.checkOutTime <= dto.autoCheckoutTime)) throw new BadRequestException('Urutan jam harus masuk <= batas terlambat < pulang <= checkout otomatis, pada hari yang sama.');
-    const key = `attendance_policy_${month}`, value = JSON.stringify(dto);
+    const { checkInStart, lateAfter, checkOutTime, autoCheckoutTime } = dto;
+    const key = `attendance_policy_${month}`, value = JSON.stringify({ checkInStart, lateAfter, checkOutTime, autoCheckoutTime });
     await this.prisma.appSetting.upsert({ where: { key }, create: { key, value }, update: { value } });
     return { message: 'Jadwal disimpan. Absensi yang sudah masuk tetap memakai jadwal saat check-in.' };
   }
@@ -86,7 +89,7 @@ export class PayrollService implements OnModuleInit, OnModuleDestroy {
   }
   async removeLeave(leaveId: string) {
     await this.prisma.employeeLeave.deleteMany({ where: { id: id(leaveId) } });
-    return { message: 'Catatan libur dihapus. Hari tanpa absen tetap dihitung tidak hadir jika termasuk hari kerja.' };
+    return { message: 'Catatan libur dihapus. Hari tanpa absen tetap dihitung tidak hadir sesuai tanggal pemantauan.' };
   }
   async self(userInput: string) {
     await this.autoClose();
@@ -95,14 +98,12 @@ export class PayrollService implements OnModuleInit, OnModuleDestroy {
       this.prisma.employeeAttendance.findUnique({ where: { userId_workDate: { userId, workDate: dateOnly(today) } } }),
       this.prisma.employeeLeave.findUnique({ where: { userId_workDate: { userId, workDate: dateOnly(today) } } }),
     ]);
-    const working = policy.workDays.split(',').includes(String(dateOnly(today).getUTCDay()));
-    return serialize({ today, serverNow: now, policy, attendance, leave, canCheckIn: !attendance && !leave && working && now >= clockOn(today, policy.checkInStart) && now < clockOn(today, policy.checkOutTime), canCheckOut: !!attendance && !attendance.checkOut && now < attendance.autoCheckoutAt });
+    return serialize({ today, serverNow: now, policy, attendance, leave, canCheckIn: !attendance && !leave && now >= clockOn(today, policy.checkInStart) && now < clockOn(today, policy.checkOutTime), canCheckOut: !!attendance && !attendance.checkOut && now < attendance.autoCheckoutAt });
   }
   async checkIn(userInput: string) {
     const userId = id(userInput), now = new Date(), today = dateKey(now), workDate = dateOnly(today), policy = await this.policy(today.slice(0, 7));
     if (now < clockOn(today, policy.checkInStart)) throw new BadRequestException('Belum waktunya absen masuk. Mulai pukul ' + policy.checkInStart + ' WIB.');
     if (now >= clockOn(today, policy.checkOutTime)) throw new BadRequestException('Waktu absen masuk hari ini sudah berakhir.');
-    if (!policy.workDays.split(',').includes(String(workDate.getUTCDay()))) throw new BadRequestException('Hari ini bukan hari kerja.');
     await this.atomic(async tx => {
       const user = await tx.user.findUnique({ where: { id: userId }, select: { status: true } });
       if (user?.status !== 'active') throw new BadRequestException('Akun karyawan tidak aktif.');
@@ -155,8 +156,7 @@ export class PayrollService implements OnModuleInit, OnModuleDestroy {
         if (key < activeFrom) continue;
         eligibleDays++;
         if (clockOn(key, policy.autoCheckoutTime) > now || present.has(key)) continue;
-        const workDay = policy.workDays.split(',').includes(String(dateOnly(key).getUTCDay()));
-        if (leaveDates.has(key) || (profile && key >= profile.absenceTrackingFrom.toISOString().slice(0, 10) && workDay && accessRoles(user).includes('teknisi'))) leaveDays++;
+        if (leaveDates.has(key) || (profile && key >= profile.absenceTrackingFrom.toISOString().slice(0, 10) && accessRoles(user).includes('teknisi'))) leaveDays++;
       }
       const wage = attendanceWage(profile ?? { salaryType: 'MONTHLY', amount: 0n, maxLeave: 0, excessLeaveCut: false, excessLeaveAmount: 0n, lateCut: false, lateAmount: 0n, earlyCut: false, earlyAmount: 0n }, attendance, leaveDays, eligibleDays, days, now);
       let psbBonus = 0n, salesSalary = 0n, psbCount = 0;

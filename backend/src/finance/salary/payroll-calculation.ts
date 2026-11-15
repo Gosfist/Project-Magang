@@ -2,8 +2,8 @@ export const WIB = 7 * 60 * 60 * 1000;
 export const dateKey = (date: Date) => new Date(date.getTime() + WIB).toISOString().slice(0, 10);
 export const clockOn = (day: string, time: string) => new Date(`${day}T${time}:00+07:00`);
 export const dateOnly = (day: string) => new Date(`${day}T00:00:00Z`);
-export type AttendanceRule = { checkInStart: string; lateAfter: string; checkOutTime: string; autoCheckoutTime: string; workDays: string };
-export const defaultAttendanceRule: AttendanceRule = { checkInStart: '08:00', lateAfter: '08:15', checkOutTime: '17:00', autoCheckoutTime: '17:15', workDays: '0,1,2,3,4,5,6' };
+export type AttendanceRule = { checkInStart: string; lateAfter: string; checkOutTime: string; autoCheckoutTime: string };
+export const defaultAttendanceRule: AttendanceRule = { checkInStart: '08:00', lateAfter: '08:15', checkOutTime: '17:00', autoCheckoutTime: '17:15' };
 export type WageProfile = { salaryType: string; amount: bigint; maxLeave: number; excessLeaveCut: boolean; excessLeaveAmount: bigint; lateCut: boolean; lateAmount: bigint; earlyCut: boolean; earlyAmount: bigint };
 export type WageAttendance = { workDate: Date; checkIn: Date; checkOut: Date | null; scheduledStart: Date; scheduledEnd: Date; autoCheckoutAt: Date; isLate: boolean };
 export function attendanceWage(profile: WageProfile, records: WageAttendance[], leaveDays: number, eligibleDays: number, monthDays: number, now: Date) {
