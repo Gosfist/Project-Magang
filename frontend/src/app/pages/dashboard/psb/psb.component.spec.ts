@@ -18,7 +18,7 @@ describe('technician PPPoE activation', () => {
     ] });
     const fixture = TestBed.createComponent(PsbComponent);
     const component = fixture.componentInstance;
-    component.openActivation({ id: '1', customerId: '000001', status } as PsbOrder);
+    component.openActivation({ id: '1', customerId: '000001', customerName: 'Ahmad Subarjo', status } as PsbOrder);
     component.odps.set([option]);
     fixture.detectChanges();
     return { fixture, component, post, photoRequests };
@@ -93,8 +93,8 @@ describe('technician PPPoE activation', () => {
       Object.defineProperty(this, 'result', { value: 'data:image/png;base64,Yg==' });
       this.onload?.call(this, new ProgressEvent('load') as ProgressEvent<FileReader>);
     });
-    component.openActivation({ id: '1', customerId: '000001', status: 'ACTIVATED', installationPhoto: '/uploads/instalasi/1.png' } as PsbOrder);
-    component.openActivation({ id: '2', customerId: '000002', status: 'ACTIVATED', installationPhoto: '/uploads/instalasi/2.png' } as PsbOrder);
+    component.openActivation({ id: '1', customerId: '000001', customerName: 'Ahmad Subarjo', status: 'ACTIVATED', installationPhoto: '/uploads/instalasi/1.png' } as PsbOrder);
+    component.openActivation({ id: '2', customerId: '000002', customerName: 'Subarjo', status: 'ACTIVATED', installationPhoto: '/uploads/instalasi/2.png' } as PsbOrder);
     photoRequests['/psb/1/installation-photo'].next(new Blob(['old']));
     expect(read).not.toHaveBeenCalled();
     expect(component.activation.installationPhoto).toBe('/uploads/instalasi/2.png');
