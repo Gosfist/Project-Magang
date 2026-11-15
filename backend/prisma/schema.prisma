@@ -29,6 +29,11 @@ model User {
   activatedOrders     PsbOrder[]           @relation("PsbActivatedBy")
   completedOrders     PsbOrder[]           @relation("PsbCompletedBy")
 
+  payrollProfiles EmployeePayrollProfile[]
+  attendance EmployeeAttendance[]
+  leaves EmployeeLeave[]
+  psbTeam PsbTeamMember[]
+
   @@map("users")
 }
 
@@ -145,6 +150,8 @@ model PsbOrder {
   completedByUserId BigInt?   @map("completed_by_user_id") @db.UnsignedBigInt
   activatedAt       DateTime? @map("activated_at")
   completedAt       DateTime? @map("completed_at")
+  salesCommission BigInt? @map("sales_commission") @db.UnsignedBigInt
+  team PsbTeamMember[]
   installationFeePaid BigInt? @map("installation_fee_paid") @db.UnsignedBigInt
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
@@ -597,4 +604,61 @@ model SubscriptionTermination {
   @@index([pppoeAccountId])
   @@index([status, requestedAt])
   @@map("subscription_terminations")
+}
+
+model EmployeePayrollProfile {
+  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  userId BigInt @map("user_id") @db.UnsignedBigInt
+  effectiveFrom DateTime @map("effective_from") @db.Date
+  absenceTrackingFrom DateTime @map("absence_tracking_from") @db.Date
+  salaryType String @map("salary_type") @db.VarChar(10)
+  amount BigInt @default(0) @db.UnsignedBigInt
+  maxLeave Int @default(4) @map("max_leave") @db.UnsignedInt
+  excessLeaveCut Boolean @default(false) @map("excess_leave_cut")
+  excessLeaveAmount BigInt @default(0) @map("excess_leave_amount") @db.UnsignedBigInt
+  lateCut Boolean @default(false) @map("late_cut")
+  lateAmount BigInt @default(0) @map("late_amount") @db.UnsignedBigInt
+  earlyCut Boolean @default(false) @map("early_cut")
+  earlyAmount BigInt @default(0) @map("early_amount") @db.UnsignedBigInt
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@unique([userId, effectiveFrom])
+  @@map("employee_payroll_profiles")
+}
+model EmployeeAttendance {
+  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  userId BigInt @map("user_id") @db.UnsignedBigInt
+  workDate DateTime @map("work_date") @db.Date
+  checkIn DateTime @map("check_in")
+  checkOut DateTime? @map("check_out")
+  scheduledStart DateTime @map("scheduled_start")
+  scheduledEnd DateTime @map("scheduled_end")
+  autoCheckoutAt DateTime @map("auto_checkout_at")
+  isLate Boolean @default(false) @map("is_late")
+  checkoutSource String? @map("checkout_source") @db.VarChar(10)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@unique([userId, workDate])
+  @@index([checkOut, autoCheckoutAt])
+  @@map("employee_attendance")
+}
+model EmployeeLeave {
+  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  userId BigInt @map("user_id") @db.UnsignedBigInt
+  workDate DateTime @map("work_date") @db.Date
+  note String @default("") @db.VarChar(500)
+  recordedByUserId BigInt @map("recorded_by_user_id") @db.UnsignedBigInt
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@unique([userId, workDate])
+  @@map("employee_leaves")
+}
+model PsbTeamMember {
+  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  psbOrderId BigInt @map("psb_order_id") @db.UnsignedBigInt
+  userId BigInt @map("user_id") @db.UnsignedBigInt
+  bonusAmount BigInt @default(0) @map("bonus_amount") @db.UnsignedBigInt
+  order PsbOrder @relation(fields: [psbOrderId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@unique([psbOrderId, userId])
+  @@index([userId])
+  @@map("psb_team_members")
 }

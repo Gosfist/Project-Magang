@@ -1,3 +1,5 @@
+import { PayrollService } from './salary/payroll.service.js';
+import { PayrollController, EmployeeAttendanceController } from './salary/payroll.controller.js';
 import { FinanceSalaryService } from './salary/finance-salary.service.js';
 import { FinanceSalaryController } from './salary/finance-salary.controller.js';
 import { Module } from '@nestjs/common';
@@ -15,8 +17,8 @@ import { FinanceDepositsService } from './deposits/finance-deposits.service.js';
 
 @Module({
   imports: [AuthModule, PrismaModule, PppoeModule],
-  exports: [FinanceSalaryService],
-  controllers: [FinanceSalaryController, FinanceTransactionsController, FinanceDepositsController, FinanceSummaryController, FinanceInvoicesController],
-  providers: [FinanceSalaryService, FinanceTransactionsService, FinanceDepositsService, FinanceSummaryService, FinanceInvoicesService],
+  exports: [FinanceSalaryService, PayrollService],
+  controllers: [PayrollController, EmployeeAttendanceController, FinanceSalaryController, FinanceTransactionsController, FinanceDepositsController, FinanceSummaryController, FinanceInvoicesController],
+  providers: [PayrollService, FinanceSalaryService, FinanceTransactionsService, FinanceDepositsService, FinanceSummaryService, FinanceInvoicesService],
 })
 export class FinanceModule {}

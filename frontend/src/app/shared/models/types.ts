@@ -158,6 +158,8 @@ export type FinanceSummary = {
 };
 
 export type PsbOrder = {
+  activatedBy?: { id: string; name: string } | null;
+  team?: { userId: string; bonusAmount: number | string; user: { id: string; name: string } }[];
   odpPort?: number | null; pppoeAccountId?: string | null;
   id: string; customerNumber: string; customerId: string; customerName: string; phone: string; address: string; idCardNumber?: string | null; idCardPhoto?: string | null;
   pppoePackageId: string; areaId?: string | null; status: 'PROCESS' | 'ACTIVATED' | 'COMPLETED'; username?: string | null; odp?: string | null; routerNasId?: number | null;

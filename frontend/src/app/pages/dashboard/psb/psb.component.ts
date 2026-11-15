@@ -52,6 +52,12 @@ export class PsbComponent implements OnInit, OnDestroy {
   private listLoading = false;
   formOpen = signal(false);
   activationOpen = signal(false);
+  teamOptions = signal<{id: string; name: string}[]>([]);
+  teamIds: string[] = [];
+  teamLeadId = '';
+  teamLoading = signal(false);
+  teamError = signal('');
+  private teamRequest = 0;
   activationStep = signal(1);
   showActivationPassword = signal(false);
   editing = signal<PsbOrder | null>(null);
@@ -91,6 +97,7 @@ export class PsbComponent implements OnInit, OnDestroy {
     this.refreshTimer = setInterval(() => this.load(true), 5000);
   }
   ngOnDestroy() {
+    this.teamRequest++;
     this.activationPhotoRequest++;
     if (this.refreshTimer) clearInterval(this.refreshTimer);
   }
@@ -183,6 +190,15 @@ export class PsbComponent implements OnInit, OnDestroy {
   openActivation(item: PsbOrder, viewOnly = false) {
     const photoRequest = ++this.activationPhotoRequest;
     this.selected.set(item);
+    this.teamLeadId = item.activatedBy?.id || this.auth.user()?.id || '';
+    this.teamIds = item.team?.length ? item.team.map(m => m.userId) : [this.teamLeadId].filter(Boolean);
+    this.teamOptions.set(item.team?.map(m => m.user) ?? []);
+    this.teamError.set(''); this.teamLoading.set(true);
+    const teamRequest = ++this.teamRequest;
+    this.api.get<{ data: {id: string; name: string}[] }>('/psb/technicians').subscribe({
+      next: r => { if (teamRequest !== this.teamRequest) return; const all = [...this.teamOptions(), ...r.data]; this.teamOptions.set([...new Map(all.map(u => [u.id, u])).values()]); this.teamLoading.set(false); },
+      error: e => { if (teamRequest !== this.teamRequest) return; this.teamLoading.set(false); this.teamError.set(e.message); },
+    });
     this.activationViewOnly = viewOnly;
     this.activationStep.set(1);
     this.showActivationPassword.set(false);
@@ -262,8 +278,12 @@ export class PsbComponent implements OnInit, OnDestroy {
     this.activationPhotoReference = '';
     reader.readAsDataURL(file);
   }
+  toggleTeam(id: string, checked: boolean) {
+    if (id === this.teamLeadId || this.activationViewOnly || this.selected()?.status === 'COMPLETED') return;
+    this.teamIds = checked ? [...new Set([...this.teamIds, id])] : this.teamIds.filter(value => value !== id);
+  }
   activate() {
-    if (this.activationViewOnly || this.saving()) return;
+    if (this.activationViewOnly || this.saving() || this.teamLoading() || this.teamError()) return;
     if (!this.validActivationPort()) return this.toast.set({ message: 'Pilih port yang tersedia.', type: 'error' });
     if (!this.activation.installationPhoto && !this.activationPhotoReference)
       return this.toast.set({
@@ -273,6 +293,7 @@ export class PsbComponent implements OnInit, OnDestroy {
     this.saving.set(true);
     const payload = {
       ...this.activation,
+      ...(this.selected()?.status !== 'COMPLETED' ? { teamMemberIds: this.teamIds } : {}),
       odpPort: Number(this.activation.odpPort),
       password: this.activation.password || undefined,
       installationPhoto: this.activationPhotoReference || this.activation.installationPhoto,

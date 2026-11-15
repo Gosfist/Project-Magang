@@ -315,6 +315,11 @@ Test-NetConnection 10.88.0.2 -Port 1122
 
 5. Target pengujian: server membalas ping dan TcpTestSucceeded True. Ping antar klien tetap tidak membalas. Aturan gateway ping dari installer tetap ada; firewall perangkat tujuan juga dapat menolak ping. Tidak perlu membuka ICMP antar klien untuk memakai Winbox.
 
+### 6.5 Gaji karyawan dan absensi
+
+1. Finance > Gaji menyediakan gaji karyawan bulanan/harian per akun, bonus tim PSB, gaji Sales, jadwal absensi, catatan libur, dan total gaji periode WIB. Atur tanggal mulai menghitung ketidakhadiran agar hari sebelum fitur dipakai tidak dipotong otomatis. Teknisi absen pada Dashboard dan memilih anggota Tim PSB di akhir form aktivasi.
+2. Untuk VPS yang sudah berisi data, jalankan SQL tambahan pada [panduan gaji dan absensi](gaji-absensi.md) sebelum update backend baru. Jangan mengimpor ulang database.sql. Instalasi kosong memakai skema database.sql terbaru.
+
 ## 7 Tambah Router NAS dari klien VPN
 
 1. Buka Router > Router / NAS > Tambah Router NAS. Pilih klien VPN yang sudah dapat dipilih dan belum dipakai router lain. Jika opsi masih Menunggu server, tutup form lalu buka kembali setelah sekitar 15 detik; jika tetap menunggu, periksa worker pada bagian 9.2.

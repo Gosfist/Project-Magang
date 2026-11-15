@@ -132,6 +132,7 @@ CREATE TABLE `psb_orders` (
     `completed_by_user_id` BIGINT UNSIGNED NULL,
     `activated_at` DATETIME(3) NULL,
     `completed_at` DATETIME(3) NULL,
+    `sales_commission` BIGINT UNSIGNED NULL,
     `installation_fee_paid` BIGINT UNSIGNED NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,
@@ -583,6 +584,69 @@ CREATE TABLE `subscription_terminations` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `employee_payroll_profiles` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT UNSIGNED NOT NULL,
+    `effective_from` DATE NOT NULL,
+    `absence_tracking_from` DATE NOT NULL,
+    `salary_type` VARCHAR(10) NOT NULL,
+    `amount` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    `max_leave` INTEGER UNSIGNED NOT NULL DEFAULT 4,
+    `excess_leave_cut` BOOLEAN NOT NULL DEFAULT false,
+    `excess_leave_amount` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    `late_cut` BOOLEAN NOT NULL DEFAULT false,
+    `late_amount` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    `early_cut` BOOLEAN NOT NULL DEFAULT false,
+    `early_amount` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    `updated_at` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `employee_payroll_profiles_user_id_effective_from_key`(`user_id`, `effective_from`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `employee_attendance` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT UNSIGNED NOT NULL,
+    `work_date` DATE NOT NULL,
+    `check_in` DATETIME(3) NOT NULL,
+    `check_out` DATETIME(3) NULL,
+    `scheduled_start` DATETIME(3) NOT NULL,
+    `scheduled_end` DATETIME(3) NOT NULL,
+    `auto_checkout_at` DATETIME(3) NOT NULL,
+    `is_late` BOOLEAN NOT NULL DEFAULT false,
+    `checkout_source` VARCHAR(10) NULL,
+
+    INDEX `employee_attendance_check_out_auto_checkout_at_idx`(`check_out`, `auto_checkout_at`),
+    UNIQUE INDEX `employee_attendance_user_id_work_date_key`(`user_id`, `work_date`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `employee_leaves` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT UNSIGNED NOT NULL,
+    `work_date` DATE NOT NULL,
+    `note` VARCHAR(500) NOT NULL DEFAULT '',
+    `recorded_by_user_id` BIGINT UNSIGNED NOT NULL,
+
+    UNIQUE INDEX `employee_leaves_user_id_work_date_key`(`user_id`, `work_date`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `psb_team_members` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `psb_order_id` BIGINT UNSIGNED NOT NULL,
+    `user_id` BIGINT UNSIGNED NOT NULL,
+    `bonus_amount` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+
+    INDEX `psb_team_members_user_id_idx`(`user_id`),
+    UNIQUE INDEX `psb_team_members_psb_order_id_user_id_key`(`psb_order_id`, `user_id`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `main_core` ADD CONSTRAINT `main_core_parent_id_fkey` FOREIGN KEY (`parent_id`) REFERENCES `main_core`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -669,6 +733,21 @@ ALTER TABLE `subscription_terminations` ADD CONSTRAINT `subscription_termination
 
 -- AddForeignKey
 ALTER TABLE `subscription_terminations` ADD CONSTRAINT `subscription_terminations_collected_by_user_id_fkey` FOREIGN KEY (`collected_by_user_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `employee_payroll_profiles` ADD CONSTRAINT `employee_payroll_profiles_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `employee_attendance` ADD CONSTRAINT `employee_attendance_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `employee_leaves` ADD CONSTRAINT `employee_leaves_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `psb_team_members` ADD CONSTRAINT `psb_team_members_psb_order_id_fkey` FOREIGN KEY (`psb_order_id`) REFERENCES `psb_orders`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `psb_team_members` ADD CONSTRAINT `psb_team_members_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- Pengaturan awal sesuai nilai bawaan aplikasi.
 INSERT INTO website_settings (`key`, `value`, updated_at) VALUES

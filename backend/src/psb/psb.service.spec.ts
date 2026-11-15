@@ -33,8 +33,10 @@ describe('PSB fee paid to technician', () => {
       billing: vi.fn().mockResolvedValue({ billingStartDay: 5, billingEndDay: 10 }) };
     const wa = { notifyPsbCompleted: vi.fn().mockResolvedValue(true) };
     const network = { accountPresence: vi.fn().mockResolvedValue({ states: new Map(), warnings: [] }) };
+    Object.assign(order, { team: [], activatedByUserId: 7n });
+    Object.assign(prisma, { $queryRaw: vi.fn().mockResolvedValue([]), appSetting: { findUnique: vi.fn().mockResolvedValue({ value: '50000' }) }, psbTeamMember: { upsert: vi.fn() }, $transaction: async (fn: any) => fn(prisma) });
     const service = new PsbService(prisma as any, {} as any, {} as any, settings as any, wa as any, network as any);
-    return { service, prisma, wa };
+    return { service, prisma, wa, order };
   }
   it.each([0, 150000])('records Rp%s as received without invoicing the collector', async fee => {
     const { service, prisma, wa } = setup(fee);
@@ -42,10 +44,18 @@ describe('PSB fee paid to technician', () => {
     await service.complete('1', '7', { installationFeePaid: fee });
     expect(prisma.psbOrder.updateMany).toHaveBeenCalledWith({
       where: { id: 1n, status: 'ACTIVATED' },
-      data: { status: 'COMPLETED', completedByUserId: 7n, completedAt: expect.any(Date), installationFeePaid: BigInt(fee) },
+      data: { status: 'COMPLETED', completedByUserId: 7n, completedAt: expect.any(Date), installationFeePaid: BigInt(fee), salesCommission: 50000n },
     });
     expect(prisma.invoice.create).not.toHaveBeenCalled();
     expect(wa.notifyPsbCompleted).toHaveBeenCalledTimes(1);
+  });
+  it('credits each PSB team member exactly once, even when a different technician completes it', async () => {
+    const { service, prisma, order } = setup(100000);
+    Object.assign(order, { team: [{userId:7n}, {userId:8n}, {userId:9n}] });
+    await service.complete('1', '12', {installationFeePaid:100000});
+    const calls = (prisma as any).psbTeamMember.upsert.mock.calls;
+    expect(calls.map((c: any) => c[0].create)).toEqual([{psbOrderId:1n,userId:7n,bonusAmount:33334n},{psbOrderId:1n,userId:8n,bonusAmount:33333n},{psbOrderId:1n,userId:9n,bonusAmount:33333n}]);
+    expect(calls.some((c: any) => c[0].create.userId === 12n)).toBe(false);
   });
   it('requires confirmation of the current fee', async () => {
     const { service, prisma, wa } = setup();

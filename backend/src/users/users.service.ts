@@ -136,7 +136,11 @@ export class UsersService {
   async remove(id: string, currentUserId: string) {
     if (id === currentUserId) throw new BadRequestException('Anda tidak bisa menghapus akun sendiri.');
     await this.exists(id);
-    await this.prisma.user.delete({ where: { id: BigInt(id) } });
+    try { await this.prisma.user.delete({ where: { id: BigInt(id) } }); }
+    catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') throw new ConflictException('Akun memiliki riwayat gaji, absensi, PSB, atau transaksi. Nonaktifkan akun untuk mempertahankan riwayat.');
+      throw error;
+    }
     return { message: 'Petugas berhasil dihapus.' };
   }
 

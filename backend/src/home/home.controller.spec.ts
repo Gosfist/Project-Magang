@@ -14,7 +14,7 @@ describe('administrator overview', () => {
       collectorDeposit: { count: vi.fn().mockResolvedValue(4) },
       $transaction: vi.fn((queries: Promise<unknown>[]) => Promise.all(queries)),
     };
-    return { prisma, controller: new HomeController(prisma as any, {} as any) };
+    return { prisma, controller: new HomeController(prisma as any, {} as any, {} as any) };
   }
 
   it('returns live operational totals and sums only unpaid invoices', async () => {
@@ -60,7 +60,8 @@ describe('monthly salary', () => {
     const prisma = { user: { findUnique: vi.fn().mockResolvedValue({ createdAt: new Date('2026-01-01T00:00:00Z') }) }, mainCore: { count: vi.fn().mockResolvedValue(0) }, psbOrder: { count: vi.fn().mockResolvedValueOnce(3).mockResolvedValueOnce(2) },
       $transaction: vi.fn((queries: Promise<unknown>[]) => Promise.all(queries)) };
     const salary = { settings: vi.fn().mockResolvedValue({ sales: 50000, psb: 100000 }) };
-    return { prisma, controller: new HomeController(prisma as any, salary as any) };
+    const payroll = { summary: vi.fn().mockResolvedValue({data:[{netWage:2500000,psbBonus:200000,psbCount:2,salesSalary:100000,total:2700000}]}) };
+    return { prisma, payroll, controller: new HomeController(prisma as any, salary as any, payroll as any) };
   }
   it('scopes registration and completion counts to the logged-in sales user', async () => {
     const { prisma, controller } = setup();
@@ -69,12 +70,12 @@ describe('monthly salary', () => {
     expect(prisma.psbOrder.count).toHaveBeenNthCalledWith(1, { where: { salesUserId: 17n, status: { in: ['PROCESS', 'ACTIVATED'] }, createdAt: { gte: expect.any(Date), lt: expect.any(Date) } } });
     expect(prisma.psbOrder.count).toHaveBeenNthCalledWith(2, { where: { salesUserId: 17n, status: 'COMPLETED', completedAt: { gte: expect.any(Date), lt: expect.any(Date) } } });
   });
-  it('pays only completed installations attributed to the current technician', async () => {
+  it('separates employee wage and the team bonus for the logged-in technician', async () => {
     const { prisma, controller } = setup();
     prisma.psbOrder.count.mockReset().mockResolvedValue(2);
     const result = await controller.stats({ user: { id: '19', role: 'teknisi' } } as any);
-    expect(result).toMatchObject({ monthlyCompletedOrders: 2, monthlySalary: 200000 });
-    expect(prisma.psbOrder.count).toHaveBeenNthCalledWith(1, { where: { completedByUserId: 19n, status: 'COMPLETED', completedAt: { gte: expect.any(Date), lt: expect.any(Date) } } });
+    expect(result).toMatchObject({ monthlyCompletedOrders: 2, monthlySalary: 2500000, monthlyBonus:200000, totalSalary:2700000 });
+    expect(prisma.psbOrder.count).toHaveBeenCalledWith({where:{status:'COMPLETED',OR:[{completedByUserId:19n,team:{none:{}}},{team:{some:{userId:19n}}}]}});
   });
   it('filters historical counts using the chosen month rather than the current month', async () => {
     const { prisma, controller } = setup();

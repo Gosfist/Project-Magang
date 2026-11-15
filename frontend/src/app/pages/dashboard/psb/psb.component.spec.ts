@@ -14,7 +14,7 @@ describe('technician PPPoE activation', () => {
     const post = jasmine.createSpy('post').and.returnValue(of({ message: 'Saved' }));
     TestBed.configureTestingModule({ imports: [PsbComponent], providers: [
       { provide: ApiService, useValue: { get: (path: string) => of({ data: path === '/pppoe/odp/options' ? [option] : [], meta: {} }), getBlob, post } },
-      { provide: AuthService, useValue: { hasRole: (...roles: string[]) => roles.includes('teknisi'), isSales: () => false } },
+      { provide: AuthService, useValue: { user: () => ({id: '7', name: 'Teknisi'}), hasRole: (...roles: string[]) => roles.includes('teknisi'), isSales: () => false } },
     ] });
     const fixture = TestBed.createComponent(PsbComponent);
     const component = fixture.componentInstance;
@@ -24,6 +24,11 @@ describe('technician PPPoE activation', () => {
     return { fixture, component, post, photoRequests };
   }
 
+  it('sends all PSB team members and keeps the activation owner selected', () => {
+    const {component,post}=setup();component.activation.odp='4';component.activation.odpPort='1';component.activation.installationPhoto='data:image/png;base64,test';
+    component.toggleTeam('8',true);component.toggleTeam('9',true);component.toggleTeam('7',false);component.activate();
+    expect(post.calls.mostRecent().args[1].teamMemberIds).toEqual(['7','8','9']);
+  });
   it('binds manually typed credentials and sends them on save', () => {
     const { fixture, component, post } = setup();
     const username = fixture.nativeElement.querySelector('#activation-username') as HTMLInputElement;

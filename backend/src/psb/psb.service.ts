@@ -1,3 +1,5 @@
+import { divideBonus } from '../finance/salary/payroll-calculation.js';
+import { accessRoles } from '../auth/access-roles.js';
 import { assertOutputPort, lockOutputNodes } from '../main-core/shared/output-ports.js';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -33,6 +35,7 @@ export class PsbService {
         { status: 'PROCESS' },
         { status: 'ACTIVATED', activatedByUserId: BigInt(user.id) },
         { status: 'COMPLETED', completedByUserId: BigInt(user.id) },
+        { team: { some: { userId: BigInt(user.id) } } },
       ] } : {}),
       ...(status === 'PROCESS' ? { status: { in: ['PROCESS', 'ACTIVATED'] } } : status ? { status } : {}),
       AND: [customerSearch(search)],
@@ -41,6 +44,7 @@ export class PsbService {
       this.prisma.psbOrder.findMany({
         where,
         include: {
+          team: { include: { user: { select: { id: true, name: true } } } },
           package: true,
           area: true,
           account: { select: { username: true, routerNasId: true, odp: true, odpPort: true } },
@@ -89,6 +93,9 @@ export class PsbService {
 
   async activate(id: string, dto: ActivatePsbOrderDto, technicianId: string) {
     const order = await this.find(id, true);
+    const team = order.status === 'PROCESS' || dto.teamMemberIds !== undefined
+      ? await this.validateTeam([String(order.activatedByUserId ?? technicianId), ...(dto.teamMemberIds ?? [])]) : null;
+    if (order.status === 'COMPLETED' && team && team.map(String).sort().join(',') !== (order.team ?? []).map((m: { userId: bigint }) => String(m.userId)).sort().join(',')) throw new ConflictException('Tim PSB yang sudah selesai tidak dapat diubah.');
     if (!dto.password && order.status === 'PROCESS') throw new BadRequestException('Password PPPoE wajib diisi saat aktivasi pertama.');
     if (!dto.installationPhoto && order.status === 'PROCESS') throw new BadRequestException('Foto instalasi wajib dipilih saat aktivasi pertama.');
     const odp = await this.prisma.mainCore.findFirst({ where: { id: BigInt(dto.odp), tipeTitik: { in: ['odc', 'odp'] }, deletedAt: null } });
@@ -113,6 +120,11 @@ export class PsbService {
         throw new BadRequestException('Pesanan ini tidak dapat diedit.');
       }
       const result = await this.prisma.$transaction(async tx => {
+        if (team && order.status !== 'COMPLETED') {
+          await tx.$queryRaw`SELECT id FROM psb_orders WHERE id = ${order.id} FOR UPDATE`;
+          const latest = await tx.psbOrder.findUnique({ where: { id: order.id }, select: { status: true } });
+          if (!latest || latest.status !== 'ACTIVATED') throw new ConflictException('Status pemasangan berubah. Muat ulang sebelum mengubah tim.');
+        }
         await this.validateActivationPort(tx, odp.id, dto.odpPort, order.pppoeAccountId);
         const currentAccount = await tx.pppoeAccount.findUnique({ where: { id: order.pppoeAccountId! }, select: { username: true, routerNasId: true, terminatedAt: true } });
         if (!currentAccount) throw new NotFoundException('Akun PPPoE tidak ditemukan.');
@@ -137,6 +149,7 @@ export class PsbService {
             odp: dto.odp,
             routerNasId,
             installationPhoto,
+            ...(team && order.status !== 'COMPLETED' ? { team: { deleteMany: {}, create: team.map(userId => ({ userId })) } } : {}),
             ...(dto.username.trim() !== currentAccount?.username ? { username: dto.username.trim() } : {}),
             ...(dto.password ? { password: this.secrets.encrypt(dto.password) } : {}),
           },
@@ -151,6 +164,9 @@ export class PsbService {
     }
     try {
       const result = await this.prisma.$transaction(async tx => {
+        await tx.$queryRaw`SELECT id FROM psb_orders WHERE id = ${order.id} FOR UPDATE`;
+        const latest = await tx.psbOrder.findUnique({ where: { id: order.id }, select: { status: true } });
+        if (!latest || latest.status !== 'PROCESS') throw new ConflictException('Pemasangan sudah diaktivasi. Muat ulang daftar.');
         await this.validateActivationPort(tx, odp.id, dto.odpPort);
         const installationPhoto = await stagePhoto();
         const account = await tx.pppoeAccount.create({
@@ -180,7 +196,7 @@ export class PsbService {
         await this.radius.sync(tx, account);
         const updated = await tx.psbOrder.update({
           where: { id: order.id },
-          data: { status: 'ACTIVATED', username: dto.username.trim(), password: this.secrets.encrypt(dto.password!), odp: dto.odp, routerNasId, installationPhoto, pppoeAccountId: account.id, activatedByUserId: BigInt(technicianId), activatedAt: new Date() },
+          data: { status: 'ACTIVATED', username: dto.username.trim(), password: this.secrets.encrypt(dto.password!), odp: dto.odp, routerNasId, installationPhoto, pppoeAccountId: account.id, activatedByUserId: BigInt(technicianId), activatedAt: new Date(), team: { create: team!.map(userId => ({ userId })) } },
         });
         return { account, updated };
       });
@@ -193,6 +209,19 @@ export class PsbService {
       }
       throw error;
     }
+  }
+
+  async technicians() {
+    const users = await this.prisma.user.findMany({ where: { status: 'active' }, select: { id: true, name: true, role: true, additionalRoles: true } });
+    return serialize({ data: users.filter(u => accessRoles(u).includes('teknisi')).map(u => ({ id: u.id, name: u.name })) });
+  }
+  private async validateTeam(values: string[]) {
+    if (values.some(v => !/^[1-9]\d{0,19}$/.test(v) || BigInt(v) > 18446744073709551615n)) throw new BadRequestException('Anggota tim PSB tidak valid.');
+    const ids = [...new Set(values.map(BigInt))];
+    if (ids.length > 50) throw new BadRequestException('Tim PSB maksimal 50 orang.');
+    const users = await this.prisma.user.findMany({ where: { id: { in: ids }, status: 'active' }, select: { id: true, role: true, additionalRoles: true } });
+    if (users.length !== ids.length || users.some(u => !accessRoles(u).includes('teknisi'))) throw new BadRequestException('Pilih anggota tim teknisi yang aktif.');
+    return ids;
   }
 
   private async validateActivationPort(tx: Prisma.TransactionClient, nodeId: bigint, port: number, accountId?: bigint) {
@@ -220,11 +249,21 @@ export class PsbService {
     const psb = await this.settings.psb();
     if (dto.installationFeePaid !== psb.installationFee) throw new ConflictException('Biaya PSB berubah. Buka kembali konfirmasi pemasangan dan periksa nominal pembayaran.');
     const now = new Date();
-    const updated = await this.prisma.psbOrder.updateMany({
-      where: { id: order.id, status: 'ACTIVATED' },
-      data: { status: 'COMPLETED', completedByUserId: BigInt(technicianId), completedAt: now, installationFeePaid: BigInt(psb.installationFee) },
-    });
-    if (!updated.count) throw new ConflictException('Pemasangan sudah diselesaikan. Muat ulang daftar pelanggan.');
+    await this.prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT id FROM psb_orders WHERE id = ${order.id} FOR UPDATE`;
+      const current = await tx.psbOrder.findUnique({ where: { id: order.id }, include: { team: true } });
+      if (!current || current.status !== 'ACTIVATED') throw new ConflictException('Pemasangan sudah diselesaikan. Muat ulang daftar pelanggan.');
+      const salesRate = await tx.appSetting.findUnique({ where: { key: 'gaji_sales' } });
+      const updated = await tx.psbOrder.updateMany({
+        where: { id: order.id, status: 'ACTIVATED' },
+        data: { status: 'COMPLETED', completedByUserId: BigInt(technicianId), completedAt: now, installationFeePaid: BigInt(psb.installationFee), salesCommission: BigInt(salesRate?.value || '0') },
+      });
+      if (!updated.count) throw new ConflictException('Pemasangan sudah diselesaikan. Muat ulang daftar pelanggan.');
+      const members = current.team.length ? current.team.map(m => m.userId) : [current.activatedByUserId ?? BigInt(technicianId)];
+      for (const share of divideBonus(BigInt(psb.installationFee), members)) {
+        await tx.psbTeamMember.upsert({ where: { psbOrderId_userId: { psbOrderId: order.id, userId: share.userId } }, create: { psbOrderId: order.id, ...share }, update: { bonusAmount: share.bonusAmount } });
+      }
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     void this.wa.notifyPsbCompleted({ customerName: order.customerName, customerNumber: order.customerNumber, phone: order.phone, packageName: order.package.name, installationFee: psb.installationFee, billingStartDay: billing.billingStartDay, billingEndDay: billing.billingEndDay });
     return { message: 'Pemasangan selesai dan pembayaran PSB ke teknisi tercatat. Notifikasi pelanggan diproses. Tagihan layanan dimulai bulan berikutnya.' };
   }
@@ -263,7 +302,7 @@ export class PsbService {
     if (dto.areaId && !await this.prisma.area.findUnique({ where: { id: BigInt(dto.areaId) } })) throw new NotFoundException('Area tidak ditemukan.');
   }
   private async find(id: string, includePackage = false): Promise<any> {
-    const order = await this.prisma.psbOrder.findUnique({ where: { id: BigInt(id) }, ...(includePackage ? { include: { package: true } } : {}) });
+    const order = await this.prisma.psbOrder.findUnique({ where: { id: BigInt(id) }, include: { team: true, ...(includePackage ? { package: true } : {}) } });
     if (!order) throw new NotFoundException('Registrasi pasang baru tidak ditemukan.');
     return order;
   }

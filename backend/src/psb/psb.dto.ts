@@ -1,4 +1,4 @@
-import { IsIn, IsInt, Min, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsArray, ArrayMaxSize, ArrayUnique, IsIn, IsInt, Min, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class CompletePsbOrderDto {
   @IsInt() @Min(0) installationFeePaid: number;
@@ -17,6 +17,7 @@ export class CreatePsbOrderDto {
 export class UpdatePsbOrderDto extends CreatePsbOrderDto {}
 
 export class ActivatePsbOrderDto {
+  @IsOptional() @IsArray() @ArrayMaxSize(50) @ArrayUnique() @IsString({ each: true }) @Matches(/^[1-9]\d{0,19}$/, { each: true }) teamMemberIds?: string[];
   @IsString() @MaxLength(64) @Matches(/^[A-Za-z0-9._@-]+$/) username: string;
   @IsOptional() @IsString() @MinLength(6) @MaxLength(64) password?: string;
   @IsString() @Matches(/^[1-9]\d*$/, { message: 'ODC / ODP wajib dipilih.' }) odp: string;

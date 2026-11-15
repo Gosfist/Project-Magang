@@ -1,3 +1,4 @@
+import { TechnicianAttendanceComponent } from './technician-attendance.component';
 import { SalesComponent } from '../sales/sales.component';
 import { AdminDashboardComponent } from '../admin/admin-dashboard.component';
 import { FinanceSummaryComponent } from '../finance/summary/finance-summary.component';
@@ -21,7 +22,7 @@ type StatCard = {
   host: { class: 'workspace-page' },
   selector: 'app-dashboard-home',
   standalone: true,
-  imports: [AdminDashboardComponent, SalesComponent, FinanceSummaryComponent, FormsModule, CommonModule, RouterLink, LucideGitBranch, LucideNetwork, LucideServer, LucideUsers],
+  imports: [TechnicianAttendanceComponent, AdminDashboardComponent, SalesComponent, FinanceSummaryComponent, FormsModule, CommonModule, RouterLink, LucideGitBranch, LucideNetwork, LucideServer, LucideUsers],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })
@@ -121,7 +122,9 @@ export class HomeComponent implements OnInit {
         { label: 'Menunggu Selesai', value: s['activatedOrders'], type: 'redaman' },
         { label: 'Pemasangan Selesai', value: s['completedOrders'], type: 'odc' },
         { label: 'Pemasangan Selesai Bulan Ini', value: s['monthlyCompletedOrders'], type: 'odp' },
-        { label: 'Gaji Bulan Ini', value: s['monthlySalary'], type: 'users', currency: true },
+        { label: 'Gaji Karyawan Bulan Ini', value: s['monthlySalary'], type: 'users', currency: true },
+        { label: 'Bonus PSB Bulan Ini', value: s['monthlyBonus'], type: 'users', currency: true },
+        { label: 'Total Gaji dan Bonus', value: s['totalSalary'], type: 'users', currency: true },
       ];
     } else if (this.auth.isKolektor()) {
       result = [

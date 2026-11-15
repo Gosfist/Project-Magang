@@ -1,4 +1,5 @@
-import { FinanceSalaryService, currentSalaryMonth, salaryMonth } from '../finance/salary/finance-salary.service.js';
+import { PayrollService } from '../finance/salary/payroll.service.js';
+import { FinanceSalaryService, salaryMonth } from '../finance/salary/finance-salary.service.js';
 import { BadRequestException, Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import type { AuthRequest } from '../auth/jwt-auth.guard.js';
@@ -7,7 +8,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 @Controller('dashboard')
 @UseGuards(JwtAuthGuard)
 export class HomeController {
-  constructor(private readonly prisma: PrismaService, private readonly salary: FinanceSalaryService) { }
+  constructor(private readonly prisma: PrismaService, private readonly salary: FinanceSalaryService, private readonly payroll: PayrollService) { }
 
   @Get('stats')
   async stats(@Req() request: AuthRequest, @Query('year') year?: string, @Query('month') month?: string) {
@@ -41,13 +42,13 @@ export class HomeController {
       });
     } else if (request.user.role === 'teknisi') {
       const rates = await this.salary.settings();
-      const monthlyCompletedOrders = await this.prisma.psbOrder.count({ where: { completedByUserId: BigInt(request.user.id), status: 'COMPLETED', completedAt: currentSalaryMonth() } });
       const [newOrders, activatedOrders, completedOrders] = await this.prisma.$transaction([
         this.prisma.psbOrder.count({ where: { status: 'PROCESS' } }),
-        this.prisma.psbOrder.count({ where: { status: 'ACTIVATED', activatedByUserId: BigInt(request.user.id) } }),
-        this.prisma.psbOrder.count({ where: { status: 'COMPLETED', completedByUserId: BigInt(request.user.id) } }),
+        this.prisma.psbOrder.count({ where: { status: 'ACTIVATED', OR: [{ activatedByUserId: BigInt(request.user.id) }, { team: { some: { userId: BigInt(request.user.id) } } }] } }),
+        this.prisma.psbOrder.count({ where: { status: 'COMPLETED', OR: [{ completedByUserId: BigInt(request.user.id), team: { none: {} } }, { team: { some: { userId: BigInt(request.user.id) } } }] } }),
       ]);
-      return { newOrders, activatedOrders, completedOrders, monthlyCompletedOrders, salaryRate: rates.psb, monthlySalary: monthlyCompletedOrders * rates.psb };
+      const row = (await this.payroll.summary(undefined, request.user.id)).data[0];
+      return { newOrders, activatedOrders, completedOrders, monthlyCompletedOrders: row?.psbCount ?? 0, salaryRate: rates.psb, monthlySalary: row?.netWage ?? 0, monthlyBonus: row?.psbBonus ?? 0, totalSalary: row?.total ?? 0 };
     } else if (request.user.role === 'kolektor') {
       const [assignedCustomers, pendingDeposits, acceptedDeposits] = await this.prisma.$transaction([
         this.prisma.pppoeAccount.count({ where: { area: { collectors: { some: { userId: BigInt(request.user.id) } } } } }),
@@ -91,8 +92,9 @@ export class HomeController {
       this.prisma.psbOrder.count({ where: { salesUserId, status: { in: ['PROCESS', 'ACTIVATED'] }, createdAt: period } }),
       this.prisma.psbOrder.count({ where: { salesUserId, status: 'COMPLETED', completedAt: period } }),
     ]);
-    return { monthlyProcessOrders, monthlyCompletedOrders, salaryRate: rates.sales,
-      monthlySalary: monthlyCompletedOrders * rates.sales, year, month,
+    const employee = (await this.payroll.summary(`${year}-${String(month).padStart(2, '0')}`, userId)).data[0];
+    return { monthlyProcessOrders, monthlyCompletedOrders, employeeWage: employee?.netWage ?? 0, totalSalary: employee?.total ?? 0, salaryRate: rates.sales,
+      monthlySalary: employee?.salesSalary ?? 0, year, month,
       startYear: start.year, startMonth: start.month, currentYear: current.year, currentMonth: current.month };
   }
 

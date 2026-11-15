@@ -14,6 +14,7 @@ export class PsbController {
   list(@Req() req: AuthRequest, @Query('search') search = '', @Query('status') status = '', @Query('page', new ParseIntPipe({ optional: true })) page = 1) {
     return this.psb.list(req.user, search.trim(), status, Math.max(1, page));
   }
+  @Get('technicians') @Roles('admin', 'teknisi') technicians() { return this.psb.technicians(); }
   @Post() @Roles('admin', 'sales') create(@Body() dto: CreatePsbOrderDto, @Req() req: AuthRequest) { return this.psb.create(dto, req.user.id); }
   @Patch(':id') @Roles('admin', 'sales') update(@Param('id') id: string, @Body() dto: UpdatePsbOrderDto, @Req() req: AuthRequest) { return this.psb.update(id, dto, req.user); }
   @Post(':id/activate') @Roles('admin', 'teknisi') activate(@Param('id') id: string, @Body() dto: ActivatePsbOrderDto, @Req() req: AuthRequest) { return this.psb.activate(id, dto, req.user.id); }

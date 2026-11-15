@@ -157,3 +157,5 @@ Panduan instalasi bagian 6.1 memuat Download CA dan impor Windows ke Local Machi
 Remote Winbox subnet VPN: installer memasang 30-vpn-remote.conf untuk akses TCP 1122/8291 antar 10.88.0.0/24 dengan forwarding aktif. Script NAS terkelola menyertakan rute balik /24 dan rule input yang membaca port Winbox saat dipasang. Panduan bagian 6.3 memuat penerapan pada VPS/router lama; port khusus perlu ditambahkan pada aturan VPS. Aturan ini mempertahankan akses LAN dan tidak otomatis menutup akses WAN lama.
 
 Konfigurasi akhir tidak mengizinkan ping antar klien VPN. Ping ke server 10.88.0.1 tetap tersedia melalui unzanet-vpn-ping; remote Winbox tetap memakai bagian 6.3. Bagian 6.4 memuat penghapusan konfigurasi ICMP percobaan jika sempat diterapkan.
+
+Gaji, bonus tim PSB, dan absensi: lihat [gaji-absensi.md](gaji-absensi.md) untuk alur Finance/teknisi, rumus potongan, checkout otomatis, dan SQL tambahan pada VPS yang sudah berisi data. Skema instalasi baru tetap di database.sql.

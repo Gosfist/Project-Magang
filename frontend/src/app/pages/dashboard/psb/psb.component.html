@@ -449,6 +449,18 @@
             class="max-h-64 rounded-lg border object-contain"
           />
         }
+        <fieldset class="rounded-lg border border-slate-200 p-4 space-y-3">
+          <legend class="px-1 font-semibold">Tim PSB</legend>
+          <p class="text-sm text-slate-500">Pilih teknisi yang ikut pemasangan. Bonus PSB dibagi rata ke {{ teamIds.length }} anggota saat pemasangan selesai. Teknisi yang melakukan aktivasi tetap termasuk tim.</p>
+          @if (teamLoading()) {<p class="text-sm text-slate-500">Memuat anggota tim...</p>}
+          @if (teamError()) {<p class="text-sm text-red-600" role="alert">{{ teamError() }}</p>}
+          <div class="grid gap-2 sm:grid-cols-2">
+            @for (member of teamOptions(); track member.id) {
+              <label class="flex items-center gap-2 rounded-lg border border-slate-200 p-3"><input type="checkbox" [checked]="teamIds.includes(member.id)" [disabled]="activationViewOnly || selected()?.status === 'COMPLETED' || member.id === teamLeadId" (change)="toggleTeam(member.id, $any($event.target).checked)" /><span>{{ member.name }}{{ member.id === teamLeadId ? ' (Aktivator)' : '' }}</span></label>
+            }
+          </div>
+          @if (selected()?.status === 'COMPLETED') {<p class="text-xs text-slate-500">Tim pemasangan yang sudah selesai tidak dapat diubah.</p>}
+        </fieldset>
         <div class="flex justify-between">
           <button class="btn-secondary" (click)="activationStep.set(1)">
             Kembali
@@ -464,7 +476,7 @@
           } @else {
             <button
               class="btn-primary"
-              [disabled]="saving() || !activation.installationPhoto"
+              [disabled]="saving() || teamLoading() || !!teamError() || !activation.installationPhoto"
               (click)="activate()"
             >
               {{ saving() ? "Menyimpan..." : "Simpan Aktivasi" }}
