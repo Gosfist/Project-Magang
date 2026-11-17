@@ -177,6 +177,7 @@ table tbody span.rounded-full :is(span, small) { font-size: var(--ui-caption); l
 app-modal [role="dialog"] { border: 1px solid var(--ui-border); border-radius: 10px; box-shadow: 0 24px 80px #02061733; }
 app-modal .modal-header { padding: 20px 24px; }
 app-modal .modal-body { padding: 24px; }
+app-modal .modal-body:has(> app-main-core-editor-tabs [role="tablist"]) { padding-top: 4px; }
 .skip-link { position: fixed; top: 8px; left: 8px; z-index: 100; transform: translateY(-160%); padding: 12px 20px; background: white; color: #0f172a; border: 2px solid var(--ui-brand); border-radius: 6px; }
 .skip-link:focus { transform: translateY(0); }
 @media (max-width: 767px) {
