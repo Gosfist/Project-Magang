@@ -25,7 +25,7 @@
         <tbody>
           @for (output of ports(); track output.port) {
             @for (destination of output.destinations; track destination.id) {
-              <tr><th scope="row" class="whitespace-nowrap font-medium">Port {{ output.port }}</th><td colspan="4" class="text-slate-900">To {{ destinationType(destination.type) }} {{ destination.name }}</td></tr>
+              <tr><th scope="row" class="whitespace-nowrap font-medium">Port {{ output.port }}</th><td colspan="4" class="text-slate-900">To {{ destinationType(destination.type) }}_{{ destination.name }}</td></tr>
             }
             @for (customer of output.customers; track customer.id) {
               <tr><th scope="row" class="whitespace-nowrap font-medium">Port {{ output.port }}</th><td>Pelanggan</td><td class="whitespace-nowrap">{{ customer.customerNumber }}</td><td class="text-slate-900">{{ customer.name }}</td><td><span class="inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium" [class]="customer.online === true ? 'bg-emerald-50 text-emerald-700' : customer.online === false ? 'bg-slate-100 text-slate-600' : 'bg-amber-50 text-amber-800'">{{ customer.online === true ? 'Online' : customer.online === false ? 'Offline' : 'Tidak diketahui' }}</span></td></tr>

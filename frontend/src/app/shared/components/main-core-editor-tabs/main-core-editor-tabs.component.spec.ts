@@ -34,7 +34,7 @@ describe('Main Core editor tabs', () => {
     (root.querySelector('[data-tab="output"]') as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(root.querySelector('#odc-data-panel')?.hasAttribute('hidden')).toBeTrue();
-    expect(root.textContent).toContain('To ODP Utara');
+    expect(root.textContent).toContain('To ODP_Utara');
     expect(root.textContent).toContain('Ahmad');
     expect(root.textContent).toContain('000045');
     expect(root.textContent).toContain('Online');
