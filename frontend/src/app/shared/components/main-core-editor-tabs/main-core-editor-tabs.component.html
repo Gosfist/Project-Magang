@@ -1,0 +1,43 @@
+@if (nodeId) {
+  <div class="mb-5 flex gap-2 border-b border-slate-200" role="tablist" [attr.aria-label]="'Detail ' + label">
+    <button type="button" role="tab" data-tab="data" [id]="category + '-data-tab'" [attr.aria-controls]="category + '-data-panel'" [attr.aria-selected]="tab() === 'data'" [tabIndex]="tab() === 'data' ? 0 : -1" class="min-h-11 border-b-2 px-4 py-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600" [class]="tab() === 'data' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-900'" (click)="selectTab('data')" (keydown)="onTabKey($event)">Data {{ label }}</button>
+    <button type="button" role="tab" data-tab="output" [id]="category + '-output-tab'" [attr.aria-controls]="category + '-output-panel'" [attr.aria-selected]="tab() === 'output'" [tabIndex]="tab() === 'output' ? 0 : -1" class="min-h-11 border-b-2 px-4 py-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600" [class]="tab() === 'output' ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-900'" (click)="selectTab('output')" (keydown)="onTabKey($event)">Output</button>
+  </div>
+}
+<div [hidden]="tab() !== 'data'" [attr.role]="nodeId ? 'tabpanel' : null" [id]="category + '-data-panel'" [attr.aria-labelledby]="nodeId ? category + '-data-tab' : null">
+  <ng-content></ng-content>
+</div>
+@if (nodeId) {
+  <div role="tabpanel" tabindex="0" [hidden]="tab() !== 'output'" [id]="category + '-output-panel'" [attr.aria-labelledby]="category + '-output-tab'" [attr.aria-busy]="loading()" class="space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div><h3 class="font-medium text-slate-900">Output {{ label }}</h3><p class="mt-1 text-sm text-slate-500">Tujuan perangkat dan pelanggan yang terhubung langsung di setiap port.</p></div>
+      <button type="button" class="btn-secondary" [disabled]="loading()" (click)="load()">Muat ulang</button>
+    </div>
+    @if (loading()) {
+      <p role="status" class="py-8 text-center text-sm text-slate-500">Memuat output...</p>
+    } @else if (error()) {
+      <p role="alert" class="rounded-lg bg-red-50 p-4 text-sm text-red-700">{{ error() }}</p>
+    } @else {
+      @for (warning of warnings(); track warning) { <p role="status" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{{ warning }}</p> }
+      <div class="table-wrap"><table>
+        <caption class="sr-only">Daftar output port {{ label }}</caption>
+        <thead><tr><th scope="col">Port</th><th scope="col">Tujuan</th><th scope="col">No. Pelanggan</th><th scope="col">Nama</th><th scope="col">Status</th></tr></thead>
+        <tbody>
+          @for (output of ports(); track output.port) {
+            @for (destination of output.destinations; track destination.id) {
+              <tr><th scope="row" class="whitespace-nowrap font-medium">Port {{ output.port }}</th><td colspan="4" class="text-slate-900">To {{ destinationType(destination.type) }} {{ destination.name }}</td></tr>
+            }
+            @for (customer of output.customers; track customer.id) {
+              <tr><th scope="row" class="whitespace-nowrap font-medium">Port {{ output.port }}</th><td>Pelanggan</td><td class="whitespace-nowrap">{{ customer.customerNumber }}</td><td class="text-slate-900">{{ customer.name }}</td><td><span class="inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium" [class]="customer.online === true ? 'bg-emerald-50 text-emerald-700' : customer.online === false ? 'bg-slate-100 text-slate-600' : 'bg-amber-50 text-amber-800'">{{ customer.online === true ? 'Online' : customer.online === false ? 'Offline' : 'Tidak diketahui' }}</span></td></tr>
+            }
+            @if (!output.destinations.length && !output.customers.length) {
+              <tr><th scope="row" class="whitespace-nowrap font-medium">Port {{ output.port }}</th><td colspan="4" class="text-slate-400">Belum terpakai</td></tr>
+            }
+          } @empty {
+            <tr><td colspan="5" class="py-8 text-center text-slate-500">Belum ada port output.</td></tr>
+          }
+        </tbody>
+      </table></div>
+    }
+  </div>
+}

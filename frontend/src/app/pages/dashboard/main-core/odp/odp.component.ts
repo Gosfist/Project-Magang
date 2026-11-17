@@ -1,3 +1,4 @@
+import { MainCoreEditorTabsComponent } from '../../../../shared/components/main-core-editor-tabs/main-core-editor-tabs.component';
 import { ConfirmationService } from '../../../../core/services/confirmation.service';
 import { estimateInputPower } from '../../../../shared/optical-power';
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
@@ -34,7 +35,7 @@ const emptyOdpForm = {
   host: { class: 'workspace-page' },
   selector: 'app-odp',
   standalone: true,
-  imports: [FormsModule, LucidePencil, LucidePlus, LucideSearch, LucideTrash2, ModalComponent, PaginationComponent, ToastComponent],
+  imports: [MainCoreEditorTabsComponent, FormsModule, LucidePencil, LucidePlus, LucideSearch, LucideTrash2, ModalComponent, PaginationComponent, ToastComponent],
   templateUrl: './odp.component.html',
 })
 export class OdpComponent implements OnInit, OnDestroy {

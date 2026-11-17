@@ -1,3 +1,5 @@
+import { PppoeModule } from '../pppoe/pppoe.module.js';
+import { MainCoreOutputService } from './shared/main-core-output.service.js';
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
 import { MainCoreController } from './shared/main-core.controller.js';
@@ -8,5 +10,5 @@ import { OdcController } from './odc/odc.controller.js';
 import { OdpController } from './odp/odp.controller.js';
 import { TraceJalurController } from './trace-jalur/trace-jalur.controller.js';
 
-@Module({ imports: [AuthModule], controllers: [MainCoreController, ServerController, RasioController, OdcController, OdpController, TraceJalurController], providers: [MainCoreService] })
+@Module({ imports: [AuthModule, PppoeModule], controllers: [MainCoreController, ServerController, RasioController, OdcController, OdpController, TraceJalurController], providers: [MainCoreService, MainCoreOutputService] })
 export class MainCoreModule { }

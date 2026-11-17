@@ -31,6 +31,8 @@
   <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
 
   <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Data Rasio'" (closeModal)="open.set(false)">
+    @if (open()) {
+    <app-main-core-editor-tabs [nodeId]="editing()?.id ?? null" category="rasio" label="Rasio">
     <form (ngSubmit)="save()" class="space-y-4">
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div><label class="label">Nama Rasio *</label><input class="input" required [(ngModel)]="form.namaTitik" name="namaTitik" /></div>
@@ -77,6 +79,8 @@
       </div>
       <div class="flex justify-end gap-3"><button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button><button class="btn-primary">Simpan</button></div>
     </form>
+    </app-main-core-editor-tabs>
+    }
   </app-modal>
 
   @if (toast()) { <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast> }

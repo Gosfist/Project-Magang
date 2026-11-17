@@ -9,7 +9,9 @@
     @if (items().length === 0) { <tr><td colspan="8" class="py-8 text-center text-slate-400">Data ODP belum tersedia.</td></tr> }
   </tbody></table></div>
   <app-pagination [meta]="meta()" (pageChange)="page.set($event); load()"></app-pagination>
-  <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Data ODP'" (closeModal)="open.set(false)"><form (ngSubmit)="save()" class="space-y-4">
+  <app-modal [open]="open()" [title]="(editing() ? 'Edit' : 'Tambah') + ' Data ODP'" (closeModal)="open.set(false)">@if (open()) {
+    <app-main-core-editor-tabs [nodeId]="editing()?.id ?? null" category="odp" label="ODP">
+    <form (ngSubmit)="save()" class="space-y-4">
       <div class="grid grid-cols-1 items-end gap-4 lg:grid-cols-3">
         <div><label class="label">Nama ODP *</label><input class="input" required [(ngModel)]="form.namaTitik" name="namaTitik" /></div>
         <div>
@@ -58,6 +60,9 @@
     <div class="lg:col-span-3"><label class="label">Alamat *</label><textarea class="input" required rows="3" [(ngModel)]="form.alamat" name="alamat"></textarea></div>
       </div>
     <div class="flex justify-end gap-3"><button type="button" class="btn-secondary" (click)="open.set(false)">Batal</button><button class="btn-primary">Simpan</button></div>
-  </form></app-modal>
+  </form>
+    </app-main-core-editor-tabs>
+    }
+  </app-modal>
   @if (toast()) { <app-toast [message]="toast()!.message" [type]="toast()!.type" (close)="toast.set(null)"></app-toast> }
 </div>
