@@ -8,7 +8,7 @@ export class MainCoreOutputService {
   constructor(private readonly prisma: PrismaService, private readonly network: PppoeNetworkService) {}
 
   async list(type: string, id: string) {
-    if (!['odc', 'odp', 'rasio'].includes(type) || !/^\d+$/.test(id)) throw new NotFoundException('Titik tidak ditemukan.');
+    if (!['server', 'odc', 'odp', 'rasio'].includes(type) || !/^\d+$/.test(id)) throw new NotFoundException('Titik tidak ditemukan.');
     const node = await this.prisma.mainCore.findFirst({ where: { id: BigInt(id), tipeTitik: type, deletedAt: null } });
     if (!node) throw new NotFoundException('Titik tidak ditemukan.');
     const [children, accounts] = await Promise.all([
@@ -17,11 +17,11 @@ export class MainCoreOutputService {
     ]);
     const presence = await this.network.accountPresence(accounts);
     return {
-      data: Array.from({ length: outputPortCount(node.spesifikasi) }, (_, index) => {
+      data: Array.from({ length: type === 'server' ? 1 : outputPortCount(node.spesifikasi) }, (_, index) => {
         const port = index + 1;
         return {
           port,
-          destinations: children.filter(child => child.parentPortOut === port).map(child => ({ id: String(child.id), name: child.namaTitik, type: child.tipeTitik })),
+          destinations: children.filter(child => type === 'server' || child.parentPortOut === port).map(child => ({ id: String(child.id), name: child.namaTitik, type: child.tipeTitik })),
           customers: accounts.filter(account => account.odpPort === port).map(account => ({
             id: String(account.id), customerNumber: String(account.customerNumber).padStart(6, '0'), name: account.customerName,
             online: presence.states.get(account.username) ?? null,

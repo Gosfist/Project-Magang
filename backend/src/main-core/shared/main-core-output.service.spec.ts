@@ -45,9 +45,26 @@ describe('Main Core direct outputs', () => {
     expect(result.warnings).toEqual(['Accounting belum diperbarui']);
   });
 
+  it('shows the direct Server connection even when its source port is null', async () => {
+    const { db, service } = setup('server');
+    db.mainCore.findFirst.mockResolvedValue({ id: 1n, tipeTitik: 'server', spesifikasi: null });
+    db.mainCore.findMany.mockResolvedValue([{ id: 2n, namaTitik: 'ODC Pusat', tipeTitik: 'odc', parentPortOut: null }]);
+    db.pppoeAccount.findMany.mockResolvedValue([]);
+    const result = await service.list('server', '1');
+    expect(result.data).toEqual([{ port: 1, destinations: [{ id: '2', name: 'ODC Pusat', type: 'odc' }], customers: [] }]);
+  });
+
+  it('shows an unused Server output when there is no direct connection', async () => {
+    const { db, service } = setup('server');
+    db.mainCore.findMany.mockResolvedValue([]);
+    db.pppoeAccount.findMany.mockResolvedValue([]);
+    const result = await service.list('server', '1');
+    expect(result.data).toEqual([{ port: 1, destinations: [], customers: [] }]);
+  });
+
   it('rejects invalid category, invalid id and missing nodes', async () => {
     const { db, service } = setup();
-    await expect(service.list('server', '1')).rejects.toThrow('Titik tidak ditemukan');
+    await expect(service.list('invalid', '1')).rejects.toThrow('Titik tidak ditemukan');
     await expect(service.list('odc', 'abc')).rejects.toThrow('Titik tidak ditemukan');
     expect(db.mainCore.findFirst).not.toHaveBeenCalled();
     db.mainCore.findFirst.mockResolvedValue(null);

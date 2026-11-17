@@ -1,3 +1,4 @@
+import { MainCoreEditorTabsComponent } from '../../../../shared/components/main-core-editor-tabs/main-core-editor-tabs.component';
 import { ConfirmationService } from '../../../../core/services/confirmation.service';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -16,6 +17,7 @@ const emptyServerForm = { namaTitik: '', redamanIn: '', routerNasId: '' };
   selector: 'app-server',
   standalone: true,
   imports: [
+    MainCoreEditorTabsComponent,
     FormsModule,
     LucidePencil,
     LucidePlus,

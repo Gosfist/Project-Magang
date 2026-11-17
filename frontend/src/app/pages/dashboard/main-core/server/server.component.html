@@ -59,6 +59,8 @@
     [title]="(editing() ? 'Edit' : 'Tambah') + ' Data Server'"
     (closeModal)="open.set(false)"
   >
+    @if (open()) {
+    <app-main-core-editor-tabs [nodeId]="editing()?.id ?? null" category="server" label="Server">
     <form (ngSubmit)="save()" class="space-y-4">
       <div>
         <label class="label">Nama Core *</label>
@@ -82,6 +84,8 @@
         <button class="btn-primary">Simpan</button>
       </div>
     </form>
+    </app-main-core-editor-tabs>
+    }
   </app-modal>
 
   @if (toast()) {
