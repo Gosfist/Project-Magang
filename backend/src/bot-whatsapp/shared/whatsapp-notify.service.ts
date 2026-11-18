@@ -168,10 +168,6 @@ export class WhatsappNotifyService {
     if (!sent) throw new Error('Bot WhatsApp tidak menerima pengingat tagihan.');
   }
 
-  private defaultTemplate(): string {
-    return `Halo {nama}! 👋\n\nSelamat, akun internet Anda telah berhasil didaftarkan di PT Unzanet.\n\n📋 *Detail Akun:*\n• Nomor Pelanggan: {nomor_pelanggan}\n• Paket: {paket}\n• Username PPPoE: {username}\n• Password PPPoE: {password}\n\nTerima kasih telah memilih layanan kami!\n\n— PT Unzanet`;
-  }
-
   private defaultIsolationTemplate(): string {
     return `Halo {nama}! ⚠️\n\nKami informasikan bahwa layanan internet Anda (No. Pelanggan: {nomor_pelanggan}) sementara kami nonaktifkan (isolir) dikarenakan tagihan belum diselesaikan.\n\n📋 *Detail Tagihan:*\n• Paket: {paket}\n• Total Tagihan: {total_tagihan}\n• Batas Pembayaran: {jatuh_tempo}\n\nMohon segera melakukan pembayaran agar layanan internet Anda dapat aktif kembali secara otomatis.\n\nAbaikan pesan ini jika Anda sudah melakukan pembayaran. Terima kasih.\n\n— PT Unzanet`;
   }

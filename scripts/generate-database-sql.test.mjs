@@ -22,6 +22,11 @@ test('fresh install SQL contains current tables without legacy migrations or des
   assert.doesNotMatch(nasTable, /`(?:username|password|port|auth_mode)`/);
   assert.match(nasTable, /`coa_port` SMALLINT UNSIGNED NOT NULL DEFAULT 3799/);
   assert.doesNotMatch(sql, /CREATE TABLE `router_stats/);
+  assert.doesNotMatch(sql, /CREATE TABLE `vpn_servers`/);
+  const vpnClients = sql.match(/CREATE TABLE `vpn_clients` \([\s\S]*?\n\)/)?.[0];
+  assert.ok(vpnClients);
+  assert.match(vpnClients, /`password_encrypted` TEXT NULL/);
+  assert.doesNotMatch(vpnClients, /`(?:vpn_server_id|client_public_key|client_private_key|allowed_ips|is_radius_server)`/);
 });
 
 test('SQL generation is stable across Windows and Ubuntu line endings', () => {

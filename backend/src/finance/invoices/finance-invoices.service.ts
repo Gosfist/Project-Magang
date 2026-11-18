@@ -1,17 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { serialize } from '../../common/serialize.js';
-import { WhatsappNotifyService } from '../../bot-whatsapp/shared/whatsapp-notify.service.js';
 import { customerSearch } from '../../common/customer-search.js';
 
 @Injectable()
 export class FinanceInvoicesService {
-  private readonly logger = new Logger(FinanceInvoicesService.name);
-
   constructor(
     private readonly prisma: PrismaService,
-    private readonly waNotify?: WhatsappNotifyService,
   ) {}
 
   async unpaidInvoices(search = '', outsideAreaCollectorId = '') {

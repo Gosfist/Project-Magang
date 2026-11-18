@@ -41,7 +41,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
       const local = this.localNow(settings.billingTimezone, now);
       if (local.day >= settings.billingStartDay) {
         await this.createMonthlyInvoices(settings, local.year, local.month, onlyAccountId);
-        await this.notifyPaymentReminders(settings, local.year, local.month, onlyAccountId);
+        await this.notifyPaymentReminders(local.year, local.month, onlyAccountId);
       }
       if (local.hour < settings.isolationCheckHour || local.day <= settings.billingEndDay) return true;
       await this.isolateOverdue(settings, this.utcDate(local.year, local.month, settings.billingEndDay), now, onlyAccountId);
@@ -179,7 +179,7 @@ export class BillingIsolationService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async notifyPaymentReminders(settings: BillingSettings, year: number, month: number, onlyAccountId?: bigint) {
+  private async notifyPaymentReminders(year: number, month: number, onlyAccountId?: bigint) {
     const monthStart = this.utcDate(year, month, 1);
     const nextMonthStart = month === 12 ? this.utcDate(year + 1, 1, 1) : this.utcDate(year, month + 1, 1);
     const invoices = await this.prisma.invoice.findMany({

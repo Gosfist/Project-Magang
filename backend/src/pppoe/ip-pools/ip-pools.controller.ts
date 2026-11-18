@@ -6,17 +6,12 @@ import { Roles } from '../../auth/roles.decorator.js';
 
 import { SaveIpPoolDto } from './ip-pools.dto.js';
 import { IpPoolsService } from './ip-pools.service.js';
-import { CustomerServicesService } from '../data-pelanggan/customer-services.service.js';
-
-import { BillingIsolationService } from '../data-pelanggan/billing-isolation.service.js';
-
-import { PengaturanService } from '../../tools/pengaturan/pengaturan.service.js';
 
 @Controller('pppoe')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 export class IpPoolsController {
-  constructor(private readonly pppoe: IpPoolsService, private readonly customers: CustomerServicesService, private readonly billingIsolation: BillingIsolationService, private readonly settings: PengaturanService) { }
+  constructor(private readonly pppoe: IpPoolsService) { }
 
   @Get('ip-pools/options') ipPoolOptions() { return this.pppoe.ipPoolOptions(); }
   @Get('ip-pools') ipPools(@Query('search') search = '', @Query('page', new ParseIntPipe({ optional: true })) page = 1) { return this.pppoe.ipPools(search.trim(), Math.max(1, page)); }

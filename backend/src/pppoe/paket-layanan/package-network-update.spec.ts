@@ -23,7 +23,7 @@ function setup(active = true) {
   };
   const network = { disconnect: vi.fn(async () => { expect(committed).toBe(true); return { warnings: [] as string[], completed: 1 }; }) };
   const secrets = { decrypt: () => 'test-password' };
-  const service = new PaketLayananService(prisma as any, new RadiusService(secrets as any), secrets as any, network as any);
+  const service = new PaketLayananService(prisma as any, new RadiusService(secrets as any), network as any);
   const dto = { name: 'Paket', downloadMbps: 20, uploadMbps: 3, addressPool: 'pool', price: 110000, costPrice: 100000, validityDays: 30 };
   return { service, tx, network, dto };
 }

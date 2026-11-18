@@ -165,8 +165,6 @@ export class MonitoringInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
-    // Simpan pola rute saja agar kueri, isi permintaan, dan kredensial tidak masuk log.
-    const route = request.route?.path ?? '(unknown)';
     return next.handle().pipe(tap({
       next: (result) => { void this.monitoring.activity(request, response.statusCode, result); },
       error: (error) => void this.monitoring.activity(request, typeof error.getStatus === 'function' ? error.getStatus() : 500),

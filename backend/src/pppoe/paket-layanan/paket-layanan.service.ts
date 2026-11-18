@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { pageMeta, serialize } from '../../common/serialize.js';
@@ -6,19 +6,15 @@ import { pageMeta, serialize } from '../../common/serialize.js';
 import { SavePackageDto } from './paket-layanan.dto.js';
 
 import { RadiusService } from '../shared/radius.service.js';
-import { SecretService } from '../shared/secret.service.js';
 import { PppoeNetworkService } from '../shared/pppoe-network.service.js';
 
-import { WhatsappNotifyService } from '../../bot-whatsapp/shared/whatsapp-notify.service.js';
 import { isolationPoolInUse } from '../shared/isolation-config.js';
 
 const popularPackageKey = 'landing_popular_package_id';
 
 @Injectable()
 export class PaketLayananService {
-  private readonly logger = new Logger(PaketLayananService.name);
-
-  constructor(private readonly prisma: PrismaService, private readonly radius: RadiusService, private readonly secrets: SecretService, private readonly network: PppoeNetworkService, private readonly waNotify?: WhatsappNotifyService) { }
+  constructor(private readonly prisma: PrismaService, private readonly radius: RadiusService, private readonly network: PppoeNetworkService) { }
 
   async packages(search = '', page = 1) {
     const where = search ? { name: { contains: search } } : {};

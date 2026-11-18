@@ -1,5 +1,7 @@
 # Panduan arsitektur tanpa API MikroTik
 
+Panduan [audit tabel database](audit-database.md) memuat hasil pemakaian tabel, penghapusan struktur WireGuard lama, dan SQL pembaruan database yang sudah ada.
+
 Panduan [Berhenti Langganan dan isolir manual](berhenti-langganan.md) memuat alur
 pengambilan, prorata akhir, petugas, setoran, WhatsApp, retensi KTP permanen dan
 perubahan skema tambahan untuk database lama.

@@ -3,7 +3,7 @@
 -- Pilih database MySQL KOSONG sebelum mengimpor file ini.
 -- Impor sekali saat instalasi awal, bukan saat update aplikasi.
 -- Akun awal dibuat terpisah dengan npm run db:seed dari folder backend.
--- Klien VPN SSTP dikelola web dan diterapkan oleh worker VPS; field WireGuard hanya legacy.
+-- Klien VPN SSTP dikelola web dan diterapkan oleh worker VPS.
 
 SET NAMES utf8mb4;
 
@@ -343,45 +343,20 @@ CREATE TABLE `radpostauth` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `vpn_servers` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `name` VARCHAR(100) NOT NULL,
-    `host` VARCHAR(100) NOT NULL,
-    `subnet` VARCHAR(50) NOT NULL DEFAULT '10.200.0.0/24',
-    `wg_port` INTEGER UNSIGNED NOT NULL DEFAULT 51820,
-    `wg_public_key` TEXT NOT NULL,
-    `wg_private_key` TEXT NULL,
-    `pool_start` INTEGER UNSIGNED NOT NULL DEFAULT 10,
-    `pool_end` INTEGER UNSIGNED NOT NULL DEFAULT 254,
-    `gateway` VARCHAR(45) NULL,
-    `is_active` BOOLEAN NOT NULL DEFAULT true,
-    `created_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
-
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
 CREATE TABLE `vpn_clients` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(100) NOT NULL,
-    `vpn_server_id` BIGINT UNSIGNED NULL,
     `vpn_ip` VARCHAR(45) NOT NULL,
     `username` VARCHAR(64) NULL,
     `password_encrypted` TEXT NULL,
     `provisioned_at` DATETIME(3) NULL,
-    `client_public_key` TEXT NULL,
-    `client_private_key` TEXT NULL,
-    `allowed_ips` VARCHAR(100) NOT NULL DEFAULT '10.200.0.0/24',
     `description` TEXT NULL,
-    `is_radius_server` BOOLEAN NOT NULL DEFAULT false,
     `is_active` BOOLEAN NOT NULL DEFAULT true,
     `created_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
     `vpn_type` VARCHAR(20) NOT NULL DEFAULT 'legacy',
 
     UNIQUE INDEX `vpn_clients_username_key`(`username`),
-    INDEX `vpn_clients_vpn_server_id_idx`(`vpn_server_id`),
     INDEX `vpn_clients_vpn_ip_idx`(`vpn_ip`),
     UNIQUE INDEX `vpn_clients_vpn_type_vpn_ip_key`(`vpn_type`, `vpn_ip`),
     PRIMARY KEY (`id`)
@@ -697,9 +672,6 @@ ALTER TABLE `customer_addons` ADD CONSTRAINT `customer_addons_pppoe_account_id_f
 
 -- AddForeignKey
 ALTER TABLE `payment_promises` ADD CONSTRAINT `payment_promises_pppoe_account_id_fkey` FOREIGN KEY (`pppoe_account_id`) REFERENCES `daftar_pelanggan`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `vpn_clients` ADD CONSTRAINT `vpn_clients_vpn_server_id_fkey` FOREIGN KEY (`vpn_server_id`) REFERENCES `vpn_servers`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `nas` ADD CONSTRAINT `nas_vpn_client_id_fkey` FOREIGN KEY (`vpn_client_id`) REFERENCES `vpn_clients`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;

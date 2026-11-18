@@ -178,7 +178,7 @@ def render(config):
     db_url = f"mysql://unzanet:{config['DB_PASSWORD']}@127.0.0.1:3306/unzanet"
     backend = {
         'PORT': '3001', 'FRONTEND_URL': origin, 'DATABASE_URL': db_url,
-        'JWT_SECRET': config['JWT_SECRET'], 'JWT_EXPIRES_IN': '7d', 'LARAVEL_APP_KEY': '',
+        'JWT_SECRET': config['JWT_SECRET'], 'JWT_EXPIRES_IN': '7d',
         'BOT_WHATSAPP_URL': 'http://127.0.0.1:3002', 'BOT_API_KEY': config['BOT_API_KEY'],
         'RADIUS_LOG_TIMEZONE': 'WIB', 'RADIUS_SERVER_IP': config['VPN_RADIUS_IP'] if config.get('NETWORK_MODE', 'vpn') != 'web' else '',
         'RADIUS_DISCONNECT_SOURCE_IP': config['VPN_RADIUS_IP'] if config.get('NETWORK_MODE', 'vpn') != 'web' else '',

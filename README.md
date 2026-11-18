@@ -111,6 +111,8 @@ Updater memuat ulang script setelah Git mengambil revisi baru dan mempertahankan
 
 ## Database
 
+Pembaruan khusus database lokal lama tersedia di [panduan SQL lokal](backend/prisma/updates/README.md). Jangan mengimpor ulang `database.sql` untuk memperbarui database berisi data.
+
 File SQL untuk **instalasi baru** adalah [`backend/prisma/database.sql`](backend/prisma/database.sql). Semua perubahan tanpa API MikroTik sudah langsung berada di file ini, termasuk metadata NAS, Disconnect, pool per NAS, dan pengaturan awal. Gunakan database kosong pada VPS Ubuntu baru. Tidak ada file migrasi terpisah.
 
 Setelah membuat database kosong dan mengisi `backend/.env`, jalankan:
@@ -140,7 +142,7 @@ Akun seed pengembangan:
 - Admin: `admin@unzanet.com` / `123`
 - Teknisi: `teknisi@unzanet.com` / `password`
 
-Jika data akun PPPoE berasal dari Laravel, salin nilai `APP_KEY` lama ke `LARAVEL_APP_KEY` agar backend NestJS dapat mendekripsi password lama dan menyinkronkannya ke FreeRADIUS. Satu akun selalu dibatasi satu sesi melalui `Simultaneous-Use := 1`.
+Kredensial PPPoE dan VPN disimpan dalam format `unzanet:v1` menggunakan AES-256-GCM. Kunci diturunkan dari `JWT_SECRET`, sehingga nilainya harus dipertahankan saat update agar kredensial tersimpan tetap dapat dibaca. Satu akun selalu dibatasi satu sesi melalui `Simultaneous-Use := 1`.
 
 Dokumentasi PPPoE/FreeRADIUS berada di `backend/docs`.
 

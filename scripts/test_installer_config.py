@@ -145,7 +145,7 @@ class InstallerConfigurationTests(unittest.TestCase):
     def test_vpn_second_stage_preserves_existing_website_settings_and_secrets(self):
         config = {**self.config, 'NETWORK_MODE': 'web', 'WEB_URL': 'http://127.0.0.1:8080',
                   'VPN_SERVER': '', 'VPN_USERNAME': '', 'VPN_PASSWORD': ''}
-        original = 'JWT_SECRET="user-edited-secret"\nDATABASE_URL="keep-db"\nFRONTEND_URL="http://127.0.0.1:8080"\nRADIUS_SERVER_IP=""\nRADIUS_DISCONNECT_SOURCE_IP=""\nLARAVEL_APP_KEY="keep-key"\n'
+        original = 'JWT_SECRET="user-edited-secret"\nDATABASE_URL="keep-db"\nFRONTEND_URL="http://127.0.0.1:8080"\nRADIUS_SERVER_IP=""\nRADIUS_DISCONNECT_SOURCE_IP=""\nCUSTOM_SETTING="keep-setting"\n'
         changes = {key: self.config[key] for key in ('VPN_SERVER', 'VPN_USERNAME', 'VPN_PASSWORD', 'VPN_RADIUS_IP', 'VPN_ROUTER_IP', 'VPN_NETWORK')}
         updated, files = module.vpn_transition(config, original, changes)
         self.assertEqual(updated['NETWORK_MODE'], 'vpn')

@@ -7,17 +7,12 @@ import { Roles } from '../../auth/roles.decorator.js';
 import { SavePackageDto } from './paket-layanan.dto.js';
 
 import { PaketLayananService } from './paket-layanan.service.js';
-import { CustomerServicesService } from '../data-pelanggan/customer-services.service.js';
-
-import { BillingIsolationService } from '../data-pelanggan/billing-isolation.service.js';
-
-import { PengaturanService } from '../../tools/pengaturan/pengaturan.service.js';
 
 @Controller('pppoe')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 export class PaketLayananController {
-  constructor(private readonly pppoe: PaketLayananService, private readonly customers: CustomerServicesService, private readonly billingIsolation: BillingIsolationService, private readonly settings: PengaturanService) { }
+  constructor(private readonly pppoe: PaketLayananService) { }
 
   @Get('packages/options') @Roles('admin', 'sales', 'teknisi') packageOptions() { return this.pppoe.packageOptions(); }
   @Get('packages') packages(@Query('search') search = '', @Query('page', new ParseIntPipe({ optional: true })) page = 1) { return this.pppoe.packages(search.trim(), Math.max(1, page)); }

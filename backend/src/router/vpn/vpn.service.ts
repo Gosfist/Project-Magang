@@ -53,7 +53,7 @@ export class VpnService {
         let ip = '';
         for (let n = 2; n <= 254; n++) if (!used.has(`10.88.0.${n}`)) { ip = `10.88.0.${n}`; break; }
         if (!ip) throw new BadRequestException('Pool IP VPN sudah penuh.');
-        return tx.vpnClient.create({ data: { name: name.trim(), username, passwordEncrypted: this.secrets.encrypt(plain), vpnIp: ip, vpnType: 'sstp', allowedIps: '10.88.0.1/32' } });
+        return tx.vpnClient.create({ data: { name: name.trim(), username, passwordEncrypted: this.secrets.encrypt(plain), vpnIp: ip, vpnType: 'sstp' } });
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
       return serialize({ message: 'Akun VPN dibuat. Penerapan ke server sekitar 15 detik.', id: client.id });
     } catch (error) {

@@ -40,7 +40,7 @@ function setup() {
     }),
   };
   const network = { disconnect: vi.fn() };
-  const service = new PaketLayananService(prisma as any, {} as any, {} as any, network as any);
+  const service = new PaketLayananService(prisma as any, {} as any, network as any);
   const dto = { name: 'Paket', price: 100000, costPrice: 0, downloadMbps: 20, uploadMbps: 2, validityDays: 30 };
   return { service, prisma, network, dto };
 }
