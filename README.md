@@ -111,7 +111,7 @@ Updater memuat ulang script setelah Git mengambil revisi baru dan mempertahankan
 
 ## Database
 
-Pembaruan khusus database lokal lama tersedia di [panduan SQL lokal](backend/prisma/updates/README.md). Jangan mengimpor ulang `database.sql` untuk memperbarui database berisi data.
+Skema final disatukan dalam [`backend/prisma/database.sql`](backend/prisma/database.sql): 34 tabel dan 33 foreign key. Hasil pemeriksaan pemakaian tabel tersedia pada [audit database](backend/docs/audit-database.md). Database lokal sudah sesuai; tidak perlu diimpor ulang.
 
 File SQL untuk **instalasi baru** adalah [`backend/prisma/database.sql`](backend/prisma/database.sql). Semua perubahan tanpa API MikroTik sudah langsung berada di file ini, termasuk metadata NAS, Disconnect, pool per NAS, dan pengaturan awal. Gunakan database kosong pada VPS Ubuntu baru. Tidak ada file migrasi terpisah.
 
@@ -135,7 +135,7 @@ npm run database:generate
 npm run database:check
 ```
 
-Kedua perintah tersebut menghasilkan/memeriksa file SQL tanpa menghubungi database. Klien VPN SSTP tersedia pada menu Router; field server/WireGuard lama dipertahankan untuk kompatibilitas skema.
+Kedua perintah tersebut menghasilkan/memeriksa file SQL tanpa menghubungi database. Klien VPN SSTP tersedia pada menu Router. Struktur server dan kolom WireGuard lama sudah dihapus dari skema final.
 
 Akun seed pengembangan:
 

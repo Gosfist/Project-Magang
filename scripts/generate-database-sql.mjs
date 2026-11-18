@@ -14,6 +14,7 @@ function normalize(text) {
 export function renderDatabaseSql(schemaSql) {
   if (!/^CREATE TABLE /m.test(schemaSql)) throw new Error('Prisma tidak menghasilkan skema tabel.');
   return `-- PT UNZANET - skema database lengkap untuk INSTALASI BARU.
+-- Seluruh struktur aplikasi disatukan dalam berkas ini; tidak memerlukan patch SQL terpisah.
 -- Dihasilkan dari backend/prisma/schema.prisma: npm run database:generate
 -- Pilih database MySQL KOSONG sebelum mengimpor file ini.
 -- Impor sekali saat instalasi awal, bukan saat update aplikasi.

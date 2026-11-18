@@ -8,13 +8,13 @@ Skema aktif memuat 34 tabel dan 33 foreign key. Seluruh tabel yang dipertahankan
 
 `vpn_clients` tetap dipakai untuk akun SSTP. Field `vpn_type` tetap dipakai untuk membedakan data SSTP dan data historis. `radgroupcheck`, `radgroupreply`, dan `nasreload` dipertahankan karena dikonsumsi konfigurasi FreeRADIUS, walaupun tidak seluruhnya diakses layanan NestJS. Tabel statistik harian/bulanan/tahunan server dipertahankan untuk grafik dan rekap monitoring.
 
-## Pembaruan database yang sudah ada
+## Skema final dalam satu berkas
 
-Backup database lengkap dan hentikan backend terlebih dahulu. Jalankan SQL [penghapusan struktur VPN lama](../prisma/updates/20261118-remove-unused-vpn.sql) sekali pada database target yang masih memiliki tabel/kolom lama. Pilih database lewat pengelola MySQL atau `USE nama_database;` sebelum menjalankan file. Skrip melepas foreign key sebelum menghapus tabel server agar aksi cascade tidak menghapus klien. DDL MySQL auto-commit; jangan mengandalkan ROLLBACK. Untuk database dengan struktur berbeda, bandingkan skema terlebih dahulu.
+Seluruh struktur final disatukan dalam [`backend/prisma/database.sql`](../prisma/database.sql), yang dihasilkan dari `backend/prisma/schema.prisma`. Berkas ini memuat seluruh 34 tabel, 33 foreign key, indeks, dan pengaturan awal. Tidak ada folder SQL pembaruan atau patch terpisah di proyek. Pengelolaan kode tetap memakai skema Prisma; satu-satunya berkas SQL aplikasi untuk impor adalah `database.sql`.
 
-Untuk instalasi baru, `backend/prisma/database.sql` sudah dihasilkan ulang dari skema bersih. Untuk lokal lama yang belum diperbarui sama sekali, jalankan migrasi lokal terdahulu lalu skrip penghapusan VPN lama ini. Pada mesin pengembangan ini, kedua pembaruan sudah diterapkan; jangan jalankan ulang.
+Untuk instalasi baru, pilih database MySQL kosong lalu impor berkas SQL tersebut sekali. Pembuatan akun awal tetap melalui `npm run db:seed` dari folder backend. Jangan mengimpor ulang berkas instalasi baru ke database berisi data. Updater aplikasi tetap tidak mereset atau mengimpor ulang database.
 
-Pembersihan diterapkan pada database lokal `unzanet` dan database struktur dokumentasi `unzanet_dokumentasi_20261118`. Database VPS belum diubah. Backup sebelum penghapusan ada di `C:/Users/arema/Documents/UNZANET-Backup/20261118/`, tidak dimasukkan repositori.
+Database lokal `unzanet` dan database struktur dokumentasi `unzanet_dokumentasi_20261118` sudah sesuai dengan skema final sehingga tidak perlu diimpor ulang. Database VPS belum diperiksa atau diubah pada pekerjaan ini. Backup sebelum pembersihan serta arsip SQL pembaruan terdahulu disimpan di luar proyek pada `C:/Users/arema/Documents/UNZANET-Backup/20261118/`.
 
 ## Bukti validasi
 
